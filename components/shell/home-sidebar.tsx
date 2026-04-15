@@ -1,0 +1,79 @@
+import Link from "next/link";
+
+export function HomeSidebar() {
+  return (
+    <aside className="channel-sidebar">
+      {/* Banner */}
+      <div className="server-banner">
+        <div
+          className="banner-canvas"
+          style={{ background: "linear-gradient(135deg,#1B9E75,#157a5b)" }}
+        >
+          <div className="node" style={{ top: 25, left: 30 }}></div>
+          <div className="node filled" style={{ top: 40, left: 80 }}></div>
+          <div className="node" style={{ top: 20, left: 140 }}></div>
+          <div className="node filled" style={{ top: 55, left: 170 }}></div>
+          <div className="node" style={{ top: 35, left: 200 }}></div>
+          <div className="line" style={{ top: 31, left: 42, width: 40, transform: "rotate(12deg)" }}></div>
+          <div className="line" style={{ top: 46, left: 92, width: 50, transform: "rotate(-18deg)" }}></div>
+          <div className="line" style={{ top: 26, left: 152, width: 24, transform: "rotate(55deg)" }}></div>
+          <div className="server-banner-header">
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span className="server-name-text">focus.camp</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Menu */}
+      <div className="features-menu">
+        <div className="features-section-title" style={{ paddingTop: 16 }}>
+          Khám phá
+        </div>
+        <Link href="/discovery" className="feature-item">
+          <span className="feature-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
+            </svg>
+          </span>
+          <span className="feature-name">Discovery</span>
+          <span className="unread-badge new">NEW</span>
+        </Link>
+        <div className="feature-item">
+          <span className="feature-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z" />
+            </svg>
+          </span>
+          <span className="feature-name">Marketplace</span>
+        </div>
+
+        <div className="features-section-title">Tài khoản</div>
+        <div className="feature-item">
+          <span className="feature-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+            </svg>
+          </span>
+          <span className="feature-name">Profile</span>
+        </div>
+        <div className="feature-item">
+          <span className="feature-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
+            </svg>
+          </span>
+          <span className="feature-name">Thông báo</span>
+        </div>
+        <div className="feature-item">
+          <span className="feature-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41L9.25 5.35c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
+            </svg>
+          </span>
+          <span className="feature-name">Cài đặt</span>
+        </div>
+      </div>
+    </aside>
+  );
+}

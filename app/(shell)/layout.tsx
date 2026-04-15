@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { ServerList } from "@/components/shell/server-list";
 import { UserPanel } from "@/components/shell/user-panel";
+import { HomeSidebar } from "@/components/shell/home-sidebar";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,7 @@ export default async function ShellLayout({
       <div className="left-section">
         <div className="left-section-top">
           <ServerList communities={myCommunities} />
+          <HomeSidebar />
         </div>
         <UserPanel user={session?.user} />
       </div>
