@@ -158,6 +158,72 @@ async function main() {
   });
   console.log(`✅ Challenge "${challenge.title}"`);
 
+  // Sample products for marketplace
+  const products = [
+    {
+      slug: "funnel-template-pack",
+      title: "Funnel Template Pack",
+      description: "Bộ template funnel chuẩn, convert cao, sẵn sàng customize cho mọi niche.",
+      type: "TEMPLATE",
+      pillar: "Offer · Phase 1",
+      priceVnd: 290000,
+      priceOldVnd: 490000,
+    },
+    {
+      slug: "ai-challenge-coach",
+      title: "AI Challenge Coach 24/7",
+      description: "Bot AI đồng hành suốt thử thách — nhắc task, review, feedback. Telegram bridge.",
+      type: "TOOL",
+      pillar: "USP · All Pillars",
+      priceVnd: 299000,
+      isSubscription: true,
+      subscriptionPeriod: "month",
+    },
+    {
+      slug: "starter-bundle",
+      title: "Beginner Starter Bundle",
+      description: "Combo 6 items cho 4 challenge đầu: templates, SOP, prompts, tracker.",
+      type: "BUNDLE",
+      pillar: "6 items combo",
+      priceVnd: 990000,
+      priceOldVnd: 2200000,
+    },
+    {
+      slug: "hiring-playbook",
+      title: "Hiring Playbook",
+      description: "SOP tuyển dụng scale team từ 5 đến 50 người. Template JD, interview, onboarding.",
+      type: "SOP",
+      pillar: "Delivery · Phase 3",
+      priceVnd: 1490000,
+    },
+    {
+      slug: "conversion-tracker",
+      title: "Conversion Tracker",
+      description: "Công cụ tracking tỷ lệ chuyển đổi funnel, A/B test, phân tích drop-off.",
+      type: "TOOL",
+      pillar: "Conversion",
+      priceVnd: 790000,
+    },
+    {
+      slug: "launch-prompt-pack",
+      title: "Launch Prompt Pack",
+      description: "50+ prompt chuẩn cho ChatGPT/Claude, phục vụ launch sản phẩm mới.",
+      type: "PROMPT",
+      pillar: "Launch",
+      priceVnd: 0,
+      isFree: true,
+    },
+  ];
+
+  for (const p of products) {
+    await prisma.product.upsert({
+      where: { communityId_slug: { communityId: community.id, slug: p.slug } },
+      update: {},
+      create: { ...p, communityId: community.id },
+    });
+  }
+  console.log(`✅ Seeded ${products.length} products`);
+
   console.log("🎉 Seed done!");
 }
 
