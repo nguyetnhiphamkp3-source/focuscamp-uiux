@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Về focus.camp — Triết lý & Nguyên tắc",
+  title: "Về focus.camp",
   description:
     "Cộng đồng được đặt tên từ hai từ cổ đại — Focus và Camp — và trong sự giao thoa đó là toàn bộ triết lý của chúng tôi.",
 };
@@ -11,7 +11,7 @@ const PRINCIPLES = [
   },
   {
     title: "Chuyện thật, không phải content",
-    body: "Ở đây bạn nói những thứ không đăng lên LinkedIn. Sự thất bại, nỗi sợ, câu hỏi chưa có đáp án.",
+    body: 'Ở đây bạn nói những thứ không đăng lên LinkedIn. Sự thất bại, nỗi sợ, câu hỏi chưa có đáp án.',
   },
   {
     title: "Hiện diện, không phải networking",
@@ -19,11 +19,11 @@ const PRINCIPLES = [
   },
   {
     title: "Lửa ấm, không phải decor",
-    body: "Focus.Camp không giống những \"aesthetic campfire\". Lửa ở đây là triết học — sự ấm áp, sự tập trung, và sức hút tự nhiên kéo người lại gần nhau.",
+    body: 'Focus.Camp không giống những "aesthetic campfire". Lửa ở đây là triết học — sự ấm áp, sự tập trung, và sức hút tự nhiên kéo người lại gần nhau.',
   },
 ];
 
-const DOS_DONTS: { do: string; dont: string }[] = [
+const DOS_DONTS = [
   {
     do: '"Tối thứ Sáu — vòng tròn mở. Có chỗ trống nếu bạn muốn ngồi."',
     dont: '"ĐĂNG KÝ NGAY! Sự kiện networking HOT nhất tháng này!"',
@@ -37,55 +37,39 @@ const DOS_DONTS: { do: string; dont: string }[] = [
 export default function AboutPage() {
   return (
     <div style={{ flex: 1, overflowY: "auto" }}>
-      {/* HERO */}
-      <section
+      <div
         style={{
-          background: "var(--bg-card)",
-          padding: "var(--space-16) var(--space-8) var(--space-12)",
-          borderBottom: "1px solid var(--border-subtle)",
+          maxWidth: 760,
+          margin: "0 auto",
+          padding: "var(--space-16) var(--space-6) var(--space-16)",
         }}
       >
-        <div className="container-md" style={{ textAlign: "center" }}>
-          <div
-            style={{
-              fontSize: "var(--text-xs)",
-              letterSpacing: "0.2em",
-              textTransform: "uppercase",
-              color: "var(--text-muted)",
-              marginBottom: "var(--space-6)",
-              fontWeight: "var(--fw-medium)",
-            }}
-          >
-            Giới thiệu
-          </div>
+        {/* HERO */}
+        <header style={{ marginBottom: "var(--space-16)" }}>
+          <Label>Giới thiệu</Label>
           <h1
-            className="font-display"
             style={{
-              fontSize: "var(--text-4xl)",
-              lineHeight: "var(--lh-tight)",
-              fontWeight: "var(--fw-regular)",
+              fontFamily: "var(--font-display)",
               fontStyle: "italic",
-              marginBottom: "var(--space-5)",
+              fontWeight: "var(--fw-regular)",
+              fontSize: "var(--text-3xl)",
+              lineHeight: "var(--lh-snug)",
               color: "var(--text-heading)",
+              marginBottom: "var(--space-4)",
             }}
           >
-            Cộng đồng được đặt tên từ hai từ cổ đại —
-            <br />
-            và trong sự giao thoa đó là toàn bộ triết lý của chúng tôi.
+            Cộng đồng được đặt tên từ hai từ cổ đại — và trong sự giao thoa đó
+            là toàn bộ triết lý của chúng tôi.
           </h1>
-          <div style={{ fontSize: 40, marginTop: "var(--space-6)" }}>🏕️🔥</div>
-        </div>
-      </section>
+          <div style={{ fontSize: 32 }}>🏕️🔥</div>
+        </header>
 
-      {/* NAME & MEANING */}
-      <section style={{ padding: "var(--space-12) var(--space-8)" }}>
-        <div className="container-lg">
-          <SectionLabel>Tên &amp; Ý nghĩa</SectionLabel>
+        {/* NAME */}
+        <Section label="Tên & ý nghĩa">
           <div
-            className="ui-card ui-card-lg"
             style={{
               display: "grid",
-              gridTemplateColumns: "1fr 1fr",
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
               gap: "var(--space-8)",
             }}
           >
@@ -112,66 +96,44 @@ export default function AboutPage() {
               }
             />
           </div>
-        </div>
-      </section>
+        </Section>
 
-      {/* MANIFESTO (dark) */}
-      <section
-        style={{
-          background: "#1a1612",
-          padding: "var(--space-16) var(--space-8)",
-          color: "#e0ddd0",
-        }}
-      >
-        <div className="container-md">
-          <SectionLabel dark>Manifesto</SectionLabel>
-          <div
-            className="font-display"
+        {/* MANIFESTO */}
+        <Section label="Manifesto">
+          <blockquote
             style={{
+              fontFamily: "var(--font-display)",
+              fontStyle: "italic",
               fontSize: "var(--text-xl)",
               lineHeight: "var(--lh-relaxed)",
-              fontStyle: "italic",
-              color: "#f0eee6",
+              color: "var(--text-heading)",
+              borderLeft: "2px solid var(--brand-green)",
+              paddingLeft: "var(--space-5)",
             }}
           >
-            <p style={{ marginBottom: "var(--space-6)" }}>
+            <p style={{ marginBottom: "var(--space-4)" }}>
               Trước khi có thành phố, trước khi có tôn giáo, trước khi có ngôn
-              ngữ viết —{" "}
-              <span style={{ color: "#d8955a", fontStyle: "normal" }}>
-                đã có lửa.
-              </span>
+              ngữ viết — <em style={{ color: "var(--brand-green)" }}>đã có lửa.</em>
             </p>
-            <p style={{ marginBottom: "var(--space-6)" }}>
+            <p style={{ marginBottom: "var(--space-4)" }}>
               Và xung quanh lửa đó, người ta ngồi lại. Không phải vì họ phải
               ngồi. Mà vì{" "}
-              <span style={{ color: "#d8955a", fontStyle: "normal" }}>
-                lửa kéo người đến.
-              </span>
+              <em style={{ color: "var(--brand-green)" }}>lửa kéo người đến.</em>
             </p>
             <p>
               Focus.Camp không phát minh ra thứ gì mới. Chúng tôi chỉ{" "}
-              <span style={{ color: "#d8955a", fontStyle: "normal" }}>
-                giữ lửa.
-              </span>
+              <em style={{ color: "var(--brand-green)" }}>giữ lửa.</em>
             </p>
-          </div>
-        </div>
-      </section>
+          </blockquote>
+        </Section>
 
-      {/* PRINCIPLES */}
-      <section
-        style={{
-          padding: "var(--space-12) var(--space-8)",
-          background: "var(--bg-body)",
-        }}
-      >
-        <div className="container-md">
-          <SectionLabel>Nguyên tắc cộng đồng</SectionLabel>
+        {/* PRINCIPLES */}
+        <Section label="Nguyên tắc cộng đồng">
           <div
             style={{
               display: "flex",
               flexDirection: "column",
-              gap: "var(--space-6)",
+              gap: "var(--space-5)",
             }}
           >
             {PRINCIPLES.map((p, i) => (
@@ -179,19 +141,19 @@ export default function AboutPage() {
                 key={p.title}
                 style={{
                   display: "flex",
-                  gap: "var(--space-5)",
+                  gap: "var(--space-4)",
                   alignItems: "flex-start",
                 }}
               >
                 <div
                   style={{
-                    fontSize: "var(--text-2xl)",
+                    fontFamily: "var(--font-display)",
+                    fontSize: "var(--text-xl)",
                     fontWeight: "var(--fw-regular)",
                     color: "var(--text-muted)",
-                    fontFamily: "var(--font-display)",
-                    lineHeight: 1,
                     flexShrink: 0,
-                    width: 32,
+                    width: 28,
+                    lineHeight: 1.2,
                   }}
                 >
                   {i + 1}
@@ -199,8 +161,7 @@ export default function AboutPage() {
                 <div>
                   <h3
                     style={{
-                      fontFamily: "var(--font-heading)",
-                      fontSize: "var(--text-lg)",
+                      fontSize: "var(--text-md)",
                       fontWeight: "var(--fw-bold)",
                       color: "var(--text-heading)",
                       marginBottom: "var(--space-1)",
@@ -210,7 +171,6 @@ export default function AboutPage() {
                   </h3>
                   <p
                     style={{
-                      fontFamily: "var(--font-body)",
                       color: "var(--text-normal)",
                       lineHeight: "var(--lh-relaxed)",
                       fontSize: "var(--text-base)",
@@ -222,51 +182,57 @@ export default function AboutPage() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
+        </Section>
 
-      {/* DO / DON'T */}
-      <section style={{ padding: "var(--space-12) var(--space-8) var(--space-16)" }}>
-        <div className="container-lg">
-          <SectionLabel>Dùng &amp; Không dùng</SectionLabel>
+        {/* DO / DON'T */}
+        <Section label="Giọng điệu">
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
               gap: "var(--space-4)",
             }}
           >
             {DOS_DONTS.flatMap((row, i) => [
-              <DoDontCard key={`do-${i}`} kind="do" text={row.do} />,
-              <DoDontCard key={`dont-${i}`} kind="dont" text={row.dont} />,
+              <ToneCard key={`do-${i}`} kind="do" text={row.do} />,
+              <ToneCard key={`dont-${i}`} kind="dont" text={row.dont} />,
             ])}
           </div>
-        </div>
-      </section>
+        </Section>
+      </div>
     </div>
   );
 }
 
-function SectionLabel({
-  children,
-  dark,
-}: {
-  children: React.ReactNode;
-  dark?: boolean;
-}) {
+function Label({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
         fontSize: "var(--text-xs)",
         letterSpacing: "0.2em",
         textTransform: "uppercase",
-        color: dark ? "rgba(240,238,230,0.6)" : "var(--text-muted)",
-        marginBottom: "var(--space-6)",
-        fontWeight: "var(--fw-medium)",
+        color: "var(--text-muted)",
+        fontWeight: "var(--fw-semibold)",
+        marginBottom: "var(--space-5)",
       }}
     >
       {children}
     </div>
+  );
+}
+
+function Section({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section style={{ marginBottom: "var(--space-16)" }}>
+      <Label>{label}</Label>
+      {children}
+    </section>
   );
 }
 
@@ -282,13 +248,13 @@ function WordOrigin({
   return (
     <div>
       <div
-        className="font-display"
         style={{
-          fontSize: "var(--text-3xl)",
-          fontWeight: "var(--fw-bold)",
+          fontFamily: "var(--font-display)",
+          fontSize: "var(--text-2xl)",
+          fontWeight: "var(--fw-semibold)",
           color: "var(--text-heading)",
-          marginBottom: "var(--space-1)",
           lineHeight: "var(--lh-tight)",
+          marginBottom: "var(--space-1)",
         }}
       >
         {word}
@@ -298,7 +264,7 @@ function WordOrigin({
           fontSize: "var(--text-xs)",
           letterSpacing: "0.15em",
           textTransform: "uppercase",
-          color: "#c77a2d",
+          color: "var(--text-muted)",
           marginBottom: "var(--space-3)",
           fontWeight: "var(--fw-semibold)",
         }}
@@ -307,7 +273,6 @@ function WordOrigin({
       </div>
       <p
         style={{
-          fontFamily: "var(--font-body)",
           color: "var(--text-normal)",
           lineHeight: "var(--lh-relaxed)",
           fontSize: "var(--text-base)",
@@ -319,15 +284,16 @@ function WordOrigin({
   );
 }
 
-function DoDontCard({ kind, text }: { kind: "do" | "dont"; text: string }) {
+function ToneCard({ kind, text }: { kind: "do" | "dont"; text: string }) {
   const isDo = kind === "do";
   return (
     <div
       style={{
         padding: "var(--space-5)",
-        borderRadius: "var(--r-lg)",
-        background: isDo ? "rgba(27,158,117,0.08)" : "rgba(205,92,82,0.08)",
-        border: `1px solid ${isDo ? "rgba(27,158,117,0.25)" : "rgba(205,92,82,0.25)"}`,
+        borderRadius: "var(--r-md)",
+        background: "var(--bg-card)",
+        border: "1px solid var(--border-subtle)",
+        borderLeft: `3px solid ${isDo ? "var(--brand-green)" : "var(--border-strong)"}`,
       }}
     >
       <div
@@ -335,17 +301,18 @@ function DoDontCard({ kind, text }: { kind: "do" | "dont"; text: string }) {
           fontSize: "var(--text-xs)",
           letterSpacing: "0.15em",
           textTransform: "uppercase",
-          color: isDo ? "var(--brand-green-dark)" : "#a35f2a",
+          color: isDo ? "var(--brand-green-dark)" : "var(--text-muted)",
           fontWeight: "var(--fw-bold)",
           marginBottom: "var(--space-3)",
         }}
       >
-        {isDo ? "Nên dùng" : "Không dùng"}
+        {isDo ? "Nên" : "Tránh"}
       </div>
       <div
-        className="font-body"
         style={{
-          color: "var(--text-heading)",
+          fontFamily: "var(--font-display)",
+          fontStyle: "italic",
+          color: isDo ? "var(--text-heading)" : "var(--text-muted)",
           lineHeight: "var(--lh-relaxed)",
           fontSize: "var(--text-base)",
         }}
