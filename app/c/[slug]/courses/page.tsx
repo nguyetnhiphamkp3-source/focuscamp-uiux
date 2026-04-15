@@ -1,0 +1,131 @@
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { prisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
+
+const PILLAR_THUMB: Record<string, { cls: string; icon: string }> = {
+  Offer: { cls: "p-offer", icon: "🎯" },
+  Traffic: { cls: "p-traffic", icon: "📣" },
+  Conversion: { cls: "p-conversion", icon: "⚡" },
+  Delivery: { cls: "p-delivery", icon: "🚚" },
+  USP: { cls: "p-usp", icon: "💎" },
+};
+
+function thumbFor(pillar: string | null) {
+  if (!pillar) return { cls: "p-offer", icon: "📚" };
+  for (const [key, val] of Object.entries(PILLAR_THUMB)) {
+    if (pillar.toLowerCase().startsWith(key.toLowerCase())) return val;
+  }
+  return { cls: "p-offer", icon: "📚" };
+}
+
+export default async function CoursesPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const community = await prisma.community.findUnique({
+    where: { slug },
+    include: {
+      courses: {
+        where: { isPublished: true },
+        include: { _count: { select: { lessons: true } } },
+        orderBy: { createdAt: "desc" },
+      },
+    },
+  });
+  if (!community) notFound();
+
+  return (
+    <>
+      <header className="view-header">
+        <span className="view-title">Khóa học</span>
+        <span className="view-subtitle">Hệ thống học tập có lộ trình</span>
+      </header>
+
+      <div className="courses-list-wrap" id="courseListView">
+        <div className="courses-list-inner">
+          <div className="cl-filters">
+            <div className="cl-filter active">Tất cả</div>
+            <div className="cl-filter">Đang học</div>
+            <div className="cl-filter">Miễn phí</div>
+            <div className="cl-filter">PRO</div>
+            <div className="cl-filter">Đã hoàn thành</div>
+          </div>
+
+          {community.courses.length === 0 ? (
+            <div
+              style={{
+                background: "var(--bg-card)",
+                border: "1px solid var(--border-subtle)",
+                borderRadius: 12,
+                padding: 40,
+                textAlign: "center",
+                color: "var(--text-muted)",
+              }}
+            >
+              <div style={{ fontSize: 40, marginBottom: 8 }}>📚</div>
+              Chưa có khóa học nào được publish.
+            </div>
+          ) : (
+            <div className="cl-grid">
+              {community.courses.map((c) => {
+                const t = thumbFor(c.pillar);
+                const isPro = c.requiredTier === "PRO" || c.level === "ADVANCED";
+                return (
+                  <Link
+                    key={c.id}
+                    href={`/c/${slug}/courses/${c.slug}`}
+                    className="course-card"
+                    style={{ textDecoration: "none", color: "inherit" }}
+                  >
+                    <div className={`course-card-thumb ${t.cls}`}>
+                      <span className="thumb-icon">{t.icon}</span>
+                      <span className="course-card-level">
+                        {c.level === "BASIC"
+                          ? "Basic"
+                          : c.level === "ADVANCED"
+                            ? "Advanced"
+                            : "Intermediate"}
+                      </span>
+                      {isPro && <span className="course-card-locked">Pro</span>}
+                    </div>
+                    <div className="course-card-body">
+                      {c.pillar && (
+                        <div className="course-card-pillar">{c.pillar}</div>
+                      )}
+                      <div className="course-card-title">{c.title}</div>
+                      <div className="course-card-desc">{c.description}</div>
+                      <div className="course-card-meta">
+                        <span>📹 {c._count.lessons} bài</span>
+                        {c.xpReward > 0 && (
+                          <>
+                            <span className="meta-sep">·</span>
+                            <span>💎 +{c.xpReward} XP</span>
+                          </>
+                        )}
+                      </div>
+                      <div className="course-card-progress">
+                        <div className="bar">
+                          <div className="fill" style={{ width: "0%" }}></div>
+                        </div>
+                        <span className="pct">Chưa bắt đầu</span>
+                      </div>
+                      <span
+                        className={`course-card-cta ${isPro ? "locked" : "primary"}`}
+                      >
+                        {isPro ? "🔒 Unlock Pro" : "Bắt đầu học"}
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
