@@ -98,7 +98,7 @@ export default function AboutPage() {
           </div>
         </Section>
 
-        {/* MANIFESTO */}
+        {/* MANIFESTO — dark box with fire accent */}
         <Section label="Manifesto">
           <blockquote
             style={{
@@ -106,23 +106,32 @@ export default function AboutPage() {
               fontStyle: "italic",
               fontSize: "var(--text-xl)",
               lineHeight: "var(--lh-relaxed)",
-              color: "var(--text-heading)",
-              borderLeft: "2px solid var(--brand-green)",
-              paddingLeft: "var(--space-5)",
+              color: "#f0eee6",
+              background: "#1a1612",
+              padding: "var(--space-10) var(--space-8)",
+              borderRadius: "var(--r-xl)",
+              boxShadow: "var(--shadow-md)",
             }}
           >
             <p style={{ marginBottom: "var(--space-4)" }}>
               Trước khi có thành phố, trước khi có tôn giáo, trước khi có ngôn
-              ngữ viết — <em style={{ color: "var(--brand-green)" }}>đã có lửa.</em>
+              ngữ viết —{" "}
+              <em style={{ color: "#ff7043", fontStyle: "normal" }}>
+                đã có lửa.
+              </em>
             </p>
             <p style={{ marginBottom: "var(--space-4)" }}>
               Và xung quanh lửa đó, người ta ngồi lại. Không phải vì họ phải
               ngồi. Mà vì{" "}
-              <em style={{ color: "var(--brand-green)" }}>lửa kéo người đến.</em>
+              <em style={{ color: "#ff7043", fontStyle: "normal" }}>
+                lửa kéo người đến.
+              </em>
             </p>
             <p>
               Focus.Camp không phát minh ra thứ gì mới. Chúng tôi chỉ{" "}
-              <em style={{ color: "var(--brand-green)" }}>giữ lửa.</em>
+              <em style={{ color: "#ff7043", fontStyle: "normal" }}>
+                giữ lửa.
+              </em>
             </p>
           </blockquote>
         </Section>
