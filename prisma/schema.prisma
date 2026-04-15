@@ -1,0 +1,582 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============= AUTH =============
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  handle        String?   @unique
+  bio           String?
+  location      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts         Account[]
+  sessions         Session[]
+  memberships      Membership[]
+  ownedCommunities Community[]        @relation("CommunityOwner")
+  posts            Post[]
+  comments         Comment[]
+  reactions        Reaction[]
+  votes            Vote[]
+  messages         Message[]
+  courseProgress   CourseProgress[]
+  challengeMembers ChallengeMember[]
+  taskCompletions  TaskCompletion[]
+  checkins         Checkin[]
+  submissionVotes  SubmissionVote[]
+  purchases        Purchase[]
+  xpLedger         XPLedger[]
+  badgeAwards      BadgeAward[]
+  affiliateLinks   AffiliateLink[]
+  referrals        Referral[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ============= COMMUNITY =============
+
+model Community {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  tagline     String?
+  description String?  @db.Text
+  bannerUrl   String?
+  iconUrl     String?
+  ownerId     String
+
+  classesConfig Json?
+  pillarsConfig Json?
+  gemsConfig    Json?
+  billingModel  Json?
+
+  memberCount Int @default(0)
+  onlineCount Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner         User           @relation("CommunityOwner", fields: [ownerId], references: [id])
+  memberships   Membership[]
+  channels      Channel[]
+  courses       Course[]
+  challenges    Challenge[]
+  posts         Post[]
+  products      Product[]
+  badges        Badge[]
+  subscriptions Subscription[]
+}
+
+model Membership {
+  id           String   @id @default(cuid())
+  userId       String
+  communityId  String
+  role         String   @default("MEMBER")
+  tier         String   @default("EXPLORER")
+  className    String?
+  xp           Int      @default(0)
+  level        Int      @default(1)
+  aip          Int      @default(0)
+  gems         Int      @default(0)
+  streakDays   Int      @default(0)
+  lastActiveAt DateTime @default(now())
+  joinedAt     DateTime @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, communityId])
+  @@index([communityId, xp])
+}
+
+// ============= CHAT =============
+
+model Channel {
+  id           String  @id @default(cuid())
+  communityId  String
+  name         String
+  slug         String
+  topic        String?
+  category     String?
+  position     Int     @default(0)
+  type         String  @default("TEXT")
+  isPrivate    Boolean @default(false)
+  requiredTier String?
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  messages  Message[]
+
+  @@unique([communityId, slug])
+}
+
+model Message {
+  id        String    @id @default(cuid())
+  channelId String
+  userId    String
+  content   String    @db.Text
+  replyToId String?
+  editedAt  DateTime?
+  createdAt DateTime  @default(now())
+
+  channel Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  replyTo Message?  @relation("MessageReply", fields: [replyToId], references: [id])
+  replies Message[] @relation("MessageReply")
+
+  @@index([channelId, createdAt])
+}
+
+// ============= COURSES =============
+
+model Course {
+  id           String   @id @default(cuid())
+  communityId  String
+  slug         String
+  title        String
+  description  String?  @db.Text
+  thumbnailUrl String?
+  pillar       String?
+  level        String   @default("BASIC")
+  requiredTier String?
+  xpReward     Int      @default(0)
+  aipReward    Int      @default(0)
+  isPublished  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  lessons   Lesson[]
+
+  @@unique([communityId, slug])
+}
+
+model Lesson {
+  id          String  @id @default(cuid())
+  courseId    String
+  title       String
+  description String? @db.Text
+  content     String? @db.Text
+  videoUrl    String?
+  duration    Int?
+  position    Int     @default(0)
+  xpReward    Int     @default(0)
+
+  course   Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progress CourseProgress[]
+}
+
+model CourseProgress {
+  id          String    @id @default(cuid())
+  userId      String
+  lessonId    String
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+}
+
+// ============= CHALLENGES =============
+
+model Challenge {
+  id             String    @id @default(cuid())
+  communityId    String
+  slug           String
+  title          String
+  description    String?   @db.Text
+  bannerUrl      String?
+  difficulty     String    @default("NORMAL")
+  requiredDays   Int       @default(21)
+  maxMembers     Int       @default(999)
+  depositAip     Int?
+  priceVnd       Decimal?  @db.Decimal(15, 2)
+  leaderId       String?
+  status         String    @default("OPEN")
+  startsAt       DateTime?
+  endsAt         DateTime?
+  freezeFromDay  Int?
+  freezeStartsAt DateTime?
+  freezeEndsAt   DateTime?
+  createdAt      DateTime  @default(now())
+
+  community Community         @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  tasks     ChallengeTask[]
+  members   ChallengeMember[]
+  checkins  Checkin[]
+
+  @@unique([communityId, slug])
+}
+
+model ChallengeTask {
+  id            String    @id @default(cuid())
+  challengeId   String
+  dayNumber     Int
+  label         String?
+  title         String
+  description   String?   @db.Text
+  sopContent    String?   @db.Text
+  videoUrl      String?
+  meetingAt     DateTime?
+  evidenceType  String    @default("TEXT")
+  evidenceLabel String?   @db.Text
+
+  challenge   Challenge        @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  completions TaskCompletion[]
+
+  @@unique([challengeId, dayNumber])
+}
+
+model ChallengeMember {
+  id                String    @id @default(cuid())
+  challengeId       String
+  userId            String
+  classAtJoin       String?
+  status            String    @default("PENDING")
+  joinedAt          DateTime  @default(now())
+  approvedAt        DateTime?
+  personalStartsAt  DateTime?
+  completedAt       DateTime?
+  lastCheckinAt     DateTime?
+  consecutiveMissed Int       @default(0)
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, userId])
+}
+
+model TaskCompletion {
+  id           String    @id @default(cuid())
+  taskId       String
+  userId       String
+  evidence     String?   @db.Text
+  isLate       Boolean   @default(false)
+  status       String    @default("PENDING")
+  rejectCount  Int       @default(0)
+  reviewedById String?
+  reviewedAt   DateTime?
+  reviewNote   String?   @db.Text
+  createdAt    DateTime  @default(now())
+
+  task  ChallengeTask    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  votes SubmissionVote[]
+
+  @@unique([taskId, userId])
+}
+
+model Checkin {
+  id          String   @id @default(cuid())
+  challengeId String
+  userId      String
+  content     String   @db.Text
+  createdAt   DateTime @default(now())
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([challengeId, userId, createdAt])
+}
+
+model SubmissionVote {
+  id           String   @id @default(cuid())
+  completionId String
+  userId       String
+  createdAt    DateTime @default(now())
+
+  completion TaskCompletion @relation(fields: [completionId], references: [id], onDelete: Cascade)
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([completionId, userId])
+}
+
+// ============= CONTENT =============
+
+model Post {
+  id            String    @id @default(cuid())
+  communityId   String
+  userId        String
+  type          String    @default("POST")
+  title         String?
+  body          String    @db.Text
+  pillar        String?
+  tags          String[]  @default([])
+  isAnonymous   Boolean   @default(false)
+  isPinned      Boolean   @default(false)
+  isCot         Boolean   @default(false)
+  cotApprovedAt DateTime?
+  bountyAip     Int?
+  viewCount     Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  community Community  @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments  Comment[]
+  reactions Reaction[]
+  votes     Vote[]
+
+  @@index([communityId, type, createdAt])
+}
+
+model Comment {
+  id           String   @id @default(cuid())
+  postId       String
+  userId       String
+  parentId     String?
+  body         String   @db.Text
+  isBestAnswer Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  post    Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent  Comment?  @relation("CommentReply", fields: [parentId], references: [id])
+  replies Comment[] @relation("CommentReply")
+}
+
+model Reaction {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId, emoji])
+}
+
+model Vote {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  value     Int
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+}
+
+// ============= MARKETPLACE =============
+
+model Product {
+  id                 String   @id @default(cuid())
+  communityId        String
+  slug               String
+  title              String
+  description        String?  @db.Text
+  thumbnailUrl       String?
+  type               String   @default("TEMPLATE")
+  pillar             String?
+  priceVnd           Decimal  @default(0) @db.Decimal(15, 2)
+  priceOldVnd        Decimal? @db.Decimal(15, 2)
+  isFree             Boolean  @default(false)
+  isSubscription     Boolean  @default(false)
+  subscriptionPeriod String?
+  fileUrl            String?
+  externalUrl        String?
+  stock              Int?
+  soldCount          Int      @default(0)
+  createdAt          DateTime @default(now())
+
+  community Community  @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  purchases Purchase[]
+
+  @@unique([communityId, slug])
+}
+
+model Purchase {
+  id         String   @id @default(cuid())
+  productId  String
+  userId     String
+  amountVnd  Decimal  @db.Decimal(15, 2)
+  paymentRef String?
+  status     String   @default("PENDING")
+  createdAt  DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+}
+
+// ============= PAYMENT (SePay) =============
+
+model Payment {
+  id            String   @id @default(cuid())
+  paymentCode   String   @unique // unique code used in transfer content
+  userId        String
+  communityId   String?
+  purpose       String   // subscription | product | challenge_deposit
+  refType       String   // subscription | product | challenge
+  refId         String   // ID của subscription/product/challenge
+  amountVnd     Decimal  @db.Decimal(15, 2)
+  status        String   @default("PENDING") // PENDING, COMPLETED, EXPIRED, REFUNDED
+  provider      String   @default("SEPAY_STANDARD") // SEPAY_STANDARD | SEPAY_BANKHUB
+  bankName      String?
+  bankAccount   String?
+  receivedAt    DateTime?
+  transactionId String?
+  metadata      Json?
+  expiresAt     DateTime
+  createdAt     DateTime @default(now())
+
+  @@index([userId, status])
+  @@index([refType, refId])
+}
+
+model SePayTransaction {
+  id              String   @id @default(cuid())
+  transactionId   String   @unique // ID từ SePay
+  referenceCode   String?
+  gateway         String
+  accountNumber   String?
+  vaNumber        String?
+  paymentCode     String?
+  content         String   @db.Text
+  transferType    String   // credit | debit
+  amount          Decimal  @db.Decimal(15, 2)
+  accumulated     Decimal? @db.Decimal(15, 2)
+  transactionDate DateTime
+  matchedPaymentId String?
+  raw             Json     // raw payload
+  createdAt       DateTime @default(now())
+
+  @@index([paymentCode])
+  @@index([transactionDate])
+}
+
+// ============= GAMIFICATION =============
+
+model XPLedger {
+  id        String   @id @default(cuid())
+  userId    String
+  amount    Int
+  reason    String
+  reasonId  String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model Badge {
+  id          String  @id @default(cuid())
+  communityId String?
+  slug        String
+  name        String
+  emoji       String
+  description String?
+  rarity      String  @default("COMMON")
+  criteria    Json
+
+  community Community?   @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  awards    BadgeAward[]
+
+  @@unique([communityId, slug])
+}
+
+model BadgeAward {
+  id        String   @id @default(cuid())
+  badgeId   String
+  userId    String
+  awardedAt DateTime @default(now())
+
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([badgeId, userId])
+}
+
+// ============= BILLING =============
+
+model Subscription {
+  id          String    @id @default(cuid())
+  userId      String
+  communityId String
+  tier        String
+  status      String    @default("ACTIVE")
+  startedAt   DateTime  @default(now())
+  expiresAt   DateTime?
+  cancelledAt DateTime?
+  paymentRef  String?
+  amountVnd   Decimal   @db.Decimal(15, 2)
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  @@index([userId, communityId])
+}
+
+// ============= AFFILIATE =============
+
+model AffiliateLink {
+  id        String   @id @default(cuid())
+  userId    String
+  code      String   @unique
+  clicks    Int      @default(0)
+  createdAt DateTime @default(now())
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  referrals Referral[]
+}
+
+model Referral {
+  id             String    @id @default(cuid())
+  linkId         String
+  referredUserId String
+  convertedAt    DateTime?
+  commissionVnd  Decimal?  @db.Decimal(15, 2)
+  status         String    @default("PENDING")
+  createdAt      DateTime  @default(now())
+
+  link         AffiliateLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  referredUser User          @relation(fields: [referredUserId], references: [id])
+}
