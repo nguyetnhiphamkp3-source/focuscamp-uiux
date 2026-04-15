@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export default async function DiscoveryPage() {
   const communities = await prisma.community.findMany({
     take: 20,
