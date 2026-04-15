@@ -89,7 +89,7 @@ function GuestView({
           alignItems: "center",
           justifyContent: "center",
           color: "#fff",
-          fontSize: 48,
+          fontSize: "var(--text-3xl)",
           fontWeight: 800,
           fontFamily: "var(--font-heading)",
         }}
@@ -161,11 +161,11 @@ function GuestView({
                   display: "flex",
                   alignItems: "center",
                   gap: 8,
-                  fontSize: 13,
+                  fontSize: "var(--text-sm)",
                   color: "var(--text-normal)",
                 }}
               >
-                <span style={{ fontSize: 16 }}>{icon}</span> {text}
+                <span style={{ fontSize: "var(--text-md)" }}>{icon}</span> {text}
               </div>
             ))}
           </div>
@@ -192,7 +192,7 @@ function MemberView({
           alignItems: "center",
           justifyContent: "center",
           color: "#fff",
-          fontSize: 16,
+          fontSize: "var(--text-md)",
           fontWeight: 700,
           textAlign: "center",
           padding: 16,
@@ -236,7 +236,7 @@ function MemberView({
         <div className="rs-card">
           <div
             style={{
-              fontSize: 12,
+              fontSize: "var(--text-xs)",
               color: "var(--text-muted)",
               lineHeight: 1.6,
             }}
@@ -257,7 +257,7 @@ function Stat({ label, value }: { label: string; value: string }) {
       style={{
         display: "flex",
         justifyContent: "space-between",
-        fontSize: 13,
+        fontSize: "var(--text-sm)",
         color: "var(--text-muted)",
       }}
     >
@@ -274,11 +274,11 @@ function Hint({ icon, text }: { icon: string; text: string }) {
         display: "flex",
         alignItems: "center",
         gap: 8,
-        fontSize: 13,
+        fontSize: "var(--text-sm)",
         color: "var(--text-normal)",
       }}
     >
-      <span style={{ fontSize: 16 }}>{icon}</span>
+      <span style={{ fontSize: "var(--text-md)" }}>{icon}</span>
       {text}
     </div>
   );

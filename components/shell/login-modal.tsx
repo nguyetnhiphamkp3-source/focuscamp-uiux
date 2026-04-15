@@ -63,17 +63,17 @@ export function LoginModal({
                 border: "none",
                 background: "transparent",
                 color: "var(--text-muted)",
-                fontSize: 20,
+                fontSize: "var(--text-lg)",
                 cursor: "pointer",
                 borderRadius: 6,
               }}
             >
               ✕
             </button>
-            <div style={{ fontSize: 40, marginBottom: 8 }}>🏕️🔥</div>
+            <div style={{ fontSize: "var(--text-3xl)", marginBottom: 8 }}>🏕️🔥</div>
             <h1
               style={{
-                fontSize: 22,
+                fontSize: "var(--text-xl)",
                 fontWeight: 800,
                 color: "var(--text-heading)",
                 marginBottom: 6,
@@ -83,7 +83,7 @@ export function LoginModal({
             </h1>
             <p
               style={{
-                fontSize: 14,
+                fontSize: "var(--text-base)",
                 color: "var(--text-muted)",
                 marginBottom: 20,
                 lineHeight: 1.5,
@@ -103,7 +103,7 @@ export function LoginModal({
                   borderRadius: 10,
                   background: "var(--bg-elevated)",
                   color: "var(--text-heading)",
-                  fontSize: 15,
+                  fontSize: "var(--text-base)",
                   fontWeight: 700,
                   cursor: "pointer",
                   display: "flex",
@@ -119,7 +119,7 @@ export function LoginModal({
 
             <p
               style={{
-                fontSize: 12,
+                fontSize: "var(--text-xs)",
                 color: "var(--text-muted)",
                 textAlign: "center",
                 marginTop: 16,

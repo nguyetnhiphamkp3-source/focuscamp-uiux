@@ -24,7 +24,7 @@ export default function GlobalError({
       }}
     >
       <div className="ui-card ui-card-lg" style={{ maxWidth: 480, textAlign: "center" }}>
-        <div style={{ fontSize: 40, marginBottom: 8 }}>💥</div>
+        <div style={{ fontSize: "var(--text-3xl)", marginBottom: 8 }}>💥</div>
         <h1 style={{ fontSize: "var(--text-xl)", marginBottom: 8 }}>
           Có lỗi xảy ra
         </h1>

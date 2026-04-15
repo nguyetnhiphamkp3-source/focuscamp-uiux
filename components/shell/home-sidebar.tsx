@@ -57,6 +57,14 @@ export function HomeSidebar() {
           </span>
           <span className="feature-name">Manifesto</span>
         </FeatureLink>
+        <FeatureLink href="/brand">
+          <span className="feature-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 3l-8 4v6c0 5 3.5 9.7 8 11 4.5-1.3 8-6 8-11V7l-8-4z" />
+            </svg>
+          </span>
+          <span className="feature-name">Brand Guide</span>
+        </FeatureLink>
 
         <div className="features-section-title">Tài khoản</div>
         <div className="feature-item">
