@@ -1,5 +1,4 @@
 import { notFound, redirect } from "next/navigation";
-import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { createPayment } from "@/lib/sepay";
@@ -15,10 +14,10 @@ export default async function ProductDetailPage({
 }: {
   params: Promise<{ slug: string; productSlug: string }>;
 }) {
-  const { slug, productSlug } = await params;
+  const { slug: communitySlug, productSlug } = await params;
 
   const product = await prisma.product.findFirst({
-    where: { community: { slug }, slug: productSlug },
+    where: { community: { slug: communitySlug }, slug: productSlug },
     include: { community: true },
   });
   if (!product) notFound();
@@ -56,13 +55,6 @@ export default async function ProductDetailPage({
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "24px 32px" }}>
       <div style={{ maxWidth: 720 }}>
-        <Link
-          href={`/c/${slug}/marketplace`}
-          style={{ color: "var(--text-link)", fontSize: 14 }}
-        >
-          ← Marketplace
-        </Link>
-
         <h1
           style={{
             fontSize: 28,

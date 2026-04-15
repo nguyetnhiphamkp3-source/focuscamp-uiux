@@ -61,12 +61,6 @@ export default async function DiscoveryPage() {
   return (
     <div className="dc-view" style={{ minHeight: 0, flex: 1, overflowY: "auto" }}>
       <div className="dc-inner">
-        <div style={{ marginBottom: 16 }}>
-          <Link href="/" className="text-sm" style={{ color: "var(--text-link)" }}>
-            ← Về trang chủ
-          </Link>
-        </div>
-
         {/* Hero */}
         <section className="dc-hero">
           <div className="dc-hero-title">🔭 Discover — Cross-community marketplace</div>
