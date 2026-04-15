@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth, signOut } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { CommunityRightSidebar } from "@/components/shell/community-right-sidebar";
 
 export const dynamic = "force-dynamic";
 
@@ -248,6 +249,29 @@ export default async function CommunityLayout({
 
       {/* MAIN CONTENT */}
       <main className="main-content">{children}</main>
+
+      {/* RIGHT SIDEBAR */}
+      <CommunityRightSidebar
+        community={{
+          id: community.id,
+          slug: community.slug,
+          name: community.name,
+          tagline: community.tagline,
+          description: community.description,
+          memberCount: community.memberCount,
+          onlineCount: community.onlineCount,
+        }}
+        membership={
+          membership
+            ? {
+                role: membership.role,
+                tier: membership.tier,
+                xp: membership.xp,
+              }
+            : null
+        }
+        isLoggedIn={!!session?.user}
+      />
     </div>
   );
 }
