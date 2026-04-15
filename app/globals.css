@@ -13,11 +13,23 @@ select {
 
 /* Overrides on top of prototype.css */
 :root {
-  --font-primary: var(--font-roboto), 'Helvetica Neue', Arial, sans-serif;
+  /* Typography system:
+     - Heading (h1-h6, buttons, labels): Roboto
+     - Body (paragraphs, UI text): Arial system
+     - Display (manifesto, quotes, pull-quotes): Playfair Display */
+  --font-primary: Arial, 'Helvetica Neue', Helvetica, sans-serif;
+  --font-body: Arial, 'Helvetica Neue', Helvetica, sans-serif;
   --font-heading: var(--font-roboto), 'Helvetica Neue', Arial, sans-serif;
+  --font-display: var(--font-playfair), Georgia, 'Times New Roman', serif;
+
   /* Prototype uses --online-green #1B9E75 (teal) for all CTAs.
-     Alias --brand-green to the same value so both names look the same. */
+     Alias --brand-green to the same value. */
   --brand-green: #1B9E75;
   --brand-green-dark: #157a5b;
   --brand-green-soft: rgba(27, 158, 117, 0.12);
 }
+
+/* Utility classes */
+.font-display { font-family: var(--font-display); }
+.font-heading { font-family: var(--font-heading); }
+.font-body { font-family: var(--font-body); }
