@@ -232,3 +232,48 @@ h6 { font-size: var(--text-sm); font-weight: var(--fw-bold); line-height: var(--
 .feature-item:focus-visible { background: var(--bg-modifier-hover); }
 .view-title { font-size: var(--text-lg); font-weight: var(--fw-bold); }
 .view-subtitle { font-size: var(--text-sm); color: var(--text-muted); }
+
+/* ============ Chat hierarchy fixes ============ */
+/* Sidebar section label — smallest, uppercase, muted */
+.chat-channels-header {
+  font-size: var(--text-xs);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+.chat-cat-title {
+  font-size: var(--text-xs);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+/* Channel item in list */
+.chat-channel-item .ch-name { font-size: var(--text-base); }
+.chat-channel-item.active .ch-name {
+  font-weight: var(--fw-bold);
+  color: var(--text-heading);
+}
+/* Current channel title in chat header — most prominent */
+.chat-header-channel {
+  font-size: var(--text-lg);
+  font-weight: var(--fw-bold);
+  color: var(--text-heading);
+}
+/* Message body — same as UI base, not bigger */
+.message-content {
+  font-size: var(--text-base);
+  line-height: var(--lh-relaxed);
+}
+.message-username {
+  font-size: var(--text-base);
+  font-weight: var(--fw-bold);
+}
+.message-timestamp {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+.date-separator-text {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
