@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+button:not(:disabled),
+[role="button"]:not(:disabled),
+a[href],
+label[for],
+summary,
+select {
+  cursor: pointer;
+}
+
 :root {
   /* Surfaces — warm cream (Claude-inspired) */
   --bg-body: #e5ddc9;
