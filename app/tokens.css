@@ -55,7 +55,7 @@
   --shadow-sm: 0 1px 3px rgba(60, 45, 20, 0.06), 0 1px 2px rgba(60, 45, 20, 0.04);
   --shadow-md: 0 4px 10px rgba(60, 45, 20, 0.08);
   --shadow-lg: 0 12px 32px rgba(60, 45, 20, 0.12);
-  --shadow-focus: 0 0 0 3px rgba(27, 158, 117, 0.35);
+  --shadow-focus: 0 0 0 2px rgba(27, 158, 117, 0.35);
 
   /* === Durations === */
   --dur-fast: 120ms;
@@ -82,10 +82,21 @@
 *:focus {
   outline: none;
 }
-*:focus-visible {
+/* Keyboard-only focus ring for interactive atoms. Scope away from inputs/textareas
+   so typing doesn't wrap the field in a chunky ring. */
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+select:focus-visible {
   outline: none;
   box-shadow: var(--shadow-focus);
   border-radius: inherit;
+}
+/* Inputs/textareas: no outer ring; change border color only. */
+input:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-color: var(--brand-green);
 }
 button,
 a,
