@@ -1,13 +1,11 @@
 import { notFound, redirect } from "next/navigation";
+import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { createPayment } from "@/lib/sepay";
+import { fmtVnd, TYPE_THUMB } from "@/components/marketplace/product-card";
 
 export const dynamic = "force-dynamic";
-
-function fmtVnd(n: number) {
-  return n.toLocaleString("vi-VN");
-}
 
 export default async function ProductDetailPage({
   params,
@@ -18,16 +16,41 @@ export default async function ProductDetailPage({
 
   const product = await prisma.product.findFirst({
     where: { community: { slug: communitySlug }, slug: productSlug },
-    include: { community: true },
+    include: { community: { select: { id: true, name: true, slug: true } } },
   });
   if (!product) notFound();
+
+  const session = await auth();
+  let isMember = false;
+  if (session?.user?.id) {
+    const m = await prisma.membership.findUnique({
+      where: {
+        userId_communityId: {
+          userId: session.user.id,
+          communityId: product.communityId,
+        },
+      },
+      select: { id: true },
+    });
+    isMember = !!m;
+  }
 
   async function buy() {
     "use server";
     const s = await auth();
     if (!s?.user?.id) redirect("/login");
 
-    // Create a Purchase record (pending) + a Payment and redirect to pay page
+    // require community membership
+    const mem = await prisma.membership.findUnique({
+      where: {
+        userId_communityId: {
+          userId: s.user!.id!,
+          communityId: product!.communityId,
+        },
+      },
+    });
+    if (!mem) redirect(`/c/${communitySlug}`);
+
     const purchase = await prisma.purchase.create({
       data: {
         userId: s.user!.id!,
@@ -51,99 +74,187 @@ export default async function ProductDetailPage({
 
   const price = Number(product.priceVnd);
   const oldPrice = product.priceOldVnd ? Number(product.priceOldVnd) : null;
+  const t = TYPE_THUMB[product.type] || TYPE_THUMB.TEMPLATE;
 
   return (
-    <div style={{ flex: 1, overflowY: "auto", padding: "24px 32px" }}>
-      <div style={{ maxWidth: 720 }}>
-        <h1
-          style={{
-            fontSize: 28,
-            fontWeight: 800,
-            marginTop: 16,
-            marginBottom: 6,
-            color: "var(--text-heading)",
-          }}
-        >
-          {product.title}
-        </h1>
-        {product.pillar && (
-          <div style={{ color: "var(--text-muted)", marginBottom: 16 }}>
-            {product.pillar} · {product.type}
-          </div>
-        )}
+    <>
+      <header className="view-header">
+        <span className="view-title">{product.title}</span>
+        <span className="view-subtitle">
+          {product.pillar || t.label} · {t.label}
+        </span>
+      </header>
 
-        {product.description && (
-          <p
+      <div
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          padding: "var(--space-6) var(--space-8)",
+        }}
+      >
+        <div style={{ maxWidth: 760 }}>
+          {/* Header card */}
+          <div
+            className="ui-card ui-card-lg"
             style={{
-              background: "var(--bg-card)",
-              border: "1px solid var(--border-subtle)",
-              borderRadius: 12,
-              padding: 20,
-              color: "var(--text-normal)",
-              lineHeight: 1.6,
-              marginBottom: 20,
+              display: "flex",
+              gap: "var(--space-5)",
+              alignItems: "center",
+              marginBottom: "var(--space-5)",
             }}
           >
-            {product.description}
-          </p>
-        )}
-
-        <div
-          style={{
-            background: "var(--bg-card)",
-            border: "1px solid var(--border-subtle)",
-            borderRadius: 12,
-            padding: 20,
-            display: "flex",
-            alignItems: "center",
-            gap: 20,
-            flexWrap: "wrap",
-          }}
-        >
-          <div style={{ flex: 1 }}>
-            {oldPrice && (
-              <div
-                style={{
-                  color: "var(--text-muted)",
-                  textDecoration: "line-through",
-                  fontSize: 14,
-                }}
-              >
-                {fmtVnd(oldPrice)}đ
-              </div>
-            )}
             <div
+              className={`mk-card-thumb ${t.cls}`}
               style={{
-                fontSize: 28,
-                fontWeight: 800,
-                color: "var(--brand-green)",
+                width: 120,
+                height: 120,
+                borderRadius: "var(--r-lg)",
+                flexShrink: 0,
               }}
             >
-              {product.isFree
-                ? "Miễn phí"
-                : `${fmtVnd(price)}đ${product.isSubscription ? "/" + (product.subscriptionPeriod || "tháng") : ""}`}
+              <span className="mk-icon">{t.icon}</span>
+              <span className="mk-card-type">{t.label}</span>
             </div>
-          </div>
-          {!product.isFree && (
-            <form action={buy}>
-              <button
-                type="submit"
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h1 style={{ marginBottom: "var(--space-1)" }}>{product.title}</h1>
+              {product.pillar && (
+                <div
+                  style={{
+                    fontSize: "var(--text-sm)",
+                    color: "var(--text-muted)",
+                    marginBottom: "var(--space-3)",
+                  }}
+                >
+                  {product.pillar}
+                </div>
+              )}
+              <div
                 style={{
-                  padding: "12px 24px",
-                  fontSize: 15,
-                  fontWeight: 700,
-                  color: "#fff",
-                  background: "var(--brand-green)",
-                  border: "none",
-                  borderRadius: 10,
+                  display: "flex",
+                  alignItems: "baseline",
+                  gap: "var(--space-2)",
                 }}
               >
-                {product.isSubscription ? "Subscribe ngay" : "Mua ngay"}
-              </button>
-            </form>
+                {oldPrice && (
+                  <span
+                    style={{
+                      color: "var(--text-muted)",
+                      textDecoration: "line-through",
+                      fontSize: "var(--text-base)",
+                    }}
+                  >
+                    {fmtVnd(oldPrice)}đ
+                  </span>
+                )}
+                <span
+                  style={{
+                    fontSize: "var(--text-2xl)",
+                    fontWeight: "var(--fw-extrabold)",
+                    color: "var(--brand-green)",
+                  }}
+                >
+                  {product.isFree
+                    ? "Miễn phí"
+                    : `${fmtVnd(price)}đ${
+                        product.isSubscription
+                          ? "/" + (product.subscriptionPeriod || "th")
+                          : ""
+                      }`}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Description */}
+          {product.description && (
+            <div
+              className="ui-card"
+              style={{
+                lineHeight: "var(--lh-relaxed)",
+                marginBottom: "var(--space-5)",
+              }}
+            >
+              {product.description}
+            </div>
           )}
+
+          {/* Purchase CTA */}
+          <div className="ui-card">
+            {!product.isFree ? (
+              <>
+                {!session?.user ? (
+                  <div>
+                    <p
+                      style={{
+                        fontSize: "var(--text-sm)",
+                        color: "var(--text-muted)",
+                        marginBottom: "var(--space-3)",
+                      }}
+                    >
+                      Đăng nhập để mua sản phẩm này.
+                    </p>
+                    <Link href="/login" className="ui-btn ui-btn-primary ui-btn-lg">
+                      Đăng nhập
+                    </Link>
+                  </div>
+                ) : !isMember ? (
+                  <div>
+                    <p
+                      style={{
+                        fontSize: "var(--text-sm)",
+                        color: "var(--text-muted)",
+                        marginBottom: "var(--space-3)",
+                      }}
+                    >
+                      Tham gia community &ldquo;{product.community.name}&rdquo;
+                      để được mua.
+                    </p>
+                    <Link
+                      href={`/c/${communitySlug}`}
+                      className="ui-btn ui-btn-primary ui-btn-lg"
+                    >
+                      Vào community
+                    </Link>
+                  </div>
+                ) : (
+                  <form action={buy}>
+                    <button
+                      type="submit"
+                      className="ui-btn ui-btn-primary ui-btn-lg"
+                    >
+                      {product.isSubscription ? "Subscribe ngay" : "Mua ngay"}
+                    </button>
+                    <div
+                      style={{
+                        fontSize: "var(--text-xs)",
+                        color: "var(--text-muted)",
+                        marginTop: "var(--space-3)",
+                      }}
+                    >
+                      Thanh toán qua VietQR · Tự nhận khi SePay xác nhận
+                    </div>
+                  </form>
+                )}
+              </>
+            ) : (
+              <div style={{ textAlign: "center" }}>
+                <div
+                  style={{
+                    fontSize: "var(--text-sm)",
+                    color: "var(--text-muted)",
+                    marginBottom: "var(--space-3)",
+                  }}
+                >
+                  Sản phẩm miễn phí
+                </div>
+                <button className="ui-btn ui-btn-primary ui-btn-lg" disabled>
+                  Tải về (coming soon)
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

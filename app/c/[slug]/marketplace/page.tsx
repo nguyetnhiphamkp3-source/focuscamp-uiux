@@ -1,20 +1,9 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { ProductCard, fmtVnd } from "@/components/marketplace/product-card";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export const dynamic = "force-dynamic";
-
-const TYPE_THUMB: Record<string, { cls: string; icon: string; label: string }> = {
-  TEMPLATE: { cls: "t-template", icon: "🎯", label: "Template" },
-  TOOL: { cls: "t-tool", icon: "🧠", label: "Tool" },
-  BUNDLE: { cls: "t-bundle", icon: "📦", label: "Bundle" },
-  SOP: { cls: "t-sop", icon: "👥", label: "SOP Pack" },
-  PROMPT: { cls: "t-prompt", icon: "💬", label: "Prompt" },
-};
-
-function fmtVnd(n: number) {
-  return n.toLocaleString("vi-VN");
-}
 
 export default async function MarketplacePage({
   params,
@@ -33,7 +22,6 @@ export default async function MarketplacePage({
 
   const products = community.products;
   const featured = products.slice(0, 5);
-  const all = products;
 
   const totalSales = products.reduce((s, p) => s + p.soldCount, 0);
   const totalVolume = products.reduce(
@@ -50,7 +38,7 @@ export default async function MarketplacePage({
         </span>
       </header>
 
-      <div className="mk-view" id="mkListView">
+      <div className="mk-view">
         <div className="mk-inner">
           {/* Hero */}
           <div className="mk-hero">
@@ -66,44 +54,33 @@ export default async function MarketplacePage({
 
           {/* Stats */}
           <div className="mk-stats">
-            <div className="mk-stat">
-              <span className="mk-stat-period">All-time</span>
-              <div className="mk-stat-label">📦 Items</div>
-              <div className="mk-stat-value">{community._count.products}</div>
-              <div className="mk-stat-delta neutral">trong shop</div>
-            </div>
-            <div className="mk-stat">
-              <span className="mk-stat-period">All-time</span>
-              <div className="mk-stat-label">🛍️ Purchases</div>
-              <div className="mk-stat-value">{fmtVnd(totalSales)}</div>
-              <div className="mk-stat-delta neutral">đơn</div>
-            </div>
-            <div className="mk-stat">
-              <span className="mk-stat-period">All-time</span>
-              <div className="mk-stat-label">💰 Volume</div>
-              <div className="mk-stat-value">
-                {fmtVnd(totalVolume)}
-                <span
-                  style={{
-                    fontSize: 13,
-                    color: "var(--text-muted)",
-                    fontWeight: 600,
-                  }}
-                >
-                  đ
-                </span>
-              </div>
-              <div className="mk-stat-delta neutral">doanh thu</div>
-            </div>
-            <div className="mk-stat">
-              <span className="mk-stat-period">Live</span>
-              <div className="mk-stat-label">✨ Featured</div>
-              <div className="mk-stat-value">{featured.length}</div>
-              <div className="mk-stat-delta neutral">trending</div>
-            </div>
+            <StatCard
+              icon="📦"
+              label="Items"
+              value={String(community._count.products)}
+              sub="trong shop"
+            />
+            <StatCard
+              icon="🛍️"
+              label="Purchases"
+              value={fmtVnd(totalSales)}
+              sub="đơn"
+            />
+            <StatCard
+              icon="💰"
+              label="Volume"
+              value={`${fmtVnd(totalVolume)}đ`}
+              sub="doanh thu"
+            />
+            <StatCard
+              icon="✨"
+              label="Featured"
+              value={String(featured.length)}
+              sub="trending"
+            />
           </div>
 
-          {/* Featured */}
+          {/* Featured carousel */}
           {featured.length > 0 && (
             <>
               <div className="mk-section-head">
@@ -111,82 +88,21 @@ export default async function MarketplacePage({
               </div>
               <div className="mk-carousel-wrap">
                 <div className="mk-carousel">
-                  {featured.map((p, idx) => {
-                    const t = TYPE_THUMB[p.type] || TYPE_THUMB.TEMPLATE;
-                    const price = Number(p.priceVnd);
-                    const oldPrice = p.priceOldVnd ? Number(p.priceOldVnd) : null;
-                    const sale =
-                      oldPrice && oldPrice > price
-                        ? Math.round(((oldPrice - price) / oldPrice) * 100)
-                        : null;
-                    return (
-                      <Link
-                        key={p.id}
-                        href={`/c/${slug}/marketplace/${p.slug}`}
-                        className="mk-card"
-                        style={{ textDecoration: "none", color: "inherit" }}
-                      >
-                        <div className={`mk-card-thumb ${t.cls}`}>
-                          <span className="mk-icon">{t.icon}</span>
-                          <span className="mk-card-type">{t.label}</span>
-                          {sale && <span className="mk-card-sale">-{sale}%</span>}
-                          <span className="mk-card-id">
-                            #{String(idx + 1).padStart(3, "0")}
-                          </span>
-                          {idx === 0 && <span className="mk-card-limited">Hot</span>}
-                        </div>
-                        <div className="mk-card-body">
-                          {p.pillar && (
-                            <div className="mk-card-pillar">{p.pillar}</div>
-                          )}
-                          <div className="mk-card-title">{p.title}</div>
-                          <div className="mk-card-footer">
-                            <div className="mk-card-price">
-                              {oldPrice && (
-                                <span className="mk-card-old">
-                                  {fmtVnd(oldPrice)}đ
-                                </span>
-                              )}
-                              {p.isFree ? (
-                                <span className="mk-card-now">
-                                  Miễn phí
-                                </span>
-                              ) : (
-                                <span className="mk-card-now">
-                                  {fmtVnd(price)}
-                                  <span className="currency">đ</span>
-                                  {p.isSubscription && (
-                                    <span
-                                      style={{
-                                        fontSize: 11,
-                                        color: "var(--text-muted)",
-                                        fontWeight: 500,
-                                      }}
-                                    >
-                                      /{p.subscriptionPeriod || "th"}
-                                    </span>
-                                  )}
-                                </span>
-                              )}
-                            </div>
-                            <span className="mk-card-cta">
-                              {p.isFree
-                                ? "Tải"
-                                : p.isSubscription
-                                  ? "Subscribe"
-                                  : "Mua"}
-                            </span>
-                          </div>
-                        </div>
-                      </Link>
-                    );
-                  })}
+                  {featured.map((p, idx) => (
+                    <ProductCard
+                      key={p.id}
+                      product={p}
+                      communitySlug={slug}
+                      idx={idx}
+                      featured
+                    />
+                  ))}
                 </div>
               </div>
             </>
           )}
 
-          {/* All items */}
+          {/* Toolbar */}
           <div className="mk-section-head">
             <h2>Tất cả items</h2>
           </div>
@@ -208,87 +124,49 @@ export default async function MarketplacePage({
             </div>
           </div>
 
-          {all.length === 0 ? (
-            <div
-              style={{
-                background: "var(--bg-card)",
-                border: "1px solid var(--border-subtle)",
-                borderRadius: 12,
-                padding: 40,
-                textAlign: "center",
-                color: "var(--text-muted)",
-              }}
-            >
-              <div style={{ fontSize: 40, marginBottom: 8 }}>🏪</div>
-              Chưa có sản phẩm nào trong shop.
-            </div>
+          {products.length === 0 ? (
+            <EmptyState
+              icon="🏪"
+              title="Chưa có sản phẩm nào trong shop"
+              description="Chủ community có thể thêm product đầu tiên để bắt đầu bán."
+            />
           ) : (
             <div className="mk-grid">
-              {all.map((p, idx) => {
-                const t = TYPE_THUMB[p.type] || TYPE_THUMB.TEMPLATE;
-                const price = Number(p.priceVnd);
-                const oldPrice = p.priceOldVnd ? Number(p.priceOldVnd) : null;
-                const sale =
-                  oldPrice && oldPrice > price
-                    ? Math.round(((oldPrice - price) / oldPrice) * 100)
-                    : null;
-                return (
-                  <Link
-                    key={p.id}
-                    href={`/c/${slug}/marketplace/${p.slug}`}
-                    className="mk-card"
-                    style={{ textDecoration: "none", color: "inherit" }}
-                  >
-                    <div className={`mk-card-thumb ${t.cls}`}>
-                      <span className="mk-icon">{t.icon}</span>
-                      <span className="mk-card-type">{t.label}</span>
-                      {sale && <span className="mk-card-sale">-{sale}%</span>}
-                      <span className="mk-card-id">
-                        #{String(idx + 1).padStart(3, "0")}
-                      </span>
-                    </div>
-                    <div className="mk-card-body">
-                      {p.pillar && <div className="mk-card-pillar">{p.pillar}</div>}
-                      <div className="mk-card-title">{p.title}</div>
-                      <div className="mk-card-footer">
-                        <div className="mk-card-price">
-                          {oldPrice && (
-                            <span className="mk-card-old">
-                              {fmtVnd(oldPrice)}đ
-                            </span>
-                          )}
-                          {p.isFree ? (
-                            <span className="mk-card-now">Miễn phí</span>
-                          ) : (
-                            <span className="mk-card-now">
-                              {fmtVnd(price)}
-                              <span className="currency">đ</span>
-                              {p.isSubscription && (
-                                <span
-                                  style={{
-                                    fontSize: 11,
-                                    color: "var(--text-muted)",
-                                    fontWeight: 500,
-                                  }}
-                                >
-                                  /{p.subscriptionPeriod || "th"}
-                                </span>
-                              )}
-                            </span>
-                          )}
-                        </div>
-                        <span className="mk-card-cta">
-                          {p.isFree ? "Tải" : p.isSubscription ? "Subscribe" : "Mua"}
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
+              {products.map((p, idx) => (
+                <ProductCard
+                  key={p.id}
+                  product={p}
+                  communitySlug={slug}
+                  idx={idx}
+                />
+              ))}
             </div>
           )}
         </div>
       </div>
     </>
+  );
+}
+
+function StatCard({
+  icon,
+  label,
+  value,
+  sub,
+}: {
+  icon: string;
+  label: string;
+  value: string;
+  sub: string;
+}) {
+  return (
+    <div className="mk-stat">
+      <span className="mk-stat-period">All-time</span>
+      <div className="mk-stat-label">
+        {icon} {label}
+      </div>
+      <div className="mk-stat-value">{value}</div>
+      <div className="mk-stat-delta neutral">{sub}</div>
+    </div>
   );
 }
