@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./prototype.css";
+@import "./tokens.css";
 
 button:not(:disabled),
 [role="button"]:not(:disabled),
