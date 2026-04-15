@@ -1,154 +1,281 @@
 import Link from "next/link";
-import { auth, signOut } from "@/auth";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { LoginModal } from "@/components/shell/login-modal";
 
 export const dynamic = "force-dynamic";
 
+const FEATURES = [
+  {
+    icon: "💬",
+    title: "Chat & Feed",
+    desc: "Cộng đồng real-time với channels, bảng tin, và CỐT — các bài viết đỉnh cao.",
+  },
+  {
+    icon: "⚔️",
+    title: "Challenges",
+    desc: "Thử thách nhóm có lộ trình 7-90 ngày với SOP, daily check-in, XP reward.",
+  },
+  {
+    icon: "📚",
+    title: "Khóa học",
+    desc: "Hệ thống học tập có phases, pillars, và level tracking theo tier member.",
+  },
+  {
+    icon: "🛒",
+    title: "Marketplace",
+    desc: "Mua templates, SOP packs, tools, prompts độc quyền từ creators.",
+  },
+  {
+    icon: "🤖",
+    title: "AI Agents",
+    desc: "Agents kèm bạn 24/7 qua Telegram/Zalo — USP riêng của focus.camp.",
+  },
+  {
+    icon: "🏆",
+    title: "Gamification",
+    desc: "XP, levels, streaks, badges, leaderboard. Học và ship được thưởng thật.",
+  },
+];
+
 export default async function Home() {
   const session = await auth();
-
-  let dbStatus = "❌ Không kết nối được";
-  let userCount = 0;
-  let communityCount = 0;
-
-  try {
-    userCount = await prisma.user.count();
-    communityCount = await prisma.community.count();
-    dbStatus = "✅ Connected";
-  } catch (err) {
-    dbStatus = `❌ ${err instanceof Error ? err.message : "Unknown error"}`;
-  }
-
-  async function handleSignOut() {
-    "use server";
-    await signOut({ redirectTo: "/" });
-  }
+  const [userCount, communityCount, productCount, challengeCount] = await prisma.$transaction([
+    prisma.user.count(),
+    prisma.community.count(),
+    prisma.product.count(),
+    prisma.challenge.count(),
+  ]);
 
   return (
-    <div
-      style={{
-        flex: 1,
-        overflowY: "auto",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 24,
-      }}
-    >
-      <div
+    <div style={{ flex: 1, overflowY: "auto" }}>
+      {/* HERO */}
+      <section
         style={{
-          width: "100%",
-          maxWidth: 560,
-          background: "var(--bg-card)",
-          border: "1px solid var(--border-subtle)",
-          boxShadow: "0 1px 3px rgba(60, 45, 20, 0.08)",
-          borderRadius: 16,
-          padding: 32,
+          background:
+            "linear-gradient(135deg, #f7f2e8 0%, #ede5d0 50%, #e5ddc9 100%)",
+          padding: "64px 32px 56px",
+          textAlign: "center",
+          borderBottom: "1px solid var(--border-subtle)",
         }}
       >
-        <div style={{ fontSize: 40, marginBottom: 8 }}>🏕️🔥</div>
+        <div style={{ fontSize: 56, marginBottom: 12 }}>🏕️🔥</div>
         <h1
           style={{
-            fontSize: 28,
+            fontSize: 40,
             fontWeight: 800,
-            marginBottom: 6,
             color: "var(--text-heading)",
+            marginBottom: 10,
+            letterSpacing: "-0.02em",
+            lineHeight: 1.1,
           }}
         >
           focus.camp
         </h1>
-        <p style={{ fontSize: 15, color: "var(--text-muted)", marginBottom: 20, lineHeight: 1.5 }}>
-          Community platform driven by challenges + AI Agents.<br />
-          Coming soon.
+        <p
+          style={{
+            fontSize: 17,
+            color: "var(--text-muted)",
+            maxWidth: 520,
+            margin: "0 auto 24px",
+            lineHeight: 1.5,
+          }}
+        >
+          Cộng đồng builders, creators, founders Việt Nam — học bằng challenges,
+          đồng hành bằng AI Agents, ship sản phẩm thực tế.
         </p>
-
-        {session?.user && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              padding: 14,
-              marginBottom: 16,
-              borderRadius: 10,
-              background: "var(--bg-elevated)",
-            }}
-          >
-            {session.user.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={session.user.image}
-                alt={session.user.name || "avatar"}
-                referrerPolicy="no-referrer"
-                style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0 }}
-              />
-            ) : (
-              <div
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: "50%",
-                  background: "linear-gradient(135deg,#5865F2,#eb459e)",
-                  color: "#fff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontWeight: 700,
-                  flexShrink: 0,
-                }}
-              >
-                {(session.user.name || session.user.email || "?")[0].toUpperCase()}
-              </div>
-            )}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 700, color: "var(--text-heading)" }}>
-                Chào {session.user.name || session.user.email}
-              </div>
-              <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                {session.user.email}
-              </div>
-            </div>
-            <form action={handleSignOut}>
-              <button
-                type="submit"
-                style={{
-                  padding: "6px 12px",
-                  borderRadius: 6,
-                  fontSize: 13,
-                  background: "var(--bg-card)",
-                  border: "1px solid var(--border-subtle)",
-                  color: "var(--text-normal)",
-                }}
-              >
-                Đăng xuất
-              </button>
-            </form>
-          </div>
-        )}
 
         <div
           style={{
-            padding: 14,
-            marginBottom: 20,
-            borderRadius: 10,
-            background: "var(--bg-elevated)",
-            fontSize: 13,
+            display: "flex",
+            gap: 12,
+            justifyContent: "center",
+            flexWrap: "wrap",
+            marginBottom: 28,
           }}
         >
-          <div style={{ fontWeight: 700, marginBottom: 4 }}>System status</div>
-          <div>Database: {dbStatus}</div>
-          <div>Users: {userCount}</div>
-          <div>Communities: {communityCount}</div>
-          <div>Session: {session?.user ? "✅ Logged in" : "⚪ Guest"}</div>
-        </div>
-
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           {session?.user ? (
             <Link
               href="/discovery"
               style={{
-                padding: "12px 20px",
+                padding: "14px 28px",
+                borderRadius: 10,
+                fontWeight: 700,
+                fontSize: 15,
+                color: "#fff",
+                background: "var(--brand-green)",
+                textDecoration: "none",
+                boxShadow: "0 2px 8px rgba(27,158,117,0.3)",
+              }}
+            >
+              Khám phá cộng đồng →
+            </Link>
+          ) : (
+            <LoginModal
+              trigger={
+                <button
+                  style={{
+                    padding: "14px 28px",
+                    borderRadius: 10,
+                    fontWeight: 700,
+                    fontSize: 15,
+                    color: "#fff",
+                    background: "var(--brand-green)",
+                    border: "none",
+                    cursor: "pointer",
+                    boxShadow: "0 2px 8px rgba(27,158,117,0.3)",
+                  }}
+                >
+                  Bắt đầu ngay
+                </button>
+              }
+            />
+          )}
+          <Link
+            href="/discovery"
+            style={{
+              padding: "14px 28px",
+              borderRadius: 10,
+              fontWeight: 700,
+              fontSize: 15,
+              color: "var(--text-heading)",
+              background: "var(--bg-card)",
+              border: "1px solid var(--border-subtle)",
+              textDecoration: "none",
+            }}
+          >
+            Khám phá
+          </Link>
+        </div>
+
+        {/* Stats */}
+        <div
+          style={{
+            display: "flex",
+            gap: 28,
+            justifyContent: "center",
+            flexWrap: "wrap",
+            fontSize: 13,
+          }}
+        >
+          <Stat n={communityCount} label="Communities" />
+          <Stat n={userCount} label="Members" />
+          <Stat n={challengeCount} label="Challenges" />
+          <Stat n={productCount} label="Products" />
+        </div>
+      </section>
+
+      {/* FEATURES */}
+      <section
+        style={{
+          padding: "48px 32px 32px",
+          maxWidth: 1040,
+          margin: "0 auto",
+        }}
+      >
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <h2
+            style={{
+              fontSize: 24,
+              fontWeight: 800,
+              color: "var(--text-heading)",
+              marginBottom: 6,
+            }}
+          >
+            Tất cả trong 1 platform
+          </h2>
+          <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
+            Chat, học, làm thử thách, mua tools, và đồng hành cùng AI — không
+            cần rời tab.
+          </p>
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gap: 14,
+            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+          }}
+        >
+          {FEATURES.map((f) => (
+            <div
+              key={f.title}
+              style={{
+                background: "var(--bg-card)",
+                border: "1px solid var(--border-subtle)",
+                borderRadius: 12,
+                padding: 20,
+              }}
+            >
+              <div style={{ fontSize: 32, marginBottom: 8 }}>{f.icon}</div>
+              <div
+                style={{
+                  fontWeight: 700,
+                  color: "var(--text-heading)",
+                  marginBottom: 4,
+                  fontSize: 16,
+                }}
+              >
+                {f.title}
+              </div>
+              <div
+                style={{
+                  fontSize: 13,
+                  color: "var(--text-muted)",
+                  lineHeight: 1.5,
+                }}
+              >
+                {f.desc}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* BOTTOM CTA */}
+      <section
+        style={{
+          padding: "32px 32px 56px",
+          textAlign: "center",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 520,
+            margin: "0 auto",
+            padding: 28,
+            borderRadius: 16,
+            background: "var(--bg-card)",
+            border: "1px solid var(--border-subtle)",
+          }}
+        >
+          <div style={{ fontSize: 28, marginBottom: 8 }}>🚀</div>
+          <h3
+            style={{
+              fontSize: 18,
+              fontWeight: 800,
+              color: "var(--text-heading)",
+              marginBottom: 6,
+            }}
+          >
+            Sẵn sàng ship?
+          </h3>
+          <p
+            style={{
+              fontSize: 14,
+              color: "var(--text-muted)",
+              marginBottom: 16,
+              lineHeight: 1.5,
+            }}
+          >
+            Tham gia free. Chọn challenge đầu tiên. Có AI đồng hành.
+          </p>
+          {session?.user ? (
+            <Link
+              href="/discovery"
+              style={{
+                display: "inline-block",
+                padding: "12px 24px",
                 borderRadius: 10,
                 fontWeight: 700,
                 color: "#fff",
@@ -156,45 +283,46 @@ export default async function Home() {
                 textDecoration: "none",
               }}
             >
-              Khám phá cộng đồng
+              Khám phá communities
             </Link>
           ) : (
-            <>
-              <LoginModal
-                trigger={
-                  <button
-                    style={{
-                      padding: "12px 20px",
-                      borderRadius: 10,
-                      fontWeight: 700,
-                      color: "#fff",
-                      background: "var(--brand-green)",
-                      border: "none",
-                      fontSize: 15,
-                    }}
-                  >
-                    Đăng nhập
-                  </button>
-                }
-              />
-              <Link
-                href="/discovery"
-                style={{
-                  padding: "12px 20px",
-                  borderRadius: 10,
-                  fontWeight: 700,
-                  color: "var(--text-heading)",
-                  background: "var(--bg-elevated)",
-                  border: "1px solid var(--border-subtle)",
-                  textDecoration: "none",
-                }}
-              >
-                Khám phá
-              </Link>
-            </>
+            <LoginModal
+              trigger={
+                <button
+                  style={{
+                    padding: "12px 24px",
+                    borderRadius: 10,
+                    fontWeight: 700,
+                    color: "#fff",
+                    background: "var(--brand-green)",
+                    border: "none",
+                    fontSize: 15,
+                  }}
+                >
+                  Đăng nhập với Google
+                </button>
+              }
+            />
           )}
         </div>
+      </section>
+    </div>
+  );
+}
+
+function Stat({ n, label }: { n: number; label: string }) {
+  return (
+    <div style={{ textAlign: "center" }}>
+      <div
+        style={{
+          fontSize: 20,
+          fontWeight: 800,
+          color: "var(--text-heading)",
+        }}
+      >
+        {n.toLocaleString("vi-VN")}
       </div>
+      <div style={{ color: "var(--text-muted)" }}>{label}</div>
     </div>
   );
 }
