@@ -10,8 +10,13 @@ select {
   cursor: pointer;
 }
 
-/* Ensure next/font Roboto overrides prototype's font-family vars */
+/* Overrides on top of prototype.css */
 :root {
   --font-primary: var(--font-roboto), 'Helvetica Neue', Arial, sans-serif;
   --font-heading: var(--font-roboto), 'Helvetica Neue', Arial, sans-serif;
+  /* Prototype uses --online-green #1B9E75 (teal) for all CTAs.
+     Alias --brand-green to the same value so both names look the same. */
+  --brand-green: #1B9E75;
+  --brand-green-dark: #157a5b;
+  --brand-green-soft: rgba(27, 158, 117, 0.12);
 }
