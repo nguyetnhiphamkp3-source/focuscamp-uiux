@@ -26,70 +26,95 @@ export default async function Home() {
 
   return (
     <main
-      className="min-h-screen flex items-center justify-center p-6"
-      style={{ background: "var(--bg-body)" }}
+      style={{
+        minHeight: "100vh",
+        background: "var(--bg-body)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 24,
+      }}
     >
       <div
-        className="max-w-2xl w-full rounded-2xl p-10"
         style={{
+          width: "100%",
+          maxWidth: 560,
           background: "var(--bg-card)",
           border: "1px solid var(--border-subtle)",
           boxShadow: "0 1px 3px rgba(60, 45, 20, 0.08)",
+          borderRadius: 16,
+          padding: 32,
         }}
       >
-        <div className="text-5xl mb-3">🏕️🔥</div>
+        <div style={{ fontSize: 40, marginBottom: 8 }}>🏕️🔥</div>
         <h1
-          className="text-3xl font-extrabold mb-2"
-          style={{ color: "var(--text-heading)" }}
+          style={{
+            fontSize: 28,
+            fontWeight: 800,
+            marginBottom: 6,
+            color: "var(--text-heading)",
+          }}
         >
           focus.camp
         </h1>
-        <p className="text-base mb-6" style={{ color: "var(--text-muted)" }}>
-          Community platform driven by challenges + AI Agents.
-          <br />
+        <p style={{ fontSize: 15, color: "var(--text-muted)", marginBottom: 20, lineHeight: 1.5 }}>
+          Community platform driven by challenges + AI Agents.<br />
           Coming soon.
         </p>
 
-        {session?.user ? (
+        {session?.user && (
           <div
-            className="rounded-lg p-4 mb-6 flex items-center gap-3"
-            style={{ background: "var(--bg-elevated)" }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              padding: 14,
+              marginBottom: 16,
+              borderRadius: 10,
+              background: "var(--bg-elevated)",
+            }}
           >
             {session.user.image ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={session.user.image}
                 alt={session.user.name || "avatar"}
-                className="w-10 h-10 rounded-full"
                 referrerPolicy="no-referrer"
+                style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0 }}
               />
             ) : (
               <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
-                style={{ background: "linear-gradient(135deg, #5865F2, #eb459e)" }}
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: "50%",
+                  background: "linear-gradient(135deg,#5865F2,#eb459e)",
+                  color: "#fff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontWeight: 700,
+                  flexShrink: 0,
+                }}
               >
                 {(session.user.name || session.user.email || "?")[0].toUpperCase()}
               </div>
             )}
-            <div className="flex-1">
-              <div
-                className="font-bold"
-                style={{ color: "var(--text-heading)" }}
-              >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 700, color: "var(--text-heading)" }}>
                 Chào {session.user.name || session.user.email}
               </div>
-              <div
-                className="text-xs"
-                style={{ color: "var(--text-muted)" }}
-              >
+              <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
                 {session.user.email}
               </div>
             </div>
             <form action={handleSignOut}>
               <button
                 type="submit"
-                className="px-3 py-1.5 rounded-md text-sm"
                 style={{
+                  padding: "6px 12px",
+                  borderRadius: 6,
+                  fontSize: 13,
                   background: "var(--bg-card)",
                   border: "1px solid var(--border-subtle)",
                   color: "var(--text-normal)",
@@ -99,27 +124,35 @@ export default async function Home() {
               </button>
             </form>
           </div>
-        ) : null}
+        )}
 
         <div
-          className="rounded-lg p-4 mb-6 text-sm"
-          style={{ background: "var(--bg-elevated)" }}
+          style={{
+            padding: 14,
+            marginBottom: 20,
+            borderRadius: 10,
+            background: "var(--bg-elevated)",
+            fontSize: 13,
+          }}
         >
-          <div className="font-semibold mb-1">System status</div>
+          <div style={{ fontWeight: 700, marginBottom: 4 }}>System status</div>
           <div>Database: {dbStatus}</div>
           <div>Users: {userCount}</div>
           <div>Communities: {communityCount}</div>
           <div>Session: {session?.user ? "✅ Logged in" : "⚪ Guest"}</div>
         </div>
 
-        <div className="flex gap-3 flex-wrap">
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           {session?.user ? (
             <Link
               href="/discovery"
-              className="px-6 py-3 rounded-lg font-bold text-white"
               style={{
+                padding: "12px 20px",
+                borderRadius: 10,
+                fontWeight: 700,
+                color: "#fff",
                 background: "var(--brand-green)",
-                fontFamily: "var(--font-roboto)",
+                textDecoration: "none",
               }}
             >
               Khám phá cộng đồng
@@ -128,21 +161,27 @@ export default async function Home() {
             <>
               <Link
                 href="/login"
-                className="px-6 py-3 rounded-lg font-bold text-white"
                 style={{
+                  padding: "12px 20px",
+                  borderRadius: 10,
+                  fontWeight: 700,
+                  color: "#fff",
                   background: "var(--brand-green)",
-                  fontFamily: "var(--font-roboto)",
+                  textDecoration: "none",
                 }}
               >
                 Đăng nhập
               </Link>
               <Link
                 href="/discovery"
-                className="px-6 py-3 rounded-lg font-bold"
                 style={{
-                  background: "var(--bg-elevated)",
+                  padding: "12px 20px",
+                  borderRadius: 10,
+                  fontWeight: 700,
                   color: "var(--text-heading)",
+                  background: "var(--bg-elevated)",
                   border: "1px solid var(--border-subtle)",
+                  textDecoration: "none",
                 }}
               >
                 Khám phá
