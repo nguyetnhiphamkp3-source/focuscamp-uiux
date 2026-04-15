@@ -110,7 +110,7 @@ export default async function ChallengeDetailPage({
         style={{
           flex: 1,
           overflowY: "auto",
-          padding: "20px 24px 40px",
+          padding: "var(--space-5) var(--space-6) var(--space-10)",
           background: "var(--bg-chat)",
         }}
       >
@@ -199,19 +199,8 @@ export default async function ChallengeDetailPage({
             </div>
           ) : (
             session?.user && (
-              <form action={join} style={{ marginTop: 20 }}>
-                <button
-                  type="submit"
-                  style={{
-                    padding: "12px 28px",
-                    fontSize: 15,
-                    fontWeight: 700,
-                    color: "#fff",
-                    background: "var(--brand-green)",
-                    border: "none",
-                    borderRadius: 10,
-                  }}
-                >
+              <form action={join} style={{ marginTop: "var(--space-5)" }}>
+                <button type="submit" className="ui-btn ui-btn-primary ui-btn-lg">
                   Tham gia challenge
                 </button>
               </form>

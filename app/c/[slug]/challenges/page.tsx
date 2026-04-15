@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export const dynamic = "force-dynamic";
 
@@ -53,19 +54,11 @@ export default async function ChallengesPage({
           </div>
 
           {community.challenges.length === 0 ? (
-            <div
-              style={{
-                background: "var(--bg-card)",
-                border: "1px solid var(--border-subtle)",
-                borderRadius: 12,
-                padding: 40,
-                textAlign: "center",
-                color: "var(--text-muted)",
-              }}
-            >
-              <div style={{ fontSize: 40, marginBottom: 8 }}>⚔️</div>
-              Chưa có challenge nào.
-            </div>
+            <EmptyState
+              icon="⚔️"
+              title="Chưa có challenge nào"
+              description="Admin sẽ sớm mở challenge đầu tiên."
+            />
           ) : (
             <div className="ch-grid">
               {community.challenges.map((c) => {

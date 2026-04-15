@@ -68,8 +68,8 @@ export default async function ProfilePage({
               </div>
             </div>
             <div className="pf-actions">
-              <button className="pf-action-btn secondary">Chia sẻ</button>
-              <button className="pf-action-btn primary">Edit profile</button>
+              <button className="ui-btn ui-btn-secondary ui-btn-sm">Chia sẻ</button>
+              <button className="ui-btn ui-btn-primary ui-btn-sm">Edit profile</button>
             </div>
           </div>
 

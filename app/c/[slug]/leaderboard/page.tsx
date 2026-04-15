@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export const dynamic = "force-dynamic";
 
@@ -96,19 +97,12 @@ export default async function LeaderboardPage({
           </div>
 
           {top.length === 0 && (
-            <div
-              style={{
-                background: "var(--bg-card)",
-                border: "1px solid var(--border-subtle)",
-                borderRadius: 12,
-                padding: 40,
-                textAlign: "center",
-                color: "var(--text-muted)",
-                marginTop: 20,
-              }}
-            >
-              <div style={{ fontSize: 40, marginBottom: 8 }}>🏆</div>
-              Chưa có thành viên nào có XP.
+            <div style={{ marginTop: "var(--space-5)" }}>
+              <EmptyState
+                icon="🏆"
+                title="Chưa có thành viên nào có XP"
+                description="XP sẽ được tích luỹ khi members hoạt động (check-in, hoàn thành task, đóng góp bài viết...)."
+              />
             </div>
           )}
         </div>

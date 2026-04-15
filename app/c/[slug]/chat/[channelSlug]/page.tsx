@@ -312,18 +312,7 @@ export default async function ChannelPage({
                   fontFamily: "inherit",
                 }}
               />
-              <button
-                type="submit"
-                style={{
-                  padding: "4px 14px",
-                  borderRadius: 6,
-                  fontWeight: 700,
-                  fontSize: 13,
-                  color: "#fff",
-                  background: "var(--brand-green)",
-                  border: "none",
-                }}
-              >
+              <button type="submit" className="ui-btn ui-btn-primary ui-btn-sm">
                 Gửi
               </button>
             </div>

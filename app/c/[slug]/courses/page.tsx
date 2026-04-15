@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +46,7 @@ export default async function CoursesPage({
         <span className="view-subtitle">Hệ thống học tập có lộ trình</span>
       </header>
 
-      <div className="courses-list-wrap" id="courseListView">
+      <div className="courses-list-wrap">
         <div className="courses-list-inner">
           <div className="cl-filters">
             <div className="cl-filter active">Tất cả</div>
@@ -56,24 +57,17 @@ export default async function CoursesPage({
           </div>
 
           {community.courses.length === 0 ? (
-            <div
-              style={{
-                background: "var(--bg-card)",
-                border: "1px solid var(--border-subtle)",
-                borderRadius: 12,
-                padding: 40,
-                textAlign: "center",
-                color: "var(--text-muted)",
-              }}
-            >
-              <div style={{ fontSize: 40, marginBottom: 8 }}>📚</div>
-              Chưa có khóa học nào được publish.
-            </div>
+            <EmptyState
+              icon="📚"
+              title="Chưa có khóa học nào"
+              description="Community sẽ publish khóa học đầu tiên sớm."
+            />
           ) : (
             <div className="cl-grid">
               {community.courses.map((c) => {
                 const t = thumbFor(c.pillar);
-                const isPro = c.requiredTier === "PRO" || c.level === "ADVANCED";
+                const isPro =
+                  c.requiredTier === "PRO" || c.level === "ADVANCED";
                 return (
                   <Link
                     key={c.id}
@@ -97,7 +91,9 @@ export default async function CoursesPage({
                         <div className="course-card-pillar">{c.pillar}</div>
                       )}
                       <div className="course-card-title">{c.title}</div>
-                      <div className="course-card-desc">{c.description}</div>
+                      {c.description && (
+                        <div className="course-card-desc">{c.description}</div>
+                      )}
                       <div className="course-card-meta">
                         <span>📹 {c._count.lessons} bài</span>
                         {c.xpReward > 0 && (
@@ -109,7 +105,7 @@ export default async function CoursesPage({
                       </div>
                       <div className="course-card-progress">
                         <div className="bar">
-                          <div className="fill" style={{ width: "0%" }}></div>
+                          <div className="fill" style={{ width: "0%" }} />
                         </div>
                         <span className="pct">Chưa bắt đầu</span>
                       </div>

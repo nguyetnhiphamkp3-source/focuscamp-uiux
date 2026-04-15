@@ -24,36 +24,32 @@ export default async function SettingsPage({
         <span className="view-title">Community Settings</span>
         <span className="view-subtitle">{community.name}</span>
       </header>
-      <div style={{ flex: 1, overflowY: "auto", padding: "24px 32px" }}>
+      <div
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          padding: "var(--space-6) var(--space-8)",
+        }}
+      >
         <div style={{ maxWidth: 800 }}>
           {!isOwner && (
             <div
               style={{
-                background: "rgba(242, 63, 67, 0.1)",
-                border: "1px solid var(--dnd-red)",
-                borderRadius: 8,
-                padding: 12,
-                color: "var(--dnd-red)",
-                fontSize: 14,
-                marginBottom: 16,
+                background: "var(--danger-soft)",
+                border: "1px solid var(--danger)",
+                borderRadius: "var(--r-md)",
+                padding: "var(--space-3)",
+                color: "var(--danger)",
+                fontSize: "var(--text-sm)",
+                marginBottom: "var(--space-4)",
               }}
             >
               ⚠️ Bạn không phải chủ cộng đồng. Chỉ xem read-only.
             </div>
           )}
 
-          <div
-            style={{
-              background: "var(--bg-card)",
-              border: "1px solid var(--border-subtle)",
-              borderRadius: 12,
-              padding: 20,
-              marginBottom: 16,
-            }}
-          >
-            <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>
-              Thông tin cộng đồng
-            </h2>
+          <div className="ui-card ui-card-lg" style={{ marginBottom: "var(--space-4)" }}>
+            <h2 style={{ marginBottom: "var(--space-3)" }}>Thông tin cộng đồng</h2>
             <Row label="Slug" value={community.slug} />
             <Row label="Name" value={community.name} />
             <Row label="Tagline" value={community.tagline || "—"} />
@@ -64,17 +60,8 @@ export default async function SettingsPage({
             />
           </div>
 
-          <div
-            style={{
-              background: "var(--bg-card)",
-              border: "1px solid var(--border-subtle)",
-              borderRadius: 12,
-              padding: 20,
-              color: "var(--text-muted)",
-              textAlign: "center",
-            }}
-          >
-            <div style={{ fontSize: 32, marginBottom: 8 }}>⚙️</div>
+          <div className="ui-empty">
+            <div className="ui-empty-icon">⚙️</div>
             Các tuỳ chỉnh khác đang hoàn thiện (classes, pillars, gems, billing...).
           </div>
         </div>
@@ -89,9 +76,9 @@ function Row({ label, value }: { label: string; value: string }) {
       style={{
         display: "flex",
         justifyContent: "space-between",
-        padding: "8px 0",
+        padding: "var(--space-2) 0",
         borderBottom: "1px solid var(--border-subtle)",
-        fontSize: 14,
+        fontSize: "var(--text-base)",
       }}
     >
       <span style={{ color: "var(--text-muted)" }}>{label}</span>

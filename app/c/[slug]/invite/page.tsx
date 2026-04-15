@@ -25,39 +25,29 @@ export default async function InvitePage({
         style={{
           flex: 1,
           overflowY: "auto",
-          padding: "40px 24px",
+          padding: "var(--space-10) var(--space-6)",
           display: "flex",
           justifyContent: "center",
         }}
       >
         <div
+          className="ui-card ui-card-lg"
           style={{
             width: "100%",
             maxWidth: 520,
-            background: "var(--bg-card)",
-            border: "1px solid var(--border-subtle)",
-            borderRadius: 16,
-            padding: 28,
             textAlign: "center",
           }}
         >
-          <div style={{ fontSize: 48, marginBottom: 8 }}>✉️</div>
-          <h1
-            style={{
-              fontSize: 22,
-              fontWeight: 800,
-              color: "var(--text-heading)",
-              marginBottom: 6,
-            }}
-          >
+          <div style={{ fontSize: 48, marginBottom: "var(--space-2)" }}>✉️</div>
+          <h1 style={{ marginBottom: "var(--space-2)" }}>
             Mời bạn bè vào {community.name}
           </h1>
           <p
             style={{
-              fontSize: 14,
+              fontSize: "var(--text-sm)",
               color: "var(--text-muted)",
-              marginBottom: 24,
-              lineHeight: 1.5,
+              marginBottom: "var(--space-6)",
+              lineHeight: "var(--lh-normal)",
             }}
           >
             Chia sẻ link bên dưới để bạn bè tham gia cộng đồng.
@@ -66,8 +56,8 @@ export default async function InvitePage({
           <div
             style={{
               display: "flex",
-              gap: 8,
-              marginBottom: 16,
+              gap: "var(--space-2)",
+              marginBottom: "var(--space-4)",
             }}
           >
             <input
@@ -77,32 +67,20 @@ export default async function InvitePage({
               style={{
                 flex: 1,
                 padding: "10px 14px",
-                borderRadius: 8,
+                borderRadius: "var(--r-md)",
                 border: "1px solid var(--border-subtle)",
                 background: "var(--bg-elevated)",
                 color: "var(--text-normal)",
-                fontSize: 14,
+                fontSize: "var(--text-sm)",
               }}
             />
-            <button
-              style={{
-                padding: "10px 18px",
-                borderRadius: 8,
-                border: "none",
-                background: "var(--brand-green)",
-                color: "#fff",
-                fontWeight: 700,
-                fontSize: 13,
-              }}
-            >
-              Copy
-            </button>
+            <button className="ui-btn ui-btn-primary ui-btn-sm">Copy</button>
           </div>
 
           <div
             style={{
               display: "flex",
-              gap: 10,
+              gap: "var(--space-2)",
               justifyContent: "center",
               flexWrap: "wrap",
             }}
@@ -111,19 +89,11 @@ export default async function InvitePage({
               ["📱", "Telegram"],
               ["💬", "Zalo"],
               ["📘", "Facebook"],
-              ["🐦", "X / Twitter"],
+              ["🐦", "X"],
             ].map(([icon, name]) => (
               <button
                 key={name}
-                style={{
-                  padding: "8px 14px",
-                  borderRadius: 8,
-                  border: "1px solid var(--border-subtle)",
-                  background: "var(--bg-elevated)",
-                  color: "var(--text-normal)",
-                  fontSize: 13,
-                  fontWeight: 600,
-                }}
+                className="ui-btn ui-btn-secondary ui-btn-sm"
               >
                 {icon} {name}
               </button>
