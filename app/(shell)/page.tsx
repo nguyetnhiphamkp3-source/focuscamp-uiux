@@ -59,10 +59,10 @@ export default async function Home() {
           borderBottom: "1px solid var(--border-subtle)",
         }}
       >
-        <div style={{ fontSize: 56, marginBottom: 12 }}>🏕️🔥</div>
+        <div style={{ fontSize: "var(--text-3xl)", marginBottom: 12 }}>🏕️🔥</div>
         <h1
           style={{
-            fontSize: 40,
+            fontSize: "var(--text-3xl)",
             fontWeight: 800,
             color: "var(--text-heading)",
             marginBottom: 10,
@@ -74,7 +74,7 @@ export default async function Home() {
         </h1>
         <p
           style={{
-            fontSize: 17,
+            fontSize: "var(--text-md)",
             color: "var(--text-muted)",
             maxWidth: 520,
             margin: "0 auto 24px",
@@ -101,7 +101,7 @@ export default async function Home() {
                 padding: "14px 28px",
                 borderRadius: 10,
                 fontWeight: 700,
-                fontSize: 15,
+                fontSize: "var(--text-base)",
                 color: "#fff",
                 background: "var(--brand-green)",
                 textDecoration: "none",
@@ -118,7 +118,7 @@ export default async function Home() {
                     padding: "14px 28px",
                     borderRadius: 10,
                     fontWeight: 700,
-                    fontSize: 15,
+                    fontSize: "var(--text-base)",
                     color: "#fff",
                     background: "var(--brand-green)",
                     border: "none",
@@ -137,7 +137,7 @@ export default async function Home() {
               padding: "14px 28px",
               borderRadius: 10,
               fontWeight: 700,
-              fontSize: 15,
+              fontSize: "var(--text-base)",
               color: "var(--text-heading)",
               background: "var(--bg-card)",
               border: "1px solid var(--border-subtle)",
@@ -155,7 +155,7 @@ export default async function Home() {
             gap: 28,
             justifyContent: "center",
             flexWrap: "wrap",
-            fontSize: 13,
+            fontSize: "var(--text-sm)",
           }}
         >
           <Stat n={communityCount} label="Communities" />
@@ -176,7 +176,7 @@ export default async function Home() {
         <div style={{ textAlign: "center", marginBottom: 28 }}>
           <h2
             style={{
-              fontSize: 24,
+              fontSize: "var(--text-xl)",
               fontWeight: 800,
               color: "var(--text-heading)",
               marginBottom: 6,
@@ -184,7 +184,7 @@ export default async function Home() {
           >
             Tất cả trong 1 platform
           </h2>
-          <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
+          <p style={{ color: "var(--text-muted)", fontSize: "var(--text-base)" }}>
             Chat, học, làm thử thách, mua tools, và đồng hành cùng AI — không
             cần rời tab.
           </p>
@@ -207,20 +207,20 @@ export default async function Home() {
                 padding: 20,
               }}
             >
-              <div style={{ fontSize: 32, marginBottom: 8 }}>{f.icon}</div>
+              <div style={{ fontSize: "var(--text-2xl)", marginBottom: 8 }}>{f.icon}</div>
               <div
                 style={{
                   fontWeight: 700,
                   color: "var(--text-heading)",
                   marginBottom: 4,
-                  fontSize: 16,
+                  fontSize: "var(--text-md)",
                 }}
               >
                 {f.title}
               </div>
               <div
                 style={{
-                  fontSize: 13,
+                  fontSize: "var(--text-sm)",
                   color: "var(--text-muted)",
                   lineHeight: 1.5,
                 }}
@@ -249,10 +249,10 @@ export default async function Home() {
             border: "1px solid var(--border-subtle)",
           }}
         >
-          <div style={{ fontSize: 28, marginBottom: 8 }}>🚀</div>
+          <div style={{ fontSize: "var(--text-2xl)", marginBottom: 8 }}>🚀</div>
           <h3
             style={{
-              fontSize: 18,
+              fontSize: "var(--text-lg)",
               fontWeight: 800,
               color: "var(--text-heading)",
               marginBottom: 6,
@@ -262,7 +262,7 @@ export default async function Home() {
           </h3>
           <p
             style={{
-              fontSize: 14,
+              fontSize: "var(--text-base)",
               color: "var(--text-muted)",
               marginBottom: 16,
               lineHeight: 1.5,
@@ -296,7 +296,7 @@ export default async function Home() {
                     color: "#fff",
                     background: "var(--brand-green)",
                     border: "none",
-                    fontSize: 15,
+                    fontSize: "var(--text-base)",
                   }}
                 >
                   Đăng nhập với Google
@@ -315,7 +315,7 @@ function Stat({ n, label }: { n: number; label: string }) {
     <div style={{ textAlign: "center" }}>
       <div
         style={{
-          fontSize: 20,
+          fontSize: "var(--text-lg)",
           fontWeight: 800,
           color: "var(--text-heading)",
         }}

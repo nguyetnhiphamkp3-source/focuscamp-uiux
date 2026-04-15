@@ -176,7 +176,7 @@ export default async function ChannelPage({
               <span
                 style={{
                   color: "var(--text-muted)",
-                  fontSize: 13,
+                  fontSize: "var(--text-sm)",
                   fontWeight: 400,
                   marginLeft: 10,
                   borderLeft: "1px solid var(--border-subtle)",
@@ -202,13 +202,13 @@ export default async function ChannelPage({
                 color: "var(--text-muted)",
               }}
             >
-              <div style={{ fontSize: 40, marginBottom: 8 }}>👋</div>
+              <div style={{ fontSize: "var(--text-3xl)", marginBottom: 8 }}>👋</div>
               <div
-                style={{ fontWeight: 700, color: "var(--text-heading)", fontSize: 18 }}
+                style={{ fontWeight: 700, color: "var(--text-heading)", fontSize: "var(--text-lg)" }}
               >
                 Chào mừng đến # {stripLeadingEmoji(channel.name)}
               </div>
-              <div style={{ fontSize: 14, marginTop: 4 }}>
+              <div style={{ fontSize: "var(--text-base)", marginTop: 4 }}>
                 Đây là đầu kênh. Gửi tin nhắn đầu tiên!
               </div>
             </div>
@@ -259,7 +259,7 @@ export default async function ChannelPage({
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          fontSize: 16,
+                          fontSize: "var(--text-md)",
                           color: "#fff",
                           fontWeight: 600,
                           position: "absolute",
@@ -307,7 +307,7 @@ export default async function ChannelPage({
                   background: "transparent",
                   outline: "none",
                   border: "none",
-                  fontSize: 15,
+                  fontSize: "var(--text-base)",
                   color: "var(--text-normal)",
                   fontFamily: "inherit",
                 }}

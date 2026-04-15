@@ -122,7 +122,7 @@ export default async function DiscoveryPage() {
               color: "var(--text-muted)",
             }}
           >
-            <div style={{ fontSize: 48, marginBottom: 8 }}>🏜️</div>
+            <div style={{ fontSize: "var(--text-3xl)", marginBottom: 8 }}>🏜️</div>
             Chưa có community nào.
           </div>
         ) : (
@@ -211,7 +211,7 @@ export default async function DiscoveryPage() {
                         {ch.description || "Challenge trong focus.camp."}
                       </div>
                       <div className="ch-card-meta">
-                        <span style={{ fontSize: 11 }}>bởi</span>
+                        <span style={{ fontSize: "var(--text-xs)" }}>bởi</span>
                         <span style={{ fontWeight: 600, color: "var(--text-heading)" }}>
                           {ch.community.name}
                         </span>

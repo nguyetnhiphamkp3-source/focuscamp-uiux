@@ -61,7 +61,7 @@ export default function AboutPage() {
             Cộng đồng được đặt tên từ hai từ cổ đại — và trong sự giao thoa đó
             là toàn bộ triết lý của chúng tôi.
           </h1>
-          <div style={{ fontSize: 32 }}>🏕️🔥</div>
+          <div style={{ fontSize: "var(--text-2xl)" }}>🏕️🔥</div>
         </header>
 
         {/* NAME */}
