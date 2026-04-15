@@ -28,7 +28,6 @@ export default async function ChallengesPage({
         orderBy: { createdAt: "desc" },
         include: {
           _count: { select: { members: true } },
-          leader: { select: { name: true, image: true } },
         },
       },
     },
@@ -76,7 +75,7 @@ export default async function ChallengesPage({
                     : c.status === "OPEN"
                       ? "open"
                       : "";
-                const leaderName = c.leader?.name || "Leader";
+                const leaderName = "Leader";
                 return (
                   <Link
                     key={c.id}
