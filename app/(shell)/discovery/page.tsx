@@ -59,7 +59,7 @@ export default async function DiscoveryPage() {
   const [communityCount, challengeCount, memberCount, productCount] = totals;
 
   return (
-    <div className="dc-view">
+    <div className="dc-view" style={{ minHeight: 0, flex: 1, overflowY: "auto" }}>
       <div className="dc-inner">
         <div style={{ marginBottom: 16 }}>
           <Link href="/" className="text-sm" style={{ color: "var(--text-link)" }}>

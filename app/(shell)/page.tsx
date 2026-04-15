@@ -25,10 +25,10 @@ export default async function Home() {
   }
 
   return (
-    <main
+    <div
       style={{
-        minHeight: "100vh",
-        background: "var(--bg-body)",
+        flex: 1,
+        overflowY: "auto",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -190,6 +190,6 @@ export default async function Home() {
           )}
         </div>
       </div>
-    </main>
+    </div>
   );
 }
