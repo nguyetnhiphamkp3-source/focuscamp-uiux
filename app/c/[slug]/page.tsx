@@ -25,7 +25,7 @@ export default async function CommunityHomePage({
   if (!community) notFound();
 
   return (
-    <div style={{ overflowY: "auto", padding: "24px 32px" }}>
+    <div style={{ flex: 1, overflowY: "auto", padding: "24px 32px" }}>
       <div style={{ maxWidth: 900 }}>
         <h1
           style={{
