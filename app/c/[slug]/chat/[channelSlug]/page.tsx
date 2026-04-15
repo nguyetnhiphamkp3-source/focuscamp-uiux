@@ -1,8 +1,9 @@
 import { notFound, redirect } from "next/navigation";
-import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+
+export const dynamic = "force-dynamic";
 
 export default async function ChannelPage({
   params,
@@ -14,11 +15,12 @@ export default async function ChannelPage({
 
   const community = await prisma.community.findUnique({
     where: { slug },
-    include: { channels: { orderBy: { position: "asc" } } },
   });
   if (!community) notFound();
 
-  const channel = community.channels.find((c) => c.slug === channelSlug);
+  const channel = await prisma.channel.findFirst({
+    where: { communityId: community.id, slug: channelSlug },
+  });
   if (!channel) notFound();
 
   if (!session?.user?.id) redirect("/login");
@@ -59,188 +61,166 @@ export default async function ChannelPage({
   }
 
   return (
-    <div
-      className="min-h-screen flex"
-      style={{ background: "var(--bg-body)" }}
-    >
-      {/* Channels sidebar */}
-      <aside
-        className="w-64 flex-shrink-0 p-4"
+    <>
+      <header
         style={{
-          background: "var(--bg-sidebar)",
-          borderRight: "1px solid var(--border-subtle)",
+          height: 52,
+          padding: "0 20px",
+          display: "flex",
+          alignItems: "center",
+          borderBottom: "1px solid var(--border-subtle)",
+          flexShrink: 0,
         }}
       >
-        <Link
-          href={`/c/${slug}`}
-          className="block font-bold text-lg mb-4"
-          style={{ color: "var(--text-heading)", fontFamily: "var(--font-roboto)" }}
-        >
-          {community.name}
-        </Link>
         <div
-          className="text-xs uppercase font-bold mb-2 px-2"
-          style={{ color: "var(--text-muted)", letterSpacing: "0.05em" }}
+          style={{
+            fontSize: 16,
+            fontWeight: 800,
+            color: "var(--text-heading)",
+          }}
         >
-          Channels
+          # {channel.name}
         </div>
-        <nav className="flex flex-col gap-1">
-          {community.channels.map((ch) => (
-            <Link
-              key={ch.id}
-              href={`/c/${slug}/chat/${ch.slug}`}
-              className="px-3 py-1.5 rounded-md text-sm flex items-center gap-2"
-              style={{
-                background:
-                  ch.slug === channelSlug
-                    ? "var(--bg-modifier-active)"
-                    : "transparent",
-                color:
-                  ch.slug === channelSlug
-                    ? "var(--interactive-active)"
-                    : "var(--text-muted)",
-                fontWeight: ch.slug === channelSlug ? 700 : 500,
-              }}
-            >
-              <span style={{ opacity: 0.7 }}>#</span>
-              {ch.name}
-            </Link>
-          ))}
-        </nav>
-      </aside>
-
-      {/* Main chat */}
-      <main className="flex-1 flex flex-col min-w-0">
-        <header
-          className="h-14 px-6 flex items-center"
-          style={{ borderBottom: "1px solid var(--border-subtle)" }}
-        >
+        {channel.topic && (
           <div
-            className="font-bold text-lg"
             style={{
-              color: "var(--text-heading)",
-              fontFamily: "var(--font-roboto)",
+              marginLeft: 12,
+              paddingLeft: 12,
+              fontSize: 13,
+              color: "var(--text-muted)",
+              borderLeft: "1px solid var(--border-subtle)",
             }}
           >
-            # {channel.name}
+            {channel.topic}
           </div>
-          {channel.topic && (
-            <div
-              className="ml-4 pl-4 text-sm"
-              style={{
-                color: "var(--text-muted)",
-                borderLeft: "1px solid var(--border-subtle)",
-              }}
-            >
-              {channel.topic}
-            </div>
-          )}
-        </header>
+        )}
+      </header>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 flex flex-col-reverse">
-          {messages.length === 0 ? (
-            <div
-              className="text-center py-20"
-              style={{ color: "var(--text-muted)" }}
-            >
-              <div className="text-4xl mb-2">👋</div>
-              <p className="font-bold" style={{ color: "var(--text-heading)" }}>
-                Chào mừng đến # {channel.name}
-              </p>
-              <p className="text-sm">Đây là đầu kênh. Hãy gửi tin nhắn đầu tiên!</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {messages
-                .slice()
-                .reverse()
-                .map((m) => (
-                  <div key={m.id} className="flex gap-3">
-                    {m.user.image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={m.user.image}
-                        alt={m.user.name || "avatar"}
-                        className="w-10 h-10 rounded-full flex-shrink-0"
-                        referrerPolicy="no-referrer"
-                      />
-                    ) : (
-                      <div
-                        className="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-white font-bold"
-                        style={{
-                          background:
-                            "linear-gradient(135deg, #5865F2, #eb459e)",
-                        }}
-                      >
-                        {(m.user.name || m.user.email || "?")[0].toUpperCase()}
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-baseline gap-2">
-                        <span
-                          className="font-bold text-sm"
-                          style={{ color: "var(--text-heading)" }}
-                        >
-                          {m.user.name || m.user.email}
-                        </span>
-                        <span
-                          className="text-xs"
-                          style={{ color: "var(--text-muted)" }}
-                        >
-                          {m.createdAt.toLocaleString("vi-VN", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            day: "2-digit",
-                            month: "2-digit",
-                          })}
-                        </span>
-                      </div>
-                      <div
-                        className="text-base"
-                        style={{ color: "var(--text-normal)", lineHeight: 1.5 }}
-                      >
-                        {m.content}
-                      </div>
+      <div
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          padding: "16px 20px",
+          display: "flex",
+          flexDirection: "column-reverse",
+        }}
+      >
+        {messages.length === 0 ? (
+          <div style={{ textAlign: "center", padding: 60, color: "var(--text-muted)" }}>
+            <div style={{ fontSize: 36, marginBottom: 8 }}>👋</div>
+            <p style={{ fontWeight: 700, color: "var(--text-heading)" }}>
+              Chào mừng đến # {channel.name}
+            </p>
+            <p style={{ fontSize: 13 }}>Hãy gửi tin nhắn đầu tiên!</p>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {messages
+              .slice()
+              .reverse()
+              .map((m) => (
+                <div key={m.id} style={{ display: "flex", gap: 12 }}>
+                  {m.user.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={m.user.image}
+                      alt={m.user.name || "avatar"}
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: "50%",
+                        flexShrink: 0,
+                      }}
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: "50%",
+                        flexShrink: 0,
+                        background: "linear-gradient(135deg,#1B9E75,#5865F2)",
+                        color: "#fff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {(m.user.name || m.user.email || "?")[0].toUpperCase()}
+                    </div>
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                      <span style={{ fontWeight: 700, fontSize: 14, color: "var(--text-heading)" }}>
+                        {m.user.name || m.user.email}
+                      </span>
+                      <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                        {m.createdAt.toLocaleString("vi-VN", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          day: "2-digit",
+                          month: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 15, color: "var(--text-normal)", lineHeight: 1.5 }}>
+                      {m.content}
                     </div>
                   </div>
-                ))}
-            </div>
-          )}
-        </div>
+                </div>
+              ))}
+          </div>
+        )}
+      </div>
 
-        {/* Compose */}
-        <form
-          action={sendMessage}
-          className="p-4"
-          style={{ borderTop: "1px solid var(--border-subtle)" }}
+      <form
+        action={sendMessage}
+        style={{ padding: 16, borderTop: "1px solid var(--border-subtle)" }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "10px 14px",
+            borderRadius: 12,
+            background: "var(--bg-compose)",
+            border: "1px solid var(--border-subtle)",
+          }}
         >
-          <div
-            className="flex items-center gap-2 px-4 py-3 rounded-xl"
+          <input
+            type="text"
+            name="content"
+            placeholder={`Gửi tin vào # ${channel.name}`}
+            required
+            autoComplete="off"
             style={{
-              background: "var(--bg-compose)",
-              border: "1px solid var(--border-subtle)",
+              flex: 1,
+              background: "transparent",
+              outline: "none",
+              border: "none",
+              fontSize: 15,
+              color: "var(--text-normal)",
+            }}
+          />
+          <button
+            type="submit"
+            style={{
+              padding: "6px 14px",
+              borderRadius: 6,
+              fontWeight: 700,
+              fontSize: 13,
+              color: "#fff",
+              background: "var(--brand-green)",
+              border: "none",
             }}
           >
-            <input
-              type="text"
-              name="content"
-              placeholder={`Gửi tin vào # ${channel.name}`}
-              required
-              autoComplete="off"
-              className="flex-1 bg-transparent outline-none text-base"
-              style={{ color: "var(--text-normal)" }}
-            />
-            <button
-              type="submit"
-              className="px-4 py-1.5 rounded-md font-bold text-sm text-white"
-              style={{ background: "var(--brand-green)" }}
-            >
-              Gửi
-            </button>
-          </div>
-        </form>
-      </main>
-    </div>
+            Gửi
+          </button>
+        </div>
+      </form>
+    </>
   );
 }
