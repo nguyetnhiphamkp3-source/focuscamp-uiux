@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { auth, signOut } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { LoginModal } from "@/components/shell/login-modal";
 
 export const dynamic = "force-dynamic";
 
@@ -159,19 +160,23 @@ export default async function Home() {
             </Link>
           ) : (
             <>
-              <Link
-                href="/login"
-                style={{
-                  padding: "12px 20px",
-                  borderRadius: 10,
-                  fontWeight: 700,
-                  color: "#fff",
-                  background: "var(--brand-green)",
-                  textDecoration: "none",
-                }}
-              >
-                Đăng nhập
-              </Link>
+              <LoginModal
+                trigger={
+                  <button
+                    style={{
+                      padding: "12px 20px",
+                      borderRadius: 10,
+                      fontWeight: 700,
+                      color: "#fff",
+                      background: "var(--brand-green)",
+                      border: "none",
+                      fontSize: 15,
+                    }}
+                  >
+                    Đăng nhập
+                  </button>
+                }
+              />
               <Link
                 href="/discovery"
                 style={{
