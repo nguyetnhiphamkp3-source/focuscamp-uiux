@@ -49,8 +49,8 @@ export function PostCard({
       <div className="feed-post-head">
         <Link
           href={`/c/${communitySlug}/profile/${post.user.id}`}
-          style={{ display: "contents" }}
           aria-label={`Xem profile của ${authorName}`}
+          style={{ flexShrink: 0, lineHeight: 0 }}
         >
           {post.user.image ? (
             // eslint-disable-next-line @next/next/no-img-element
