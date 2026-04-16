@@ -102,32 +102,75 @@ export default async function CommunityLayout({
 
           {/* CHANNEL SIDEBAR */}
           <aside className="channel-sidebar">
-            {/* Server Banner */}
-            <div className="server-banner">
-              <div className="banner-canvas">
-                <div className="node" style={{top:"25px",left:"30px"}}></div>
-                <div className="node filled" style={{top:"40px",left:"80px"}}></div>
-                <div className="node" style={{top:"20px",left:"140px"}}></div>
-                <div className="node filled" style={{top:"55px",left:"170px"}}></div>
-                <div className="node" style={{top:"35px",left:"200px"}}></div>
-                <div className="node filled" style={{top:"70px",left:"120px"}}></div>
-                <div className="line" style={{top:"31px",left:"42px",width:"40px",transform:"rotate(12deg)"}}></div>
-                <div className="line" style={{top:"46px",left:"92px",width:"50px",transform:"rotate(-18deg)"}}></div>
-                <div className="line" style={{top:"26px",left:"152px",width:"24px",transform:"rotate(55deg)"}}></div>
-                <div className="line" style={{top:"62px",left:"132px",width:"42px",transform:"rotate(-10deg)"}}></div>
-
-                <div className="server-banner-header">
-                  <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
-                    <span className="server-name-text">{community.name}</span>
-                    <Link href={`/c/${slug}/settings`} className="banner-settings-btn" title="Community Settings">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41L9.25 5.35c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-                    </Link>
-                  </div>
-                  <Link href={`/c/${slug}/invite`} className="banner-invite-btn" title="Invite friends">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-                  </Link>
-                </div>
+            {/* Community banner — photo only */}
+            <div
+              className="server-banner"
+              style={{
+                height: 120,
+                overflow: "hidden",
+                position: "relative",
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/campfire.jpg"
+                alt={community.name}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  display: "block",
+                }}
+              />
+              {/* Community name overlay */}
+              <div
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  padding: "var(--space-3) var(--space-4)",
+                  background:
+                    "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%)",
+                  color: "#fff",
+                  fontWeight: "var(--fw-bold)",
+                  fontSize: "var(--text-md)",
+                  fontFamily: "var(--font-heading)",
+                  lineHeight: "var(--lh-tight)",
+                  textShadow: "0 1px 2px rgba(0,0,0,0.4)",
+                }}
+              >
+                {community.name}
               </div>
+            </div>
+
+            {/* Settings row below banner */}
+            <div
+              style={{
+                padding: "var(--space-2) var(--space-3)",
+                borderBottom: "1px solid var(--border-subtle)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "flex-end",
+              }}
+            >
+              <Link
+                href={`/c/${slug}/settings`}
+                title="Community Settings"
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: "var(--r-md)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "var(--text-muted)",
+                  textDecoration: "none",
+                }}
+                className="banner-settings-btn"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41L9.25 5.35c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+              </Link>
             </div>
 
             {/* Features Module Menu */}
