@@ -4,10 +4,25 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 function fmtDuration(sec: number | null): string {
-  if (!sec) return "—";
+  if (!sec) return "";
   const m = Math.floor(sec / 60);
   const s = sec % 60;
   return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+/** Extract YouTube video ID from embed/watch URL */
+function ytId(url: string | null): string | null {
+  if (!url) return null;
+  const m =
+    url.match(/embed\/([a-zA-Z0-9_-]{11})/) ||
+    url.match(/[?&]v=([a-zA-Z0-9_-]{11})/) ||
+    url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+function ytThumb(url: string | null): string | null {
+  const id = ytId(url);
+  return id ? `https://img.youtube.com/vi/${id}/mqdefault.jpg` : null;
 }
 
 export default async function CoursePlaylistSidebar({
@@ -24,6 +39,7 @@ export default async function CoursePlaylistSidebar({
 
   return (
     <aside className="right-sidebar">
+      {/* Header */}
       <div
         style={{
           padding: "var(--space-5) var(--space-5) var(--space-3)",
@@ -59,52 +75,147 @@ export default async function CoursePlaylistSidebar({
         </div>
       </div>
 
-      <div style={{ padding: "var(--space-3)" }}>
+      {/* Playlist */}
+      <div
+        style={{
+          padding: "var(--space-2) var(--space-3)",
+          overflowY: "auto",
+          flex: 1,
+        }}
+      >
         {course.lessons.map((l, i) => {
           const isActive = i === 0;
+          const thumb = ytThumb(l.videoUrl);
+          const dur = fmtDuration(l.duration);
           return (
             <div
               key={l.id}
               style={{
                 display: "flex",
                 gap: "var(--space-3)",
-                padding: "var(--space-3)",
+                padding: "var(--space-2)",
                 borderRadius: "var(--r-md)",
-                background: isActive ? "var(--bg-modifier-active)" : "transparent",
+                background: isActive
+                  ? "var(--bg-modifier-active)"
+                  : "transparent",
                 marginBottom: "var(--space-1)",
                 cursor: "pointer",
               }}
             >
+              {/* Thumbnail */}
               <div
                 style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: "var(--r-full)",
-                  background: isActive
-                    ? "var(--brand-green)"
-                    : "var(--bg-elevated)",
-                  color: isActive ? "#fff" : "var(--text-muted)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "var(--text-xs)",
-                  fontWeight: "var(--fw-bold)",
+                  width: 120,
+                  aspectRatio: "16/9",
+                  borderRadius: "var(--r-md)",
+                  overflow: "hidden",
                   flexShrink: 0,
+                  position: "relative",
+                  background: "var(--bg-elevated)",
                 }}
               >
-                {i + 1}
+                {thumb ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={thumb}
+                    alt={l.title}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      display: "block",
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "var(--text-muted)",
+                      fontSize: "var(--text-xl)",
+                    }}
+                  >
+                    📹
+                  </div>
+                )}
+                {/* Duration badge */}
+                {dur && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: 4,
+                      right: 4,
+                      background: "rgba(0,0,0,0.75)",
+                      color: "#fff",
+                      fontSize: "var(--text-xs)",
+                      fontWeight: "var(--fw-semibold)",
+                      padding: "1px 4px",
+                      borderRadius: "var(--r-sm)",
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {dur}
+                  </div>
+                )}
+                {/* Active indicator */}
+                {isActive && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      height: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: "rgba(0,0,0,0.35)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: "var(--r-full)",
+                        background: "rgba(255,255,255,0.9)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 0,
+                          height: 0,
+                          borderLeft: "10px solid var(--text-heading)",
+                          borderTop: "6px solid transparent",
+                          borderBottom: "6px solid transparent",
+                          marginLeft: 2,
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
+
+              {/* Info */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div
                   style={{
                     fontSize: "var(--text-sm)",
-                    fontWeight: isActive ? "var(--fw-bold)" : "var(--fw-medium)",
+                    fontWeight: isActive
+                      ? "var(--fw-bold)"
+                      : "var(--fw-medium)",
                     color: "var(--text-heading)",
                     lineHeight: "var(--lh-snug)",
                     overflow: "hidden",
                     display: "-webkit-box",
                     WebkitLineClamp: 2,
                     WebkitBoxOrient: "vertical",
+                    marginBottom: "var(--space-1)",
                   }}
                 >
                   {l.title}
@@ -113,10 +224,10 @@ export default async function CoursePlaylistSidebar({
                   style={{
                     fontSize: "var(--text-xs)",
                     color: "var(--text-muted)",
-                    marginTop: 2,
+                    lineHeight: "var(--lh-normal)",
                   }}
                 >
-                  {fmtDuration(l.duration)}
+                  Bài {i + 1}
                   {l.xpReward ? ` · +${l.xpReward} XP` : ""}
                 </div>
               </div>
