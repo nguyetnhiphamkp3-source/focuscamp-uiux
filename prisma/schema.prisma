@@ -36,6 +36,8 @@ model User {
   checkins         Checkin[]
   reviewedCheckins Checkin[]          @relation("CheckinReviewer")
   submissionVotes  SubmissionVote[]
+  notifications    Notification[]     @relation("NotifRecipient")
+  triggeredNotifs  Notification[]     @relation("NotifActor")
   purchases        Purchase[]
   xpLedger         XPLedger[]
   badgeAwards      BadgeAward[]
@@ -526,6 +528,30 @@ model SePayTransaction {
 
   @@index([paymentCode])
   @@index([transactionDate])
+}
+
+// ============= NOTIFICATIONS =============
+
+model Notification {
+  id            String    @id @default(cuid())
+  userId        String    // recipient
+  type          String    // POST_COMMENT | POST_REACTION | COMMENT_REPLY | BEST_ANSWER | POST_COT | SUBMISSION_APPROVED | SUBMISSION_REJECTED
+  title         String
+  body          String?   @db.Text
+  actorId       String?   // who triggered this (user who commented, reacted, etc.)
+  /** Route target — e.g. /c/<slug>/p/<postId> */
+  link          String?
+  communitySlug String?
+  postId        String?
+  commentId     String?
+  readAt        DateTime?
+  createdAt     DateTime  @default(now())
+
+  user  User  @relation("NotifRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  actor User? @relation("NotifActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([userId, readAt, createdAt])
+  @@index([userId, createdAt])
 }
 
 // ============= GAMIFICATION =============

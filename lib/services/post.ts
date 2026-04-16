@@ -6,6 +6,7 @@
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { getPillars } from "@/lib/community-config";
+import { createNotification } from "./notification";
 
 const LIKE_EMOJI = "❤️";
 
@@ -236,6 +237,31 @@ export async function toggleReaction(input: {
     await prisma.reaction.create({
       data: { postId: input.postId, userId: input.userId, emoji },
     });
+    // Notify post author on new reaction (not on toggle-off)
+    const post = await prisma.post.findUnique({
+      where: { id: input.postId },
+      select: {
+        userId: true,
+        title: true,
+        community: { select: { slug: true } },
+      },
+    });
+    const actor = await prisma.user.findUnique({
+      where: { id: input.userId },
+      select: { name: true },
+    });
+    if (post) {
+      await createNotification({
+        userId: post.userId,
+        type: "POST_REACTION",
+        title: `${actor?.name ?? "Ai đó"} thích bài của bạn ${emoji}`,
+        body: post.title ?? undefined,
+        actorId: input.userId,
+        link: `/c/${post.community.slug}/p/${input.postId}`,
+        communitySlug: post.community.slug,
+        postId: input.postId,
+      });
+    }
   }
 
   const count = await prisma.reaction.count({ where: { postId: input.postId, emoji } });
@@ -348,5 +374,30 @@ export async function toggleCot(input: { userId: string; postId: string }) {
     { postId: updated.id, isCot: updated.isCot, by: input.userId },
     "[post] toggleCot"
   );
+
+  // Notify post author when marked as CỐT (not when unmarked)
+  if (updated.isCot) {
+    const postFull = await prisma.post.findUnique({
+      where: { id: input.postId },
+      select: {
+        userId: true,
+        title: true,
+        community: { select: { slug: true, name: true } },
+      },
+    });
+    if (postFull) {
+      await createNotification({
+        userId: postFull.userId,
+        type: "POST_COT",
+        title: `Bài của bạn được đánh dấu là CỐT ⭐`,
+        body: postFull.title ?? undefined,
+        actorId: input.userId,
+        link: `/c/${postFull.community.slug}/p/${input.postId}`,
+        communitySlug: postFull.community.slug,
+        postId: input.postId,
+      });
+    }
+  }
+
   return updated;
 }

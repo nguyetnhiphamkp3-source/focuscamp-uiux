@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { ServerList } from "@/components/shell/server-list";
 import { UserPanel } from "@/components/shell/user-panel";
 import { HomeSidebar } from "@/components/shell/home-sidebar";
+import { unreadCount } from "@/lib/services/notification";
 
 export const dynamic = "force-dynamic";
 
@@ -14,13 +15,18 @@ export default async function ShellLayout({
   const session = await auth();
 
   let myCommunities: { id: string; slug: string; name: string }[] = [];
+  let notifUnread = 0;
   if (session?.user?.id) {
-    const mems = await prisma.membership.findMany({
-      where: { userId: session.user.id },
-      include: { community: { select: { id: true, slug: true, name: true } } },
-      orderBy: { joinedAt: "asc" },
-    });
+    const [mems, n] = await Promise.all([
+      prisma.membership.findMany({
+        where: { userId: session.user.id },
+        include: { community: { select: { id: true, slug: true, name: true } } },
+        orderBy: { joinedAt: "asc" },
+      }),
+      unreadCount(session.user.id),
+    ]);
     myCommunities = mems.map((m) => m.community);
+    notifUnread = n;
   }
 
   return (
@@ -28,7 +34,7 @@ export default async function ShellLayout({
       <div className="left-section">
         <div className="left-section-top">
           <ServerList communities={myCommunities} />
-          <HomeSidebar />
+          <HomeSidebar notifUnread={notifUnread} />
         </div>
         <UserPanel user={session?.user} />
       </div>

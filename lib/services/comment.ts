@@ -5,6 +5,7 @@
  */
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { createNotification } from "./notification";
 
 export async function createComment(input: {
   userId: string;
@@ -46,6 +47,63 @@ export async function createComment(input: {
     },
   });
   logger.info({ commentId: comment.id, postId: input.postId }, "[comment] created");
+
+  // Emit notifications (non-blocking — failures logged, never thrown)
+  const postFull = await prisma.post.findUnique({
+    where: { id: input.postId },
+    select: {
+      userId: true,
+      title: true,
+      type: true,
+      community: { select: { slug: true, name: true } },
+    },
+  });
+  const actor = await prisma.user.findUnique({
+    where: { id: input.userId },
+    select: { name: true },
+  });
+  const actorName = actor?.name ?? "Ai đó";
+  const link = postFull
+    ? `/c/${postFull.community.slug}/p/${input.postId}`
+    : undefined;
+
+  if (input.parentId) {
+    // Reply — notify the parent comment's author
+    const parent = await prisma.comment.findUnique({
+      where: { id: input.parentId },
+      select: { userId: true },
+    });
+    if (parent) {
+      await createNotification({
+        userId: parent.userId,
+        type: "COMMENT_REPLY",
+        title: `${actorName} trả lời bình luận của bạn`,
+        body: input.body.trim().slice(0, 160),
+        actorId: input.userId,
+        link,
+        communitySlug: postFull?.community.slug,
+        postId: input.postId,
+        commentId: comment.id,
+      });
+    }
+  } else if (postFull) {
+    // Top-level — notify post author
+    await createNotification({
+      userId: postFull.userId,
+      type: "POST_COMMENT",
+      title:
+        postFull.type === "QUESTION"
+          ? `${actorName} trả lời câu hỏi của bạn`
+          : `${actorName} bình luận bài của bạn`,
+      body: input.body.trim().slice(0, 160),
+      actorId: input.userId,
+      link,
+      communitySlug: postFull.community.slug,
+      postId: input.postId,
+      commentId: comment.id,
+    });
+  }
+
   return comment;
 }
 
@@ -89,6 +147,28 @@ export async function markBestAnswer(input: { userId: string; commentId: string 
       data: { isBestAnswer: true },
     }),
   ]);
+
+  // Notify the comment author
+  const post = await prisma.post.findUnique({
+    where: { id: comment.postId },
+    select: { community: { select: { slug: true } }, type: true, title: true },
+  });
+  if (post) {
+    await createNotification({
+      userId: comment.userId,
+      type: "BEST_ANSWER",
+      title:
+        post.type === "QUESTION"
+          ? "Câu trả lời của bạn được chọn là Best Answer ★"
+          : "Comment của bạn được ghim ★",
+      actorId: input.userId,
+      link: `/c/${post.community.slug}/p/${comment.postId}`,
+      communitySlug: post.community.slug,
+      postId: comment.postId,
+      commentId: input.commentId,
+    });
+  }
+
   return { isBestAnswer: true };
 }
 

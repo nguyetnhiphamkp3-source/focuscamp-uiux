@@ -3,6 +3,7 @@
  */
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { createNotification } from "./notification";
 
 export interface ActiveChallenge {
   memberId: string;
@@ -342,6 +343,31 @@ export async function reviewSubmission(input: {
     },
     "[challenge] submission reviewed"
   );
+
+  // Notify the submitter
+  const ctx = await prisma.challenge.findUnique({
+    where: { id: checkin.challengeId },
+    select: {
+      slug: true,
+      title: true,
+      community: { select: { slug: true } },
+    },
+  });
+  if (ctx) {
+    await createNotification({
+      userId: checkin.userId,
+      type: input.action === "APPROVE" ? "SUBMISSION_APPROVED" : "SUBMISSION_REJECTED",
+      title:
+        input.action === "APPROVE"
+          ? `Submission của bạn được duyệt ✓ (${ctx.title})`
+          : `Submission của bạn bị từ chối ✕ (${ctx.title})`,
+      body: input.note?.trim() || undefined,
+      actorId: input.userId,
+      link: `/c/${ctx.community.slug}/challenges/${ctx.slug}`,
+      communitySlug: ctx.community.slug,
+    });
+  }
+
   return updated;
 }
 
