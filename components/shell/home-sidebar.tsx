@@ -57,6 +57,15 @@ export function HomeSidebar() {
           </span>
           <span className="feature-name">Manifesto</span>
         </FeatureLink>
+        <FeatureLink href="/direct-challenge">
+          <span className="feature-icon">
+            <svg viewBox="0 0 24 24">
+              {/* Flame icon — matches the 'chọn lửa' motif */}
+              <path d="M12 2C10 6 6 9 6 14c0 3.3 2.7 6 6 6s6-2.7 6-6c0-1.7-.6-3.2-1.6-4.4C15 11.5 13 12 12 12c0-3 1-7 0-10z" />
+            </svg>
+          </span>
+          <span className="feature-name">Direct Challenge</span>
+        </FeatureLink>
         <FeatureLink href="/brand">
           <span className="feature-icon">
             <svg viewBox="0 0 24 24">
