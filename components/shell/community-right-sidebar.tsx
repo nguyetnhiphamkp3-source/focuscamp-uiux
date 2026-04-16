@@ -1,4 +1,5 @@
 import { JoinButton } from "./join-button";
+import { PixelWolf } from "./pixel-wolf";
 import { classByKey } from "@/lib/community-config";
 import type { ClassConfig } from "@/lib/community-config";
 
@@ -40,6 +41,7 @@ export async function CommunityRightSidebar({
       ) : (
         <GuestView community={community} classes={classes} />
       )}
+      <PixelWolf />
     </aside>
   );
 }

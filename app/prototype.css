@@ -5169,3 +5169,106 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
   font-size: var(--text-sm);
   color: var(--text-muted);
 }
+
+/* ==================================================================
+   Pixel Wolf Boss — footer patrol animation (focus.camp)
+   Mount inside .wolf-scene. Walks back and forth at the bottom of the
+   right sidebar, with sparkles along the way.
+   ================================================================== */
+
+.wolf-scene {
+  width: 100%;
+  height: 80px;
+  position: relative;
+  overflow: hidden;
+}
+
+.wolf-wrap {
+  position: absolute;
+  bottom: 0;
+  animation: wolf-patrol 9s linear infinite;
+}
+
+@keyframes wolf-patrol {
+  0%   { left: 40px;              transform: scaleX(1); }
+  45%  { left: calc(100% - 140px); transform: scaleX(1); }
+  50%  { left: calc(100% - 140px); transform: scaleX(-1); }
+  95%  { left: 40px;              transform: scaleX(-1); }
+  100% { left: 40px;              transform: scaleX(1); }
+}
+
+.wolf {
+  image-rendering: pixelated;
+  display: grid;
+  grid-template-columns: repeat(14, 7px);
+  grid-template-rows: repeat(12, 7px);
+  gap: 0;
+  animation: wolf-bob 0.4s steps(1) infinite;
+}
+
+@keyframes wolf-bob {
+  0%  { margin-bottom: 0px; }
+  50% { margin-bottom: 2px; }
+}
+
+.wolf .px { width: 7px; height: 7px; }
+.wolf .px-t  { background: transparent; }
+.wolf .px-dg { background: #3A3550; }
+.wolf .px-g  { background: #5C5878; }
+.wolf .px-lg { background: #8C8AA8; }
+.wolf .px-wh { background: #E8E4F0; }
+.wolf .px-bl { background: #0D0A14; }
+.wolf .px-rd { background: #CC2244; }
+.wolf .px-yw { background: #DDAA22; }
+
+.wolf-spark {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  background: #AA44FF;
+  opacity: 0;
+  pointer-events: none;
+  animation: wolf-sparkle 2s steps(1) infinite;
+}
+.wolf-spark::before {
+  content: '';
+  position: absolute;
+  top: -3px; left: 2px;
+  width: 1px; height: 11px;
+  background: #CC88FF;
+}
+.wolf-spark::after {
+  content: '';
+  position: absolute;
+  left: -3px; top: 2px;
+  width: 11px; height: 1px;
+  background: #CC88FF;
+}
+
+.wolf-spark:nth-child(1) { top: 10px; left: 15%; animation-delay: 0s;    background: #AA44FF; }
+.wolf-spark:nth-child(2) { top: 25px; left: 35%; animation-delay: 0.6s;  background: #CC44EE; }
+.wolf-spark:nth-child(3) { top:  8px; left: 55%; animation-delay: 1.1s;  background: #8833DD; }
+.wolf-spark:nth-child(4) { top: 30px; left: 72%; animation-delay: 1.7s;  background: #AA44FF; }
+.wolf-spark:nth-child(5) { top: 15px; left: 85%; animation-delay: 0.3s;  background: #DD66FF; }
+.wolf-spark:nth-child(6) { top: 35px; left: 22%; animation-delay: 1.4s;  background: #9922CC; }
+
+@keyframes wolf-sparkle {
+  0%,79%  { opacity: 0;   transform: scale(0.5) rotate(0deg); }
+  80%     { opacity: 1;   transform: scale(1.4) rotate(15deg); }
+  88%     { opacity: 0.6; transform: scale(1)   rotate(-10deg); }
+  94%     { opacity: 1;   transform: scale(1.2) rotate(5deg); }
+  100%    { opacity: 0;   transform: scale(0.5) rotate(0deg); }
+}
+
+.wolf-shadow {
+  width: 70px;
+  height: 8px;
+  background: radial-gradient(ellipse, rgba(100,60,180,0.35) 0%, transparent 70%);
+  margin: 0 auto;
+  animation: wolf-shadow-pulse 0.4s steps(1) infinite;
+}
+
+@keyframes wolf-shadow-pulse {
+  0%  { transform: scaleX(1);    opacity: 0.8; }
+  50% { transform: scaleX(0.85); opacity: 0.5; }
+}

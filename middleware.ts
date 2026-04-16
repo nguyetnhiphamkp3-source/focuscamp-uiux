@@ -18,6 +18,7 @@ const PUBLIC_PREFIXES = [
   "/discovery",
   "/about",
   "/brand",
+  "/direct-challenge",
   "/pay",
   "/api/auth",
   "/api/sepay",
