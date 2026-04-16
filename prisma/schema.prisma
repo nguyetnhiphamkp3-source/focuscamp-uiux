@@ -95,6 +95,7 @@ model Community {
   pillarsConfig Json?
   gemsConfig    Json?
   levelsConfig  Json?
+  bossConfig    Json?
   billingModel  Json?
 
   memberCount Int @default(0)

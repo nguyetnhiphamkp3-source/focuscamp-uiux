@@ -8,6 +8,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { CommunityRightSidebar } from "@/components/shell/community-right-sidebar";
 import { getClasses } from "@/lib/community-config";
+import { computeBossState } from "@/lib/services/community-boss";
 
 export async function DefaultRightSidebar({
   slug,
@@ -31,6 +32,7 @@ export async function DefaultRightSidebar({
   }
 
   const classes = getClasses(community);
+  const boss = await computeBossState(community.id);
 
   return (
     <CommunityRightSidebar
@@ -55,6 +57,7 @@ export async function DefaultRightSidebar({
       }
       isLoggedIn={!!session?.user}
       classes={classes}
+      boss={boss}
     />
   );
 }

@@ -1,70 +1,129 @@
 /**
- * Pixel Wolf Boss — mascot that patrols the bottom of a container.
+ * Boss Sói widget — pixel-art mascot + name + tagline + HP bar.
  *
- * Stateless / server-renderable. The animation is pure CSS (see
- * prototype.css .wolf-*). Place inside any container that needs a bit
- * of personality at the bottom — we use it in the right sidebar.
- *
- * Pixel grid is 14 columns × 12 rows, encoded as short codes below
- * (see `CODE_TO_CLASS`). Keeping the art as data (not 168 divs) lets
- * us re-skin or tweak the sprite by editing one matrix.
+ * Purely visual gamification: members do tasks, boss takes damage (computed
+ * server-side by computeBossState). Our own XP comes from those tasks, not
+ * from fighting the boss — the boss is the shared "campfire storyline".
  */
 
 const CODE_TO_CLASS: Record<string, string> = {
-  ".": "px-t", // transparent
-  D: "px-dg", // dark gray
-  G: "px-g", // gray
-  L: "px-lg", // light gray
-  W: "px-wh", // white
-  K: "px-bl", // black
-  R: "px-rd", // red
-  Y: "px-yw", // yellow
+  ".": "px-t",
+  D: "px-dg",
+  G: "px-g",
+  L: "px-lg",
+  W: "px-wh",
+  K: "px-bl",
+  R: "px-rd",
+  Y: "px-yw",
 };
 
-// 14 chars per row, 12 rows. See /Users/mdm/Downloads/pixel-wolf for source.
 const WOLF_ROWS = [
-  "..DD...DD.....", // 0 ears
-  ".DGGD.DGD.....", // 1
-  ".DGGGDGGGD....", // 2 head top
-  ".GRYGGGRYGD...", // 3 eyes (red/yellow)
-  ".GGGGWGGGGD...", // 4 face
-  "..GWWKWWG.....", // 5 snout (black nose)
-  ".DGGDDDGDDDD..", // 6 neck
-  ".DLGGGGGGGGDD.", // 7 body
-  ".DGGWWWWGGGGD.", // 8 belly
-  "..DG..DG.GD...", // 9 legs top
-  "..DD..DD.DD...", // 10 legs
-  "..KK..KK.KK...", // 11 paws (black)
+  "..DD...DD.....",
+  ".DGGD.DGD.....",
+  ".DGGGDGGGD....",
+  ".GRYGGGRYGD...",
+  ".GGGGWGGGGD...",
+  "..GWWKWWG.....",
+  ".DGGDDDGDDDD..",
+  ".DLGGGGGGGGDD.",
+  ".DGGWWWWGGGGD.",
+  "..DG..DG.GD...",
+  "..DD..DD.DD...",
+  "..KK..KK.KK...",
 ];
 
-/**
- * Top-to-bottom patrol wolf. Parent should set its height to at least 80px
- * (the scene fixed at 80px tall).
- */
+export function BossWidget({
+  name,
+  tagline,
+  hpPct,
+  currentHp,
+  maxHp,
+  defeated = false,
+}: {
+  name: string;
+  tagline?: string;
+  /** 0..1 */
+  hpPct: number;
+  currentHp: number;
+  maxHp: number;
+  defeated?: boolean;
+}) {
+  const pctClamped = Math.max(0, Math.min(1, hpPct));
+  const barColor =
+    pctClamped > 0.5
+      ? "var(--success, #248046)"
+      : pctClamped > 0.2
+        ? "#f0b232"
+        : "var(--danger, #da373c)";
+
+  return (
+    <div className="boss-widget">
+      {tagline && !defeated && (
+        <div className="boss-tagline" aria-hidden="true">
+          {tagline}
+        </div>
+      )}
+      {defeated && (
+        <div className="boss-tagline boss-tagline-defeated">Đã bị hạ 💀</div>
+      )}
+
+      <div
+        className="wolf-scene boss-scene"
+        aria-label={`Boss ${name} — ${currentHp}/${maxHp} HP`}
+      >
+        <div className="wolf-spark" />
+        <div className="wolf-spark" />
+        <div className="wolf-spark" />
+        <div className="wolf-spark" />
+        <div className="wolf-spark" />
+        <div className="wolf-spark" />
+
+        <div
+          className={`wolf-wrap ${defeated ? "wolf-wrap-defeated" : ""}`}
+          style={defeated ? { animation: "none", left: "50%", transform: "translateX(-50%)" } : undefined}
+        >
+          <div className="wolf">
+            {WOLF_ROWS.flatMap((row, rowIdx) =>
+              row.split("").map((code, colIdx) => (
+                <div
+                  key={`${rowIdx}-${colIdx}`}
+                  className={`px ${CODE_TO_CLASS[code] ?? "px-t"}`}
+                />
+              ))
+            )}
+          </div>
+          <div className="wolf-shadow" />
+        </div>
+      </div>
+
+      <div className="boss-hp-wrap" title={`HP ${currentHp}/${maxHp}`}>
+        <div
+          className="boss-hp-bar"
+          style={{
+            width: `${Math.round(pctClamped * 100)}%`,
+            background: barColor,
+          }}
+        />
+      </div>
+      <div className="boss-hp-label">
+        HP {currentHp.toLocaleString()}/{maxHp.toLocaleString()}
+      </div>
+
+      <div className="boss-name">{name}</div>
+    </div>
+  );
+}
+
+/** Kept as alias for any code still importing PixelWolf (it renders a
+ *  default-config boss). */
 export function PixelWolf() {
   return (
-    <div className="wolf-scene" aria-hidden="true">
-      {/* Sparkles — positioned via CSS nth-child */}
-      <div className="wolf-spark" />
-      <div className="wolf-spark" />
-      <div className="wolf-spark" />
-      <div className="wolf-spark" />
-      <div className="wolf-spark" />
-      <div className="wolf-spark" />
-
-      <div className="wolf-wrap">
-        <div className="wolf">
-          {WOLF_ROWS.flatMap((row, rowIdx) =>
-            row.split("").map((code, colIdx) => (
-              <div
-                key={`${rowIdx}-${colIdx}`}
-                className={`px ${CODE_TO_CLASS[code] ?? "px-t"}`}
-              />
-            ))
-          )}
-        </div>
-        <div className="wolf-shadow" />
-      </div>
-    </div>
+    <BossWidget
+      name="Boss Sói"
+      tagline="Kẻ gác cổng đầu tiên"
+      hpPct={1}
+      currentHp={100}
+      maxHp={100}
+    />
   );
 }
