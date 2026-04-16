@@ -122,6 +122,8 @@ export default async function SignalsPage({
                 pillars={pillars}
                 currency={currency}
                 canEditCot={isOwner}
+                currentUserId={userId ?? null}
+                isOwner={isOwner}
               />
             ))
           )}

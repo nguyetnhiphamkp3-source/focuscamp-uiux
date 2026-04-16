@@ -103,6 +103,8 @@ export default async function CotPage({
                 pillars={pillars}
                 currency={currency}
                 canEditCot={isOwner}
+                currentUserId={userId ?? null}
+                isOwner={isOwner}
                 showCotBadge={false}
               />
             ))

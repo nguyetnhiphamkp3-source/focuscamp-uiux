@@ -16,6 +16,7 @@ import {
 } from "@/lib/brand";
 import { ReactionButton } from "@/components/feed/reaction-button";
 import { CotToggleButton } from "@/components/feed/cot-toggle-button";
+import { PostMenu } from "@/components/feed/post-menu";
 import { CommentComposer } from "@/components/feed/comment-composer";
 import { CommentItem } from "@/components/feed/comment-item";
 import type { CommentItemData } from "@/components/feed/comment-item";
@@ -222,6 +223,21 @@ export default async function PostDetailPage({
                   initialIsCot={post.isCot}
                 />
               )}
+              <div style={{ marginLeft: "auto" }}>
+                <PostMenu
+                  postId={post.id}
+                  communitySlug={slug}
+                  canEdit={isAuthor}
+                  canDelete={isAuthor || isOwner}
+                  redirectOnDelete={true}
+                  initial={{
+                    title: post.title,
+                    body: post.body,
+                    pillar: post.pillar,
+                  }}
+                  pillars={pillars}
+                />
+              </div>
             </div>
           </article>
 

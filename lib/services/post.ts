@@ -218,6 +218,69 @@ export async function toggleReaction(input: {
   return { reacted: !existing, count };
 }
 
+/**
+ * Edit a post's body/title/pillar. Allowed to: post author only.
+ * Admin cannot edit others' posts — only delete (separate concern).
+ */
+export async function updatePost(input: {
+  userId: string;
+  postId: string;
+  title?: string;
+  body: string;
+  pillar?: string;
+}) {
+  const post = await prisma.post.findUnique({
+    where: { id: input.postId },
+    include: { community: { select: { pillarsConfig: true } } },
+  });
+  if (!post) throw new Error("Bài viết không tồn tại");
+  if (post.userId !== input.userId)
+    throw new Error("Chỉ tác giả mới sửa được bài");
+
+  // Validate pillar against community config
+  let validatedPillar: string | null = null;
+  if (input.pillar) {
+    const pillarKeys = new Set(
+      getPillars(post.community).map((p) => p.key)
+    );
+    validatedPillar = pillarKeys.has(input.pillar) ? input.pillar : null;
+  }
+
+  const updated = await prisma.post.update({
+    where: { id: input.postId },
+    data: {
+      title: input.title?.trim() || null,
+      body: input.body.trim(),
+      pillar: validatedPillar,
+    },
+  });
+  logger.info({ postId: input.postId, userId: input.userId }, "[post] updated");
+  return updated;
+}
+
+/**
+ * Delete a post + all cascades (comments, reactions, votes).
+ * Allowed to: post author OR community owner.
+ */
+export async function deletePost(input: { userId: string; postId: string }) {
+  const post = await prisma.post.findUnique({
+    where: { id: input.postId },
+    include: { community: { select: { slug: true, ownerId: true } } },
+  });
+  if (!post) throw new Error("Bài viết không tồn tại");
+
+  const canDelete =
+    post.userId === input.userId || post.community.ownerId === input.userId;
+  if (!canDelete) throw new Error("Không có quyền xoá bài này");
+
+  await prisma.post.delete({ where: { id: input.postId } });
+  logger.info(
+    { postId: input.postId, by: input.userId, author: post.userId },
+    "[post] deleted"
+  );
+  return { communitySlug: post.community.slug, type: post.type };
+}
+
 /** Toggle Cốt flag (admin / community owner only). */
 export async function toggleCot(input: { userId: string; postId: string }) {
   const post = await prisma.post.findUnique({

@@ -9,6 +9,7 @@ import { pillarByKey, DEFAULT_GEMS } from "@/lib/community-config";
 import type { PillarConfig, GemsConfig } from "@/lib/community-config";
 import { ReactionButton } from "./reaction-button";
 import { CotToggleButton } from "./cot-toggle-button";
+import { PostMenu } from "./post-menu";
 import type { FeedPost } from "@/lib/services/post";
 
 export function PostCard({
@@ -17,6 +18,8 @@ export function PostCard({
   pillars = [],
   currency = DEFAULT_GEMS,
   canEditCot = false,
+  currentUserId = null,
+  isOwner = false,
   showCotBadge = true,
   href,
 }: {
@@ -28,6 +31,10 @@ export function PostCard({
   currency?: GemsConfig;
   /** True if current user is community owner (shows Mark CỐT button) */
   canEditCot?: boolean;
+  /** Logged-in user id (for edit/delete permissions) */
+  currentUserId?: string | null;
+  /** True if current user is community owner (for delete permission) */
+  isOwner?: boolean;
   /** Show ⭐ CỐT badge next to time if post.isCot */
   showCotBadge?: boolean;
   /** Optional link wrapping title for detail view (e.g., Q&A) */
@@ -132,6 +139,16 @@ export function PostCard({
         >
           🔗 Share
         </button>
+        <PostMenu
+          postId={post.id}
+          communitySlug={communitySlug}
+          canEdit={!!currentUserId && currentUserId === post.user.id}
+          canDelete={
+            !!currentUserId && (currentUserId === post.user.id || isOwner)
+          }
+          initial={{ title: post.title, body: post.body, pillar: post.pillar }}
+          pillars={pillars}
+        />
       </div>
     </article>
   );

@@ -143,6 +143,8 @@ export default async function FeedPage({
                 pillars={pillars}
                 currency={currency}
                 canEditCot={isOwner}
+                currentUserId={userId ?? null}
+                isOwner={isOwner}
               />
             ))
           )}

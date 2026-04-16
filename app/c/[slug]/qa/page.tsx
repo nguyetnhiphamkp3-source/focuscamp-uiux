@@ -134,6 +134,8 @@ export default async function QAPage({
                 pillars={pillars}
                 currency={currency}
                 canEditCot={isOwner}
+                currentUserId={userId ?? null}
+                isOwner={isOwner}
               />
             ))
           )}

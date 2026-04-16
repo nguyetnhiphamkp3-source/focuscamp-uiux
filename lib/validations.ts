@@ -88,6 +88,26 @@ export const MarkCotSchema = z.object({
   postId: z.string().cuid(),
 });
 
+export const UpdatePostSchema = z.object({
+  postId: z.string().cuid(),
+  title: z.string().trim().max(200).optional().or(z.literal("")),
+  body: z
+    .string()
+    .trim()
+    .min(1, "Nội dung không được trống")
+    .max(10000, "Nội dung quá dài (max 10.000 ký tự)"),
+  pillar: z
+    .string()
+    .max(40)
+    .regex(/^[a-z0-9-]+$/)
+    .optional()
+    .or(z.literal("")),
+});
+
+export const DeletePostSchema = z.object({
+  postId: z.string().cuid(),
+});
+
 export const CreateCommentSchema = z.object({
   postId: z.string().cuid(),
   parentId: z.string().cuid().optional(),
