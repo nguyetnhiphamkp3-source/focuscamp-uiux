@@ -23,8 +23,12 @@ Từ trái qua phải:
 ## Behavior rules
 
 - **community list + sidebar trái** (#1 + #2): LUÔN hiển thị cho user đã login, KHÔNG bao giờ ẩn. Chỉ đổi nội dung tuỳ context:
-  - Ở `/` hoặc `/discovery` → `<HomeSidebar>` (menu Khám phá / Tài khoản / Về chúng tôi)
+  - Ở `/` hoặc `/discovery` hoặc các route `(shell)` khác (tên gọi: **Điểm tập kết**) → `<HomeSidebar>` (menu Khám phá / Tài khoản / Về chúng tôi)
   - Ở `/c/[slug]/*` → community channel-sidebar (tên community + features menu + text channels list)
+
+- **Nguyên tắc phân chia menu**:
+  - **HomeSidebar (Điểm tập kết)** chỉ chứa nội dung **platform-level**: Discovery, Marketplace global, About/Manifesto/Direct Challenge/Brand (về focus.camp chứ không phải về 1 community), Profile global, Cài đặt global.
+  - **Community sidebar** chỉ chứa nội dung **của community đó**: Chat, Bảng tin, Cốt, Tín hiệu, Hỏi đáp, Khóa học, Challenge, Bảng xếp hạng, Marketplace (của community), AI Agent (per-community). KHÔNG đặt triết học focus.camp, Brand Guide, About… trong đây — user đã có chỗ khác để xem (Điểm tập kết).
 
 - **content zone** (#3): đổi theo feature đang chọn (page route).
 
