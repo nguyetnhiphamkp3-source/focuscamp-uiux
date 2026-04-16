@@ -4,7 +4,10 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { CheckinForm } from "@/components/community/checkin-form";
-import { getActiveChallenge } from "@/lib/services/challenge";
+import {
+  getActiveChallenge,
+  getChallengeLeaderboard,
+} from "@/lib/services/challenge";
 
 export const dynamic = "force-dynamic";
 
@@ -63,6 +66,9 @@ export default async function ChallengeDetailPage({
       .map((c) => c.dayNumber ?? null)
       .filter((n): n is number => n !== null)
   );
+
+  // Leaderboard for this challenge
+  const leaderboard = await getChallengeLeaderboard(challenge.id, 10);
 
   let myMembership:
     | { id: string; status: string; personalStartsAt: Date | null; completedAt: Date | null }
@@ -210,6 +216,44 @@ export default async function ChallengeDetailPage({
           {/* Progress (if joined) */}
           {myMembership ? (
             <>
+              {/* Missed day warning */}
+              {(() => {
+                const elapsed = myMembership.personalStartsAt
+                  ? Math.floor(
+                      (Date.now() - myMembership.personalStartsAt.getTime()) /
+                        (1000 * 60 * 60 * 24)
+                    ) + 1
+                  : 1;
+                const currentDay = Math.min(challenge.requiredDays, Math.max(1, elapsed));
+                let missed = 0;
+                for (let d = 1; d < currentDay; d++) {
+                  if (!doneDayNumbers.has(d)) missed++;
+                }
+                if (missed <= 0 || myMembership.completedAt) return null;
+                return (
+                  <div
+                    style={{
+                      marginTop: "var(--space-5)",
+                      padding: "var(--space-3) var(--space-4)",
+                      borderRadius: "var(--r-md)",
+                      background: "var(--warning-soft)",
+                      border: "1px solid var(--warning)",
+                      color: "#a16207",
+                      fontSize: "var(--text-sm)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "var(--space-2)",
+                    }}
+                  >
+                    <span style={{ fontSize: 18 }}>⚠️</span>
+                    <span>
+                      Bạn đã bỏ lỡ <strong>{missed} ngày</strong>. Check-in bù
+                      để giữ momentum — không có streak thì XP bonus giảm.
+                    </span>
+                  </div>
+                );
+              })()}
+
               <div className="ch-progress-card" style={{ marginTop: 20 }}>
                 <div className="ch-progress-header">
                   <div className="ch-progress-day">
@@ -566,6 +610,146 @@ export default async function ChallengeDetailPage({
                             🔗 {c.linkUrl.replace(/^https?:\/\//, "").slice(0, 60)}
                           </a>
                         )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Leaderboard */}
+          {leaderboard.length > 0 && (
+            <div style={{ marginTop: "var(--space-8)" }}>
+              <h2 style={{ marginBottom: "var(--space-3)" }}>
+                🏁 Bảng xếp hạng
+              </h2>
+              <div
+                className="ui-card"
+                style={{ padding: 0, overflow: "hidden" }}
+              >
+                {leaderboard.map((row, i) => {
+                  const isMe = row.userId === session?.user?.id;
+                  return (
+                    <div
+                      key={row.userId}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "var(--space-3)",
+                        padding: "var(--space-3) var(--space-4)",
+                        borderBottom:
+                          i < leaderboard.length - 1
+                            ? "1px solid var(--border-subtle)"
+                            : "none",
+                        background: isMe
+                          ? "var(--brand-green-soft)"
+                          : "transparent",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 28,
+                          textAlign: "center",
+                          fontWeight: "var(--fw-extrabold)",
+                          color: "var(--text-heading)",
+                          fontSize: "var(--text-md)",
+                        }}
+                      >
+                        {i === 0
+                          ? "🥇"
+                          : i === 1
+                            ? "🥈"
+                            : i === 2
+                              ? "🥉"
+                              : i + 1}
+                      </div>
+                      {row.image ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={row.image}
+                          alt={row.name}
+                          referrerPolicy="no-referrer"
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: "50%",
+                            flexShrink: 0,
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: "50%",
+                            background: "var(--bg-elevated)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontWeight: "var(--fw-bold)",
+                            flexShrink: 0,
+                            fontSize: "var(--text-sm)",
+                          }}
+                        >
+                          {row.name[0]?.toUpperCase()}
+                        </div>
+                      )}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontWeight: isMe
+                              ? "var(--fw-bold)"
+                              : "var(--fw-semibold)",
+                            color: "var(--text-heading)",
+                            fontSize: "var(--text-sm)",
+                          }}
+                        >
+                          {row.name}
+                          {isMe && (
+                            <span
+                              style={{
+                                fontSize: "var(--text-xs)",
+                                color: "var(--brand-green)",
+                                marginLeft: 6,
+                                fontWeight: "var(--fw-bold)",
+                              }}
+                            >
+                              (bạn)
+                            </span>
+                          )}
+                          {row.status === "COMPLETED" && (
+                            <span
+                              style={{
+                                marginLeft: 6,
+                                fontSize: "var(--text-xs)",
+                                color: "var(--warning)",
+                                fontWeight: "var(--fw-bold)",
+                              }}
+                            >
+                              ✓ Hoàn thành
+                            </span>
+                          )}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: "var(--text-xs)",
+                            color: "var(--text-muted)",
+                            marginTop: 2,
+                          }}
+                        >
+                          Day {row.currentDay} · {row.totalCheckins} check-in
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "var(--text-xs)",
+                          fontWeight: "var(--fw-bold)",
+                          color: row.streak > 0 ? "var(--brand-green)" : "var(--text-muted)",
+                          flexShrink: 0,
+                        }}
+                      >
+                        🔥 {row.streak}
                       </div>
                     </div>
                   );

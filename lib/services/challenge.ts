@@ -15,6 +15,7 @@ export interface ActiveChallenge {
   currentDay: number;
   progressPct: number;
   streak: number;
+  missedDays: number; // days from start to yesterday without any check-in
   todayTask: {
     id: string;
     dayNumber: number;
@@ -22,6 +23,22 @@ export interface ActiveChallenge {
     label: string | null;
   } | null;
   checkedInToday: boolean;
+}
+
+/**
+ * Compute consecutive-day streak ending at the most recent check-in.
+ * Given checkins sorted asc, returns the longest run of consecutive days
+ * ending at the last check-in day.
+ */
+export function computeStreak(checkinDays: number[]): number {
+  if (checkinDays.length === 0) return 0;
+  const sorted = [...new Set(checkinDays)].sort((a, b) => a - b);
+  let streak = 1;
+  for (let i = sorted.length - 1; i > 0; i--) {
+    if (sorted[i] - sorted[i - 1] === 1) streak++;
+    else break;
+  }
+  return streak;
 }
 
 /**
@@ -63,17 +80,24 @@ export async function getActiveChallenge(
 
   const todayTask = ch.tasks.find((t) => t.dayNumber === currentDay) || null;
 
-  // Check if user already checked in today
-  const checkinToday = await prisma.checkin.findFirst({
-    where: {
-      userId,
-      challengeId: ch.id,
-      createdAt: {
-        gte: today,
-      },
-    },
-    select: { id: true },
+  // Load all my check-ins for this challenge (lightweight)
+  const myCheckins = await prisma.checkin.findMany({
+    where: { userId, challengeId: ch.id },
+    select: { dayNumber: true, createdAt: true },
   });
+  const dayNumbers = myCheckins
+    .map((c) => c.dayNumber ?? null)
+    .filter((n): n is number => n !== null);
+  const checkedInToday = myCheckins.some(
+    (c) => c.createdAt.getTime() >= today.getTime()
+  );
+  const streak = computeStreak(dayNumbers);
+  // Missed days = days from 1..(currentDay-1) that have no check-in
+  const doneSet = new Set(dayNumbers);
+  let missedDays = 0;
+  for (let d = 1; d < currentDay; d++) {
+    if (!doneSet.has(d)) missedDays++;
+  }
 
   return {
     memberId: member.id,
@@ -85,7 +109,8 @@ export async function getActiveChallenge(
     personalStartsAt: member.personalStartsAt,
     currentDay,
     progressPct,
-    streak: Math.max(0, (member.consecutiveMissed ?? 0) === 0 ? currentDay : 0),
+    streak,
+    missedDays,
     todayTask: todayTask
       ? {
           id: todayTask.id,
@@ -94,7 +119,7 @@ export async function getActiveChallenge(
           label: todayTask.label,
         }
       : null,
-    checkedInToday: !!checkinToday,
+    checkedInToday,
   };
 }
 
@@ -179,4 +204,53 @@ export async function submitCheckin(params: {
     "[challenge] checkin submitted"
   );
   return { ok: true, completed: isFinalDay };
+}
+
+/**
+ * Get per-challenge leaderboard: top members by streak (tiebreak by checkin count).
+ */
+export async function getChallengeLeaderboard(
+  challengeId: string,
+  limit: number = 10
+) {
+  const members = await prisma.challengeMember.findMany({
+    where: { challengeId, status: { in: ["ACTIVE", "COMPLETED"] } },
+    include: {
+      user: { select: { id: true, name: true, email: true, image: true } },
+    },
+  });
+  // Fetch all checkins once
+  const checkins = await prisma.checkin.findMany({
+    where: { challengeId },
+    select: { userId: true, dayNumber: true, createdAt: true },
+  });
+  const byUser = new Map<string, number[]>();
+  for (const c of checkins) {
+    if (c.dayNumber == null) continue;
+    if (!byUser.has(c.userId)) byUser.set(c.userId, []);
+    byUser.get(c.userId)!.push(c.dayNumber);
+  }
+
+  const rows = members.map((m) => {
+    const days = byUser.get(m.userId) ?? [];
+    return {
+      userId: m.userId,
+      name: m.user.name || m.user.email || "Member",
+      image: m.user.image,
+      status: m.status,
+      completedAt: m.completedAt,
+      currentDay: days.length ? Math.max(...days) : 0,
+      streak: computeStreak(days),
+      totalCheckins: days.length,
+    };
+  });
+
+  rows.sort((a, b) => {
+    if (a.status === "COMPLETED" && b.status !== "COMPLETED") return -1;
+    if (b.status === "COMPLETED" && a.status !== "COMPLETED") return 1;
+    if (b.streak !== a.streak) return b.streak - a.streak;
+    return b.totalCheckins - a.totalCheckins;
+  });
+
+  return rows.slice(0, limit);
 }
