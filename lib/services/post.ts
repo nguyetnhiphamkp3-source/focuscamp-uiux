@@ -5,6 +5,7 @@
  */
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { getPillars } from "@/lib/community-config";
 
 const LIKE_EMOJI = "❤️";
 
@@ -84,11 +85,25 @@ export async function createPost(input: {
 }) {
   const { userId, communityId, type = "POST", title, body, pillar, bountyAip } = input;
 
-  // Membership check
-  const membership = await prisma.membership.findUnique({
-    where: { userId_communityId: { userId, communityId } },
-  });
+  // Membership check (+ load community config to validate pillar)
+  const [membership, community] = await Promise.all([
+    prisma.membership.findUnique({
+      where: { userId_communityId: { userId, communityId } },
+    }),
+    prisma.community.findUnique({
+      where: { id: communityId },
+      select: { pillarsConfig: true },
+    }),
+  ]);
   if (!membership) throw new Error("Bạn chưa tham gia cộng đồng này");
+  if (!community) throw new Error("Cộng đồng không tồn tại");
+
+  // Ignore pillar that doesn't match community's configured pillars.
+  let validatedPillar: string | null = null;
+  if (pillar) {
+    const pillarKeys = new Set(getPillars(community).map((p) => p.key));
+    validatedPillar = pillarKeys.has(pillar) ? pillar : null;
+  }
 
   const post = await prisma.post.create({
     data: {
@@ -97,7 +112,7 @@ export async function createPost(input: {
       type,
       title: title?.trim() || null,
       body: body.trim(),
-      pillar: pillar || null,
+      pillar: validatedPillar,
       bountyAip: bountyAip ?? null,
     },
   });

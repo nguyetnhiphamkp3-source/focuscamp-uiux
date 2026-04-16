@@ -92,21 +92,6 @@ export function nameColorFor(id: string): string {
   return NAME_COLORS[hashString(id) % NAME_COLORS.length];
 }
 
-/* ======== Feed pillars ======== */
-export const PILLARS = [
-  { key: "offer", label: "Offer", emoji: "🎯", cls: "pillar-offer" },
-  { key: "traffic", label: "Traffic", emoji: "📣", cls: "pillar-traffic" },
-  { key: "conversion", label: "Conversion", emoji: "⚡", cls: "pillar-conversion" },
-  { key: "delivery", label: "Delivery", emoji: "🚚", cls: "pillar-delivery" },
-] as const;
-
-export type PillarKey = (typeof PILLARS)[number]["key"];
-
-export function pillarFor(key: string | null | undefined) {
-  if (!key) return null;
-  return PILLARS.find((p) => p.key === key) ?? null;
-}
-
 /* ======== Relative time ("2 giờ trước") ======== */
 export function fmtRelativeTime(date: Date | string | number): string {
   const d = typeof date === "string" || typeof date === "number" ? new Date(date) : date;

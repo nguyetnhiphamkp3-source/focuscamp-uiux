@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { listFeed } from "@/lib/services/post";
+import { getPillars, getCurrency } from "@/lib/community-config";
 import { PostCard } from "@/components/feed/post-card";
 import { EmptyState } from "@/components/ui/empty-state";
 
@@ -16,9 +17,18 @@ export default async function CotPage({
 
   const community = await prisma.community.findUnique({
     where: { slug },
-    select: { id: true, name: true, ownerId: true },
+    select: {
+      id: true,
+      name: true,
+      ownerId: true,
+      pillarsConfig: true,
+      gemsConfig: true,
+    },
   });
   if (!community) notFound();
+
+  const pillars = getPillars(community);
+  const currency = getCurrency(community);
 
   const session = await auth();
   const userId = session?.user?.id;
@@ -90,6 +100,8 @@ export default async function CotPage({
                 key={p.id}
                 post={p}
                 communitySlug={slug}
+                pillars={pillars}
+                currency={currency}
                 canEditCot={isOwner}
                 showCotBadge={false}
               />

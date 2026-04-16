@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { listFeed } from "@/lib/services/post";
-import { PILLARS } from "@/lib/brand";
+import { getPillars, getCurrency } from "@/lib/community-config";
 import { PostComposer } from "@/components/feed/post-composer";
 import { PostCard } from "@/components/feed/post-card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -23,9 +23,18 @@ export default async function FeedPage({
 
   const community = await prisma.community.findUnique({
     where: { slug },
-    select: { id: true, name: true, ownerId: true },
+    select: {
+      id: true,
+      name: true,
+      ownerId: true,
+      pillarsConfig: true,
+      gemsConfig: true,
+    },
   });
   if (!community) notFound();
+
+  const pillars = getPillars(community);
+  const currency = getCurrency(community);
 
   const session = await auth();
   const userId = session?.user?.id;
@@ -57,6 +66,7 @@ export default async function FeedPage({
             <PostComposer
               communityId={community.id}
               communitySlug={slug}
+              pillars={pillars}
               user={{
                 id: userId,
                 name: session.user.name ?? null,
@@ -91,25 +101,28 @@ export default async function FeedPage({
             </div>
           </div>
 
-          <div className="feed-pillars">
-            <Link
-              href={`/c/${slug}/feed`}
-              className={`feed-pillar-pill ${!pillarFilter ? "active" : ""}`}
-              style={{ textDecoration: "none" }}
-            >
-              Tất cả Pillars
-            </Link>
-            {PILLARS.map((p) => (
+          {pillars.length > 0 && (
+            <div className="feed-pillars">
               <Link
-                key={p.key}
-                href={`/c/${slug}/feed?pillar=${p.key}`}
-                className={`feed-pillar-pill ${pillarFilter === p.key ? "active" : ""}`}
+                href={`/c/${slug}/feed`}
+                className={`feed-pillar-pill ${!pillarFilter ? "active" : ""}`}
                 style={{ textDecoration: "none" }}
               >
-                {p.emoji} {p.label}
+                Tất cả
               </Link>
-            ))}
-          </div>
+              {pillars.map((p) => (
+                <Link
+                  key={p.key}
+                  href={`/c/${slug}/feed?pillar=${p.key}`}
+                  className={`feed-pillar-pill ${pillarFilter === p.key ? "active" : ""}`}
+                  style={{ textDecoration: "none" }}
+                >
+                  {p.emoji ? `${p.emoji} ` : ""}
+                  {p.label}
+                </Link>
+              ))}
+            </div>
+          )}
 
           {posts.length === 0 ? (
             <EmptyState
@@ -127,6 +140,8 @@ export default async function FeedPage({
                 key={p.id}
                 post={p}
                 communitySlug={slug}
+                pillars={pillars}
+                currency={currency}
                 canEditCot={isOwner}
               />
             ))

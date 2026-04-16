@@ -3,13 +3,15 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createPostAction } from "@/app/actions/posts";
-import { PILLARS, avatarColorFor, initials } from "@/lib/brand";
+import { avatarColorFor, initials } from "@/lib/brand";
+import type { PillarConfig } from "@/lib/community-config";
 
 export function PostComposer({
   communityId,
   communitySlug,
   type = "POST",
   user,
+  pillars = [],
   placeholder = "Chia sẻ điều gì đó với cộng đồng...",
   showTitle = true,
   showPillar = true,
@@ -18,6 +20,8 @@ export function PostComposer({
   communitySlug: string;
   type?: "POST" | "QUESTION" | "SIGNAL";
   user: { id: string; name: string | null; image: string | null };
+  /** Per-community pillar list. Composer hides the dropdown if empty. */
+  pillars?: PillarConfig[];
   placeholder?: string;
   showTitle?: boolean;
   showPillar?: boolean;
@@ -144,7 +148,7 @@ export function PostComposer({
           flexWrap: "wrap",
         }}
       >
-        {showPillar ? (
+        {showPillar && pillars.length > 0 ? (
           <select
             className="feed-compose-input"
             value={pillar}
@@ -153,9 +157,10 @@ export function PostComposer({
             style={{ maxWidth: 220, cursor: "pointer" }}
           >
             <option value="">— Chọn Pillar —</option>
-            {PILLARS.map((p) => (
+            {pillars.map((p) => (
               <option key={p.key} value={p.key}>
-                {p.emoji} {p.label}
+                {p.emoji ? `${p.emoji} ` : ""}
+                {p.label}
               </option>
             ))}
           </select>

@@ -62,8 +62,12 @@ export const CreatePostSchema = z.object({
     .trim()
     .min(1, "Nội dung không được trống")
     .max(10000, "Nội dung quá dài (max 10.000 ký tự)"),
+  // Pillar key must match one entry in Community.pillarsConfig — validated
+  // against the community's config in the service layer, not here.
   pillar: z
-    .enum(["offer", "traffic", "conversion", "delivery"])
+    .string()
+    .max(40)
+    .regex(/^[a-z0-9-]+$/)
     .optional()
     .or(z.literal("")),
   bountyAip: z.number().int().nonnegative().optional(),

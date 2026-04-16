@@ -4,8 +4,9 @@ import {
   nameColorFor,
   initials,
   fmtRelativeTime,
-  pillarFor,
 } from "@/lib/brand";
+import { pillarByKey, DEFAULT_GEMS } from "@/lib/community-config";
+import type { PillarConfig, GemsConfig } from "@/lib/community-config";
 import { ReactionButton } from "./reaction-button";
 import { CotToggleButton } from "./cot-toggle-button";
 import type { FeedPost } from "@/lib/services/post";
@@ -13,12 +14,18 @@ import type { FeedPost } from "@/lib/services/post";
 export function PostCard({
   post,
   communitySlug,
+  pillars = [],
+  currency = DEFAULT_GEMS,
   canEditCot = false,
   showCotBadge = true,
   href,
 }: {
   post: FeedPost;
   communitySlug: string;
+  /** Per-community pillar list. Empty array → no pillar tag rendered. */
+  pillars?: PillarConfig[];
+  /** Per-community currency (for bounty display). Falls back to default. */
+  currency?: GemsConfig;
   /** True if current user is community owner (shows Mark CỐT button) */
   canEditCot?: boolean;
   /** Show ⭐ CỐT badge next to time if post.isCot */
@@ -26,7 +33,7 @@ export function PostCard({
   /** Optional link wrapping title for detail view (e.g., Q&A) */
   href?: string;
 }) {
-  const pillar = pillarFor(post.pillar);
+  const pillar = pillarByKey(post.pillar, pillars);
   const authorName = post.user.name || "Ẩn danh";
   const nameColor = nameColorFor(post.user.id);
 
@@ -67,15 +74,19 @@ export function PostCard({
               <>
                 {" · "}
                 <span style={{ color: "var(--brand-green)", fontWeight: 600 }}>
-                  💰 {post.bountyAip} AIP
+                  {currency.currencyIcon} {post.bountyAip} {currency.currencyName}
                 </span>
               </>
             )}
           </div>
         </div>
         {pillar && (
-          <span className={`feed-post-pillar-tag ${pillar.cls}`}>
-            {pillar.emoji} {pillar.label}
+          <span
+            className={`feed-post-pillar-tag${pillar.cssClass ? ` ${pillar.cssClass}` : ""}`}
+            style={pillar.color ? { borderColor: pillar.color, color: pillar.color } : undefined}
+          >
+            {pillar.emoji ? `${pillar.emoji} ` : ""}
+            {pillar.label}
           </span>
         )}
       </div>
