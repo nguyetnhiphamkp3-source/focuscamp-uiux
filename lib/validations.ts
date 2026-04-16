@@ -127,6 +127,21 @@ export const BuyProductSchema = z.object({
   productId: z.string().cuid(),
 });
 
+/* ========== User profile ========== */
+export const UpdateProfileSchema = z.object({
+  name: z.string().trim().min(1).max(80).optional().or(z.literal("")),
+  bio: z.string().trim().max(500).optional().or(z.literal("")),
+  location: z.string().trim().max(100).optional().or(z.literal("")),
+  handle: z
+    .string()
+    .trim()
+    .min(2)
+    .max(30)
+    .regex(/^[a-z0-9_-]+$/, "Handle chỉ gồm a-z, 0-9, -, _")
+    .optional()
+    .or(z.literal("")),
+});
+
 /* ========== Auth ========== */
 export const LoginRedirectSchema = z.object({
   redirectTo: z

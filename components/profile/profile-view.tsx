@@ -4,6 +4,7 @@ import {
   initials,
   fmtRelativeTime,
 } from "@/lib/brand";
+import { EditProfileButton } from "./edit-profile-modal";
 import {
   classByKey,
   pillarByKey,
@@ -161,9 +162,15 @@ export function ProfileView({
                 <button className="ui-btn ui-btn-secondary ui-btn-sm">
                   Chia sẻ
                 </button>
-                <button className="ui-btn ui-btn-primary ui-btn-sm">
-                  Edit profile
-                </button>
+                <EditProfileButton
+                  initial={{
+                    name: user.name,
+                    handle: user.handle,
+                    bio: user.bio,
+                    location: user.location,
+                  }}
+                  communitySlug={community.slug}
+                />
               </div>
             )}
           </div>
