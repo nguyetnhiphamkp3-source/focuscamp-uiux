@@ -91,6 +91,53 @@ export async function joinCommunity(
   }
 }
 
+/**
+ * Create a new community with the current user as owner. Creates the
+ * owner's Membership in the same transaction and bumps memberCount.
+ */
+export async function createCommunity(input: {
+  userId: string;
+  name: string;
+  slug: string;
+  tagline?: string;
+  description?: string;
+}) {
+  // Slug format already validated upstream by Zod. Here we check uniqueness.
+  const existing = await prisma.community.findUnique({
+    where: { slug: input.slug },
+    select: { id: true },
+  });
+  if (existing) {
+    throw new Error(`Slug "${input.slug}" đã có cộng đồng khác dùng rồi`);
+  }
+
+  return await prisma.$transaction(async (tx) => {
+    const community = await tx.community.create({
+      data: {
+        name: input.name,
+        slug: input.slug,
+        tagline: input.tagline?.trim() || null,
+        description: input.description?.trim() || null,
+        ownerId: input.userId,
+        memberCount: 1,
+      },
+    });
+    await tx.membership.create({
+      data: {
+        userId: input.userId,
+        communityId: community.id,
+        role: "ADMIN",
+        tier: "OWNER",
+      },
+    });
+    logger.info(
+      { communityId: community.id, slug: community.slug, userId: input.userId },
+      "[community] created"
+    );
+    return community;
+  });
+}
+
 export async function listMyCommunities(userId: string) {
   const mems = await prisma.membership.findMany({
     where: { userId },

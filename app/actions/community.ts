@@ -2,8 +2,11 @@
 
 import { auth, signIn } from "@/auth";
 import { revalidatePath } from "next/cache";
-import { joinCommunity } from "@/lib/services/community";
-import { JoinCommunitySchema } from "@/lib/validations";
+import { joinCommunity, createCommunity } from "@/lib/services/community";
+import {
+  JoinCommunitySchema,
+  CreateCommunitySchema,
+} from "@/lib/validations";
 import { logError } from "@/lib/logger";
 
 type ActionResult = { ok: true } | { ok: false; reason: string };
@@ -42,6 +45,46 @@ export async function joinCommunityAction(input: {
     return { ok: true };
   } catch (err) {
     logError(err, { userId: s.user.id, communityId: input.communityId });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+export async function createCommunityAction(input: {
+  name: string;
+  slug: string;
+  tagline?: string;
+  description?: string;
+}): Promise<
+  | { ok: true; slug: string }
+  | { ok: false; reason: string }
+> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+
+  const parsed = CreateCommunitySchema.safeParse({
+    name: input.name,
+    slug: input.slug,
+    tagline: input.tagline,
+    description: input.description,
+  });
+  if (!parsed.success) {
+    return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
+  }
+
+  try {
+    const c = await createCommunity({
+      userId: s.user.id,
+      name: parsed.data.name,
+      slug: parsed.data.slug,
+      tagline: parsed.data.tagline || undefined,
+      description: parsed.data.description || undefined,
+    });
+    revalidatePath("/discovery");
+    revalidatePath("/");
+    return { ok: true, slug: c.slug };
+  } catch (err) {
+    logError(err, { userId: s.user.id, slug: input.slug });
     if (err instanceof Error) return { ok: false, reason: err.message };
     return { ok: false, reason: "unknown" };
   }

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BRAND_GRADIENTS, initials } from "@/lib/brand";
+import { CreateCommunityButton } from "./create-community-button";
 
 export function ServerList({
   communities,
@@ -65,7 +66,7 @@ export function ServerList({
       <div className="server-separator"></div>
 
       <div className="server-icon-wrapper">
-        <div className="server-icon add-server">+</div>
+        <CreateCommunityButton />
       </div>
       <div className="server-icon-wrapper">
         {onDiscovery && <div className="indicator active"></div>}

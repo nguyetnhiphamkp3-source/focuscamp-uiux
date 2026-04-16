@@ -274,6 +274,13 @@ export const SlugSchema = z
   .max(60)
   .regex(/^[a-z0-9-]+$/, "Slug chỉ chứa a-z, 0-9, -");
 
+export const CreateCommunitySchema = z.object({
+  name: z.string().trim().min(2).max(80),
+  slug: SlugSchema,
+  tagline: z.string().trim().max(160).optional().or(z.literal("")),
+  description: z.string().trim().max(5000).optional().or(z.literal("")),
+});
+
 /* ========== Helper ========== */
 /** Parse FormData against a schema; throws with readable error if invalid. */
 export function parseFormData<T extends z.ZodTypeAny>(
