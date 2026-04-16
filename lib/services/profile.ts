@@ -117,12 +117,15 @@ export async function getCommunityProfile(input: {
 
   if (!user) return null;
 
-  const heatmap = buildHeatmap(
-    [...heatmapPosts, ...heatmapComments, ...heatmapCheckins].map(
-      (x) => x.createdAt
-    ),
-    heatmapStart
-  );
+  const allActivityDates = [
+    ...heatmapPosts,
+    ...heatmapComments,
+    ...heatmapCheckins,
+  ].map((x) => x.createdAt);
+  const heatmap = buildHeatmap(allActivityDates, heatmapStart);
+  const streaks = computeStreaksFromHeatmap(heatmap);
+  const peakHour = computePeakHour(allActivityDates);
+  const activeDays = heatmap.filter((d) => d.count > 0).length;
 
   return {
     user,
@@ -144,12 +147,71 @@ export async function getCommunityProfile(input: {
       comments: commentCount,
       checkins: checkinCount,
       contributions: postCount + commentCount + checkinCount,
+      activeDays,
+      currentStreak: streaks.current,
+      longestStreak: streaks.longest,
+      peakHour,
     },
     otherCommunities: otherMemberships.map((m) => m.community),
     ownedCommunities,
     latestActivityAt: latestActivity,
     heatmap,
   };
+}
+
+/**
+ * From a heatmap (contiguous day buckets, oldest → today), compute:
+ *   current: consecutive days with activity ending today (or ending yesterday
+ *            if today is 0 — we don't punish a user mid-morning)
+ *   longest: longest run of consecutive active days in the window
+ */
+function computeStreaksFromHeatmap(days: HeatmapDay[]): {
+  current: number;
+  longest: number;
+} {
+  if (days.length === 0) return { current: 0, longest: 0 };
+
+  let longest = 0;
+  let run = 0;
+  for (const d of days) {
+    if (d.count > 0) {
+      run += 1;
+      if (run > longest) longest = run;
+    } else {
+      run = 0;
+    }
+  }
+
+  // Current streak — walk from the end backward. If today is inactive but
+  // yesterday was, still count yesterday's streak (grace window until 24h).
+  let current = 0;
+  for (let i = days.length - 1; i >= 0; i--) {
+    if (days[i].count > 0) current += 1;
+    else if (i === days.length - 1) continue; // today 0 → skip, keep looking
+    else break;
+  }
+  return { current, longest };
+}
+
+/**
+ * Hour-of-day (0–23) that has the most activity events. Null if no activity.
+ * Uses local timezone of the server (same as heatmap keys).
+ */
+function computePeakHour(dates: Date[]): number | null {
+  if (dates.length === 0) return null;
+  const buckets = new Array<number>(24).fill(0);
+  for (const d of dates) {
+    buckets[d.getHours()] += 1;
+  }
+  let best = 0;
+  let bestIdx = 0;
+  for (let h = 0; h < 24; h++) {
+    if (buckets[h] > best) {
+      best = buckets[h];
+      bestIdx = h;
+    }
+  }
+  return best > 0 ? bestIdx : null;
 }
 
 /**

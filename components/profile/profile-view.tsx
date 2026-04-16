@@ -88,6 +88,10 @@ export function ProfileView({
     comments: number;
     checkins: number;
     contributions: number;
+    activeDays: number;
+    currentStreak: number;
+    longestStreak: number;
+    peakHour: number | null;
   };
   isSelf: boolean;
   classes: ClassConfig[];
@@ -280,6 +284,38 @@ export function ProfileView({
                   label="🎯 Tổng hoạt động"
                   value={stats.contributions.toLocaleString()}
                   sub={`${stats.posts}P · ${stats.comments}C · ${stats.checkins}✓`}
+                />
+                <Stat
+                  label="📅 Ngày active"
+                  value={stats.activeDays.toString()}
+                  sub="trong 12 tháng"
+                />
+                <Stat
+                  label="🔥 Streak hiện tại"
+                  value={`${stats.currentStreak}d`}
+                  sub={
+                    stats.currentStreak > 0
+                      ? "ngày liên tục"
+                      : "bắt đầu chuỗi mới"
+                  }
+                />
+                <Stat
+                  label="🏆 Streak dài nhất"
+                  value={`${stats.longestStreak}d`}
+                  sub="kỷ lục trong 12 tháng"
+                />
+                <Stat
+                  label="⏰ Peak hour"
+                  value={
+                    stats.peakHour !== null
+                      ? `${stats.peakHour}:00`
+                      : "—"
+                  }
+                  sub={
+                    stats.peakHour !== null
+                      ? `${hourLabel(stats.peakHour)}`
+                      : "chưa có dữ liệu"
+                  }
                 />
                 <Stat label="📝 Posts" value={stats.posts.toString()} sub="đã đăng" />
                 <Stat
@@ -496,4 +532,13 @@ function Stat({
       <div className="pf-stat-sub">{sub}</div>
     </div>
   );
+}
+
+/** Human label for hour of day — "sáng", "chiều", etc. */
+function hourLabel(h: number): string {
+  if (h >= 5 && h < 11) return "sáng";
+  if (h >= 11 && h < 13) return "trưa";
+  if (h >= 13 && h < 18) return "chiều";
+  if (h >= 18 && h < 22) return "tối";
+  return "khuya";
 }
