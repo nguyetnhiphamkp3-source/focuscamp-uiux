@@ -12,20 +12,30 @@ import { ProfileView } from "@/components/profile/profile-view";
 
 export const dynamic = "force-dynamic";
 
-export default async function ProfilePage({
+/**
+ * Public profile of any user inside this community.
+ *
+ * If `userId` equals the current user, redirect to `/profile` (canonical URL
+ * for self-view) so bookmarks / back-nav stay consistent.
+ */
+export default async function UserProfilePage({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ slug: string; userId: string }>;
 }) {
-  const { slug } = await params;
+  const { slug, userId } = await params;
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
+
+  if (userId === session.user.id) {
+    redirect(`/c/${slug}/profile`);
+  }
 
   const community = await prisma.community.findUnique({ where: { slug } });
   if (!community) notFound();
 
   const data = await getCommunityProfile({
-    userId: session.user.id,
+    userId,
     communityId: community.id,
   });
   if (!data) notFound();
@@ -37,7 +47,7 @@ export default async function ProfilePage({
       membership={data.membership}
       recentPosts={data.recentPosts}
       stats={data.stats}
-      isSelf={true}
+      isSelf={false}
       classes={getClasses(community)}
       pillars={getPillars(community)}
       currency={getCurrency(community)}

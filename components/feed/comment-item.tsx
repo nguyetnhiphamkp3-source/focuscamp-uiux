@@ -2,6 +2,7 @@
 
 import { useTransition, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   avatarColorFor,
   nameColorFor,
@@ -124,38 +125,43 @@ export function CommentItem({
           marginBottom: 8,
         }}
       >
-        {comment.user.image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={comment.user.image}
-            alt=""
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: "50%",
-              flexShrink: 0,
-              objectFit: "cover",
-            }}
-          />
-        ) : (
-          <div
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: "50%",
-              background: avatarColorFor(comment.user.id),
-              color: "#fff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontWeight: 700,
-              fontSize: "var(--text-sm)",
-              flexShrink: 0,
-            }}
-          >
-            {initials(authorName)}
-          </div>
-        )}
+        <Link
+          href={`/c/${communitySlug}/profile/${comment.user.id}`}
+          aria-label={`Xem profile của ${authorName}`}
+          style={{ flexShrink: 0 }}
+        >
+          {comment.user.image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={comment.user.image}
+              alt=""
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: "50%",
+                objectFit: "cover",
+                display: "block",
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: "50%",
+                background: avatarColorFor(comment.user.id),
+                color: "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 700,
+                fontSize: "var(--text-sm)",
+              }}
+            >
+              {initials(authorName)}
+            </div>
+          )}
+        </Link>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div
             style={{
@@ -167,9 +173,16 @@ export function CommentItem({
               flexWrap: "wrap",
             }}
           >
-            <span style={{ color: nameColor, fontWeight: 600 }}>
+            <Link
+              href={`/c/${communitySlug}/profile/${comment.user.id}`}
+              style={{
+                color: nameColor,
+                fontWeight: 600,
+                textDecoration: "none",
+              }}
+            >
               {authorName}
-            </span>
+            </Link>
             <span
               style={{
                 color: "var(--text-muted)",

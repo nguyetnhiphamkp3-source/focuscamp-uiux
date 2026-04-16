@@ -128,27 +128,42 @@ export default async function PostDetailPage({
             style={{ marginBottom: 0 }}
           >
             <div className="feed-post-head">
-              {post.user.image ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={post.user.image}
-                  alt=""
-                  className="feed-post-avatar"
-                  style={{ objectFit: "cover" }}
-                />
-              ) : (
-                <div
-                  className="feed-post-avatar"
-                  style={{ background: avatarColorFor(post.user.id) }}
-                >
-                  {initials(authorName)}
-                </div>
-              )}
+              <Link
+                href={`/c/${slug}/profile/${post.user.id}`}
+                style={{ display: "contents" }}
+                aria-label={`Xem profile của ${authorName}`}
+              >
+                {post.user.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={post.user.image}
+                    alt=""
+                    className="feed-post-avatar"
+                    style={{ objectFit: "cover", cursor: "pointer" }}
+                  />
+                ) : (
+                  <div
+                    className="feed-post-avatar"
+                    style={{
+                      background: avatarColorFor(post.user.id),
+                      cursor: "pointer",
+                    }}
+                  >
+                    {initials(authorName)}
+                  </div>
+                )}
+              </Link>
               <div className="feed-post-author-wrap">
                 <div className="feed-post-author">
-                  <span style={{ color: nameColorFor(post.user.id) }}>
+                  <Link
+                    href={`/c/${slug}/profile/${post.user.id}`}
+                    style={{
+                      color: nameColorFor(post.user.id),
+                      textDecoration: "none",
+                    }}
+                  >
                     {authorName}
-                  </span>
+                  </Link>
                 </div>
                 <div className="feed-post-time">
                   {fmtRelativeTime(post.createdAt)}
