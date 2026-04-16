@@ -17,7 +17,16 @@ export default async function ProductDetailPage({
 
   const product = await prisma.product.findFirst({
     where: { community: { slug: communitySlug }, slug: productSlug },
-    include: { community: { select: { id: true, name: true, slug: true } } },
+    include: {
+      community: { select: { id: true, name: true, slug: true } },
+      challenges: {
+        include: {
+          challenge: {
+            select: { slug: true, title: true, difficulty: true },
+          },
+        },
+      },
+    },
   });
   if (!product) notFound();
 
@@ -162,6 +171,55 @@ export default async function ProductDetailPage({
               }}
             >
               {product.description}
+            </div>
+          )}
+
+          {/* Related challenges */}
+          {product.challenges.length > 0 && (
+            <div
+              style={{
+                marginBottom: "var(--space-5)",
+                padding: "var(--space-4)",
+                background: "var(--warning-soft)",
+                border: "1px solid var(--warning)",
+                borderRadius: "var(--r-md)",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "var(--text-xs)",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "#a16207",
+                  fontWeight: "var(--fw-bold)",
+                  marginBottom: "var(--space-2)",
+                }}
+              >
+                🎒 Trang bị cho challenge
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
+                {product.challenges.map((link) => (
+                  <a
+                    key={link.challenge.slug}
+                    href={`/c/${communitySlug}/challenges/${link.challenge.slug}`}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      padding: "4px 10px",
+                      borderRadius: "var(--r-full)",
+                      background: "var(--bg-card)",
+                      border: "1px solid var(--border-subtle)",
+                      fontSize: "var(--text-sm)",
+                      fontWeight: "var(--fw-semibold)",
+                      color: "var(--text-heading)",
+                      textDecoration: "none",
+                    }}
+                  >
+                    ⚔️ {link.challenge.title}
+                  </a>
+                ))}
+              </div>
             </div>
           )}
 

@@ -1,7 +1,10 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { CheckinForm } from "@/components/community/checkin-form";
+import { getActiveChallenge } from "@/lib/services/challenge";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +33,10 @@ export default async function ChallengeDetailPage({
       tasks: { orderBy: { dayNumber: "asc" } },
       _count: { select: { members: true } },
       community: { select: { name: true, id: true } },
+      products: {
+        orderBy: { relevance: "asc" },
+        include: { product: true },
+      },
     },
   });
   if (!challenge) notFound();
@@ -179,24 +186,41 @@ export default async function ChallengeDetailPage({
 
           {/* Progress (if joined) */}
           {myMembership ? (
-            <div className="ch-progress-card" style={{ marginTop: 20 }}>
-              <div className="ch-progress-header">
-                <div className="ch-progress-day">
-                  Ngày <span className="day-num">{dayNow}</span> / {challenge.requiredDays}
+            <>
+              <div className="ch-progress-card" style={{ marginTop: 20 }}>
+                <div className="ch-progress-header">
+                  <div className="ch-progress-day">
+                    Ngày <span className="day-num">{dayNow}</span> / {challenge.requiredDays}
+                  </div>
+                </div>
+                <div className="ch-progress-bar">
+                  <div
+                    className="ch-progress-fill"
+                    style={{ width: `${progressPct}%` }}
+                  />
+                </div>
+                <div className="ch-progress-hint">
+                  {myMembership.completedAt
+                    ? "Đã hoàn thành"
+                    : `Còn ${Math.max(0, challenge.requiredDays - dayNow)} ngày`}
                 </div>
               </div>
-              <div className="ch-progress-bar">
-                <div
-                  className="ch-progress-fill"
-                  style={{ width: `${progressPct}%` }}
-                />
-              </div>
-              <div className="ch-progress-hint">
-                {myMembership.completedAt
-                  ? "Đã hoàn thành"
-                  : `Còn ${Math.max(0, challenge.requiredDays - dayNow)} ngày`}
-              </div>
-            </div>
+
+              {/* Daily check-in form — only when active + not completed */}
+              {!myMembership.completedAt && session?.user && (() => {
+                return (
+                  <div style={{ marginTop: "var(--space-5)" }}>
+                    <CheckinGate
+                      userId={session.user.id!}
+                      communityId={challenge.community.id}
+                      challengeId={challenge.id}
+                      communitySlug={slug}
+                      challengeSlug={challengeSlug}
+                    />
+                  </div>
+                );
+              })()}
+            </>
           ) : (
             session?.user && (
               <form action={join} style={{ marginTop: "var(--space-5)" }}>
@@ -205,6 +229,83 @@ export default async function ChallengeDetailPage({
                 </button>
               </form>
             )
+          )}
+
+          {/* Equipment — related marketplace items */}
+          {challenge.products.length > 0 && (
+            <div style={{ marginTop: "var(--space-8)" }}>
+              <h2 style={{ marginBottom: "var(--space-3)" }}>
+                🎒 Trang bị hỗ trợ
+              </h2>
+              <div
+                style={{
+                  display: "grid",
+                  gap: "var(--space-3)",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+                }}
+              >
+                {challenge.products.map((link) => {
+                  const p = link.product;
+                  const tag =
+                    link.relevance === "REQUIRED"
+                      ? "⭐ Bắt buộc"
+                      : link.relevance === "OPTIONAL"
+                        ? "Tuỳ chọn"
+                        : "Đề xuất";
+                  return (
+                    <Link
+                      key={p.id}
+                      href={`/c/${slug}/marketplace/${p.slug}`}
+                      className="ui-card ui-card-sm"
+                      style={{
+                        textDecoration: "none",
+                        color: "inherit",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "var(--space-2)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: "var(--text-xs)",
+                          letterSpacing: "0.08em",
+                          textTransform: "uppercase",
+                          color:
+                            link.relevance === "REQUIRED"
+                              ? "var(--warning)"
+                              : "var(--text-muted)",
+                          fontWeight: "var(--fw-bold)",
+                        }}
+                      >
+                        {tag}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "var(--text-md)",
+                          fontWeight: "var(--fw-bold)",
+                          color: "var(--text-heading)",
+                          lineHeight: "var(--lh-snug)",
+                        }}
+                      >
+                        {p.title}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "var(--text-sm)",
+                          color: "var(--brand-green)",
+                          fontWeight: "var(--fw-bold)",
+                          marginTop: "auto",
+                        }}
+                      >
+                        {p.isFree
+                          ? "Miễn phí"
+                          : `${Number(p.priceVnd).toLocaleString("vi-VN")}đ`}
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
           )}
 
           {/* Tasks list */}
@@ -264,5 +365,62 @@ export default async function ChallengeDetailPage({
         </div>
       </div>
     </>
+  );
+}
+
+async function CheckinGate({
+  userId,
+  communityId,
+  challengeId,
+  communitySlug,
+  challengeSlug,
+}: {
+  userId: string;
+  communityId: string;
+  challengeId: string;
+  communitySlug: string;
+  challengeSlug: string;
+}) {
+  const active = await getActiveChallenge(userId, communityId);
+  if (!active || active.challengeId !== challengeId) return null;
+
+  if (active.checkedInToday) {
+    return (
+      <div
+        className="ui-card"
+        style={{
+          background: "var(--success-soft)",
+          border: "1px solid var(--success)",
+          textAlign: "center",
+        }}
+      >
+        <div style={{ fontSize: 28, marginBottom: "var(--space-1)" }}>✓</div>
+        <div
+          style={{
+            fontWeight: "var(--fw-bold)",
+            color: "var(--brand-green-dark)",
+          }}
+        >
+          Đã check-in hôm nay
+        </div>
+        <div
+          style={{
+            fontSize: "var(--text-xs)",
+            color: "var(--text-muted)",
+            marginTop: "var(--space-1)",
+          }}
+        >
+          Hẹn gặp lại ngày mai để giữ streak 🔥
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <CheckinForm
+      challengeId={challengeId}
+      communitySlug={communitySlug}
+      challengeSlug={challengeSlug}
+    />
   );
 }

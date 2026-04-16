@@ -224,6 +224,35 @@ async function main() {
   }
   console.log(`✅ Seeded ${products.length} products`);
 
+  // Link products to the sample challenge as "equipment"
+  const createdProducts = await prisma.product.findMany({
+    where: { communityId: community.id },
+  });
+  const helperLinks = [
+    { productSlug: "funnel-template-pack", relevance: "REQUIRED" },
+    { productSlug: "ai-challenge-coach", relevance: "RECOMMENDED" },
+    { productSlug: "conversion-tracker", relevance: "OPTIONAL" },
+  ];
+  for (const link of helperLinks) {
+    const product = createdProducts.find((p) => p.slug === link.productSlug);
+    if (!product) continue;
+    await prisma.challengeProduct.upsert({
+      where: {
+        challengeId_productId: {
+          challengeId: challenge.id,
+          productId: product.id,
+        },
+      },
+      update: {},
+      create: {
+        challengeId: challenge.id,
+        productId: product.id,
+        relevance: link.relevance,
+      },
+    });
+  }
+  console.log(`✅ Seeded ${helperLinks.length} challenge↔product links`);
+
   console.log("🎉 Seed done!");
 }
 

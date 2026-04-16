@@ -5,6 +5,7 @@ import { FeatureLink } from "@/components/shell/nav-link";
 import { ServerList } from "@/components/shell/server-list";
 import { UserPanel } from "@/components/shell/user-panel";
 import { CommunityHeader } from "@/components/shell/community-header";
+import { ActiveChallengeWidget } from "@/components/community/active-challenge-widget";
 
 export const dynamic = "force-dynamic";
 
@@ -57,6 +58,13 @@ export default async function CommunityLayout({
               name={community.name}
               isOwner={community.ownerId === session?.user?.id}
               isMember={!!membership}
+            />
+
+            {/* Active challenge widget — top of sidebar */}
+            <ActiveChallengeWidget
+              userId={session?.user?.id ?? null}
+              communityId={community.id}
+              communitySlug={slug}
             />
 
             {/* Features Module Menu */}

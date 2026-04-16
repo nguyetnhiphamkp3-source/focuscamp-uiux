@@ -249,8 +249,25 @@ model Challenge {
   tasks     ChallengeTask[]
   members   ChallengeMember[]
   checkins  Checkin[]
+  products  ChallengeProduct[]
 
   @@unique([communityId, slug])
+}
+
+// Cross-link between Challenges and Products in Marketplace.
+// Used for "Equipment / Trang bị hỗ trợ" on challenge detail page
+// and "Giúp cho challenge: ..." tag on product detail page.
+model ChallengeProduct {
+  challengeId String
+  productId   String
+  relevance   String   @default("RECOMMENDED") // REQUIRED | RECOMMENDED | OPTIONAL
+  createdAt   DateTime @default(now())
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([challengeId, productId])
+  @@index([productId])
 }
 
 model ChallengeTask {
@@ -428,8 +445,9 @@ model Product {
   soldCount          Int      @default(0)
   createdAt          DateTime @default(now())
 
-  community Community  @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  purchases Purchase[]
+  community  Community          @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  purchases  Purchase[]
+  challenges ChallengeProduct[]
 
   @@unique([communityId, slug])
 }
