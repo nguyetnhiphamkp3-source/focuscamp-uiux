@@ -52,6 +52,8 @@ export default async function UserProfilePage({
       pillars={getPillars(community)}
       currency={getCurrency(community)}
       levelTiers={getLevelTiers(community)}
+      otherCommunities={data.otherCommunities}
+      viewingUserId={data.user.id}
     />
   );
 }
