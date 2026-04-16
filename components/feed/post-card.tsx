@@ -9,7 +9,9 @@ import { pillarByKey, DEFAULT_GEMS } from "@/lib/community-config";
 import type { PillarConfig, GemsConfig } from "@/lib/community-config";
 import { ReactionButton } from "./reaction-button";
 import { CotToggleButton } from "./cot-toggle-button";
+import { PinToggleButton } from "./pin-toggle-button";
 import { PostMenu } from "./post-menu";
+import { ShareButton } from "./share-button";
 import type { FeedPost } from "@/lib/services/post";
 
 export function PostCard({
@@ -83,6 +85,14 @@ export function PostCard({
           </div>
           <div className="feed-post-time">
             {fmtRelativeTime(post.createdAt)}
+            {post.isPinned && (
+              <>
+                {" · "}
+                <span style={{ color: "var(--brand-green)", fontWeight: 700 }}>
+                  📌 Ghim
+                </span>
+              </>
+            )}
             {showCotBadge && post.isCot && (
               <>
                 {" · "}
@@ -140,19 +150,20 @@ export function PostCard({
           💬 {post.commentCount} bình luận
         </Link>
         {canEditCot && (
-          <CotToggleButton
-            postId={post.id}
-            communitySlug={communitySlug}
-            initialIsCot={post.isCot}
-          />
+          <>
+            <PinToggleButton
+              postId={post.id}
+              communitySlug={communitySlug}
+              initialIsPinned={post.isPinned}
+            />
+            <CotToggleButton
+              postId={post.id}
+              communitySlug={communitySlug}
+              initialIsCot={post.isCot}
+            />
+          </>
         )}
-        <button
-          className="feed-post-action"
-          type="button"
-          style={{ marginLeft: "auto" }}
-        >
-          🔗 Share
-        </button>
+        <ShareButton communitySlug={communitySlug} postId={post.id} />
         <PostMenu
           postId={post.id}
           communitySlug={communitySlug}

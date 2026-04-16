@@ -7,6 +7,7 @@ import {
   createPost,
   toggleReaction,
   toggleCot,
+  togglePinPost,
   updatePost,
   deletePost,
 } from "@/lib/services/post";
@@ -178,6 +179,34 @@ export async function deletePostAction(input: {
   // Outside try-catch because redirect throws a control-flow exception
   if (redirectTo) redirect(redirectTo);
   return { ok: true };
+}
+
+export async function togglePinAction(input: {
+  postId: string;
+  communitySlug: string;
+}): Promise<ActionResult<{ isPinned: boolean }>> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+
+  const parsed = MarkCotSchema.safeParse({ postId: input.postId });
+  if (!parsed.success) return { ok: false, reason: "invalid" };
+
+  try {
+    const updated = await togglePinPost({
+      userId: s.user.id,
+      postId: parsed.data.postId,
+    });
+    revalidatePath(`/c/${input.communitySlug}/feed`);
+    revalidatePath(`/c/${input.communitySlug}/cot`);
+    revalidatePath(`/c/${input.communitySlug}/qa`);
+    revalidatePath(`/c/${input.communitySlug}/signals`);
+    revalidatePath(`/c/${input.communitySlug}/p/${input.postId}`);
+    return { ok: true, data: { isPinned: updated.isPinned } };
+  } catch (err) {
+    logError(err, { userId: s.user.id, postId: input.postId });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
 }
 
 export async function toggleCotAction(input: {

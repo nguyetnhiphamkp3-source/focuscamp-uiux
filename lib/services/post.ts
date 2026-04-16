@@ -281,6 +281,27 @@ export async function deletePost(input: { userId: string; postId: string }) {
   return { communitySlug: post.community.slug, type: post.type };
 }
 
+/** Toggle pinned state on a post (admin / community owner only). */
+export async function togglePinPost(input: { userId: string; postId: string }) {
+  const post = await prisma.post.findUnique({
+    where: { id: input.postId },
+    include: { community: { select: { ownerId: true } } },
+  });
+  if (!post) throw new Error("Post không tồn tại");
+  if (post.community.ownerId !== input.userId) {
+    throw new Error("Chỉ admin cộng đồng mới ghim bài");
+  }
+  const updated = await prisma.post.update({
+    where: { id: input.postId },
+    data: { isPinned: !post.isPinned },
+  });
+  logger.info(
+    { postId: updated.id, isPinned: updated.isPinned, by: input.userId },
+    "[post] togglePin"
+  );
+  return updated;
+}
+
 /** Toggle Cốt flag (admin / community owner only). */
 export async function toggleCot(input: { userId: string; postId: string }) {
   const post = await prisma.post.findUnique({
