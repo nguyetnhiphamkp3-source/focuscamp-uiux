@@ -285,6 +285,7 @@ model ChallengeTask {
 
   challenge   Challenge        @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   completions TaskCompletion[]
+  checkins    Checkin[]
 
   @@unique([challengeId, dayNumber])
 }
@@ -332,13 +333,20 @@ model Checkin {
   id          String   @id @default(cuid())
   challengeId String
   userId      String
+  taskId      String? // links this check-in to a specific daily task (optional)
+  dayNumber   Int? // redundant cache for querying by day
   content     String   @db.Text
+  linkUrl     String? // external evidence URL (e.g. screenshot host, notion, miro)
+  imageUrl    String? // inline image URL (uploaded/pasted)
   createdAt   DateTime @default(now())
 
-  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge Challenge      @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task      ChallengeTask? @relation(fields: [taskId], references: [id], onDelete: SetNull)
 
+  @@index([challengeId, createdAt])
   @@index([challengeId, userId, createdAt])
+  @@index([taskId])
 }
 
 model SubmissionVote {

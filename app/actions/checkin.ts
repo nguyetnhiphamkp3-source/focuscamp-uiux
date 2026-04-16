@@ -9,6 +9,10 @@ import { logError } from "@/lib/logger";
 export async function checkinAction(input: {
   challengeId: string;
   content: string;
+  taskId?: string;
+  dayNumber?: number;
+  linkUrl?: string;
+  imageUrl?: string;
   communitySlug: string;
   challengeSlug: string;
 }): Promise<{ ok: boolean; reason?: string; redirectTo?: string }> {
@@ -18,6 +22,10 @@ export async function checkinAction(input: {
   const parsed = ChallengeCheckinSchema.safeParse({
     challengeId: input.challengeId,
     content: input.content,
+    taskId: input.taskId,
+    dayNumber: input.dayNumber,
+    linkUrl: input.linkUrl || undefined,
+    imageUrl: input.imageUrl || undefined,
   });
   if (!parsed.success) {
     return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
@@ -28,6 +36,10 @@ export async function checkinAction(input: {
       userId: s.user.id,
       challengeId: parsed.data.challengeId,
       content: parsed.data.content,
+      taskId: parsed.data.taskId,
+      dayNumber: parsed.data.dayNumber,
+      linkUrl: parsed.data.linkUrl || undefined,
+      imageUrl: parsed.data.imageUrl || undefined,
     });
     revalidatePath(`/c/${input.communitySlug}/challenges/${input.challengeSlug}`);
     revalidatePath(`/c/${input.communitySlug}`);

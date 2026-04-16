@@ -41,6 +41,29 @@ export default async function ChallengeDetailPage({
   });
   if (!challenge) notFound();
 
+  // Recent social check-ins (all members, last 20)
+  const recentCheckins = await prisma.checkin.findMany({
+    where: { challengeId: challenge.id },
+    orderBy: { createdAt: "desc" },
+    take: 20,
+    include: {
+      user: { select: { name: true, email: true, image: true } },
+    },
+  });
+
+  // My check-ins for this challenge (to mark tasks done)
+  const myCheckins = session?.user?.id
+    ? await prisma.checkin.findMany({
+        where: { challengeId: challenge.id, userId: session.user.id },
+        select: { taskId: true, dayNumber: true, createdAt: true },
+      })
+    : [];
+  const doneDayNumbers = new Set(
+    myCheckins
+      .map((c) => c.dayNumber ?? null)
+      .filter((n): n is number => n !== null)
+  );
+
   let myMembership:
     | { id: string; status: string; personalStartsAt: Date | null; completedAt: Date | null }
     | null = null;
@@ -318,24 +341,66 @@ export default async function ChallengeDetailPage({
                 </span>
               </div>
               {challenge.tasks.map((t) => {
-                const isCurrent = t.dayNumber === dayNow;
+                const isDone = doneDayNumbers.has(t.dayNumber);
+                const isCurrent = !isDone && t.dayNumber === dayNow;
+                const isFuture = t.dayNumber > dayNow && !isDone;
                 return (
                   <div
                     key={t.id}
                     className={`ch-task${isCurrent ? " current open" : ""}`}
+                    style={{
+                      opacity: isFuture ? 0.5 : 1,
+                    }}
                   >
                     <div className="ch-task-head">
-                      <div className="ch-task-day">{t.dayNumber}</div>
+                      <div
+                        className="ch-task-day"
+                        style={
+                          isDone
+                            ? {
+                                background: "var(--brand-green)",
+                                color: "#fff",
+                              }
+                            : undefined
+                        }
+                      >
+                        {isDone ? "✓" : t.dayNumber}
+                      </div>
                       <div className="ch-task-info">
                         <div className="ch-task-label">
                           Day {t.dayNumber}
                           {t.label ? ` · ${t.label}` : ""}
                         </div>
-                        <div className="ch-task-title">{t.title}</div>
+                        <div
+                          className="ch-task-title"
+                          style={
+                            isDone
+                              ? {
+                                  textDecoration: "line-through",
+                                  color: "var(--text-muted)",
+                                }
+                              : undefined
+                          }
+                        >
+                          {t.title}
+                        </div>
                       </div>
                       {isCurrent && (
                         <span className="ch-task-status">
                           <span className="pending">● Hôm nay</span>
+                        </span>
+                      )}
+                      {isDone && (
+                        <span className="ch-task-status">
+                          <span
+                            style={{
+                              color: "var(--brand-green)",
+                              fontSize: "var(--text-xs)",
+                              fontWeight: "var(--fw-bold)",
+                            }}
+                          >
+                            ✓ Xong
+                          </span>
                         </span>
                       )}
                     </div>
@@ -361,6 +426,152 @@ export default async function ChallengeDetailPage({
                 );
               })}
             </>
+          )}
+
+          {/* Social feed — recent check-ins from everyone */}
+          {recentCheckins.length > 0 && (
+            <div style={{ marginTop: "var(--space-8)" }}>
+              <h2 style={{ marginBottom: "var(--space-3)" }}>
+                🔥 Check-in gần đây ({recentCheckins.length})
+              </h2>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "var(--space-3)",
+                }}
+              >
+                {recentCheckins.map((c) => {
+                  const name = c.user.name || c.user.email || "Member";
+                  return (
+                    <div
+                      key={c.id}
+                      className="ui-card"
+                      style={{
+                        display: "flex",
+                        gap: "var(--space-3)",
+                        alignItems: "flex-start",
+                      }}
+                    >
+                      {c.user.image ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={c.user.image}
+                          alt={name}
+                          referrerPolicy="no-referrer"
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: "50%",
+                            flexShrink: 0,
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: "50%",
+                            background: "var(--bg-elevated)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontWeight: "var(--fw-bold)",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {name[0]?.toUpperCase()}
+                        </div>
+                      )}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "baseline",
+                            gap: "var(--space-2)",
+                            marginBottom: "var(--space-1)",
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: "var(--text-sm)",
+                              fontWeight: "var(--fw-bold)",
+                              color: "var(--text-heading)",
+                            }}
+                          >
+                            {name}
+                          </span>
+                          {c.dayNumber && (
+                            <span
+                              style={{
+                                fontSize: "var(--text-xs)",
+                                color: "var(--brand-green)",
+                                fontWeight: "var(--fw-bold)",
+                              }}
+                            >
+                              Day {c.dayNumber}
+                            </span>
+                          )}
+                          <span
+                            style={{
+                              fontSize: "var(--text-xs)",
+                              color: "var(--text-muted)",
+                              marginLeft: "auto",
+                            }}
+                          >
+                            {c.createdAt.toLocaleDateString("vi-VN", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            fontSize: "var(--text-sm)",
+                            color: "var(--text-normal)",
+                            lineHeight: "var(--lh-relaxed)",
+                          }}
+                        >
+                          {c.content}
+                        </div>
+                        {c.imageUrl && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={c.imageUrl}
+                            alt=""
+                            style={{
+                              marginTop: "var(--space-2)",
+                              maxWidth: "100%",
+                              maxHeight: 240,
+                              borderRadius: "var(--r-md)",
+                              border: "1px solid var(--border-subtle)",
+                            }}
+                          />
+                        )}
+                        {c.linkUrl && (
+                          <a
+                            href={c.linkUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{
+                              display: "inline-block",
+                              marginTop: "var(--space-2)",
+                              fontSize: "var(--text-xs)",
+                              color: "var(--text-link)",
+                              fontWeight: "var(--fw-semibold)",
+                            }}
+                          >
+                            🔗 {c.linkUrl.replace(/^https?:\/\//, "").slice(0, 60)}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           )}
         </div>
       </div>
@@ -416,11 +627,27 @@ async function CheckinGate({
     );
   }
 
+  // Fetch today's task to render inside check-in form
+  const today = await prisma.challengeTask.findFirst({
+    where: { challengeId: active.challengeId, dayNumber: active.currentDay },
+    select: {
+      id: true,
+      dayNumber: true,
+      title: true,
+      label: true,
+      description: true,
+      sopContent: true,
+      evidenceType: true,
+      evidenceLabel: true,
+    },
+  });
+
   return (
     <CheckinForm
       challengeId={challengeId}
       communitySlug={communitySlug}
       challengeSlug={challengeSlug}
+      task={today}
     />
   );
 }

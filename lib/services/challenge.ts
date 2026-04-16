@@ -106,8 +106,13 @@ export async function submitCheckin(params: {
   userId: string;
   challengeId: string;
   content: string;
+  taskId?: string;
+  dayNumber?: number;
+  linkUrl?: string;
+  imageUrl?: string;
 }) {
-  const { userId, challengeId, content } = params;
+  const { userId, challengeId, content, taskId, dayNumber, linkUrl, imageUrl } =
+    params;
   const member = await prisma.challengeMember.findFirst({
     where: { userId, challengeId, status: "ACTIVE" },
   });
@@ -151,6 +156,10 @@ export async function submitCheckin(params: {
         userId,
         challengeId,
         content,
+        taskId: taskId ?? null,
+        dayNumber: dayNumber ?? null,
+        linkUrl: linkUrl ?? null,
+        imageUrl: imageUrl ?? null,
       },
     });
     await tx.challengeMember.update({

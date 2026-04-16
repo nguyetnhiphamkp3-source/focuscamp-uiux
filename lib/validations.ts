@@ -44,6 +44,10 @@ export const JoinChallengeSchema = z.object({
 export const ChallengeCheckinSchema = z.object({
   challengeId: z.string().cuid(),
   content: z.string().trim().min(5).max(1000),
+  taskId: z.string().cuid().optional(),
+  dayNumber: z.number().int().positive().optional(),
+  linkUrl: z.string().url().optional().or(z.literal("")),
+  imageUrl: z.string().url().optional().or(z.literal("")),
 });
 
 /* ========== Product purchase ========== */
