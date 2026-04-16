@@ -102,13 +102,14 @@ export default async function CommunityLayout({
 
           {/* CHANNEL SIDEBAR */}
           <aside className="channel-sidebar">
-            {/* Community banner — photo only */}
+            {/* Community banner — 16:9 photo + floating Settings at bottom */}
             <div
               className="server-banner"
               style={{
-                height: 120,
+                aspectRatio: "16 / 9",
                 overflow: "hidden",
                 position: "relative",
+                borderBottom: "1px solid var(--border-subtle)",
               }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -122,16 +123,17 @@ export default async function CommunityLayout({
                   display: "block",
                 }}
               />
-              {/* Community name overlay */}
+
+              {/* Community name — top-left overlay */}
               <div
                 style={{
                   position: "absolute",
+                  top: 0,
                   left: 0,
                   right: 0,
-                  bottom: 0,
                   padding: "var(--space-3) var(--space-4)",
                   background:
-                    "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%)",
+                    "linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 100%)",
                   color: "#fff",
                   fontWeight: "var(--fw-bold)",
                   fontSize: "var(--text-md)",
@@ -142,35 +144,45 @@ export default async function CommunityLayout({
               >
                 {community.name}
               </div>
-            </div>
 
-            {/* Settings row below banner */}
-            <div
-              style={{
-                padding: "var(--space-2) var(--space-3)",
-                borderBottom: "1px solid var(--border-subtle)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "flex-end",
-              }}
-            >
-              <Link
-                href={`/c/${slug}/settings`}
-                title="Community Settings"
+              {/* Settings btn — floating bottom, faint brand-green, gradient bg */}
+              <div
                 style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: "var(--r-md)",
+                  position: "absolute",
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  padding: "var(--space-4) var(--space-3) var(--space-2)",
+                  background:
+                    "linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 100%)",
                   display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "var(--text-muted)",
-                  textDecoration: "none",
+                  justifyContent: "flex-end",
                 }}
-                className="banner-settings-btn"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41L9.25 5.35c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-              </Link>
+                <Link
+                  href={`/c/${slug}/settings`}
+                  title="Community Settings"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "4px 10px",
+                    borderRadius: "var(--r-md)",
+                    background: "rgba(27, 158, 117, 0.25)",
+                    border: "1px solid rgba(27, 158, 117, 0.4)",
+                    color: "#fff",
+                    textDecoration: "none",
+                    fontSize: "var(--text-xs)",
+                    fontWeight: "var(--fw-semibold)",
+                    backdropFilter: "blur(6px)",
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41L9.25 5.35c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
+                  </svg>
+                  Settings
+                </Link>
+              </div>
             </div>
 
             {/* Features Module Menu */}
