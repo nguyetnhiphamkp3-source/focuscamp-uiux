@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { ServerList } from "@/components/shell/server-list";
 import { UserPanel } from "@/components/shell/user-panel";
 import { HomeSidebar } from "@/components/shell/home-sidebar";
+import { KeyboardShortcuts } from "@/components/shell/keyboard-shortcuts";
 import { unreadCount } from "@/lib/services/notification";
 
 export const dynamic = "force-dynamic";
@@ -39,6 +40,7 @@ export default async function ShellLayout({
         <UserPanel user={session?.user} />
       </div>
       <main className="main-content">{children}</main>
+      <KeyboardShortcuts />
     </div>
   );
 }

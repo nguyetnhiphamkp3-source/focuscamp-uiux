@@ -2,71 +2,45 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import {
-  updateTaskAction,
-  deleteTaskAction,
-} from "@/app/actions/challenge-review";
+import { createTaskAction } from "@/app/actions/challenge-review";
 
-/**
- * Admin-only inline task editor. Tiny '✎' button on each task row; opens
- * modal with all editable fields.
- */
-export function TaskEditorButton({
-  taskId,
+/** "+ Thêm Task" button at the bottom of task list. Owner only. */
+export function CreateTaskButton({
+  challengeId,
   communitySlug,
   challengeSlug,
-  initial,
+  nextDayNumber,
 }: {
-  taskId: string;
+  challengeId: string;
   communitySlug: string;
   challengeSlug: string;
-  initial: {
-    title: string;
-    description: string | null;
-    sopContent: string | null;
-    videoUrl: string | null;
-    evidenceType: string;
-    evidenceLabel: string | null;
-    label: string | null;
-  };
+  /** Suggested day (last task + 1) */
+  nextDayNumber: number;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [title, setTitle] = useState(initial.title);
-  const [description, setDescription] = useState(initial.description ?? "");
-  const [sopContent, setSopContent] = useState(initial.sopContent ?? "");
-  const [videoUrl, setVideoUrl] = useState(initial.videoUrl ?? "");
-  const [evidenceType, setEvidenceType] = useState(initial.evidenceType);
-  const [evidenceLabel, setEvidenceLabel] = useState(
-    initial.evidenceLabel ?? ""
-  );
-  const [label, setLabel] = useState(initial.label ?? "");
+  const [dayNumber, setDayNumber] = useState(String(nextDayNumber));
+  const [title, setTitle] = useState("");
+  const [label, setLabel] = useState("");
+  const [description, setDescription] = useState("");
+  const [sopContent, setSopContent] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
+  const [evidenceType, setEvidenceType] = useState("TEXT");
+  const [evidenceLabel, setEvidenceLabel] = useState("");
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
 
-  function deleteTask() {
-    if (!confirm("Xoá task này? Submission liên quan cũng sẽ mất liên kết.")) return;
+  function submit() {
     setErr(null);
+    const day = parseInt(dayNumber, 10);
+    if (!day || day < 1) {
+      setErr("Day phải là số dương");
+      return;
+    }
     start(async () => {
-      const res = await deleteTaskAction({
-        taskId,
-        communitySlug,
-        challengeSlug,
-      });
-      if (res.ok) {
-        setOpen(false);
-        router.refresh();
-      } else {
-        setErr(res.reason);
-      }
-    });
-  }
-
-  function save() {
-    setErr(null);
-    start(async () => {
-      const res = await updateTaskAction({
-        taskId,
+      const res = await createTaskAction({
+        challengeId,
+        dayNumber: day,
         title: title.trim(),
         description: description.trim(),
         sopContent: sopContent.trim(),
@@ -79,6 +53,7 @@ export function TaskEditorButton({
       });
       if (res.ok) {
         setOpen(false);
+        reset();
         router.refresh();
       } else {
         setErr(res.reason);
@@ -86,26 +61,36 @@ export function TaskEditorButton({
     });
   }
 
+  function reset() {
+    setDayNumber(String(nextDayNumber + 1));
+    setTitle("");
+    setLabel("");
+    setDescription("");
+    setSopContent("");
+    setVideoUrl("");
+    setEvidenceType("TEXT");
+    setEvidenceLabel("");
+  }
+
   return (
     <>
       <button
         type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen(true);
-        }}
-        title="Sửa task (admin)"
+        onClick={() => setOpen(true)}
         style={{
-          padding: "2px 8px",
-          borderRadius: 4,
-          border: "1px solid var(--border-subtle)",
+          padding: "10px 18px",
+          borderRadius: 8,
+          border: "1px dashed var(--border-subtle)",
           background: "transparent",
-          color: "var(--interactive-normal)",
-          fontSize: "var(--text-xs)",
+          color: "var(--brand-green)",
+          fontWeight: 600,
+          fontSize: "var(--text-sm)",
           cursor: "pointer",
+          marginTop: "var(--space-3)",
+          width: "100%",
         }}
       >
-        ✎
+        + Thêm Task cho Day {nextDayNumber}
       </button>
 
       {open && (
@@ -149,7 +134,7 @@ export function TaskEditorButton({
                 color: "var(--header-primary)",
               }}
             >
-              Sửa Task
+              + Thêm Task
             </div>
 
             <div
@@ -161,18 +146,30 @@ export function TaskEditorButton({
                 overflowY: "auto",
               }}
             >
-              <Field label="Tên task *">
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  maxLength={200}
-                  disabled={pending}
-                  style={inputStyle}
-                />
-              </Field>
-
-              <Field label="Label (vd: Kick-off, Final review)">
+              <div style={{ display: "grid", gridTemplateColumns: "100px 1fr", gap: 10 }}>
+                <Field label="Day *">
+                  <input
+                    type="number"
+                    min={1}
+                    value={dayNumber}
+                    onChange={(e) => setDayNumber(e.target.value)}
+                    disabled={pending}
+                    style={inputStyle}
+                  />
+                </Field>
+                <Field label="Tên task *">
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    maxLength={200}
+                    disabled={pending}
+                    autoFocus
+                    style={inputStyle}
+                  />
+                </Field>
+              </div>
+              <Field label="Label (vd: Kick-off)">
                 <input
                   type="text"
                   value={label}
@@ -182,7 +179,6 @@ export function TaskEditorButton({
                   style={inputStyle}
                 />
               </Field>
-
               <Field label="Mô tả">
                 <textarea
                   value={description}
@@ -193,32 +189,27 @@ export function TaskEditorButton({
                   style={{ ...inputStyle, resize: "vertical", fontFamily: "inherit" }}
                 />
               </Field>
-
               <Field label="SOP / Hướng dẫn chi tiết">
                 <textarea
                   value={sopContent}
                   onChange={(e) => setSopContent(e.target.value)}
-                  rows={4}
+                  rows={3}
                   maxLength={10000}
                   disabled={pending}
                   style={{ ...inputStyle, resize: "vertical", fontFamily: "inherit" }}
                 />
               </Field>
-
               <Field label="Video URL (YouTube embed)">
                 <input
                   type="url"
                   value={videoUrl}
                   onChange={(e) => setVideoUrl(e.target.value)}
-                  placeholder="https://www.youtube.com/embed/..."
                   disabled={pending}
+                  placeholder="https://www.youtube.com/embed/..."
                   style={inputStyle}
                 />
               </Field>
-
-              <div
-                style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 10 }}
-              >
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 10 }}>
                 <Field label="Loại bằng chứng">
                   <select
                     value={evidenceType}
@@ -232,14 +223,13 @@ export function TaskEditorButton({
                     <option value="FILE">FILE</option>
                   </select>
                 </Field>
-                <Field label="Yêu cầu cụ thể (evidence label)">
+                <Field label="Yêu cầu cụ thể">
                   <input
                     type="text"
                     value={evidenceLabel}
                     onChange={(e) => setEvidenceLabel(e.target.value)}
                     maxLength={500}
                     disabled={pending}
-                    placeholder="vd: Screenshot dashboard sau khi set KPI"
                     style={inputStyle}
                   />
                 </Field>
@@ -268,26 +258,9 @@ export function TaskEditorButton({
             >
               <button
                 type="button"
-                onClick={deleteTask}
-                disabled={pending}
-                style={{
-                  padding: "10px 14px",
-                  borderRadius: 8,
-                  border: "1px solid var(--danger)",
-                  background: "transparent",
-                  color: "var(--danger)",
-                  cursor: "pointer",
-                  fontSize: "var(--text-sm)",
-                }}
-              >
-                🗑 Xoá task
-              </button>
-              <button
-                type="button"
                 onClick={() => !pending && setOpen(false)}
                 disabled={pending}
                 style={{
-                  marginLeft: "auto",
                   padding: "10px 18px",
                   borderRadius: 8,
                   border: "1px solid var(--border-subtle)",
@@ -301,23 +274,25 @@ export function TaskEditorButton({
               </button>
               <button
                 type="button"
-                onClick={save}
-                disabled={pending || !title.trim()}
+                onClick={submit}
+                disabled={pending || !title.trim() || !dayNumber}
                 style={{
+                  marginLeft: "auto",
                   padding: "10px 22px",
                   borderRadius: 8,
                   border: "none",
-                  background: title.trim()
-                    ? "var(--brand-green)"
-                    : "var(--bg-modifier-hover)",
+                  background:
+                    title.trim() && dayNumber
+                      ? "var(--brand-green)"
+                      : "var(--bg-modifier-hover)",
                   color: "#fff",
                   fontWeight: 600,
                   fontSize: "var(--text-sm)",
-                  cursor: title.trim() ? "pointer" : "not-allowed",
+                  cursor: pending ? "not-allowed" : "pointer",
                   opacity: pending ? 0.6 : 1,
                 }}
               >
-                {pending ? "Đang lưu…" : "Lưu"}
+                {pending ? "Đang tạo…" : "Tạo Task"}
               </button>
             </div>
           </div>
@@ -353,4 +328,5 @@ const inputStyle: React.CSSProperties = {
   color: "var(--text-normal)",
   fontSize: "var(--text-sm)",
   outline: "none",
+  fontFamily: "inherit",
 };

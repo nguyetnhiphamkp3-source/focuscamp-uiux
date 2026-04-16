@@ -11,6 +11,7 @@ import { ChallengeSettingsPanel } from "@/components/community/challenge-setting
 import { CheckinVoteButton } from "@/components/community/checkin-vote-button";
 import { ResubmitForm } from "@/components/community/resubmit-form";
 import { TaskEditorButton } from "@/components/community/task-editor";
+import { CreateTaskButton } from "@/components/community/create-task-button";
 import {
   getActiveChallenge,
   getChallengeLeaderboard,
@@ -517,8 +518,9 @@ export default async function ChallengeDetailPage({
             </div>
           )}
 
-          {/* Tasks list */}
-          {challenge.tasks.length > 0 && (
+          {/* Tasks list — header always shows for owner so empty challenge
+              gets the '+ Thêm Task' CTA. */}
+          {(challenge.tasks.length > 0 || isOwner) && (
             <>
               <div className="ch-section-title" style={{ marginTop: 24 }}>
                 <span>Daily Tasks</span>
@@ -628,6 +630,20 @@ export default async function ChallengeDetailPage({
                 );
               })}
             </>
+          )}
+
+          {/* Owner-only: add new task at bottom of the list */}
+          {isOwner && (
+            <CreateTaskButton
+              challengeId={challenge.id}
+              communitySlug={slug}
+              challengeSlug={challengeSlug}
+              nextDayNumber={
+                challenge.tasks.length > 0
+                  ? Math.max(...challenge.tasks.map((t) => t.dayNumber)) + 1
+                  : 1
+              }
+            />
           )}
 
           {/* Social feed — recent check-ins from everyone */}
