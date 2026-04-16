@@ -1,18 +1,9 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { EmptyState } from "@/components/ui/empty-state";
+import { AVATAR_COLORS } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
-
-const AVATAR_COLORS = [
-  "linear-gradient(135deg,#e67e22,#d35400)",
-  "linear-gradient(135deg,#5865F2,#7289DA)",
-  "linear-gradient(135deg,#1abc9c,#16a085)",
-  "linear-gradient(135deg,#2ecc71,#27ae60)",
-  "linear-gradient(135deg,#9b59b6,#8e44ad)",
-  "linear-gradient(135deg,#e74c3c,#c0392b)",
-  "linear-gradient(135deg,#f39c12,#d68910)",
-];
 
 export default async function LeaderboardPage({
   params,

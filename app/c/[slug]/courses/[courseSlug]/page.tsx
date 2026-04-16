@@ -1,14 +1,8 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { fmtDuration } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
-
-function fmtDuration(sec: number | null): string {
-  if (!sec) return "—";
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
 
 export default async function CourseDetailPage({
   params,

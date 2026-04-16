@@ -15,20 +15,7 @@ const CATEGORIES = [
   "Fitness & Health",
 ];
 
-const BANNER_GRADIENTS = [
-  "linear-gradient(135deg,#c77a2d,#8a4f1e)",
-  "linear-gradient(135deg,#5865F2,#eb459e)",
-  "linear-gradient(135deg,#1abc9c,#0d7c62)",
-  "linear-gradient(135deg,#9b59b6,#6a3d72)",
-  "linear-gradient(135deg,#f39c12,#d35400)",
-  "linear-gradient(135deg,#2ecc71,#16a085)",
-];
-
-function initials(name: string) {
-  const words = name.split(/\s+/).filter(Boolean);
-  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
-  return (words[0][0] + words[1][0]).toUpperCase();
-}
+import { BRAND_GRADIENTS as BANNER_GRADIENTS, initials } from "@/lib/brand";
 
 export default async function DiscoveryPage() {
   const [communities, challenges, totals] = await Promise.all([

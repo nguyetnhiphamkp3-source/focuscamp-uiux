@@ -1,29 +1,8 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { fmtDuration, ytThumb } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
-
-function fmtDuration(sec: number | null): string {
-  if (!sec) return "";
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
-
-/** Extract YouTube video ID from embed/watch URL */
-function ytId(url: string | null): string | null {
-  if (!url) return null;
-  const m =
-    url.match(/embed\/([a-zA-Z0-9_-]{11})/) ||
-    url.match(/[?&]v=([a-zA-Z0-9_-]{11})/) ||
-    url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
-  return m ? m[1] : null;
-}
-
-function ytThumb(url: string | null): string | null {
-  const id = ytId(url);
-  return id ? `https://img.youtube.com/vi/${id}/mqdefault.jpg` : null;
-}
 
 export default async function CoursePlaylistSidebar({
   params,

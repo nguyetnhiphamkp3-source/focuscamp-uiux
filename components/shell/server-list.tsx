@@ -1,18 +1,5 @@
 import Link from "next/link";
-
-const BRAND_GRADIENTS = [
-  "linear-gradient(135deg,#c77a2d,#8a4f1e)",
-  "linear-gradient(135deg,#5865F2,#eb459e)",
-  "linear-gradient(135deg,#1abc9c,#0d7c62)",
-  "linear-gradient(135deg,#9b59b6,#6a3d72)",
-  "linear-gradient(135deg,#f39c12,#d35400)",
-];
-
-function initials(name: string) {
-  const w = name.split(/\s+/).filter(Boolean);
-  if (w.length === 1) return w[0].slice(0, 2).toUpperCase();
-  return (w[0][0] + w[1][0]).toUpperCase();
-}
+import { BRAND_GRADIENTS, initials } from "@/lib/brand";
 
 export function ServerList({
   communities,

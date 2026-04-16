@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { SendMessageSchema } from "@/lib/validations";
 import { logError } from "@/lib/logger";
+import { avatarColorFor as colorFor, nameColorFor as nameColor } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
 
@@ -41,33 +42,6 @@ function dateKey(d: Date): string {
 
 function formatTimeShort(d: Date) {
   return d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
-}
-
-const AVATAR_COLORS = [
-  "linear-gradient(135deg,#5865F2,#7289DA)",
-  "linear-gradient(135deg,#2ecc71,#27ae60)",
-  "linear-gradient(135deg,#e67e22,#d35400)",
-  "linear-gradient(135deg,#1abc9c,#16a085)",
-  "linear-gradient(135deg,#9b59b6,#8e44ad)",
-  "linear-gradient(135deg,#e74c3c,#c0392b)",
-];
-function colorFor(id: string) {
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) | 0;
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
-const NAME_COLORS = [
-  "#c77a2d",
-  "#2d8a4e",
-  "#c26a15",
-  "#1a8a72",
-  "#7b4d9e",
-  "#b8455a",
-];
-function nameColor(id: string) {
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) | 0;
-  return NAME_COLORS[Math.abs(hash) % NAME_COLORS.length];
 }
 
 export default async function ChannelPage({
