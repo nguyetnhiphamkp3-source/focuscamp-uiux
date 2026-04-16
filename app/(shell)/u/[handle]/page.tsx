@@ -142,18 +142,24 @@ export default async function UserGlobalPage({
                 alignItems: "center",
               }}
             >
-              <span>
+              <Link
+                href={`/u/${displayHandle}/followers`}
+                style={{ color: "inherit", textDecoration: "none" }}
+              >
                 <strong style={{ color: "var(--header-primary)" }}>
                   {counts.followers}
                 </strong>{" "}
                 <span style={{ color: "var(--text-muted)" }}>Followers</span>
-              </span>
-              <span>
+              </Link>
+              <Link
+                href={`/u/${displayHandle}/following`}
+                style={{ color: "inherit", textDecoration: "none" }}
+              >
                 <strong style={{ color: "var(--header-primary)" }}>
                   {counts.following}
                 </strong>{" "}
                 <span style={{ color: "var(--text-muted)" }}>Following</span>
-              </span>
+              </Link>
               {!isSelf && viewerId && (
                 <FollowButton
                   targetUserId={user.id}
