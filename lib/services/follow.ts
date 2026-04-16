@@ -36,14 +36,14 @@ export async function toggleFollow(input: {
     "[follow] added"
   );
 
-  // Notify followee (POST_REACTION type reused — could add FOLLOW type later)
+  // Notify followee
   const follower = await prisma.user.findUnique({
     where: { id: input.followerId },
     select: { name: true, handle: true },
   });
   await createNotification({
     userId: input.followeeId,
-    type: "POST_REACTION", // TODO: add FOLLOW type
+    type: "FOLLOW",
     title: `${follower?.name ?? "Ai đó"} đã follow bạn 👥`,
     actorId: input.followerId,
     link: `/u/${follower?.handle ?? input.followerId}`,

@@ -25,6 +25,8 @@ const TYPE_ICON: Record<string, string> = {
   POST_COT: "⭐",
   SUBMISSION_APPROVED: "✓",
   SUBMISSION_REJECTED: "✕",
+  FOLLOW: "👥",
+  UNFOLLOW: "👤",
 };
 
 export function NotificationItem({ n }: { n: InboxItem }) {

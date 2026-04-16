@@ -20,7 +20,9 @@ export type NotificationType =
   | "BEST_ANSWER"
   | "POST_COT"
   | "SUBMISSION_APPROVED"
-  | "SUBMISSION_REJECTED";
+  | "SUBMISSION_REJECTED"
+  | "FOLLOW"
+  | "UNFOLLOW";
 
 /**
  * Create a notification. No-op (and logs) when recipient === actor — we
