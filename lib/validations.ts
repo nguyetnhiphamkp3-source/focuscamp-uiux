@@ -205,6 +205,17 @@ export const UpdateLevelsSchema = z.object({
   tiers: z.array(LevelTierItemSchema).max(50),
 });
 
+export const UpdateMemberRoleSchema = z.object({
+  communityId: z.string().cuid(),
+  targetUserId: z.string().cuid(),
+  role: z.enum(["MEMBER", "MOD", "ADMIN"]),
+});
+
+export const RemoveMemberSchema = z.object({
+  communityId: z.string().cuid(),
+  targetUserId: z.string().cuid(),
+});
+
 /* ========== Community slug ========== */
 export const SlugSchema = z
   .string()

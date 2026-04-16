@@ -7,12 +7,16 @@ import {
   updateClassesConfig,
   updateCurrencyConfig,
   updateLevelsConfig,
+  updateMemberRole,
+  removeMember,
 } from "@/lib/services/community-settings";
 import {
   UpdatePillarsSchema,
   UpdateClassesSchema,
   UpdateCurrencySchema,
   UpdateLevelsSchema,
+  UpdateMemberRoleSchema,
+  RemoveMemberSchema,
 } from "@/lib/validations";
 import { logError } from "@/lib/logger";
 import type {
@@ -143,6 +147,79 @@ export async function updateCurrencyAction(input: {
     return { ok: true };
   } catch (err) {
     logError(err, { userId: s.user.id, communityId: input.communityId });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+export async function updateMemberRoleAction(input: {
+  communityId: string;
+  communitySlug: string;
+  targetUserId: string;
+  role: string;
+}): Promise<ActionResult> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+
+  const parsed = UpdateMemberRoleSchema.safeParse({
+    communityId: input.communityId,
+    targetUserId: input.targetUserId,
+    role: input.role,
+  });
+  if (!parsed.success) {
+    return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
+  }
+
+  try {
+    await updateMemberRole({
+      userId: s.user.id,
+      communityId: parsed.data.communityId,
+      targetUserId: parsed.data.targetUserId,
+      role: parsed.data.role,
+    });
+    bump(input.communitySlug);
+    return { ok: true };
+  } catch (err) {
+    logError(err, {
+      userId: s.user.id,
+      communityId: input.communityId,
+      target: input.targetUserId,
+    });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+export async function removeMemberAction(input: {
+  communityId: string;
+  communitySlug: string;
+  targetUserId: string;
+}): Promise<ActionResult> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+
+  const parsed = RemoveMemberSchema.safeParse({
+    communityId: input.communityId,
+    targetUserId: input.targetUserId,
+  });
+  if (!parsed.success) {
+    return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
+  }
+
+  try {
+    await removeMember({
+      userId: s.user.id,
+      communityId: parsed.data.communityId,
+      targetUserId: parsed.data.targetUserId,
+    });
+    bump(input.communitySlug);
+    return { ok: true };
+  } catch (err) {
+    logError(err, {
+      userId: s.user.id,
+      communityId: input.communityId,
+      target: input.targetUserId,
+    });
     if (err instanceof Error) return { ok: false, reason: err.message };
     return { ok: false, reason: "unknown" };
   }

@@ -107,6 +107,129 @@ export async function updateCurrencyConfig(input: {
   );
 }
 
+/**
+ * List members of a community with their User row joined. Owner + admin-only
+ * at the page/action level; service itself trusts the caller (no gate here
+ * so the profile page etc. can use it too if needed).
+ */
+export async function listMembers(input: {
+  communityId: string;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}) {
+  const { communityId, search, limit = 50, offset = 0 } = input;
+  const [members, total] = await Promise.all([
+    prisma.membership.findMany({
+      where: {
+        communityId,
+        ...(search
+          ? {
+              OR: [
+                { user: { name: { contains: search, mode: "insensitive" } } },
+                { user: { email: { contains: search, mode: "insensitive" } } },
+                { user: { handle: { contains: search, mode: "insensitive" } } },
+              ],
+            }
+          : {}),
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+            email: true,
+            handle: true,
+          },
+        },
+      },
+      orderBy: { joinedAt: "desc" },
+      take: limit,
+      skip: offset,
+    }),
+    prisma.membership.count({ where: { communityId } }),
+  ]);
+  return { members, total };
+}
+
+const ALLOWED_ROLES = new Set(["MEMBER", "MOD", "ADMIN"]);
+
+export async function updateMemberRole(input: {
+  userId: string;
+  communityId: string;
+  targetUserId: string;
+  role: string;
+}) {
+  await assertOwner(input.userId, input.communityId);
+  if (!ALLOWED_ROLES.has(input.role)) {
+    throw new Error(`Role không hợp lệ: ${input.role}`);
+  }
+  // Owner's own role is meaningless — owner status is on Community.ownerId.
+  // Don't allow them to change their own membership row's role via this path.
+  if (input.targetUserId === input.userId) {
+    throw new Error("Không thể đổi role của chính mình");
+  }
+  await prisma.membership.update({
+    where: {
+      userId_communityId: {
+        userId: input.targetUserId,
+        communityId: input.communityId,
+      },
+    },
+    data: { role: input.role },
+  });
+  logger.info(
+    {
+      communityId: input.communityId,
+      target: input.targetUserId,
+      role: input.role,
+      by: input.userId,
+    },
+    "[community-settings] member role updated"
+  );
+}
+
+export async function removeMember(input: {
+  userId: string;
+  communityId: string;
+  targetUserId: string;
+}) {
+  await assertOwner(input.userId, input.communityId);
+  if (input.targetUserId === input.userId) {
+    throw new Error("Không thể tự xoá mình. Chuyển owner trước.");
+  }
+  const community = await prisma.community.findUnique({
+    where: { id: input.communityId },
+    select: { ownerId: true },
+  });
+  if (community?.ownerId === input.targetUserId) {
+    throw new Error("Không thể xoá chủ cộng đồng");
+  }
+  await prisma.$transaction(async (tx) => {
+    const deleted = await tx.membership.deleteMany({
+      where: {
+        userId: input.targetUserId,
+        communityId: input.communityId,
+      },
+    });
+    if (deleted.count > 0) {
+      await tx.community.update({
+        where: { id: input.communityId },
+        data: { memberCount: { decrement: deleted.count } },
+      });
+    }
+  });
+  logger.info(
+    {
+      communityId: input.communityId,
+      target: input.targetUserId,
+      by: input.userId,
+    },
+    "[community-settings] member removed"
+  );
+}
+
 export async function updateLevelsConfig(input: {
   userId: string;
   communityId: string;

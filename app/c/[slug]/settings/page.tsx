@@ -11,6 +11,8 @@ import { PillarsEditor } from "@/components/settings/pillars-editor";
 import { ClassesEditor } from "@/components/settings/classes-editor";
 import { CurrencyEditor } from "@/components/settings/currency-editor";
 import { LevelsEditor } from "@/components/settings/levels-editor";
+import { MembersEditor } from "@/components/settings/members-editor";
+import { listMembers } from "@/lib/services/community-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +34,11 @@ export default async function SettingsPage({
   const classes = getClasses(community);
   const currency = getCurrency(community);
   const tiers = getLevelTiers(community);
+
+  const { members, total } = await listMembers({
+    communityId: community.id,
+    limit: 100,
+  });
 
   return (
     <>
@@ -126,6 +133,39 @@ export default async function SettingsPage({
             communitySlug={slug}
             initial={tiers}
             disabled={!isOwner}
+          />
+
+          <div
+            style={{
+              fontSize: "var(--text-xl)",
+              fontWeight: 700,
+              color: "var(--header-primary)",
+              padding: "var(--space-6) 0 var(--space-3)",
+              borderTop: "1px solid var(--border-subtle)",
+              marginTop: "var(--space-4)",
+            }}
+          >
+            Thành viên
+          </div>
+          <MembersEditor
+            communityId={community.id}
+            communitySlug={slug}
+            members={members.map((m) => ({
+              userId: m.userId,
+              role: m.role,
+              tier: m.tier,
+              className: m.className,
+              xp: m.xp,
+              level: m.level,
+              joinedAt: m.joinedAt,
+              user: m.user,
+            }))}
+            total={total}
+            isOwner={isOwner}
+            ownerId={community.ownerId}
+            currentUserId={session.user.id}
+            classes={classes}
+            levelTiers={tiers}
           />
         </div>
       </div>
