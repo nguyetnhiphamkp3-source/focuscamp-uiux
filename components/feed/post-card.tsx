@@ -91,18 +91,15 @@ export function PostCard({
         )}
       </div>
 
-      {post.title &&
-        (href ? (
-          <Link
-            href={href}
-            className="feed-post-title"
-            style={{ textDecoration: "none", color: "inherit", display: "block" }}
-          >
-            {post.title}
-          </Link>
-        ) : (
-          <div className="feed-post-title">{post.title}</div>
-        ))}
+      {post.title && (
+        <Link
+          href={href ?? `/c/${communitySlug}/p/${post.id}`}
+          className="feed-post-title"
+          style={{ textDecoration: "none", color: "inherit", display: "block" }}
+        >
+          {post.title}
+        </Link>
+      )}
       <div className="feed-post-body" style={{ whiteSpace: "pre-wrap" }}>
         {post.body}
       </div>
@@ -114,9 +111,13 @@ export function PostCard({
           initialCount={post.reactionCount}
           initialReacted={post.reactedByMe}
         />
-        <button className="feed-post-action" type="button">
+        <Link
+          href={`/c/${communitySlug}/p/${post.id}`}
+          className="feed-post-action"
+          style={{ textDecoration: "none" }}
+        >
           💬 {post.commentCount} bình luận
-        </button>
+        </Link>
         {canEditCot && (
           <CotToggleButton
             postId={post.id}

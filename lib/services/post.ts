@@ -73,6 +73,78 @@ export async function listFeed(params: {
   }));
 }
 
+/**
+ * Fetch a single post with its comments, for the detail view.
+ * Returns null if the post doesn't exist.
+ */
+export async function getPostWithComments(postId: string, userId?: string) {
+  const post = await prisma.post.findUnique({
+    where: { id: postId },
+    include: {
+      user: { select: { id: true, name: true, image: true } },
+      community: { select: { id: true, slug: true, ownerId: true } },
+      _count: { select: { comments: true, reactions: true } },
+      ...(userId
+        ? {
+            reactions: {
+              where: { userId, emoji: LIKE_EMOJI },
+              select: { id: true },
+            },
+          }
+        : {}),
+    },
+  });
+  if (!post) return null;
+
+  // Increment view count fire-and-forget (don't block render)
+  prisma.post
+    .update({
+      where: { id: postId },
+      data: { viewCount: { increment: 1 } },
+    })
+    .catch(() => {
+      /* ignore — view count is best-effort */
+    });
+
+  const comments = await prisma.comment.findMany({
+    where: { postId },
+    include: { user: { select: { id: true, name: true, image: true } } },
+    orderBy: [{ isBestAnswer: "desc" }, { createdAt: "asc" }],
+  });
+
+  return {
+    post: {
+      id: post.id,
+      type: post.type,
+      title: post.title,
+      body: post.body,
+      pillar: post.pillar,
+      tags: post.tags,
+      isPinned: post.isPinned,
+      isCot: post.isCot,
+      bountyAip: post.bountyAip,
+      viewCount: post.viewCount,
+      createdAt: post.createdAt,
+      user: post.user,
+      community: post.community,
+      commentCount: post._count.comments,
+      reactionCount: post._count.reactions,
+      reactedByMe:
+        "reactions" in post && Array.isArray(post.reactions)
+          ? post.reactions.length > 0
+          : false,
+    },
+    comments: comments.map((c) => ({
+      id: c.id,
+      body: c.body,
+      isBestAnswer: c.isBestAnswer,
+      parentId: c.parentId,
+      createdAt: c.createdAt,
+      user: c.user,
+    })),
+  };
+}
+
 /** Create a post (requires community membership). */
 export async function createPost(input: {
   userId: string;

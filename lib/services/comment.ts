@@ -1,0 +1,112 @@
+/**
+ * Comment service — create / mark best answer / delete.
+ * Comments inherit visibility from parent post; the post is the access-control
+ * unit (membership required to post, everyone in the community can read).
+ */
+import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
+
+export async function createComment(input: {
+  userId: string;
+  postId: string;
+  body: string;
+  parentId?: string;
+}) {
+  const post = await prisma.post.findUnique({
+    where: { id: input.postId },
+    select: { id: true, communityId: true },
+  });
+  if (!post) throw new Error("Bài viết không tồn tại");
+
+  // Membership required to comment
+  const membership = await prisma.membership.findUnique({
+    where: {
+      userId_communityId: { userId: input.userId, communityId: post.communityId },
+    },
+  });
+  if (!membership) throw new Error("Bạn chưa tham gia cộng đồng này");
+
+  // If replying, verify parent belongs to same post
+  if (input.parentId) {
+    const parent = await prisma.comment.findUnique({
+      where: { id: input.parentId },
+      select: { postId: true },
+    });
+    if (!parent || parent.postId !== input.postId) {
+      throw new Error("Comment cha không hợp lệ");
+    }
+  }
+
+  const comment = await prisma.comment.create({
+    data: {
+      postId: input.postId,
+      userId: input.userId,
+      parentId: input.parentId ?? null,
+      body: input.body.trim(),
+    },
+  });
+  logger.info({ commentId: comment.id, postId: input.postId }, "[comment] created");
+  return comment;
+}
+
+/**
+ * Mark a comment as the best answer to its post.
+ * Allowed to: post author (asker) OR community owner.
+ * Only ONE best answer per post — marking a new one clears the previous.
+ */
+export async function markBestAnswer(input: { userId: string; commentId: string }) {
+  const comment = await prisma.comment.findUnique({
+    where: { id: input.commentId },
+    include: {
+      post: { select: { userId: true, community: { select: { ownerId: true } } } },
+    },
+  });
+  if (!comment) throw new Error("Comment không tồn tại");
+
+  const canMark =
+    comment.post.userId === input.userId ||
+    comment.post.community.ownerId === input.userId;
+  if (!canMark) {
+    throw new Error("Chỉ người đặt câu hỏi hoặc admin mới đánh dấu câu trả lời tốt nhất");
+  }
+
+  // Toggle: if already best answer, unmark. Else mark this one, unmark others on same post.
+  if (comment.isBestAnswer) {
+    await prisma.comment.update({
+      where: { id: input.commentId },
+      data: { isBestAnswer: false },
+    });
+    return { isBestAnswer: false };
+  }
+
+  await prisma.$transaction([
+    prisma.comment.updateMany({
+      where: { postId: comment.postId, isBestAnswer: true },
+      data: { isBestAnswer: false },
+    }),
+    prisma.comment.update({
+      where: { id: input.commentId },
+      data: { isBestAnswer: true },
+    }),
+  ]);
+  return { isBestAnswer: true };
+}
+
+/** Delete a comment. Allowed to: author of the comment OR community owner. */
+export async function deleteComment(input: { userId: string; commentId: string }) {
+  const comment = await prisma.comment.findUnique({
+    where: { id: input.commentId },
+    include: {
+      post: { select: { community: { select: { ownerId: true } } } },
+    },
+  });
+  if (!comment) throw new Error("Comment không tồn tại");
+
+  const canDelete =
+    comment.userId === input.userId ||
+    comment.post.community.ownerId === input.userId;
+  if (!canDelete) throw new Error("Không có quyền xoá comment này");
+
+  await prisma.comment.delete({ where: { id: input.commentId } });
+  logger.info({ commentId: input.commentId, by: input.userId }, "[comment] deleted");
+}

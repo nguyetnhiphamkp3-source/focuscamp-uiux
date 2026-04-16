@@ -1,0 +1,104 @@
+"use server";
+
+import { auth } from "@/auth";
+import { revalidatePath } from "next/cache";
+import {
+  createComment,
+  markBestAnswer,
+  deleteComment,
+} from "@/lib/services/comment";
+import { CreateCommentSchema, CommentIdSchema } from "@/lib/validations";
+import { logError } from "@/lib/logger";
+
+type ActionResult<T = unknown> =
+  | { ok: true; data?: T }
+  | { ok: false; reason: string };
+
+function bumpPostPaths(communitySlug: string, postId: string) {
+  revalidatePath(`/c/${communitySlug}/p/${postId}`);
+  revalidatePath(`/c/${communitySlug}/feed`);
+  revalidatePath(`/c/${communitySlug}/cot`);
+  revalidatePath(`/c/${communitySlug}/qa`);
+  revalidatePath(`/c/${communitySlug}/signals`);
+}
+
+export async function createCommentAction(input: {
+  postId: string;
+  parentId?: string;
+  body: string;
+  communitySlug: string;
+}): Promise<ActionResult<{ commentId: string }>> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+
+  const parsed = CreateCommentSchema.safeParse({
+    postId: input.postId,
+    parentId: input.parentId,
+    body: input.body,
+  });
+  if (!parsed.success) {
+    return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
+  }
+
+  try {
+    const c = await createComment({
+      userId: s.user.id,
+      postId: parsed.data.postId,
+      body: parsed.data.body,
+      parentId: parsed.data.parentId,
+    });
+    bumpPostPaths(input.communitySlug, input.postId);
+    return { ok: true, data: { commentId: c.id } };
+  } catch (err) {
+    logError(err, { userId: s.user.id, postId: input.postId });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+export async function markBestAnswerAction(input: {
+  commentId: string;
+  postId: string;
+  communitySlug: string;
+}): Promise<ActionResult<{ isBestAnswer: boolean }>> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+
+  const parsed = CommentIdSchema.safeParse({ commentId: input.commentId });
+  if (!parsed.success) return { ok: false, reason: "invalid" };
+
+  try {
+    const res = await markBestAnswer({
+      userId: s.user.id,
+      commentId: parsed.data.commentId,
+    });
+    bumpPostPaths(input.communitySlug, input.postId);
+    return { ok: true, data: res };
+  } catch (err) {
+    logError(err, { userId: s.user.id, commentId: input.commentId });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+export async function deleteCommentAction(input: {
+  commentId: string;
+  postId: string;
+  communitySlug: string;
+}): Promise<ActionResult> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+
+  const parsed = CommentIdSchema.safeParse({ commentId: input.commentId });
+  if (!parsed.success) return { ok: false, reason: "invalid" };
+
+  try {
+    await deleteComment({ userId: s.user.id, commentId: parsed.data.commentId });
+    bumpPostPaths(input.communitySlug, input.postId);
+    return { ok: true };
+  } catch (err) {
+    logError(err, { userId: s.user.id, commentId: input.commentId });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
