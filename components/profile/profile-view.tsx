@@ -16,6 +16,8 @@ import type {
   GemsConfig,
   LevelTier,
 } from "@/lib/community-config";
+import type { HeatmapDay } from "@/lib/services/profile";
+import { ActivityHeatmap } from "./activity-heatmap";
 
 type Community = { name: string; slug: string };
 
@@ -72,13 +74,21 @@ export function ProfileView({
   currency,
   levelTiers,
   otherCommunities = [],
+  ownedCommunities = [],
+  latestActivityAt = null,
+  heatmap = [],
   viewingUserId,
 }: {
   community: Community;
   user: ProfileUser;
   membership: Membership;
   recentPosts: RecentPost[];
-  stats: { posts: number; comments: number };
+  stats: {
+    posts: number;
+    comments: number;
+    checkins: number;
+    contributions: number;
+  };
   isSelf: boolean;
   classes: ClassConfig[];
   pillars: PillarConfig[];
@@ -86,6 +96,12 @@ export function ProfileView({
   levelTiers: LevelTier[];
   /** Other communities this user belongs to. Name + icon only (no stats). */
   otherCommunities?: OtherCommunity[];
+  /** Communities this user owns — badge signal. */
+  ownedCommunities?: OtherCommunity[];
+  /** Most recent activity timestamp in this community (null if no activity). */
+  latestActivityAt?: Date | null;
+  /** Per-day activity counts for the past 365 days. */
+  heatmap?: HeatmapDay[];
   /** Profile owner's userId — used to build cross-community profile links. */
   viewingUserId: string;
 }) {
@@ -136,39 +152,64 @@ export function ProfileView({
                     ? `${membership.role} · ${tier?.name ?? membership.tier} của ${community.name}`
                     : `Chưa là thành viên của ${community.name}`)}
               </div>
-              {(myClass || membership) && (
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 8,
-                    alignItems: "center",
-                    flexWrap: "wrap",
-                    marginTop: 6,
-                    fontSize: "var(--text-sm)",
-                    color: "var(--text-muted)",
-                  }}
-                >
-                  {myClass && (
-                    <span
-                      style={{
-                        padding: "3px 10px",
-                        borderRadius: 10,
-                        background: "var(--bg-card)",
-                        border: "1px solid var(--border-subtle)",
-                      }}
-                    >
-                      {myClass.emoji ? `${myClass.emoji} ` : ""}
-                      {myClass.label}
-                    </span>
-                  )}
-                  {user.location && <span>📍 {user.location}</span>}
-                  {membership && (
-                    <span>
-                      Tham gia {fmtRelativeTime(membership.joinedAt)}
-                    </span>
-                  )}
-                </div>
-              )}
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  marginTop: 6,
+                  fontSize: "var(--text-sm)",
+                  color: "var(--text-muted)",
+                }}
+              >
+                {myClass && (
+                  <span
+                    style={{
+                      padding: "3px 10px",
+                      borderRadius: 10,
+                      background: "var(--bg-card)",
+                      border: "1px solid var(--border-subtle)",
+                    }}
+                  >
+                    {myClass.emoji ? `${myClass.emoji} ` : ""}
+                    {myClass.label}
+                  </span>
+                )}
+                {ownedCommunities.length > 0 && (
+                  <span
+                    style={{
+                      padding: "3px 10px",
+                      borderRadius: 10,
+                      background: "rgba(240,179,50,0.12)",
+                      border: "1px solid rgba(240,179,50,0.3)",
+                      color: "var(--premium-gold)",
+                      fontWeight: 600,
+                    }}
+                    title={ownedCommunities
+                      .map((c) => c.name)
+                      .join(", ")}
+                  >
+                    ★ Owner ({ownedCommunities.length})
+                  </span>
+                )}
+                {user.location && <span>📍 {user.location}</span>}
+                {latestActivityAt ? (
+                  <span>
+                    ● Active {fmtRelativeTime(latestActivityAt)}
+                  </span>
+                ) : (
+                  <span>● Chưa hoạt động ở {community.name}</span>
+                )}
+                <span>
+                  · Tham gia focus.camp {fmtRelativeTime(user.createdAt)}
+                </span>
+                {membership && (
+                  <span>
+                    · Vào {community.name} {fmtRelativeTime(membership.joinedAt)}
+                  </span>
+                )}
+              </div>
             </div>
             {isSelf && (
               <div className="pf-actions">
@@ -235,14 +276,34 @@ export function ProfileView({
                   value={membership.streakDays.toString()}
                   sub="ngày liên tục"
                 />
+                <Stat
+                  label="🎯 Tổng hoạt động"
+                  value={stats.contributions.toLocaleString()}
+                  sub={`${stats.posts}P · ${stats.comments}C · ${stats.checkins}✓`}
+                />
                 <Stat label="📝 Posts" value={stats.posts.toString()} sub="đã đăng" />
                 <Stat
                   label="💬 Comments"
                   value={stats.comments.toString()}
                   sub="đã bình luận"
                 />
+                <Stat
+                  label="✓ Check-ins"
+                  value={stats.checkins.toString()}
+                  sub="challenges"
+                />
               </div>
             </>
+          )}
+
+          {/* Activity heatmap — 365-day grid of posts+comments+checkins */}
+          {heatmap.length > 0 && stats.contributions > 0 && (
+            <div style={{ marginTop: 20 }}>
+              <ActivityHeatmap
+                days={heatmap}
+                totalContributions={stats.contributions}
+              />
+            </div>
           )}
 
           {otherCommunities.length > 0 && (

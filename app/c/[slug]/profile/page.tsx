@@ -43,6 +43,9 @@ export default async function ProfilePage({
       currency={getCurrency(community)}
       levelTiers={getLevelTiers(community)}
       otherCommunities={data.otherCommunities}
+      ownedCommunities={data.ownedCommunities}
+      latestActivityAt={data.latestActivityAt}
+      heatmap={data.heatmap}
       viewingUserId={data.user.id}
     />
   );
