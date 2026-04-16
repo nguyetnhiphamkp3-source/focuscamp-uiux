@@ -34,6 +34,12 @@ export const SendMessageSchema = z.object({
 /* ========== Community membership ========== */
 export const JoinCommunitySchema = z.object({
   communityId: z.string().cuid(),
+  className: z
+    .string()
+    .regex(/^[a-z0-9-]+$/)
+    .max(40)
+    .optional()
+    .or(z.literal("")),
 });
 
 /* ========== Challenge ========== */

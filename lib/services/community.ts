@@ -5,6 +5,7 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { logger } from "@/lib/logger";
+import { getClasses } from "@/lib/community-config";
 
 export async function getCommunityBySlug(slug: string) {
   return prisma.community.findUnique({ where: { slug } });
@@ -19,14 +20,45 @@ export async function getMembership(userId: string, communityId: string) {
 /**
  * Join user to community (idempotent). Wraps membership.create + community.memberCount
  * in a transaction so counters never drift.
+ *
+ * If the community has `classesConfig` and `className` is provided + valid,
+ * stores it on the membership. Invalid class keys are silently dropped (no join
+ * failure) so a stale client can't block joining.
  */
-export async function joinCommunity(userId: string, communityId: string) {
+export async function joinCommunity(
+  userId: string,
+  communityId: string,
+  className?: string
+) {
   try {
+    // Validate className against community's configured classes (if any)
+    let validatedClass: string | null = null;
+    if (className) {
+      const community = await prisma.community.findUnique({
+        where: { id: communityId },
+        select: { classesConfig: true },
+      });
+      if (community) {
+        const keys = new Set(getClasses(community).map((c) => c.key));
+        if (keys.has(className)) validatedClass = className;
+      }
+    }
+
     return await prisma.$transaction(async (tx) => {
       const existing = await tx.membership.findUnique({
         where: { userId_communityId: { userId, communityId } },
       });
-      if (existing) return { created: false, membership: existing };
+      if (existing) {
+        // Already a member — let them set/change class on re-join click
+        if (validatedClass && existing.className !== validatedClass) {
+          const updated = await tx.membership.update({
+            where: { id: existing.id },
+            data: { className: validatedClass },
+          });
+          return { created: false, membership: updated };
+        }
+        return { created: false, membership: existing };
+      }
 
       const membership = await tx.membership.create({
         data: {
@@ -34,6 +66,7 @@ export async function joinCommunity(userId: string, communityId: string) {
           communityId,
           role: "MEMBER",
           tier: "EXPLORER",
+          className: validatedClass,
         },
       });
       await tx.community.update({

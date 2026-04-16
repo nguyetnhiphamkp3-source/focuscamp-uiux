@@ -1,7 +1,6 @@
-import { auth, signIn } from "@/auth";
-import { revalidatePath } from "next/cache";
-import { joinCommunity } from "@/lib/services/community";
-import { logError } from "@/lib/logger";
+import { JoinButton } from "./join-button";
+import { classByKey } from "@/lib/community-config";
+import type { ClassConfig } from "@/lib/community-config";
 
 type Community = {
   id: string;
@@ -17,43 +16,29 @@ type Membership = {
   role: string;
   tier: string;
   xp: number;
+  className: string | null;
 } | null;
 
 export async function CommunityRightSidebar({
   community,
   membership,
-  isLoggedIn,
+  classes,
 }: {
   community: Community;
   membership: Membership;
   isLoggedIn: boolean;
+  classes: ClassConfig[];
 }) {
-  async function joinAction() {
-    "use server";
-    const s = await auth();
-    if (!s?.user?.id) {
-      await signIn("google", { redirectTo: `/c/${community.slug}` });
-      return;
-    }
-    try {
-      await joinCommunity(s.user.id, community.id);
-      revalidatePath(`/c/${community.slug}`);
-    } catch (err) {
-      logError(err, { userId: s.user.id, communityId: community.id });
-      throw err;
-    }
-  }
-
   return (
     <aside className="right-sidebar" id="rightSidebar">
       {membership ? (
-        <MemberView community={community} membership={membership} />
-      ) : (
-        <GuestView
+        <MemberView
           community={community}
-          isLoggedIn={isLoggedIn}
-          joinAction={joinAction}
+          membership={membership}
+          classes={classes}
         />
+      ) : (
+        <GuestView community={community} classes={classes} />
       )}
     </aside>
   );
@@ -61,11 +46,10 @@ export async function CommunityRightSidebar({
 
 function GuestView({
   community,
-  joinAction,
+  classes,
 }: {
   community: Community;
-  isLoggedIn: boolean;
-  joinAction: () => void;
+  classes: ClassConfig[];
 }) {
   return (
     <div className="rs-view active">
@@ -118,15 +102,11 @@ function GuestView({
           </div>
         )}
 
-        <form action={joinAction}>
-          <button
-            type="submit"
-            className="rs-join-btn primary"
-            style={{ margin: "4px 0" }}
-          >
-            Tham gia cộng đồng
-          </button>
-        </form>
+        <JoinButton
+          communityId={community.id}
+          communitySlug={community.slug}
+          classes={classes}
+        />
 
         <div className="rs-card">
           <div
@@ -166,10 +146,14 @@ function GuestView({
 function MemberView({
   community,
   membership,
+  classes,
 }: {
   community: Community;
   membership: NonNullable<Membership>;
+  classes: ClassConfig[];
 }) {
+  const myClass = classByKey(membership.className, classes);
+
   return (
     <div className="rs-view active">
       <div
@@ -222,7 +206,29 @@ function MemberView({
             <Stat label="Role" value={membership.role} />
             <Stat label="Tier" value={membership.tier} />
             <Stat label="XP" value={String(membership.xp)} />
+            {classes.length > 0 && (
+              <Stat
+                label="Class"
+                value={
+                  myClass
+                    ? `${myClass.emoji ? myClass.emoji + " " : ""}${myClass.label}`
+                    : "— chưa chọn —"
+                }
+              />
+            )}
           </div>
+          {classes.length > 0 && (
+            <div style={{ marginTop: 10 }}>
+              <JoinButton
+                communityId={community.id}
+                communitySlug={community.slug}
+                classes={classes}
+                currentClassKey={membership.className}
+                label={myClass ? "Đổi class" : "Chọn class"}
+                variant="secondary"
+              />
+            </div>
+          )}
         </div>
 
         <div className="rs-card">

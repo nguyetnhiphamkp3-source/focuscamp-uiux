@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { CommunityRightSidebar } from "@/components/shell/community-right-sidebar";
+import { getClasses } from "@/lib/community-config";
 
 export async function DefaultRightSidebar({
   slug,
@@ -29,6 +30,8 @@ export async function DefaultRightSidebar({
     });
   }
 
+  const classes = getClasses(community);
+
   return (
     <CommunityRightSidebar
       community={{
@@ -46,10 +49,12 @@ export async function DefaultRightSidebar({
               role: membership.role,
               tier: membership.tier,
               xp: membership.xp,
+              className: membership.className,
             }
           : null
       }
       isLoggedIn={!!session?.user}
+      classes={classes}
     />
   );
 }
