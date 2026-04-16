@@ -91,3 +91,36 @@ export function avatarColorFor(id: string): string {
 export function nameColorFor(id: string): string {
   return NAME_COLORS[hashString(id) % NAME_COLORS.length];
 }
+
+/* ======== Feed pillars ======== */
+export const PILLARS = [
+  { key: "offer", label: "Offer", emoji: "🎯", cls: "pillar-offer" },
+  { key: "traffic", label: "Traffic", emoji: "📣", cls: "pillar-traffic" },
+  { key: "conversion", label: "Conversion", emoji: "⚡", cls: "pillar-conversion" },
+  { key: "delivery", label: "Delivery", emoji: "🚚", cls: "pillar-delivery" },
+] as const;
+
+export type PillarKey = (typeof PILLARS)[number]["key"];
+
+export function pillarFor(key: string | null | undefined) {
+  if (!key) return null;
+  return PILLARS.find((p) => p.key === key) ?? null;
+}
+
+/* ======== Relative time ("2 giờ trước") ======== */
+export function fmtRelativeTime(date: Date | string | number): string {
+  const d = typeof date === "string" || typeof date === "number" ? new Date(date) : date;
+  const diffMs = Date.now() - d.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  if (diffSec < 60) return "vừa xong";
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin} phút trước`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr} giờ trước`;
+  const diffDay = Math.floor(diffHr / 24);
+  if (diffDay === 1) return "hôm qua";
+  if (diffDay < 7) return `${diffDay} ngày trước`;
+  if (diffDay < 30) return `${Math.floor(diffDay / 7)} tuần trước`;
+  if (diffDay < 365) return `${Math.floor(diffDay / 30)} tháng trước`;
+  return `${Math.floor(diffDay / 365)} năm trước`;
+}

@@ -50,6 +50,34 @@ export const ChallengeCheckinSchema = z.object({
   imageUrl: z.string().url().optional().or(z.literal("")),
 });
 
+/* ========== Posts (Feed / Cốt / Q&A / Signals) ========== */
+export const PostTypeSchema = z.enum(["POST", "QUESTION", "SIGNAL"]);
+
+export const CreatePostSchema = z.object({
+  communityId: z.string().cuid(),
+  type: PostTypeSchema.default("POST"),
+  title: z.string().trim().max(200).optional().or(z.literal("")),
+  body: z
+    .string()
+    .trim()
+    .min(1, "Nội dung không được trống")
+    .max(10000, "Nội dung quá dài (max 10.000 ký tự)"),
+  pillar: z
+    .enum(["offer", "traffic", "conversion", "delivery"])
+    .optional()
+    .or(z.literal("")),
+  bountyAip: z.number().int().nonnegative().optional(),
+});
+
+export const ReactPostSchema = z.object({
+  postId: z.string().cuid(),
+  emoji: z.string().min(1).max(10).default("❤️"),
+});
+
+export const MarkCotSchema = z.object({
+  postId: z.string().cuid(),
+});
+
 /* ========== Product purchase ========== */
 export const BuyProductSchema = z.object({
   productId: z.string().cuid(),
