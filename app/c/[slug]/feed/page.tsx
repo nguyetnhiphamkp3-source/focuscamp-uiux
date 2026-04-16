@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { listFeed } from "@/lib/services/post";
 import { getPillars, getCurrency } from "@/lib/community-config";
 import { PostComposer } from "@/components/feed/post-composer";
-import { PostCard } from "@/components/feed/post-card";
+import { FeedList } from "@/components/feed/feed-list";
 import { EmptyState } from "@/components/ui/empty-state";
 
 export const dynamic = "force-dynamic";
@@ -48,13 +48,14 @@ export default async function FeedPage({
       }))
     : false;
 
+  const PAGE_SIZE = 20;
   const posts = await listFeed({
     communityId: community.id,
     type: "POST",
     userId,
     pillar: pillarFilter || undefined,
     sort,
-    limit: 30,
+    limit: PAGE_SIZE,
   });
 
   // Preserve pillar across tab switches, and sort across pillar switches
@@ -172,18 +173,18 @@ export default async function FeedPage({
               }
             />
           ) : (
-            posts.map((p) => (
-              <PostCard
-                key={p.id}
-                post={p}
-                communitySlug={slug}
-                pillars={pillars}
-                currency={currency}
-                canEditCot={isOwner}
-                currentUserId={userId ?? null}
-                isOwner={isOwner}
-              />
-            ))
+            <FeedList
+              initialPosts={posts}
+              communityId={community.id}
+              communitySlug={slug}
+              type="POST"
+              pillars={pillars}
+              currency={currency}
+              isOwner={isOwner}
+              currentUserId={userId ?? null}
+              pageSize={PAGE_SIZE}
+              filter={{ pillar: pillarFilter, sort }}
+            />
           )}
         </div>
       </div>

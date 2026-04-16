@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { listFeed } from "@/lib/services/post";
 import { getPillars, getCurrency } from "@/lib/community-config";
 import { PostComposer } from "@/components/feed/post-composer";
-import { PostCard } from "@/components/feed/post-card";
+import { FeedList } from "@/components/feed/feed-list";
 import { EmptyState } from "@/components/ui/empty-state";
 
 export const dynamic = "force-dynamic";
@@ -41,11 +41,12 @@ export default async function QAPage({
       }))
     : false;
 
+  const PAGE_SIZE = 20;
   const questions = await listFeed({
     communityId: community.id,
     type: "QUESTION",
     userId,
-    limit: 30,
+    limit: PAGE_SIZE,
   });
 
   const unanswered = questions.filter((q) => q.commentCount === 0).length;
@@ -126,18 +127,17 @@ export default async function QAPage({
               }
             />
           ) : (
-            questions.map((q) => (
-              <PostCard
-                key={q.id}
-                post={q}
-                communitySlug={slug}
-                pillars={pillars}
-                currency={currency}
-                canEditCot={isOwner}
-                currentUserId={userId ?? null}
-                isOwner={isOwner}
-              />
-            ))
+            <FeedList
+              initialPosts={questions}
+              communityId={community.id}
+              communitySlug={slug}
+              type="QUESTION"
+              pillars={pillars}
+              currency={currency}
+              isOwner={isOwner}
+              currentUserId={userId ?? null}
+              pageSize={PAGE_SIZE}
+            />
           )}
         </div>
       </div>

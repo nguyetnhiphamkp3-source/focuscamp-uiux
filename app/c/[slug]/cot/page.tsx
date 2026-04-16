@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { listFeed } from "@/lib/services/post";
 import { getPillars, getCurrency } from "@/lib/community-config";
-import { PostCard } from "@/components/feed/post-card";
+import { FeedList } from "@/components/feed/feed-list";
 import { EmptyState } from "@/components/ui/empty-state";
 
 export const dynamic = "force-dynamic";
@@ -34,12 +34,13 @@ export default async function CotPage({
   const userId = session?.user?.id;
   const isOwner = userId === community.ownerId;
 
+  const PAGE_SIZE = 20;
   const posts = await listFeed({
     communityId: community.id,
     type: "POST",
     isCot: true,
     userId,
-    limit: 50,
+    limit: PAGE_SIZE,
   });
 
   return (
@@ -95,19 +96,19 @@ export default async function CotPage({
               }
             />
           ) : (
-            posts.map((p) => (
-              <PostCard
-                key={p.id}
-                post={p}
-                communitySlug={slug}
-                pillars={pillars}
-                currency={currency}
-                canEditCot={isOwner}
-                currentUserId={userId ?? null}
-                isOwner={isOwner}
-                showCotBadge={false}
-              />
-            ))
+            <FeedList
+              initialPosts={posts}
+              communityId={community.id}
+              communitySlug={slug}
+              type="POST"
+              pillars={pillars}
+              currency={currency}
+              isOwner={isOwner}
+              currentUserId={userId ?? null}
+              pageSize={PAGE_SIZE}
+              showCotBadge={false}
+              filter={{ isCot: true }}
+            />
           )}
         </div>
       </div>

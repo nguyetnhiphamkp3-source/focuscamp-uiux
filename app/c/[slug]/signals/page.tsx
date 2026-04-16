@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { listFeed } from "@/lib/services/post";
 import { getPillars, getCurrency } from "@/lib/community-config";
 import { PostComposer } from "@/components/feed/post-composer";
-import { PostCard } from "@/components/feed/post-card";
+import { FeedList } from "@/components/feed/feed-list";
 import { EmptyState } from "@/components/ui/empty-state";
 
 export const dynamic = "force-dynamic";
@@ -35,11 +35,12 @@ export default async function SignalsPage({
   const userId = session?.user?.id;
   const isOwner = userId === community.ownerId;
 
+  const PAGE_SIZE = 20;
   const signals = await listFeed({
     communityId: community.id,
     type: "SIGNAL",
     userId,
-    limit: 50,
+    limit: PAGE_SIZE,
   });
 
   return (
@@ -114,18 +115,17 @@ export default async function SignalsPage({
               }
             />
           ) : (
-            signals.map((s) => (
-              <PostCard
-                key={s.id}
-                post={s}
-                communitySlug={slug}
-                pillars={pillars}
-                currency={currency}
-                canEditCot={isOwner}
-                currentUserId={userId ?? null}
-                isOwner={isOwner}
-              />
-            ))
+            <FeedList
+              initialPosts={signals}
+              communityId={community.id}
+              communitySlug={slug}
+              type="SIGNAL"
+              pillars={pillars}
+              currency={currency}
+              isOwner={isOwner}
+              currentUserId={userId ?? null}
+              pageSize={PAGE_SIZE}
+            />
           )}
         </div>
       </div>
