@@ -18,9 +18,41 @@ import { ReactionButton } from "@/components/feed/reaction-button";
 import { CotToggleButton } from "@/components/feed/cot-toggle-button";
 import { CommentComposer } from "@/components/feed/comment-composer";
 import { CommentItem } from "@/components/feed/comment-item";
+import type { CommentItemData } from "@/components/feed/comment-item";
 import { EmptyState } from "@/components/ui/empty-state";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * Flatten comments into a tree: root comments get a `replies` array with all
+ * descendants (single-level flattening — deeper nesting still works because
+ * CommentItem recurses on each reply's own `replies`, which is what we build
+ * below via the index).
+ */
+function groupByParent(
+  comments: CommentItemData[]
+): (CommentItemData & { replies: CommentItemData[] })[] {
+  const byParent = new Map<string, CommentItemData[]>();
+  for (const c of comments) {
+    const key = c.parentId ?? "__root__";
+    const arr = byParent.get(key) ?? [];
+    arr.push(c);
+    byParent.set(key, arr);
+  }
+  function childrenOf(parentId: string): CommentItemData[] {
+    const direct = byParent.get(parentId) ?? [];
+    // Flatten nested children; CommentItem itself only renders one level
+    // so we collect all descendants under the root in render order.
+    const out: CommentItemData[] = [];
+    for (const c of direct) {
+      out.push(c);
+      out.push(...childrenOf(c.id));
+    }
+    return out;
+  }
+  const roots = byParent.get("__root__") ?? [];
+  return roots.map((r) => ({ ...r, replies: childrenOf(r.id) }));
+}
 
 export default async function PostDetailPage({
   params,
@@ -224,14 +256,24 @@ export default async function PostDetailPage({
                 }
               />
             ) : (
-              comments.map((c) => (
+              groupByParent(comments).map((c) => (
                 <CommentItem
                   key={c.id}
                   comment={c}
+                  replies={c.replies}
                   postId={post.id}
                   communitySlug={slug}
-                  canMarkBest={isAuthor || isOwner}
-                  canDelete={userId === c.user.id || isOwner}
+                  currentUser={
+                    isMember && session?.user && userId
+                      ? {
+                          id: userId,
+                          name: session.user.name ?? null,
+                          image: session.user.image ?? null,
+                        }
+                      : null
+                  }
+                  isOwner={isOwner}
+                  postAuthorId={post.user.id}
                   isQuestion={isQuestion}
                 />
               ))
