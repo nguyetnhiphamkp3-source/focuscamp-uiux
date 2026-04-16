@@ -35,11 +35,14 @@ export function FeedList({
   showCotBadge?: boolean;
   pageSize?: number;
   /** Active filters — passed to loadMoreFeedAction so more fetches keep
-   *  the same pillar/sort/isCot as the initial render. */
+   *  the same pillar/sort/isCot/scope as the initial render. */
   filter?: {
     pillar?: string;
     sort?: "latest" | "popular";
     isCot?: boolean;
+    scope?: "all" | "following" | "bookmarked";
+    followedUserIds?: string[];
+    bookmarkedPostIds?: string[];
   };
 }) {
   const [posts, setPosts] = useState<FeedPost[]>(initialPosts);
@@ -61,6 +64,9 @@ export function FeedList({
         pillar: filter?.pillar,
         sort: filter?.sort,
         isCot: filter?.isCot,
+        scope: filter?.scope,
+        followedUserIds: filter?.followedUserIds,
+        bookmarkedPostIds: filter?.bookmarkedPostIds,
         limit: pageSize,
       });
       if (res.ok) {

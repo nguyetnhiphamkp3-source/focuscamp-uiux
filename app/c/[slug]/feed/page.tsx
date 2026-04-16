@@ -7,6 +7,7 @@ import { getPillars, getCurrency } from "@/lib/community-config";
 import { PostComposer } from "@/components/feed/post-composer";
 import { FeedList } from "@/components/feed/feed-list";
 import { EmptyState } from "@/components/ui/empty-state";
+import { followedUserIds } from "@/lib/services/follow";
 
 export const dynamic = "force-dynamic";
 
@@ -15,13 +16,19 @@ export default async function FeedPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ pillar?: string; sort?: string }>;
+  searchParams: Promise<{ pillar?: string; sort?: string; scope?: string }>;
 }) {
   const { slug } = await params;
   const sp = await searchParams;
   const pillarFilter = sp.pillar;
   const sort: "latest" | "popular" =
     sp.sort === "popular" ? "popular" : "latest";
+  const scope: "all" | "following" | "bookmarked" =
+    sp.scope === "following"
+      ? "following"
+      : sp.scope === "bookmarked"
+        ? "bookmarked"
+        : "all";
 
   const community = await prisma.community.findUnique({
     where: { slug },
@@ -49,25 +56,49 @@ export default async function FeedPage({
     : false;
 
   const PAGE_SIZE = 20;
+
+  // Scope-specific precomputed lists
+  let followedIds: string[] | undefined;
+  let bookmarkedIds: string[] | undefined;
+  if (userId && scope === "following") {
+    followedIds = await followedUserIds(userId);
+  } else if (userId && scope === "bookmarked") {
+    const rows = await prisma.bookmark.findMany({
+      where: { userId, post: { communityId: community.id } },
+      select: { postId: true },
+    });
+    bookmarkedIds = rows.map((r) => r.postId);
+  }
+
   const posts = await listFeed({
     communityId: community.id,
     type: "POST",
     userId,
     pillar: pillarFilter || undefined,
     sort,
+    scope,
+    followedUserIds: followedIds,
+    bookmarkedPostIds: bookmarkedIds,
     limit: PAGE_SIZE,
   });
 
-  // Preserve pillar across tab switches, and sort across pillar switches
-  function urlFor(overrides: { pillar?: string | null; sort?: string }) {
+  // Preserve pillar+sort+scope across tab/filter switches
+  function urlFor(overrides: {
+    pillar?: string | null;
+    sort?: string;
+    scope?: string;
+  }) {
     const p = new URLSearchParams();
     const finalPillar =
       overrides.pillar === null
         ? undefined
         : overrides.pillar ?? pillarFilter;
     const finalSort = overrides.sort ?? (sort === "latest" ? undefined : sort);
+    const finalScope =
+      overrides.scope ?? (scope === "all" ? undefined : scope);
     if (finalPillar) p.set("pillar", finalPillar);
     if (finalSort) p.set("sort", finalSort);
+    if (finalScope) p.set("scope", finalScope);
     const qs = p.toString();
     return `/c/${slug}/feed${qs ? `?${qs}` : ""}`;
   }
@@ -108,35 +139,58 @@ export default async function FeedPage({
 
           <div className="feed-tabs">
             <Link
-              href={urlFor({ sort: "" })}
+              href={urlFor({ sort: "", scope: "" })}
               scroll={false}
-              className={`feed-tab ${sort === "latest" ? "active" : ""}`}
+              className={`feed-tab ${sort === "latest" && scope === "all" ? "active" : ""}`}
               style={{ textDecoration: "none" }}
             >
               Latest
             </Link>
             <Link
-              href={urlFor({ sort: "popular" })}
+              href={urlFor({ sort: "popular", scope: "" })}
               scroll={false}
-              className={`feed-tab ${sort === "popular" ? "active" : ""}`}
+              className={`feed-tab ${sort === "popular" && scope === "all" ? "active" : ""}`}
               style={{ textDecoration: "none" }}
             >
               Popular
             </Link>
-            <div
-              className="feed-tab"
-              title="Phase 2 — cần Follow system"
-              style={{ opacity: 0.4, cursor: "not-allowed" }}
-            >
-              Following
-            </div>
-            <div
-              className="feed-tab"
-              title="Phase 2 — cần Bookmark model"
-              style={{ opacity: 0.4, cursor: "not-allowed" }}
-            >
-              Bookmarked
-            </div>
+            {userId ? (
+              <>
+                <Link
+                  href={urlFor({ scope: "following" })}
+                  scroll={false}
+                  className={`feed-tab ${scope === "following" ? "active" : ""}`}
+                  style={{ textDecoration: "none" }}
+                >
+                  Following
+                </Link>
+                <Link
+                  href={urlFor({ scope: "bookmarked" })}
+                  scroll={false}
+                  className={`feed-tab ${scope === "bookmarked" ? "active" : ""}`}
+                  style={{ textDecoration: "none" }}
+                >
+                  Bookmarked
+                </Link>
+              </>
+            ) : (
+              <>
+                <div
+                  className="feed-tab"
+                  title="Đăng nhập để follow người khác"
+                  style={{ opacity: 0.4, cursor: "not-allowed" }}
+                >
+                  Following
+                </div>
+                <div
+                  className="feed-tab"
+                  title="Đăng nhập để bookmark bài"
+                  style={{ opacity: 0.4, cursor: "not-allowed" }}
+                >
+                  Bookmarked
+                </div>
+              </>
+            )}
           </div>
 
           {pillars.length > 0 && (
@@ -183,7 +237,13 @@ export default async function FeedPage({
               isOwner={isOwner}
               currentUserId={userId ?? null}
               pageSize={PAGE_SIZE}
-              filter={{ pillar: pillarFilter, sort }}
+              filter={{
+                pillar: pillarFilter,
+                sort,
+                scope,
+                followedUserIds: followedIds,
+                bookmarkedPostIds: bookmarkedIds,
+              }}
             />
           )}
         </div>

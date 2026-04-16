@@ -20,6 +20,7 @@ export type FeedPost = Awaited<ReturnType<typeof listFeed>>[number];
  * If `userId` is provided, also returns whether the current user has reacted.
  */
 export type FeedSort = "latest" | "popular";
+export type FeedScope = "all" | "following" | "bookmarked";
 
 export async function listFeed(params: {
   communityId: string;
@@ -30,6 +31,13 @@ export async function listFeed(params: {
   limit?: number;
   cursor?: string;
   sort?: FeedSort;
+  /** "all" default. "following" filters to posts by users the viewer follows.
+   *  "bookmarked" filters to posts the viewer has bookmarked. Both require userId. */
+  scope?: FeedScope;
+  /** Precomputed list of user ids to filter by (for "following"). */
+  followedUserIds?: string[];
+  /** Precomputed list of post ids (for "bookmarked"). */
+  bookmarkedPostIds?: string[];
 }) {
   const {
     communityId,
@@ -40,14 +48,31 @@ export async function listFeed(params: {
     limit = 20,
     cursor,
     sort = "latest",
+    scope = "all",
+    followedUserIds: followedIds,
+    bookmarkedPostIds: bookmarkedIds,
   } = params;
 
-  const where = {
+  const where: Record<string, unknown> = {
     communityId,
     type,
     ...(isCot !== undefined ? { isCot } : {}),
     ...(pillar ? { pillar } : {}),
   };
+  if (scope === "following" && followedIds) {
+    if (followedIds.length === 0) {
+      // No followees — short-circuit to empty result
+      where.id = "__impossible__";
+    } else {
+      where.userId = { in: followedIds };
+    }
+  } else if (scope === "bookmarked" && bookmarkedIds) {
+    if (bookmarkedIds.length === 0) {
+      where.id = "__impossible__";
+    } else {
+      where.id = { in: bookmarkedIds };
+    }
+  }
 
   // Popular sort: pinned first, then by engagement (reactions+comments),
   // then recency as tiebreak. Latest sort: pinned first, then recency.
@@ -70,6 +95,10 @@ export async function listFeed(params: {
         ? {
             reactions: {
               where: { userId, emoji: LIKE_EMOJI },
+              select: { id: true },
+            },
+            bookmarks: {
+              where: { userId },
               select: { id: true },
             },
           }
@@ -96,6 +125,8 @@ export async function listFeed(params: {
     reactionCount: p._count.reactions,
     reactedByMe:
       "reactions" in p && Array.isArray(p.reactions) ? p.reactions.length > 0 : false,
+    bookmarkedByMe:
+      "bookmarks" in p && Array.isArray(p.bookmarks) ? p.bookmarks.length > 0 : false,
   }));
 }
 

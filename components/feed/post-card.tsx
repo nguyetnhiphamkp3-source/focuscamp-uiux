@@ -12,6 +12,7 @@ import { CotToggleButton } from "./cot-toggle-button";
 import { PinToggleButton } from "./pin-toggle-button";
 import { PostMenu } from "./post-menu";
 import { ShareButton } from "./share-button";
+import { BookmarkButton } from "./bookmark-button";
 import type { FeedPost } from "@/lib/services/post";
 
 export function PostCard({
@@ -25,7 +26,7 @@ export function PostCard({
   showCotBadge = true,
   href,
 }: {
-  post: FeedPost;
+  post: FeedPost & { bookmarkedByMe?: boolean };
   communitySlug: string;
   /** Per-community pillar list. Empty array → no pillar tag rendered. */
   pillars?: PillarConfig[];
@@ -149,6 +150,13 @@ export function PostCard({
         >
           💬 {post.commentCount} bình luận
         </Link>
+        {currentUserId && (
+          <BookmarkButton
+            postId={post.id}
+            communitySlug={communitySlug}
+            initialBookmarked={post.bookmarkedByMe ?? false}
+          />
+        )}
         {canEditCot && (
           <>
             <PinToggleButton

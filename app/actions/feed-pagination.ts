@@ -17,6 +17,9 @@ export async function loadMoreFeedAction(input: {
   pillar?: string;
   sort?: "latest" | "popular";
   isCot?: boolean;
+  scope?: "all" | "following" | "bookmarked";
+  followedUserIds?: string[];
+  bookmarkedPostIds?: string[];
   limit?: number;
 }): Promise<{ ok: true; posts: FeedPost[] } | { ok: false; reason: string }> {
   try {
@@ -27,6 +30,9 @@ export async function loadMoreFeedAction(input: {
       isCot: input.isCot,
       pillar: input.pillar,
       sort: input.sort,
+      scope: input.scope,
+      followedUserIds: input.followedUserIds,
+      bookmarkedPostIds: input.bookmarkedPostIds,
       userId: s?.user?.id,
       cursor: input.cursor,
       limit: input.limit ?? 20,
