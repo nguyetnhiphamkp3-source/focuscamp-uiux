@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { getPillars } from "@/lib/community-config";
 import { createNotification } from "./notification";
+import { awardXp } from "./xp";
 
 const LIKE_EMOJI = "❤️";
 
@@ -214,6 +215,15 @@ export async function createPost(input: {
     },
   });
   logger.info({ postId: post.id, userId, type }, "[post] created");
+
+  // Award XP (non-blocking if fails)
+  awardXp({
+    userId,
+    communityId,
+    reason: "POST_CREATED",
+    reasonId: post.id,
+  }).catch((err) => logger.warn({ err }, "[post] awardXp failed"));
+
   return post;
 }
 

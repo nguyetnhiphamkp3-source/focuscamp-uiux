@@ -4,6 +4,7 @@
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { createNotification } from "./notification";
+import { awardXp, bumpCommunityStreak } from "./xp";
 
 export interface ActiveChallenge {
   memberId: string;
@@ -204,6 +205,28 @@ export async function submitCheckin(params: {
     { userId, challengeId, completed: isFinalDay },
     "[challenge] checkin submitted"
   );
+
+  // Bump streak first, then award XP (multiplier uses the freshly bumped streak)
+  const challengeCommunity = await prisma.challenge.findUnique({
+    where: { id: challengeId },
+    select: { communityId: true },
+  });
+  if (challengeCommunity) {
+    try {
+      await bumpCommunityStreak({
+        userId,
+        communityId: challengeCommunity.communityId,
+      });
+      await awardXp({
+        userId,
+        communityId: challengeCommunity.communityId,
+        reason: "CHECKIN",
+      });
+    } catch (err) {
+      logger.warn({ err }, "[checkin] streak/XP update failed");
+    }
+  }
+
   return { ok: true, completed: isFinalDay };
 }
 
@@ -367,6 +390,24 @@ export async function reviewSubmission(input: {
       link: `/c/${ctx.community.slug}/challenges/${ctx.slug}`,
       communitySlug: ctx.community.slug,
     });
+
+    // Award bonus XP on approve (on top of the base CHECKIN XP from submit)
+    if (input.action === "APPROVE") {
+      const challengeRow = await prisma.challenge.findUnique({
+        where: { id: checkin.challengeId },
+        select: { communityId: true },
+      });
+      if (challengeRow) {
+        awardXp({
+          userId: checkin.userId,
+          communityId: challengeRow.communityId,
+          reason: "SUBMISSION_APPROVED",
+          reasonId: input.checkinId,
+        }).catch((err) =>
+          logger.warn({ err }, "[review] approve XP failed")
+        );
+      }
+    }
   }
 
   return updated;

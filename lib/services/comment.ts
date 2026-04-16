@@ -6,6 +6,7 @@
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { createNotification } from "./notification";
+import { awardXp } from "./xp";
 
 export async function createComment(input: {
   userId: string;
@@ -47,6 +48,14 @@ export async function createComment(input: {
     },
   });
   logger.info({ commentId: comment.id, postId: input.postId }, "[comment] created");
+
+  // Award XP (non-blocking)
+  awardXp({
+    userId: input.userId,
+    communityId: post.communityId,
+    reason: "COMMENT_CREATED",
+    reasonId: comment.id,
+  }).catch((err) => logger.warn({ err }, "[comment] awardXp failed"));
 
   // Emit notifications (non-blocking — failures logged, never thrown)
   const postFull = await prisma.post.findUnique({
@@ -148,10 +157,14 @@ export async function markBestAnswer(input: { userId: string; commentId: string 
     }),
   ]);
 
-  // Notify the comment author
+  // Notify + award XP to comment author
   const post = await prisma.post.findUnique({
     where: { id: comment.postId },
-    select: { community: { select: { slug: true } }, type: true, title: true },
+    select: {
+      community: { select: { id: true, slug: true } },
+      type: true,
+      title: true,
+    },
   });
   if (post) {
     await createNotification({
@@ -167,6 +180,12 @@ export async function markBestAnswer(input: { userId: string; commentId: string 
       postId: comment.postId,
       commentId: input.commentId,
     });
+    awardXp({
+      userId: comment.userId,
+      communityId: post.community.id,
+      reason: "BEST_ANSWER",
+      reasonId: input.commentId,
+    }).catch((err) => logger.warn({ err }, "[comment] bestAnswer XP failed"));
   }
 
   return { isBestAnswer: true };
