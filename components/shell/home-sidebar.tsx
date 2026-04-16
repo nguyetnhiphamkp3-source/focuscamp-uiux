@@ -1,4 +1,5 @@
 import { FeatureLink } from "./nav-link";
+import { NotifBadge } from "./notif-badge";
 
 export function HomeSidebar({ notifUnread = 0 }: { notifUnread?: number }) {
   return (
@@ -99,11 +100,7 @@ export function HomeSidebar({ notifUnread = 0 }: { notifUnread?: number }) {
             </svg>
           </span>
           <span className="feature-name">Thông báo</span>
-          {notifUnread > 0 && (
-            <span className="unread-badge">
-              {notifUnread > 99 ? "99+" : notifUnread}
-            </span>
-          )}
+          <NotifBadge initial={notifUnread} />
         </FeatureLink>
         <div className="feature-item">
           <span className="feature-icon">
