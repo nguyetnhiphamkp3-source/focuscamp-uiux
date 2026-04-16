@@ -2,10 +2,15 @@
 
 import { auth, signIn } from "@/auth";
 import { revalidatePath } from "next/cache";
-import { joinCommunity, createCommunity } from "@/lib/services/community";
+import {
+  joinCommunity,
+  createCommunity,
+  updateCommunityInfo,
+} from "@/lib/services/community";
 import {
   JoinCommunitySchema,
   CreateCommunitySchema,
+  UpdateCommunityInfoSchema,
 } from "@/lib/validations";
 import { logError } from "@/lib/logger";
 
@@ -85,6 +90,51 @@ export async function createCommunityAction(input: {
     return { ok: true, slug: c.slug };
   } catch (err) {
     logError(err, { userId: s.user.id, slug: input.slug });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+export async function updateCommunityInfoAction(input: {
+  communityId: string;
+  communitySlug: string;
+  name?: string;
+  tagline?: string;
+  description?: string;
+  bannerUrl?: string;
+  iconUrl?: string;
+}): Promise<{ ok: true } | { ok: false; reason: string }> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+
+  const parsed = UpdateCommunityInfoSchema.safeParse({
+    communityId: input.communityId,
+    name: input.name,
+    tagline: input.tagline,
+    description: input.description,
+    bannerUrl: input.bannerUrl,
+    iconUrl: input.iconUrl,
+  });
+  if (!parsed.success) {
+    return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
+  }
+
+  try {
+    await updateCommunityInfo({
+      userId: s.user.id,
+      communityId: parsed.data.communityId,
+      name: parsed.data.name,
+      tagline: parsed.data.tagline ?? undefined,
+      description: parsed.data.description ?? undefined,
+      bannerUrl: parsed.data.bannerUrl ?? undefined,
+      iconUrl: parsed.data.iconUrl ?? undefined,
+    });
+    revalidatePath(`/c/${input.communitySlug}`);
+    revalidatePath(`/c/${input.communitySlug}/settings`);
+    revalidatePath("/discovery");
+    return { ok: true };
+  } catch (err) {
+    logError(err, { userId: s.user.id, communityId: input.communityId });
     if (err instanceof Error) return { ok: false, reason: err.message };
     return { ok: false, reason: "unknown" };
   }

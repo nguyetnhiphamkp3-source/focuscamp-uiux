@@ -307,6 +307,15 @@ export const CreateCommunitySchema = z.object({
   description: z.string().trim().max(5000).optional().or(z.literal("")),
 });
 
+export const UpdateCommunityInfoSchema = z.object({
+  communityId: z.string().cuid(),
+  name: z.string().trim().min(2).max(80).optional(),
+  tagline: z.string().trim().max(160).optional().or(z.literal("")),
+  description: z.string().trim().max(5000).optional().or(z.literal("")),
+  bannerUrl: z.string().url().optional().or(z.literal("")),
+  iconUrl: z.string().url().optional().or(z.literal("")),
+});
+
 /* ========== Course / Lesson CRUD ========== */
 export const CreateCourseSchema = z.object({
   communityId: z.string().cuid(),

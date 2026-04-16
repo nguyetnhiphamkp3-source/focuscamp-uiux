@@ -138,6 +138,52 @@ export async function createCommunity(input: {
   });
 }
 
+/**
+ * Update community metadata. Owner only. Cannot change slug or ownerId
+ * here — slug change is risky (breaks URLs) and ownership transfer is
+ * a separate ceremony.
+ */
+export async function updateCommunityInfo(input: {
+  userId: string;
+  communityId: string;
+  name?: string;
+  tagline?: string;
+  description?: string;
+  bannerUrl?: string;
+  iconUrl?: string;
+}) {
+  const c = await prisma.community.findUnique({
+    where: { id: input.communityId },
+    select: { ownerId: true },
+  });
+  if (!c) throw new Error("Cộng đồng không tồn tại");
+  if (c.ownerId !== input.userId)
+    throw new Error("Chỉ chủ cộng đồng mới sửa được thông tin");
+
+  await prisma.community.update({
+    where: { id: input.communityId },
+    data: {
+      ...(input.name !== undefined ? { name: input.name } : {}),
+      ...(input.tagline !== undefined
+        ? { tagline: input.tagline.trim() || null }
+        : {}),
+      ...(input.description !== undefined
+        ? { description: input.description.trim() || null }
+        : {}),
+      ...(input.bannerUrl !== undefined
+        ? { bannerUrl: input.bannerUrl.trim() || null }
+        : {}),
+      ...(input.iconUrl !== undefined
+        ? { iconUrl: input.iconUrl.trim() || null }
+        : {}),
+    },
+  });
+  logger.info(
+    { communityId: input.communityId, by: input.userId },
+    "[community] info updated"
+  );
+}
+
 export async function listMyCommunities(userId: string) {
   const mems = await prisma.membership.findMany({
     where: { userId },

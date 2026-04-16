@@ -12,6 +12,7 @@ import { ClassesEditor } from "@/components/settings/classes-editor";
 import { CurrencyEditor } from "@/components/settings/currency-editor";
 import { LevelsEditor } from "@/components/settings/levels-editor";
 import { MembersEditor } from "@/components/settings/members-editor";
+import { CommunityInfoEditor } from "@/components/settings/community-info-editor";
 import { listMembers } from "@/lib/services/community-settings";
 
 export const dynamic = "force-dynamic";
@@ -70,19 +71,43 @@ export default async function SettingsPage({
             </div>
           )}
 
+          <CommunityInfoEditor
+            communityId={community.id}
+            communitySlug={slug}
+            initial={{
+              name: community.name,
+              tagline: community.tagline,
+              description: community.description,
+              bannerUrl: community.bannerUrl,
+              iconUrl: community.iconUrl,
+            }}
+            disabled={!isOwner}
+          />
+
           <div
-            className="ui-card ui-card-lg"
-            style={{ marginBottom: "var(--space-4)" }}
+            className="ui-card"
+            style={{
+              marginBottom: "var(--space-4)",
+              padding: "var(--space-4) var(--space-5)",
+              fontSize: "var(--text-sm)",
+              color: "var(--text-muted)",
+              display: "flex",
+              gap: 20,
+              flexWrap: "wrap",
+            }}
           >
-            <h2 style={{ marginBottom: "var(--space-3)" }}>Thông tin cộng đồng</h2>
-            <Row label="Slug" value={community.slug} />
-            <Row label="Name" value={community.name} />
-            <Row label="Tagline" value={community.tagline || "—"} />
-            <Row label="Members" value={String(community.memberCount)} />
-            <Row
-              label="Created"
-              value={community.createdAt.toLocaleDateString("vi-VN")}
-            />
+            <span>
+              Slug: <code>{community.slug}</code>
+            </span>
+            <span>
+              <strong style={{ color: "var(--text-heading)" }}>
+                {community.memberCount}
+              </strong>{" "}
+              thành viên
+            </span>
+            <span>
+              Tạo {community.createdAt.toLocaleDateString("vi-VN")}
+            </span>
           </div>
 
           <div
