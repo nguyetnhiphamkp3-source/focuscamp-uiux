@@ -13,6 +13,7 @@ import { PinToggleButton } from "./pin-toggle-button";
 import { PostMenu } from "./post-menu";
 import { ShareButton } from "./share-button";
 import { BookmarkButton } from "./bookmark-button";
+import { LinkPreview } from "./link-preview";
 import type { FeedPost } from "@/lib/services/post";
 
 export function PostCard({
@@ -135,6 +136,7 @@ export function PostCard({
       <div className="feed-post-body" style={{ whiteSpace: "pre-wrap" }}>
         {post.body}
       </div>
+      <LinkPreview body={post.body} />
 
       <div className="feed-post-actions">
         <ReactionButton
