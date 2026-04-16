@@ -1,43 +1,67 @@
+import Link from "next/link";
 import { signOut } from "@/auth";
 import { LoginModal } from "./login-modal";
 
 export function UserPanel({
   user,
   subtitle,
+  profileHref,
 }: {
   user: { name?: string | null; email?: string | null; image?: string | null } | null | undefined;
   subtitle?: string;
+  /** When set, the avatar + name block links to this URL (e.g. /c/<slug>/profile). */
+  profileHref?: string;
 }) {
   const displayName = user?.name || user?.email || "Guest";
 
-  return (
-    <div className="user-panel">
-      <div className="user-panel-left" title="Mở profile">
-        <div className="user-panel-avatar">
-          {user?.image ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={user.image}
-              alt={displayName}
-              referrerPolicy="no-referrer"
-              className="user-panel-avatar-img"
-              style={{ objectFit: "cover" }}
-            />
-          ) : (
-            <div className="user-panel-avatar-img">
-              {displayName[0]?.toUpperCase()}
-            </div>
-          )}
-          <div className="status-dot"></div>
-        </div>
-        <div className="user-panel-info">
-          <div className="user-panel-name">{displayName}</div>
-          <div className="user-panel-status-text">
-            <span className="in-voice-dot"></span>
-            {subtitle || (user ? "Online" : "Guest")}
+  const avatarBlock = (
+    <>
+      <div className="user-panel-avatar">
+        {user?.image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={user.image}
+            alt={displayName}
+            referrerPolicy="no-referrer"
+            className="user-panel-avatar-img"
+            style={{ objectFit: "cover" }}
+          />
+        ) : (
+          <div className="user-panel-avatar-img">
+            {displayName[0]?.toUpperCase()}
           </div>
+        )}
+        <div className="status-dot"></div>
+      </div>
+      <div className="user-panel-info">
+        <div className="user-panel-name">{displayName}</div>
+        <div className="user-panel-status-text">
+          <span className="in-voice-dot"></span>
+          {subtitle || (user ? "Online" : "Guest")}
         </div>
       </div>
+    </>
+  );
+
+  return (
+    <div className="user-panel">
+      {profileHref && user ? (
+        <Link
+          href={profileHref}
+          className="user-panel-left"
+          title="Mở profile"
+          style={{ textDecoration: "none", color: "inherit" }}
+        >
+          {avatarBlock}
+        </Link>
+      ) : (
+        <div
+          className="user-panel-left"
+          title={user ? "Profile (đang hoàn thiện)" : "Đăng nhập để xem profile"}
+        >
+          {avatarBlock}
+        </div>
+      )}
       <div className="user-panel-actions">
         <div className="mute-btn-group">
           <button className="mute-btn-red" title="Mute">

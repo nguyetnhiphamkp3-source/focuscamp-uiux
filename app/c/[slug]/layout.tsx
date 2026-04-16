@@ -131,6 +131,7 @@ export default async function CommunityLayout({
         <UserPanel
           user={user}
           subtitle={membership ? `Member · ${membership.tier}` : "Online"}
+          profileHref={`/c/${slug}/profile`}
         />
       </div>
 
