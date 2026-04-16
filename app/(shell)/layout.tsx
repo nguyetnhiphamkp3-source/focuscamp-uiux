@@ -4,6 +4,7 @@ import { ServerList } from "@/components/shell/server-list";
 import { UserPanel } from "@/components/shell/user-panel";
 import { HomeSidebar } from "@/components/shell/home-sidebar";
 import { KeyboardShortcuts } from "@/components/shell/keyboard-shortcuts";
+import { ShortcutSheet } from "@/components/shell/shortcut-sheet";
 import { unreadCount } from "@/lib/services/notification";
 
 export const dynamic = "force-dynamic";
@@ -41,6 +42,7 @@ export default async function ShellLayout({
       </div>
       <main className="main-content">{children}</main>
       <KeyboardShortcuts />
+      <ShortcutSheet />
     </div>
   );
 }

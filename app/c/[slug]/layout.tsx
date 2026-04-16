@@ -5,6 +5,7 @@ import { FeatureLink } from "@/components/shell/nav-link";
 import { ServerList } from "@/components/shell/server-list";
 import { UserPanel } from "@/components/shell/user-panel";
 import { KeyboardShortcuts } from "@/components/shell/keyboard-shortcuts";
+import { ShortcutSheet } from "@/components/shell/shortcut-sheet";
 import { CommunityHeader } from "@/components/shell/community-header";
 import { ActiveChallengeWidget } from "@/components/community/active-challenge-widget";
 
@@ -142,6 +143,7 @@ export default async function CommunityLayout({
       {/* RIGHT SIDEBAR (parallel route slot) */}
       {rightSidebar}
       <KeyboardShortcuts />
+      <ShortcutSheet />
     </div>
   );
 }
