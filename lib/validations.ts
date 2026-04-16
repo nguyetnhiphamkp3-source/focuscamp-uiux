@@ -4,6 +4,13 @@
  */
 import { z } from "zod";
 
+/* ========== Shared primitives (used by multiple schemas below) ========== */
+export const SlugSchema = z
+  .string()
+  .min(2)
+  .max(60)
+  .regex(/^[a-z0-9-]+$/, "Slug chỉ chứa a-z, 0-9, -");
+
 /* ========== Payment / SePay ========== */
 export const SePayWebhookSchema = z.object({
   id: z.union([z.string(), z.number()]).optional(),
@@ -55,6 +62,32 @@ export const UpdateChallengeSettingsSchema = z.object({
   freezeFromDay: z.number().int().positive().optional().nullable(),
   freezeStartsAt: z.string().datetime().optional().nullable().or(z.literal("")),
   freezeEndsAt: z.string().datetime().optional().nullable().or(z.literal("")),
+});
+
+export const CreateChallengeSchema = z.object({
+  communityId: z.string().cuid(),
+  slug: SlugSchema,
+  title: z.string().trim().min(2).max(120),
+  description: z.string().trim().max(5000).optional().or(z.literal("")),
+  difficulty: z.enum(["NORMAL", "HARD", "CHAOS"]).optional(),
+  requiredDays: z.number().int().positive().max(365).optional(),
+  requiresApproval: z.boolean().optional(),
+});
+
+export const CreateChallengeTaskSchema = z.object({
+  challengeId: z.string().cuid(),
+  dayNumber: z.number().int().positive().max(365),
+  title: z.string().trim().min(1).max(200),
+  description: z.string().trim().max(5000).optional().or(z.literal("")),
+  sopContent: z.string().trim().max(10000).optional().or(z.literal("")),
+  videoUrl: z.string().url().optional().or(z.literal("")),
+  evidenceType: z.enum(["TEXT", "LINK", "IMAGE", "FILE"]).optional(),
+  evidenceLabel: z.string().trim().max(500).optional().or(z.literal("")),
+  label: z.string().trim().max(60).optional().or(z.literal("")),
+});
+
+export const DeleteChallengeTaskSchema = z.object({
+  taskId: z.string().cuid(),
 });
 
 export const UpdateChallengeTaskSchema = z.object({
@@ -266,13 +299,6 @@ export const RemoveMemberSchema = z.object({
   communityId: z.string().cuid(),
   targetUserId: z.string().cuid(),
 });
-
-/* ========== Community slug ========== */
-export const SlugSchema = z
-  .string()
-  .min(2)
-  .max(60)
-  .regex(/^[a-z0-9-]+$/, "Slug chỉ chứa a-z, 0-9, -");
 
 export const CreateCommunitySchema = z.object({
   name: z.string().trim().min(2).max(80),

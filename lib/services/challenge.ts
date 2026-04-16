@@ -696,3 +696,105 @@ export async function resubmitCheckin(input: {
   );
   return updated;
 }
+
+/* ===== Create challenge + task CRUD ===== */
+
+async function assertCommunityOwner(userId: string, communityId: string) {
+  const c = await prisma.community.findUnique({
+    where: { id: communityId },
+    select: { ownerId: true },
+  });
+  if (!c) throw new Error("Cộng đồng không tồn tại");
+  if (c.ownerId !== userId)
+    throw new Error("Chỉ admin cộng đồng mới tạo challenge");
+}
+
+export async function createChallenge(input: {
+  userId: string;
+  communityId: string;
+  slug: string;
+  title: string;
+  description?: string;
+  difficulty?: string;
+  requiredDays?: number;
+  requiresApproval?: boolean;
+}) {
+  await assertCommunityOwner(input.userId, input.communityId);
+  // Check slug uniqueness WITHIN this community
+  const existing = await prisma.challenge.findFirst({
+    where: { communityId: input.communityId, slug: input.slug },
+    select: { id: true },
+  });
+  if (existing) {
+    throw new Error(`Slug "${input.slug}" đã tồn tại trong cộng đồng này`);
+  }
+  const ch = await prisma.challenge.create({
+    data: {
+      communityId: input.communityId,
+      slug: input.slug,
+      title: input.title,
+      description: input.description?.trim() || null,
+      difficulty: input.difficulty || "NORMAL",
+      requiredDays: input.requiredDays ?? 21,
+      requiresApproval: input.requiresApproval ?? false,
+      leaderId: input.userId,
+      status: "OPEN",
+    },
+  });
+  logger.info(
+    { challengeId: ch.id, communityId: input.communityId, by: input.userId },
+    "[challenge] created"
+  );
+  return ch;
+}
+
+export async function createChallengeTask(input: {
+  userId: string;
+  challengeId: string;
+  dayNumber: number;
+  title: string;
+  description?: string;
+  sopContent?: string;
+  videoUrl?: string;
+  evidenceType?: string;
+  evidenceLabel?: string;
+  label?: string;
+}) {
+  await assertChallengeAdmin(input.userId, input.challengeId);
+  // dayNumber must be unique per challenge (schema @@unique(challengeId, dayNumber))
+  const task = await prisma.challengeTask.create({
+    data: {
+      challengeId: input.challengeId,
+      dayNumber: input.dayNumber,
+      title: input.title,
+      description: input.description?.trim() || null,
+      sopContent: input.sopContent?.trim() || null,
+      videoUrl: input.videoUrl?.trim() || null,
+      evidenceType: input.evidenceType || "TEXT",
+      evidenceLabel: input.evidenceLabel?.trim() || null,
+      label: input.label?.trim() || null,
+    },
+  });
+  logger.info(
+    { taskId: task.id, challengeId: input.challengeId, by: input.userId },
+    "[challenge] task created"
+  );
+  return task;
+}
+
+export async function deleteChallengeTask(input: {
+  userId: string;
+  taskId: string;
+}) {
+  const task = await prisma.challengeTask.findUnique({
+    where: { id: input.taskId },
+    select: { challengeId: true },
+  });
+  if (!task) throw new Error("Task không tồn tại");
+  await assertChallengeAdmin(input.userId, task.challengeId);
+  await prisma.challengeTask.delete({ where: { id: input.taskId } });
+  logger.info(
+    { taskId: input.taskId, by: input.userId },
+    "[challenge] task deleted"
+  );
+}

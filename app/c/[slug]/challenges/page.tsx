@@ -3,6 +3,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { EmptyState } from "@/components/ui/empty-state";
+import { CreateChallengeButton } from "@/components/community/create-challenge-button";
 
 export const dynamic = "force-dynamic";
 
@@ -97,6 +98,21 @@ export default async function QuestLogPage({
         }}
       >
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
+          {/* Admin: create new challenge */}
+          {session?.user?.id === community.ownerId && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                marginBottom: "var(--space-4)",
+              }}
+            >
+              <CreateChallengeButton
+                communityId={community.id}
+                communitySlug={slug}
+              />
+            </div>
+          )}
           {/* Tabs */}
           <div
             style={{
