@@ -112,7 +112,15 @@ export default async function ProductDetailPage({
               <span className="mk-card-type">{t.label}</span>
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <h1 style={{ marginBottom: "var(--space-1)" }}>{product.title}</h1>
+              <h1
+                style={{
+                  fontSize: "var(--text-xl)",
+                  marginBottom: "var(--space-1)",
+                  lineHeight: "var(--lh-tight)",
+                }}
+              >
+                {product.title}
+              </h1>
               {product.pillar && (
                 <div
                   style={{

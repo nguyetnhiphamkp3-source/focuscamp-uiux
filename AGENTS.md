@@ -64,9 +64,11 @@ If a feature doesn't have its own sub-default.tsx, Next.js uses the nearest ance
 - `--text-base` 14px — body default, UI
 - `--text-md` 16px — button, h4
 - `--text-lg` 18px — h3, card title
-- `--text-xl` 22px — h2, section header
-- `--text-2xl` 28px — h1
+- `--text-xl` 22px — h2, section header, **detail-page h1** (post detail, course detail, challenge detail, product detail)
+- `--text-2xl` 28px — h1 của **hero/manifesto/landing/unique celebration**, NOT for repeated content (courses list item opens a new page with same layout — use text-xl)
 - `--text-3xl` 36px — landing hero
+
+**Quy tắc 28px**: 28px là "shouty". Chỉ dùng khi trang đó **unique trong session** (About, Direct Challenge, Home hero, completed celebration). Detail page của content lặp lại (/c/<slug>/p/<id>, /courses/<s>, /challenges/<s>) dùng 22px — vẫn nổi bật, không áp đảo.
 
 **KHÔNG dùng inline pixel font-size ngoài 8 token này.**
 

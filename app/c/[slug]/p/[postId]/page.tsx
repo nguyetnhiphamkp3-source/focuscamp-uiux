@@ -205,7 +205,7 @@ export default async function PostDetailPage({
             {post.title && (
               <h1
                 className="feed-post-title"
-                style={{ fontSize: "var(--text-2xl)", marginBottom: 16 }}
+                style={{ fontSize: "var(--text-xl)", marginBottom: 16 }}
               >
                 {post.title}
               </h1>

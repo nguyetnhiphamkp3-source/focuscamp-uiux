@@ -90,7 +90,7 @@ export default async function CourseDetailPage({
           {/* TITLE */}
           <h1
             style={{
-              fontSize: "var(--text-2xl)",
+              fontSize: "var(--text-xl)",
               marginBottom: "var(--space-2)",
               color: "var(--text-heading)",
               lineHeight: "var(--lh-tight)",
