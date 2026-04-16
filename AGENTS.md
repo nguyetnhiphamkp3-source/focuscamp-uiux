@@ -85,3 +85,37 @@ If a feature doesn't have its own sub-default.tsx, Next.js uses the nearest ance
 ## Spacing (4px base)
 
 `--space-1` (4) → `--space-20` (80). Không dùng số lẻ ngoài scale.
+
+---
+
+# Infrastructure
+
+## Service layer (`lib/services/`)
+Mọi business logic đi qua đây, **không** gọi `prisma` trực tiếp từ pages.
+- `community.ts` — getCommunity, join (transaction-wrapped), listMyCommunities
+- `payment.ts` — startProductPurchase, matchSePayTransactionToPayment, getPaymentStatus
+
+## Validation
+Mọi input từ ngoài (webhook, server action form) đi qua schema trong `lib/validations.ts` (zod).
+
+## Rate limit
+`lib/rate-limit.ts` — in-memory per key. Áp dụng ít nhất cho: SePay webhook (60/phút/IP).
+TODO: chuyển sang Upstash Redis khi scale multi-instance.
+
+## Middleware
+`middleware.ts` — kiểm tra auth cho mọi route không nằm trong PUBLIC_PREFIXES. Không login → redirect `/login?redirectTo=<path>`. Cũng thêm security headers (X-Content-Type-Options, X-Frame-Options, Referrer-Policy).
+
+## Observability
+- `lib/logger.ts` — pino structured logger, redact sensitive fields. Dev: pretty; prod: JSON.
+- Sentry: set `SENTRY_DSN` trong `.env.production` để bật. `instrumentation.ts` + `sentry.*.config.ts` đã cài sẵn.
+- `/api/health` — uptime endpoint, check DB, dùng cho uptime monitor.
+
+## DB management
+- **Migrations**: dùng `prisma migrate deploy` (không dùng `db push` cho prod).
+- Script init 1 lần: `scripts/init-prisma-migrations.sh` — sinh baseline migration từ schema hiện tại + mark applied.
+- **Backup**: `scripts/backup-db.sh` — chạy `pg_dump` mỗi ngày 3am, giữ 7 ngày. Cài cron trên VPS.
+
+## Deploy
+- Push main → GitHub Actions SSH vào VPS → `git pull && docker compose up -d --build`
+- Sau khi code deploy ổn, chạy 1 lần `bash scripts/init-prisma-migrations.sh` trong container để chuyển sang migration-based DB management.
+

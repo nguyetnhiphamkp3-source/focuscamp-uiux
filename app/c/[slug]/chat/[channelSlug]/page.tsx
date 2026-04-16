@@ -3,6 +3,8 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { SendMessageSchema } from "@/lib/validations";
+import { logError } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -120,18 +122,25 @@ export default async function ChannelPage({
 
   async function sendMessage(formData: FormData) {
     "use server";
-    const content = (formData.get("content") as string)?.trim();
-    if (!content) return;
     const s = await auth();
     if (!s?.user?.id) return;
-    await prisma.message.create({
-      data: {
-        channelId: channel!.id,
-        userId: s.user.id,
-        content,
-      },
-    });
-    revalidatePath(`/c/${slug}/chat/${channelSlug}`);
+    try {
+      const { content } = SendMessageSchema.parse({
+        content: formData.get("content"),
+      });
+      await prisma.message.create({
+        data: {
+          channelId: channel!.id,
+          userId: s.user.id,
+          content,
+        },
+      });
+      revalidatePath(`/c/${slug}/chat/${channelSlug}`);
+    } catch (err) {
+      logError(err, { channelId: channel!.id, userId: s.user.id });
+      // Swallow — UI just won't show new msg; in a fuller impl we'd return
+      // errors to the client.
+    }
   }
 
   return (

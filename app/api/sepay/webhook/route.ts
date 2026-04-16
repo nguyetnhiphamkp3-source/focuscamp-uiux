@@ -1,65 +1,61 @@
 /**
  * SePay webhook receiver.
  *
- * SePay will POST transaction notifications here when bank account receives money.
- * Expected payload (SePay standard):
- * {
- *   id, gateway, transactionDate, accountNumber, code, content,
- *   transferType, amount, referenceCode, accumulated, subAccount,
- *   transferAmount, description
- * }
- *
  * Security:
- * - Verify Authorization header: "Apikey <SEPAY_WEBHOOK_API_KEY>"
- * - Optionally verify source IP (SePay provides IP whitelist)
+ * - Authorization: "Apikey <SEPAY_WEBHOOK_API_KEY>"
+ * - Rate limited per IP
+ * - Input validated via Zod
+ * - Business logic delegated to lib/services/payment.ts
  */
-
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { extractPaymentCode, activatePayment } from "@/lib/sepay";
+import { extractPaymentCode } from "@/lib/sepay";
+import { SePayWebhookSchema } from "@/lib/validations";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { logger, logError } from "@/lib/logger";
+import { matchSePayTransactionToPayment } from "@/lib/services/payment";
 
-interface SePayWebhookPayload {
-  id?: string | number;
-  gateway?: string;
-  transactionDate?: string;
-  accountNumber?: string;
-  code?: string | null;
-  content?: string;
-  transferType?: "in" | "out" | "credit" | "debit";
-  amount?: string | number;
-  referenceCode?: string;
-  accumulated?: string | number;
-  subAccount?: string | null;
-  transferAmount?: string | number;
-  description?: string;
-}
+export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
+  // 0. Rate limit per IP (60 req / min — SePay rarely sends >1/sec)
+  const ip = getClientIp(req);
+  const rl = rateLimit({ key: `sepay:${ip}`, limit: 60, windowSec: 60 });
+  if (!rl.ok) {
+    logger.warn({ ip, resetAt: rl.resetAt }, "[SePay webhook] rate limited");
+    return NextResponse.json(
+      { success: false, error: "rate_limited" },
+      { status: 429, headers: { "Retry-After": "60" } }
+    );
+  }
+
   // 1. Verify API key
   const authHeader = req.headers.get("authorization") || "";
   const expectedKey = process.env.SEPAY_WEBHOOK_API_KEY;
   if (!expectedKey) {
-    console.error("[SePay webhook] SEPAY_WEBHOOK_API_KEY not set");
+    logger.error("[SePay webhook] SEPAY_WEBHOOK_API_KEY not set");
     return NextResponse.json(
       { success: false, error: "server_misconfigured" },
       { status: 500 }
     );
   }
   if (authHeader !== `Apikey ${expectedKey}`) {
-    console.warn("[SePay webhook] Invalid Authorization");
+    logger.warn({ ip }, "[SePay webhook] unauthorized");
     return NextResponse.json(
       { success: false, error: "unauthorized" },
       { status: 401 }
     );
   }
 
-  // 2. Parse payload (SePay sends JSON)
-  let payload: SePayWebhookPayload;
+  // 2. Parse + validate payload
+  let payload;
   try {
-    payload = (await req.json()) as SePayWebhookPayload;
-  } catch {
+    const raw = await req.json();
+    payload = SePayWebhookSchema.parse(raw);
+  } catch (err) {
+    logError(err, { ip, note: "invalid payload" });
     return NextResponse.json(
-      { success: false, error: "invalid_json" },
+      { success: false, error: "invalid_payload" },
       { status: 400 }
     );
   }
@@ -69,13 +65,13 @@ export async function POST(req: NextRequest) {
     gateway,
     transactionDate,
     accountNumber,
-    code, // SePay may pre-extract payment code from content
+    code,
     content,
-    transferType, // in | out
+    transferType,
     amount,
     referenceCode,
     accumulated,
-    subAccount, // VA if any
+    subAccount,
   } = payload;
 
   const transactionId = String(id ?? referenceCode ?? "");
@@ -86,67 +82,67 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 3. Dedup check
-  const existing = await prisma.sePayTransaction.findUnique({
-    where: { transactionId },
-  });
-  if (existing) {
-    return NextResponse.json({ success: true, note: "already_processed" });
-  }
+  try {
+    // 3. Dedup check
+    const existing = await prisma.sePayTransaction.findUnique({
+      where: { transactionId },
+    });
+    if (existing) {
+      logger.info({ transactionId }, "[SePay] already processed");
+      return NextResponse.json({ success: true, note: "already_processed" });
+    }
 
-  // 4. Extract payment code (try payload.code first, then parse content)
-  const paymentCode =
-    (code as string | undefined) ??
-    extractPaymentCode(content ?? "") ??
-    null;
+    // 4. Extract payment code
+    const paymentCode =
+      (code as string | undefined) ??
+      extractPaymentCode(content ?? "") ??
+      null;
 
-  // 5. Save raw transaction
-  const transferTypeNormalized =
-    transferType === "in" || transferType === "credit" ? "credit" : "debit";
+    const transferTypeNormalized =
+      transferType === "in" || transferType === "credit" ? "credit" : "debit";
 
-  const tx = await prisma.sePayTransaction.create({
-    data: {
-      transactionId,
-      referenceCode: referenceCode ?? null,
-      gateway: gateway ?? "unknown",
-      accountNumber: accountNumber ?? null,
-      vaNumber: subAccount ?? null,
-      paymentCode,
-      content: content ?? "",
-      transferType: transferTypeNormalized,
-      amount: Number(amount) || 0,
-      accumulated: accumulated ? Number(accumulated) : null,
-      transactionDate: transactionDate ? new Date(transactionDate) : new Date(),
-      raw: payload as unknown as import("@prisma/client").Prisma.InputJsonValue,
-    },
-  });
-
-  // 6. Match to pending Payment (only credit = tiền vào)
-  if (transferTypeNormalized === "credit" && paymentCode) {
-    const payment = await prisma.payment.findUnique({
-      where: { paymentCode },
+    // 5. Save raw transaction
+    const tx = await prisma.sePayTransaction.create({
+      data: {
+        transactionId,
+        referenceCode: referenceCode ?? null,
+        gateway: gateway ?? "unknown",
+        accountNumber: accountNumber ?? null,
+        vaNumber: subAccount ?? null,
+        paymentCode,
+        content: content ?? "",
+        transferType: transferTypeNormalized,
+        amount: Number(amount) || 0,
+        accumulated: accumulated ? Number(accumulated) : null,
+        transactionDate: transactionDate
+          ? new Date(transactionDate)
+          : new Date(),
+        raw: payload as unknown as import("@prisma/client").Prisma.InputJsonValue,
+      },
     });
 
-    if (payment && payment.status === "PENDING") {
-      // Verify amount matches (tolerance: 0 — require exact)
-      const paymentAmount = Number(payment.amountVnd);
-      const txAmount = Number(amount);
-      if (Math.abs(paymentAmount - txAmount) < 0.01) {
-        await activatePayment(payment.id, transactionId);
-        await prisma.sePayTransaction.update({
-          where: { id: tx.id },
-          data: { matchedPaymentId: payment.id },
-        });
-        console.log(
-          `[SePay] Matched payment ${payment.paymentCode} (${paymentAmount}đ) to tx ${transactionId}`
-        );
-      } else {
-        console.warn(
-          `[SePay] Amount mismatch: payment ${paymentCode} expected ${paymentAmount} got ${txAmount}`
+    // 6. Match + activate (if credit)
+    if (transferTypeNormalized === "credit" && paymentCode) {
+      const matchResult = await matchSePayTransactionToPayment({
+        paymentCode,
+        amount: Number(amount) || 0,
+        transactionId,
+        rawTxId: tx.id,
+      });
+      if (!matchResult.matched) {
+        logger.warn(
+          { paymentCode, transactionId, reason: matchResult.reason },
+          "[SePay] not matched"
         );
       }
     }
-  }
 
-  return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    logError(err, { transactionId });
+    return NextResponse.json(
+      { success: false, error: "internal" },
+      { status: 500 }
+    );
+  }
 }

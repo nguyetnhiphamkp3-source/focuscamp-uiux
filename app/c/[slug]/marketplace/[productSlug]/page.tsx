@@ -2,8 +2,9 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { createPayment } from "@/lib/sepay";
+import { startProductPurchase } from "@/lib/services/payment";
 import { fmtVnd, TYPE_THUMB } from "@/components/marketplace/product-card";
+import { logError } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -40,36 +41,22 @@ export default async function ProductDetailPage({
     const s = await auth();
     if (!s?.user?.id) redirect("/login");
 
-    // require community membership
-    const mem = await prisma.membership.findUnique({
-      where: {
-        userId_communityId: {
-          userId: s.user!.id!,
-          communityId: product!.communityId,
-        },
-      },
-    });
-    if (!mem) redirect(`/c/${communitySlug}`);
-
-    const purchase = await prisma.purchase.create({
-      data: {
+    let paymentCode: string;
+    try {
+      const result = await startProductPurchase({
         userId: s.user!.id!,
         productId: product!.id,
-        amountVnd: product!.priceVnd,
-        status: "PENDING",
-      },
-    });
-
-    const payment = await createPayment({
-      userId: s.user!.id!,
-      communityId: product!.communityId,
-      purpose: "product",
-      refType: "product",
-      refId: purchase.id,
-      amountVnd: Number(product!.priceVnd),
-    });
-
-    redirect(`/pay/${payment.paymentCode}`);
+      });
+      paymentCode = result.payment.paymentCode;
+    } catch (err) {
+      if (err instanceof Error) {
+        if (err.message === "not_a_member") redirect(`/c/${communitySlug}`);
+        if (err.message === "product_not_found") redirect(`/c/${communitySlug}/marketplace`);
+      }
+      logError(err, { productId: product!.id, userId: s.user!.id! });
+      throw err;
+    }
+    redirect(`/pay/${paymentCode}`);
   }
 
   const price = Number(product.priceVnd);

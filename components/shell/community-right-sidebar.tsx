@@ -1,6 +1,7 @@
 import { auth, signIn } from "@/auth";
-import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { joinCommunity } from "@/lib/services/community";
+import { logError } from "@/lib/logger";
 
 type Community = {
   id: string;
@@ -27,33 +28,20 @@ export async function CommunityRightSidebar({
   membership: Membership;
   isLoggedIn: boolean;
 }) {
-  async function joinCommunity() {
+  async function joinAction() {
     "use server";
     const s = await auth();
     if (!s?.user?.id) {
       await signIn("google", { redirectTo: `/c/${community.slug}` });
       return;
     }
-    await prisma.membership.upsert({
-      where: {
-        userId_communityId: {
-          userId: s.user.id,
-          communityId: community.id,
-        },
-      },
-      update: {},
-      create: {
-        userId: s.user.id,
-        communityId: community.id,
-        role: "MEMBER",
-        tier: "EXPLORER",
-      },
-    });
-    await prisma.community.update({
-      where: { id: community.id },
-      data: { memberCount: { increment: 1 } },
-    });
-    revalidatePath(`/c/${community.slug}`);
+    try {
+      await joinCommunity(s.user.id, community.id);
+      revalidatePath(`/c/${community.slug}`);
+    } catch (err) {
+      logError(err, { userId: s.user.id, communityId: community.id });
+      throw err;
+    }
   }
 
   return (
@@ -64,7 +52,7 @@ export async function CommunityRightSidebar({
         <GuestView
           community={community}
           isLoggedIn={isLoggedIn}
-          joinAction={joinCommunity}
+          joinAction={joinAction}
         />
       )}
     </aside>
