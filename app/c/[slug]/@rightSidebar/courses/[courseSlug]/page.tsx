@@ -141,7 +141,26 @@ export default async function CoursePlaylistSidebar({
                     📹
                   </div>
                 )}
-                {/* Duration badge */}
+                {/* Order badge (top-left) */}
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 4,
+                    left: 4,
+                    background: "rgba(0,0,0,0.75)",
+                    color: "#fff",
+                    fontSize: "var(--text-xs)",
+                    fontWeight: "var(--fw-bold)",
+                    padding: "1px 6px",
+                    borderRadius: "var(--r-sm)",
+                    lineHeight: 1.4,
+                    minWidth: 20,
+                    textAlign: "center",
+                  }}
+                >
+                  {i + 1}
+                </div>
+                {/* Duration badge (bottom-right) */}
                 {dur && (
                   <div
                     style={{
@@ -220,16 +239,17 @@ export default async function CoursePlaylistSidebar({
                 >
                   {l.title}
                 </div>
-                <div
-                  style={{
-                    fontSize: "var(--text-xs)",
-                    color: "var(--text-muted)",
-                    lineHeight: "var(--lh-normal)",
-                  }}
-                >
-                  Bài {i + 1}
-                  {l.xpReward ? ` · +${l.xpReward} XP` : ""}
-                </div>
+                {l.xpReward > 0 && (
+                  <div
+                    style={{
+                      fontSize: "var(--text-xs)",
+                      color: "var(--text-muted)",
+                      lineHeight: "var(--lh-normal)",
+                    }}
+                  >
+                    +{l.xpReward} XP
+                  </div>
+                )}
               </div>
             </div>
           );
