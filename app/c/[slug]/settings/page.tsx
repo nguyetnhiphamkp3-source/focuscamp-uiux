@@ -13,6 +13,7 @@ import { CurrencyEditor } from "@/components/settings/currency-editor";
 import { LevelsEditor } from "@/components/settings/levels-editor";
 import { MembersEditor } from "@/components/settings/members-editor";
 import { CommunityInfoEditor } from "@/components/settings/community-info-editor";
+import { CommunityStatsCard } from "@/components/settings/community-stats-card";
 import { listMembers } from "@/lib/services/community-settings";
 
 export const dynamic = "force-dynamic";
@@ -83,6 +84,8 @@ export default async function SettingsPage({
             }}
             disabled={!isOwner}
           />
+
+          {isOwner && <CommunityStatsCard communityId={community.id} />}
 
           <div
             className="ui-card"
