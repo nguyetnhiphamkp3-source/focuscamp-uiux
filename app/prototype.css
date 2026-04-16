@@ -236,8 +236,8 @@ body[data-theme="luxury"] .settings-panel-title {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 12px 0;
-  gap: 4px;
+  padding: 16px 0;
+  gap: 12px;
   overflow-y: auto;
 }
 
