@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { EmptyState } from "@/components/ui/empty-state";
+import { CreateCourseButton } from "@/components/community/create-course-button";
 
 export const dynamic = "force-dynamic";
 
@@ -27,17 +29,22 @@ export default async function CoursesPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const session = await auth();
   const community = await prisma.community.findUnique({
     where: { slug },
     include: {
       courses: {
-        where: { isPublished: true },
+        // Owners see unpublished drafts too; members/guests see only published
         include: { _count: { select: { lessons: true } } },
         orderBy: { createdAt: "desc" },
       },
     },
   });
   if (!community) notFound();
+  const isOwner = session?.user?.id === community.ownerId;
+  const visibleCourses = isOwner
+    ? community.courses
+    : community.courses.filter((c) => c.isPublished);
 
   return (
     <>
@@ -48,6 +55,20 @@ export default async function CoursesPage({
 
       <div className="courses-list-wrap">
         <div className="courses-list-inner">
+          {isOwner && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                marginBottom: "var(--space-4)",
+              }}
+            >
+              <CreateCourseButton
+                communityId={community.id}
+                communitySlug={slug}
+              />
+            </div>
+          )}
           <div className="cl-filters">
             <div className="cl-filter active">Tất cả</div>
             <div className="cl-filter">Đang học</div>
@@ -56,7 +77,7 @@ export default async function CoursesPage({
             <div className="cl-filter">Đã hoàn thành</div>
           </div>
 
-          {community.courses.length === 0 ? (
+          {visibleCourses.length === 0 ? (
             <EmptyState
               icon="📚"
               title="Chưa có khóa học nào"
@@ -64,7 +85,7 @@ export default async function CoursesPage({
             />
           ) : (
             <div className="cl-grid">
-              {community.courses.map((c) => {
+              {visibleCourses.map((c) => {
                 const t = thumbFor(c.pillar);
                 const isPro =
                   c.requiredTier === "PRO" || c.level === "ADVANCED";

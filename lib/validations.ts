@@ -307,6 +307,50 @@ export const CreateCommunitySchema = z.object({
   description: z.string().trim().max(5000).optional().or(z.literal("")),
 });
 
+/* ========== Course / Lesson CRUD ========== */
+export const CreateCourseSchema = z.object({
+  communityId: z.string().cuid(),
+  slug: SlugSchema,
+  title: z.string().trim().min(2).max(160),
+  description: z.string().trim().max(5000).optional().or(z.literal("")),
+  pillar: z.string().max(40).optional().or(z.literal("")),
+  level: z.enum(["BASIC", "ADVANCED", "EXPERT"]).optional(),
+  isPublished: z.boolean().optional(),
+});
+
+export const UpdateCourseSchema = z.object({
+  courseId: z.string().cuid(),
+  title: z.string().trim().min(2).max(160).optional(),
+  description: z.string().trim().max(5000).optional().or(z.literal("")),
+  pillar: z.string().max(40).optional().or(z.literal("")),
+  level: z.enum(["BASIC", "ADVANCED", "EXPERT"]).optional(),
+  isPublished: z.boolean().optional(),
+  thumbnailUrl: z.string().url().optional().or(z.literal("")),
+});
+
+export const CreateLessonSchema = z.object({
+  courseId: z.string().cuid(),
+  title: z.string().trim().min(1).max(200),
+  description: z.string().trim().max(500).optional().or(z.literal("")),
+  content: z.string().trim().max(20000).optional().or(z.literal("")),
+  videoUrl: z.string().url().optional().or(z.literal("")),
+  duration: z.number().int().nonnegative().optional(),
+});
+
+export const UpdateLessonSchema = z.object({
+  lessonId: z.string().cuid(),
+  title: z.string().trim().min(1).max(200).optional(),
+  description: z.string().trim().max(500).optional().or(z.literal("")),
+  content: z.string().trim().max(20000).optional().or(z.literal("")),
+  videoUrl: z.string().url().optional().or(z.literal("")),
+  duration: z.number().int().nonnegative().optional(),
+  position: z.number().int().nonnegative().optional(),
+});
+
+export const DeleteLessonSchema = z.object({
+  lessonId: z.string().cuid(),
+});
+
 /* ========== Helper ========== */
 /** Parse FormData against a schema; throws with readable error if invalid. */
 export function parseFormData<T extends z.ZodTypeAny>(
