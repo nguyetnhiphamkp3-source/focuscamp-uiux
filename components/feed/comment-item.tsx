@@ -13,6 +13,7 @@ import {
   markBestAnswerAction,
   deleteCommentAction,
   createCommentAction,
+  updateCommentAction,
 } from "@/app/actions/comments";
 
 export type CommentItemData = {
@@ -51,11 +52,14 @@ export function CommentItem({
   const [err, setErr] = useState<string | null>(null);
   const [replying, setReplying] = useState(false);
   const [replyBody, setReplyBody] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [editBody, setEditBody] = useState(comment.body);
 
   const authorName = comment.user.name || "Ẩn danh";
   const nameColor = nameColorFor(comment.user.id);
   const canMarkBest =
     !!currentUser && (currentUser.id === postAuthorId || isOwner);
+  const canEdit = !!currentUser && currentUser.id === comment.user.id;
   const canDelete =
     !!currentUser && (currentUser.id === comment.user.id || isOwner);
   const canReply = !!currentUser && depth < 3; // cap nesting depth
@@ -84,6 +88,25 @@ export function CommentItem({
       });
       if (res.ok) router.refresh();
       else setErr(res.reason);
+    });
+  }
+
+  function saveEdit() {
+    setErr(null);
+    if (!editBody.trim()) return;
+    start(async () => {
+      const res = await updateCommentAction({
+        commentId: comment.id,
+        body: editBody.trim(),
+        postId,
+        communitySlug,
+      });
+      if (res.ok) {
+        setEditing(false);
+        router.refresh();
+      } else {
+        setErr(res.reason);
+      }
     });
   }
 
@@ -206,18 +229,86 @@ export function CommentItem({
               </span>
             )}
           </div>
-          <div
-            style={{
-              fontSize: "var(--text-base)",
-              color: "var(--text-normal)",
-              whiteSpace: "pre-wrap",
-              wordBreak: "break-word",
-            }}
-          >
-            {comment.body}
-          </div>
+          {editing ? (
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: 6 }}
+            >
+              <textarea
+                value={editBody}
+                onChange={(e) => setEditBody(e.target.value)}
+                rows={3}
+                maxLength={5000}
+                disabled={pending}
+                autoFocus
+                style={{
+                  width: "100%",
+                  padding: "8px 10px",
+                  borderRadius: 6,
+                  border: "1px solid var(--border-subtle)",
+                  background: "var(--bg-chat)",
+                  color: "var(--text-normal)",
+                  fontSize: "var(--text-sm)",
+                  fontFamily: "inherit",
+                  resize: "vertical",
+                  outline: "none",
+                }}
+              />
+              <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditing(false);
+                    setEditBody(comment.body);
+                  }}
+                  disabled={pending}
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: 6,
+                    border: "1px solid var(--border-subtle)",
+                    background: "transparent",
+                    color: "var(--interactive-normal)",
+                    fontSize: "var(--text-xs)",
+                    cursor: "pointer",
+                  }}
+                >
+                  Huỷ
+                </button>
+                <button
+                  type="button"
+                  onClick={saveEdit}
+                  disabled={pending || !editBody.trim()}
+                  style={{
+                    padding: "6px 14px",
+                    borderRadius: 6,
+                    border: "none",
+                    background: editBody.trim()
+                      ? "var(--brand-green)"
+                      : "var(--bg-modifier-hover)",
+                    color: "#fff",
+                    fontWeight: 600,
+                    fontSize: "var(--text-xs)",
+                    cursor: editBody.trim() ? "pointer" : "not-allowed",
+                    opacity: pending ? 0.6 : 1,
+                  }}
+                >
+                  {pending ? "Đang lưu…" : "Lưu"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div
+              style={{
+                fontSize: "var(--text-base)",
+                color: "var(--text-normal)",
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+              }}
+            >
+              {comment.body}
+            </div>
+          )}
 
-          {(canMarkBest || canDelete || canReply) && (
+          {!editing && (canMarkBest || canDelete || canReply || canEdit) && (
             <div
               style={{
                 display: "flex",
@@ -233,6 +324,15 @@ export function CommentItem({
                   style={actionBtnStyle("var(--interactive-normal)")}
                 >
                   {replying ? "Huỷ trả lời" : "↩ Trả lời"}
+                </button>
+              )}
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={() => setEditing(true)}
+                  style={actionBtnStyle("var(--interactive-normal)")}
+                >
+                  ✎ Sửa
                 </button>
               )}
               {canMarkBest && (

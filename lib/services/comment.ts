@@ -92,6 +92,28 @@ export async function markBestAnswer(input: { userId: string; commentId: string 
   return { isBestAnswer: true };
 }
 
+/** Edit a comment body. Allowed to: author of the comment only. */
+export async function updateComment(input: {
+  userId: string;
+  commentId: string;
+  body: string;
+}) {
+  const comment = await prisma.comment.findUnique({
+    where: { id: input.commentId },
+    select: { userId: true, postId: true },
+  });
+  if (!comment) throw new Error("Comment không tồn tại");
+  if (comment.userId !== input.userId)
+    throw new Error("Chỉ tác giả mới sửa được comment");
+
+  const updated = await prisma.comment.update({
+    where: { id: input.commentId },
+    data: { body: input.body.trim() },
+  });
+  logger.info({ commentId: input.commentId, userId: input.userId }, "[comment] updated");
+  return { updated, postId: comment.postId };
+}
+
 /** Delete a comment. Allowed to: author of the comment OR community owner. */
 export async function deleteComment(input: { userId: string; commentId: string }) {
   const comment = await prisma.comment.findUnique({

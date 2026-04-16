@@ -136,6 +136,15 @@ export const CommentIdSchema = z.object({
   commentId: z.string().cuid(),
 });
 
+export const UpdateCommentSchema = z.object({
+  commentId: z.string().cuid(),
+  body: z
+    .string()
+    .trim()
+    .min(1, "Nội dung không được trống")
+    .max(5000, "Comment quá dài (max 5000 ký tự)"),
+});
+
 /* ========== Product purchase ========== */
 export const BuyProductSchema = z.object({
   productId: z.string().cuid(),

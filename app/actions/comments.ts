@@ -6,8 +6,13 @@ import {
   createComment,
   markBestAnswer,
   deleteComment,
+  updateComment,
 } from "@/lib/services/comment";
-import { CreateCommentSchema, CommentIdSchema } from "@/lib/validations";
+import {
+  CreateCommentSchema,
+  CommentIdSchema,
+  UpdateCommentSchema,
+} from "@/lib/validations";
 import { logError } from "@/lib/logger";
 
 type ActionResult<T = unknown> =
@@ -74,6 +79,38 @@ export async function markBestAnswerAction(input: {
     });
     bumpPostPaths(input.communitySlug, input.postId);
     return { ok: true, data: res };
+  } catch (err) {
+    logError(err, { userId: s.user.id, commentId: input.commentId });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+export async function updateCommentAction(input: {
+  commentId: string;
+  body: string;
+  postId: string;
+  communitySlug: string;
+}): Promise<ActionResult> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+
+  const parsed = UpdateCommentSchema.safeParse({
+    commentId: input.commentId,
+    body: input.body,
+  });
+  if (!parsed.success) {
+    return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
+  }
+
+  try {
+    await updateComment({
+      userId: s.user.id,
+      commentId: parsed.data.commentId,
+      body: parsed.data.body,
+    });
+    bumpPostPaths(input.communitySlug, input.postId);
+    return { ok: true };
   } catch (err) {
     logError(err, { userId: s.user.id, commentId: input.commentId });
     if (err instanceof Error) return { ok: false, reason: err.message };

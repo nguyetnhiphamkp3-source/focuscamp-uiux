@@ -17,6 +17,8 @@ export type FeedPost = Awaited<ReturnType<typeof listFeed>>[number];
  * List posts for a community feed.
  * If `userId` is provided, also returns whether the current user has reacted.
  */
+export type FeedSort = "latest" | "popular";
+
 export async function listFeed(params: {
   communityId: string;
   type?: PostType;
@@ -25,8 +27,18 @@ export async function listFeed(params: {
   userId?: string;
   limit?: number;
   cursor?: string;
+  sort?: FeedSort;
 }) {
-  const { communityId, type = "POST", isCot, pillar, userId, limit = 20, cursor } = params;
+  const {
+    communityId,
+    type = "POST",
+    isCot,
+    pillar,
+    userId,
+    limit = 20,
+    cursor,
+    sort = "latest",
+  } = params;
 
   const where = {
     communityId,
@@ -34,6 +46,18 @@ export async function listFeed(params: {
     ...(isCot !== undefined ? { isCot } : {}),
     ...(pillar ? { pillar } : {}),
   };
+
+  // Popular sort: pinned first, then by engagement (reactions+comments),
+  // then recency as tiebreak. Latest sort: pinned first, then recency.
+  const orderBy =
+    sort === "popular"
+      ? [
+          { isPinned: "desc" as const },
+          { reactions: { _count: "desc" as const } },
+          { comments: { _count: "desc" as const } },
+          { createdAt: "desc" as const },
+        ]
+      : [{ isPinned: "desc" as const }, { createdAt: "desc" as const }];
 
   const posts = await prisma.post.findMany({
     where,
@@ -49,7 +73,7 @@ export async function listFeed(params: {
           }
         : {}),
     },
-    orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
+    orderBy,
     take: limit,
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
   });

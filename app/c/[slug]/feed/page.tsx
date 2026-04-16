@@ -15,11 +15,13 @@ export default async function FeedPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ pillar?: string }>;
+  searchParams: Promise<{ pillar?: string; sort?: string }>;
 }) {
   const { slug } = await params;
   const sp = await searchParams;
   const pillarFilter = sp.pillar;
+  const sort: "latest" | "popular" =
+    sp.sort === "popular" ? "popular" : "latest";
 
   const community = await prisma.community.findUnique({
     where: { slug },
@@ -51,8 +53,23 @@ export default async function FeedPage({
     type: "POST",
     userId,
     pillar: pillarFilter || undefined,
+    sort,
     limit: 30,
   });
+
+  // Preserve pillar across tab switches, and sort across pillar switches
+  function urlFor(overrides: { pillar?: string | null; sort?: string }) {
+    const p = new URLSearchParams();
+    const finalPillar =
+      overrides.pillar === null
+        ? undefined
+        : overrides.pillar ?? pillarFilter;
+    const finalSort = overrides.sort ?? (sort === "latest" ? undefined : sort);
+    if (finalPillar) p.set("pillar", finalPillar);
+    if (finalSort) p.set("sort", finalSort);
+    const qs = p.toString();
+    return `/c/${slug}/feed${qs ? `?${qs}` : ""}`;
+  }
 
   return (
     <>
@@ -89,14 +106,34 @@ export default async function FeedPage({
           )}
 
           <div className="feed-tabs">
-            <div className="feed-tab active">Latest</div>
-            <div className="feed-tab" style={{ opacity: 0.4, cursor: "not-allowed" }}>
+            <Link
+              href={urlFor({ sort: "" })}
+              scroll={false}
+              className={`feed-tab ${sort === "latest" ? "active" : ""}`}
+              style={{ textDecoration: "none" }}
+            >
+              Latest
+            </Link>
+            <Link
+              href={urlFor({ sort: "popular" })}
+              scroll={false}
+              className={`feed-tab ${sort === "popular" ? "active" : ""}`}
+              style={{ textDecoration: "none" }}
+            >
               Popular
-            </div>
-            <div className="feed-tab" style={{ opacity: 0.4, cursor: "not-allowed" }}>
+            </Link>
+            <div
+              className="feed-tab"
+              title="Phase 2 — cần Follow system"
+              style={{ opacity: 0.4, cursor: "not-allowed" }}
+            >
               Following
             </div>
-            <div className="feed-tab" style={{ opacity: 0.4, cursor: "not-allowed" }}>
+            <div
+              className="feed-tab"
+              title="Phase 2 — cần Bookmark model"
+              style={{ opacity: 0.4, cursor: "not-allowed" }}
+            >
               Bookmarked
             </div>
           </div>
@@ -104,7 +141,7 @@ export default async function FeedPage({
           {pillars.length > 0 && (
             <div className="feed-pillars">
               <Link
-                href={`/c/${slug}/feed`}
+                href={urlFor({ pillar: null })}
                 className={`feed-pillar-pill ${!pillarFilter ? "active" : ""}`}
                 style={{ textDecoration: "none" }}
               >
@@ -113,7 +150,7 @@ export default async function FeedPage({
               {pillars.map((p) => (
                 <Link
                   key={p.key}
-                  href={`/c/${slug}/feed?pillar=${p.key}`}
+                  href={urlFor({ pillar: p.key })}
                   className={`feed-pillar-pill ${pillarFilter === p.key ? "active" : ""}`}
                   style={{ textDecoration: "none" }}
                 >
