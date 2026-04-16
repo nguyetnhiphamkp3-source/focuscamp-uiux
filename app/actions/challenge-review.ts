@@ -8,11 +8,15 @@ import {
   approveAllPending,
   approveChallengeMember,
   rejectChallengeMember,
+  updateChallengeSettings,
+  updateChallengeTask,
 } from "@/lib/services/challenge";
 import {
   ReviewSubmissionSchema,
   FlagSubmissionSchema,
   ApproveAllPendingSchema,
+  UpdateChallengeSettingsSchema,
+  UpdateChallengeTaskSchema,
 } from "@/lib/validations";
 import { z } from "zod";
 import { logError } from "@/lib/logger";
@@ -160,6 +164,90 @@ export async function rejectMemberAction(input: {
     return { ok: true };
   } catch (err) {
     logError(err, { userId: s.user.id, memberId: input.memberId });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+export async function updateChallengeSettingsAction(input: {
+  challengeId: string;
+  requiresApproval?: boolean;
+  title?: string;
+  description?: string;
+  communitySlug: string;
+  challengeSlug: string;
+}): Promise<ActionResult> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+  const parsed = UpdateChallengeSettingsSchema.safeParse({
+    challengeId: input.challengeId,
+    requiresApproval: input.requiresApproval,
+    title: input.title,
+    description: input.description,
+  });
+  if (!parsed.success) {
+    return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
+  }
+  try {
+    await updateChallengeSettings({
+      userId: s.user.id,
+      challengeId: parsed.data.challengeId,
+      requiresApproval: parsed.data.requiresApproval,
+      title: parsed.data.title,
+      description: parsed.data.description ?? undefined,
+    });
+    bumpChallenge(input.communitySlug, input.challengeSlug);
+    return { ok: true };
+  } catch (err) {
+    logError(err, { userId: s.user.id, challengeId: input.challengeId });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+export async function updateTaskAction(input: {
+  taskId: string;
+  title?: string;
+  description?: string;
+  sopContent?: string;
+  videoUrl?: string;
+  evidenceType?: "TEXT" | "LINK" | "IMAGE" | "FILE";
+  evidenceLabel?: string;
+  label?: string;
+  communitySlug: string;
+  challengeSlug: string;
+}): Promise<ActionResult> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+  const parsed = UpdateChallengeTaskSchema.safeParse({
+    taskId: input.taskId,
+    title: input.title,
+    description: input.description,
+    sopContent: input.sopContent,
+    videoUrl: input.videoUrl,
+    evidenceType: input.evidenceType,
+    evidenceLabel: input.evidenceLabel,
+    label: input.label,
+  });
+  if (!parsed.success) {
+    return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
+  }
+  try {
+    await updateChallengeTask({
+      userId: s.user.id,
+      taskId: parsed.data.taskId,
+      title: parsed.data.title,
+      description: parsed.data.description ?? undefined,
+      sopContent: parsed.data.sopContent ?? undefined,
+      videoUrl: parsed.data.videoUrl ?? undefined,
+      evidenceType: parsed.data.evidenceType,
+      evidenceLabel: parsed.data.evidenceLabel ?? undefined,
+      label: parsed.data.label ?? undefined,
+    });
+    bumpChallenge(input.communitySlug, input.challengeSlug);
+    return { ok: true };
+  } catch (err) {
+    logError(err, { userId: s.user.id, taskId: input.taskId });
     if (err instanceof Error) return { ok: false, reason: err.message };
     return { ok: false, reason: "unknown" };
   }

@@ -514,3 +514,79 @@ export async function rejectChallengeMember(input: {
 
   return updated;
 }
+
+/* ===== Admin: challenge settings + task CRUD ===== */
+
+export async function updateChallengeSettings(input: {
+  userId: string;
+  challengeId: string;
+  requiresApproval?: boolean;
+  title?: string;
+  description?: string;
+}) {
+  const ch = await assertChallengeAdmin(input.userId, input.challengeId);
+  await prisma.challenge.update({
+    where: { id: input.challengeId },
+    data: {
+      ...(input.requiresApproval !== undefined
+        ? { requiresApproval: input.requiresApproval }
+        : {}),
+      ...(input.title !== undefined ? { title: input.title } : {}),
+      ...(input.description !== undefined
+        ? { description: input.description || null }
+        : {}),
+    },
+  });
+  logger.info(
+    { challengeId: input.challengeId, by: input.userId },
+    "[challenge] settings updated"
+  );
+  return ch;
+}
+
+export async function updateChallengeTask(input: {
+  userId: string;
+  taskId: string;
+  title?: string;
+  description?: string;
+  sopContent?: string;
+  videoUrl?: string;
+  evidenceType?: string;
+  evidenceLabel?: string;
+  label?: string;
+}) {
+  const task = await prisma.challengeTask.findUnique({
+    where: { id: input.taskId },
+    select: { challengeId: true },
+  });
+  if (!task) throw new Error("Task không tồn tại");
+  await assertChallengeAdmin(input.userId, task.challengeId);
+
+  const updated = await prisma.challengeTask.update({
+    where: { id: input.taskId },
+    data: {
+      ...(input.title !== undefined ? { title: input.title } : {}),
+      ...(input.description !== undefined
+        ? { description: input.description || null }
+        : {}),
+      ...(input.sopContent !== undefined
+        ? { sopContent: input.sopContent || null }
+        : {}),
+      ...(input.videoUrl !== undefined
+        ? { videoUrl: input.videoUrl || null }
+        : {}),
+      ...(input.evidenceType !== undefined
+        ? { evidenceType: input.evidenceType }
+        : {}),
+      ...(input.evidenceLabel !== undefined
+        ? { evidenceLabel: input.evidenceLabel || null }
+        : {}),
+      ...(input.label !== undefined ? { label: input.label || null } : {}),
+    },
+  });
+  logger.info(
+    { taskId: input.taskId, by: input.userId },
+    "[challenge] task updated"
+  );
+  return updated;
+}

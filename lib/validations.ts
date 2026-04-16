@@ -47,6 +47,24 @@ export const JoinChallengeSchema = z.object({
   challengeId: z.string().cuid(),
 });
 
+export const UpdateChallengeSettingsSchema = z.object({
+  challengeId: z.string().cuid(),
+  requiresApproval: z.boolean().optional(),
+  title: z.string().trim().min(1).max(120).optional(),
+  description: z.string().trim().max(5000).optional().or(z.literal("")),
+});
+
+export const UpdateChallengeTaskSchema = z.object({
+  taskId: z.string().cuid(),
+  title: z.string().trim().min(1).max(200).optional(),
+  description: z.string().trim().max(5000).optional().or(z.literal("")),
+  sopContent: z.string().trim().max(10000).optional().or(z.literal("")),
+  videoUrl: z.string().url().optional().or(z.literal("")),
+  evidenceType: z.enum(["TEXT", "LINK", "IMAGE", "FILE"]).optional(),
+  evidenceLabel: z.string().trim().max(500).optional().or(z.literal("")),
+  label: z.string().trim().max(60).optional().or(z.literal("")),
+});
+
 export const ReviewSubmissionSchema = z.object({
   checkinId: z.string().cuid(),
   action: z.enum(["APPROVE", "REJECT"]),

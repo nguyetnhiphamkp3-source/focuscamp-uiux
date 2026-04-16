@@ -7,6 +7,7 @@ import { CheckinForm } from "@/components/community/checkin-form";
 import { SubmissionReviewPanel } from "@/components/community/submission-review-panel";
 import type { SubmissionRow } from "@/components/community/submission-review-panel";
 import { PendingMembersPanel } from "@/components/community/pending-members-panel";
+import { ChallengeSettingsPanel } from "@/components/community/challenge-settings-panel";
 import {
   getActiveChallenge,
   getChallengeLeaderboard,
@@ -207,6 +208,20 @@ export default async function ChallengeDetailPage({
         }}
       >
         <div className="ch-inner ch-detail">
+          {/* Admin-only settings panel */}
+          {isOwner && (
+            <ChallengeSettingsPanel
+              challengeId={challenge.id}
+              communitySlug={slug}
+              challengeSlug={challengeSlug}
+              initial={{
+                title: challenge.title,
+                description: challenge.description,
+                requiresApproval: challenge.requiresApproval,
+              }}
+            />
+          )}
+
           {/* Admin-only pending member requests panel */}
           {isOwner && pendingMembers.length > 0 && (
             <PendingMembersPanel
