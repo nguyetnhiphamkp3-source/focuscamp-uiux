@@ -175,18 +175,40 @@ function MemberView({
       <div
         className="rs-banner"
         style={{
-          background: "linear-gradient(135deg,#1B9E75,#157a5b)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "#fff",
-          fontSize: "var(--text-md)",
-          fontWeight: 700,
-          textAlign: "center",
-          padding: 16,
+          position: "relative",
+          overflow: "hidden",
         }}
       >
-        🏕️ Chào mừng trở lại!
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/campfire.jpg"
+          alt="Campfire"
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            display: "block",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#fff",
+            fontSize: "var(--text-md)",
+            fontWeight: "var(--fw-bold)",
+            textAlign: "center",
+            padding: "var(--space-4)",
+            background:
+              "linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.45) 100%)",
+            textShadow: "0 1px 3px rgba(0,0,0,0.5)",
+          }}
+        >
+          🏕️ Chào mừng trở lại!
+        </div>
       </div>
       <div className="rs-body">
         <div className="rs-card">
