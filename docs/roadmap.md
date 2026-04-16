@@ -29,9 +29,11 @@ Key: ✅ done · 🟡 partial · ❌ not started · 🚫 deferred (Phase 2+)
 | Activity heatmap (12mo) | ✅ | per-community |
 | Stats: active days / current + longest streak / peak hour | ✅ | |
 | "Cũng active ở N cộng đồng" (Skool-style, no stats leak) | ✅ | |
+| XP log on profile (last 12 XPLedger events) | ✅ | |
+| Follower / Following counts + Follow button | ✅ | Shown on /u/ and /c/<slug>/profile |
 | Time-range filter on stats (All/30d/7d) | ❌ | Phase 2 |
-| Follow system (for Feed "Following" tab) | 🚫 | Phase 2 |
-| Bookmark system | 🚫 | Phase 2 |
+| Follow system (for Feed "Following" tab) | ✅ | Shipped |
+| Bookmark system | ✅ | 🔖 button + Feed Bookmarked tab |
 
 ### Community platform
 | Item | Status | Notes |
@@ -89,7 +91,9 @@ Key: ✅ done · 🟡 partial · ❌ not started · 🚫 deferred (Phase 2+)
 | Resubmit after reject (with rejectCount cap) | ✅ | Cap at 2, note preserved |
 | Admin CRUD tasks inline | ✅ | TaskEditorButton + CreateTaskButton + delete |
 | Freeze mechanics (pause timer) | 🟡 | UI + banner shipped; day-count adjustment = Phase 2 |
-| XP award / bonus multipliers (7d/30d/90d streak, class diversity) | ❌ | Schema has XPLedger, logic chưa |
+| **XP award system** (+5/post, +2/comment, +5×mult/checkin, +10/approve+best) | ✅ | awardXp + XPLedger persisted |
+| **Streak multipliers** (7d=1.1x, 30d=1.2x, 90d=1.5x) | ✅ | bumpCommunityStreak + applied to CHECKIN |
+| **Community-wide leaderboard** (All/Monthly/Weekly) | ✅ | XPLedger groupBy for time-bucketed ranks |
 | Community-wide weekly challenge (CommunityChallenge schema) | 🚫 | Phase 2 |
 
 ### Courses / Marketplace
@@ -99,7 +103,10 @@ Key: ✅ done · 🟡 partial · ❌ not started · 🚫 deferred (Phase 2+)
 | Marketplace list + detail | ✅ | |
 | Purchase via SePay webhook | ✅ | |
 | Course progress tracking | ✅ | |
-| Admin CRUD courses / products | ❌ | Schema done, UI create/edit chưa có |
+| Admin create course + draft visibility | ✅ | CreateCourseButton, owner sees unpublished |
+| Admin create lesson inside course | ✅ | CreateLessonButton |
+| Admin create product | ✅ | CreateProductButton |
+| Admin edit/delete course/lesson/product | 🟡 | Services ready, UI Phase 2 |
 | Free vs paid gating | ✅ | via `Product.isFree` |
 
 ### Chat
