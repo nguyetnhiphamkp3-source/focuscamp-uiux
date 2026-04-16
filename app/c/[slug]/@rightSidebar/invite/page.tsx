@@ -1,8 +1,8 @@
-import { DefaultRightSidebar } from "./_default-sidebar";
+import { DefaultRightSidebar } from "../_default-sidebar";
 
 export const dynamic = "force-dynamic";
 
-export default async function Default({
+export default async function Page({
   params,
 }: {
   params: Promise<{ slug: string }>;
