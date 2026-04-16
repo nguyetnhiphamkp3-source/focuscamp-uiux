@@ -6,10 +6,12 @@ import { revalidatePath } from "next/cache";
 import { CheckinForm } from "@/components/community/checkin-form";
 import { SubmissionReviewPanel } from "@/components/community/submission-review-panel";
 import type { SubmissionRow } from "@/components/community/submission-review-panel";
+import { PendingMembersPanel } from "@/components/community/pending-members-panel";
 import {
   getActiveChallenge,
   getChallengeLeaderboard,
   listChallengeSubmissions,
+  listPendingMembers,
 } from "@/lib/services/challenge";
 
 export const dynamic = "force-dynamic";
@@ -66,6 +68,7 @@ export default async function ChallengeDetailPage({
     total: number;
     pendingCount: number;
   } | null = null;
+  const pendingMembers = isOwner ? await listPendingMembers(challenge.id) : [];
   if (isOwner) {
     const res = await listChallengeSubmissions({
       challengeId: challenge.id,
@@ -149,6 +152,9 @@ export default async function ChallengeDetailPage({
       },
     });
     if (!communityMembership) redirect(`/c/${slug}`);
+    // If challenge requires approval, new joins go to PENDING (no timer).
+    // Otherwise auto-ACTIVE + start personal timer (existing behavior).
+    const requiresApproval = challenge!.requiresApproval;
     await prisma.challengeMember.upsert({
       where: {
         challengeId_userId: {
@@ -160,8 +166,8 @@ export default async function ChallengeDetailPage({
       create: {
         challengeId: challenge!.id,
         userId: s.user!.id!,
-        status: "ACTIVE",
-        personalStartsAt: new Date(),
+        status: requiresApproval ? "PENDING" : "ACTIVE",
+        personalStartsAt: requiresApproval ? null : new Date(),
       },
     });
     revalidatePath(`/c/${slug}/challenges/${challengeSlug}`);
@@ -201,6 +207,19 @@ export default async function ChallengeDetailPage({
         }}
       >
         <div className="ch-inner ch-detail">
+          {/* Admin-only pending member requests panel */}
+          {isOwner && pendingMembers.length > 0 && (
+            <PendingMembersPanel
+              communitySlug={slug}
+              challengeSlug={challengeSlug}
+              members={pendingMembers.map((m) => ({
+                id: m.id,
+                joinedAt: m.joinedAt,
+                user: m.user,
+              }))}
+            />
+          )}
+
           {/* Admin-only submission review panel (Phase C) */}
           {isOwner && submissionData && (
             <SubmissionReviewPanel

@@ -6,12 +6,15 @@ import {
   reviewSubmission,
   flagSubmissionForReview,
   approveAllPending,
+  approveChallengeMember,
+  rejectChallengeMember,
 } from "@/lib/services/challenge";
 import {
   ReviewSubmissionSchema,
   FlagSubmissionSchema,
   ApproveAllPendingSchema,
 } from "@/lib/validations";
+import { z } from "zod";
 import { logError } from "@/lib/logger";
 
 type ActionResult = { ok: true } | { ok: false; reason: string };
@@ -104,6 +107,59 @@ export async function approveAllPendingAction(input: {
     return { ok: true, count: res.count };
   } catch (err) {
     logError(err, { userId: s.user.id, challengeId: input.challengeId });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+const MemberIdSchema = z.object({ memberId: z.string().cuid() });
+const RejectMemberSchema = MemberIdSchema.extend({
+  note: z.string().trim().max(1000).optional().or(z.literal("")),
+});
+
+export async function approveMemberAction(input: {
+  memberId: string;
+  communitySlug: string;
+  challengeSlug: string;
+}): Promise<ActionResult> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+  const parsed = MemberIdSchema.safeParse({ memberId: input.memberId });
+  if (!parsed.success) return { ok: false, reason: "invalid" };
+  try {
+    await approveChallengeMember({ userId: s.user.id, memberId: parsed.data.memberId });
+    bumpChallenge(input.communitySlug, input.challengeSlug);
+    return { ok: true };
+  } catch (err) {
+    logError(err, { userId: s.user.id, memberId: input.memberId });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+export async function rejectMemberAction(input: {
+  memberId: string;
+  note?: string;
+  communitySlug: string;
+  challengeSlug: string;
+}): Promise<ActionResult> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+  const parsed = RejectMemberSchema.safeParse({
+    memberId: input.memberId,
+    note: input.note,
+  });
+  if (!parsed.success) return { ok: false, reason: "invalid" };
+  try {
+    await rejectChallengeMember({
+      userId: s.user.id,
+      memberId: parsed.data.memberId,
+      note: parsed.data.note || undefined,
+    });
+    bumpChallenge(input.communitySlug, input.challengeSlug);
+    return { ok: true };
+  } catch (err) {
+    logError(err, { userId: s.user.id, memberId: input.memberId });
     if (err instanceof Error) return { ok: false, reason: err.message };
     return { ok: false, reason: "unknown" };
   }

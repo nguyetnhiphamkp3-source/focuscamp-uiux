@@ -248,6 +248,7 @@ model Challenge {
   freezeFromDay  Int?
   freezeStartsAt DateTime?
   freezeEndsAt   DateTime?
+  requiresApproval Boolean @default(false)
   createdAt      DateTime  @default(now())
 
   community Community         @relation(fields: [communityId], references: [id], onDelete: Cascade)
@@ -303,6 +304,8 @@ model ChallengeMember {
   status            String    @default("PENDING")
   joinedAt          DateTime  @default(now())
   approvedAt        DateTime?
+  approvedById      String?
+  rejectNote        String?   @db.Text
   personalStartsAt  DateTime?
   completedAt       DateTime?
   lastCheckinAt     DateTime?

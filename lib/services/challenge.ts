@@ -425,3 +425,92 @@ export async function approveAllPending(input: {
   );
   return { count: res.count };
 }
+
+/* ===== Admin: member request review (Phase C-2) ===== */
+
+export async function listPendingMembers(challengeId: string) {
+  return prisma.challengeMember.findMany({
+    where: { challengeId, status: "PENDING" },
+    include: {
+      user: { select: { id: true, name: true, image: true, email: true, handle: true } },
+    },
+    orderBy: { joinedAt: "asc" },
+  });
+}
+
+export async function approveChallengeMember(input: {
+  userId: string;
+  memberId: string;
+}) {
+  const member = await prisma.challengeMember.findUnique({
+    where: { id: input.memberId },
+    include: { challenge: { include: { community: { select: { ownerId: true, slug: true } } } } },
+  });
+  if (!member) throw new Error("Member không tồn tại");
+  if (member.challenge.community.ownerId !== input.userId) {
+    throw new Error("Chỉ admin cộng đồng mới duyệt được");
+  }
+  const updated = await prisma.challengeMember.update({
+    where: { id: input.memberId },
+    data: {
+      status: "ACTIVE",
+      approvedAt: new Date(),
+      approvedById: input.userId,
+      personalStartsAt: new Date(), // approval = ready to play
+    },
+  });
+  logger.info(
+    { memberId: input.memberId, approvedBy: input.userId },
+    "[challenge] member approved"
+  );
+
+  // Notify applicant
+  await createNotification({
+    userId: member.userId,
+    type: "SUBMISSION_APPROVED",
+    title: `Bạn đã được duyệt vào challenge: ${member.challenge.title}`,
+    actorId: input.userId,
+    link: `/c/${member.challenge.community.slug}/challenges/${member.challenge.slug}`,
+    communitySlug: member.challenge.community.slug,
+  });
+
+  return updated;
+}
+
+export async function rejectChallengeMember(input: {
+  userId: string;
+  memberId: string;
+  note?: string;
+}) {
+  const member = await prisma.challengeMember.findUnique({
+    where: { id: input.memberId },
+    include: { challenge: { include: { community: { select: { ownerId: true, slug: true } } } } },
+  });
+  if (!member) throw new Error("Member không tồn tại");
+  if (member.challenge.community.ownerId !== input.userId) {
+    throw new Error("Chỉ admin cộng đồng mới từ chối được");
+  }
+  const updated = await prisma.challengeMember.update({
+    where: { id: input.memberId },
+    data: {
+      status: "REJECTED",
+      rejectNote: input.note?.trim() || null,
+    },
+  });
+  logger.info(
+    { memberId: input.memberId, by: input.userId },
+    "[challenge] member rejected"
+  );
+
+  await createNotification({
+    userId: member.userId,
+    type: "SUBMISSION_REJECTED",
+    title: `Bạn bị từ chối vào challenge: ${member.challenge.title}`,
+    body: input.note?.trim() || undefined,
+    actorId: input.userId,
+    link: `/c/${member.challenge.community.slug}/challenges/${member.challenge.slug}`,
+    communitySlug: member.challenge.community.slug,
+  });
+
+  return updated;
+}
