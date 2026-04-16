@@ -254,3 +254,148 @@ export async function getChallengeLeaderboard(
 
   return rows.slice(0, limit);
 }
+
+/* ===== Phase C — Admin review of submissions (check-ins) ===== */
+
+export type SubmissionStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+async function assertChallengeAdmin(userId: string, challengeId: string) {
+  const ch = await prisma.challenge.findUnique({
+    where: { id: challengeId },
+    include: { community: { select: { ownerId: true } } },
+  });
+  if (!ch) throw new Error("Challenge không tồn tại");
+  // Admin = community owner. (Future: add mod roles.)
+  if (ch.community.ownerId !== userId) {
+    throw new Error("Chỉ admin cộng đồng mới review submission");
+  }
+  return ch;
+}
+
+/**
+ * List check-ins (submissions) of a challenge, optionally filtered by status.
+ * Returns newest first with user + task for display.
+ */
+export async function listChallengeSubmissions(input: {
+  challengeId: string;
+  status?: SubmissionStatus | "ALL";
+  limit?: number;
+  offset?: number;
+}) {
+  const { challengeId, status = "ALL", limit = 50, offset = 0 } = input;
+  const [rows, total, pendingCount] = await Promise.all([
+    prisma.checkin.findMany({
+      where: {
+        challengeId,
+        ...(status !== "ALL" ? { status } : {}),
+      },
+      include: {
+        user: { select: { id: true, name: true, image: true } },
+        task: { select: { id: true, dayNumber: true, title: true, label: true } },
+        reviewedBy: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      skip: offset,
+    }),
+    prisma.checkin.count({ where: { challengeId } }),
+    prisma.checkin.count({ where: { challengeId, status: "PENDING" } }),
+  ]);
+  return { rows, total, pendingCount };
+}
+
+/**
+ * Review a submission — approve or reject. Admin/owner only.
+ * On reject, a non-empty note is required (explain why so user can resubmit).
+ */
+export async function reviewSubmission(input: {
+  userId: string;
+  checkinId: string;
+  action: "APPROVE" | "REJECT";
+  note?: string;
+}) {
+  const checkin = await prisma.checkin.findUnique({
+    where: { id: input.checkinId },
+  });
+  if (!checkin) throw new Error("Check-in không tồn tại");
+  await assertChallengeAdmin(input.userId, checkin.challengeId);
+
+  if (input.action === "REJECT" && !input.note?.trim()) {
+    throw new Error("Vui lòng ghi note khi reject để người làm biết cần sửa gì");
+  }
+
+  const updated = await prisma.checkin.update({
+    where: { id: input.checkinId },
+    data: {
+      status: input.action === "APPROVE" ? "APPROVED" : "REJECTED",
+      reviewedById: input.userId,
+      reviewedAt: new Date(),
+      reviewNote: input.note?.trim() || null,
+    },
+  });
+  logger.info(
+    {
+      checkinId: input.checkinId,
+      action: input.action,
+      reviewer: input.userId,
+      submitter: checkin.userId,
+    },
+    "[challenge] submission reviewed"
+  );
+  return updated;
+}
+
+/**
+ * Flag a check-in as PENDING (removes any prior approval). Admin-only.
+ * Useful when admin notices something suspicious on a previously-auto-approved
+ * check-in and wants to pull it back for manual review.
+ */
+export async function flagSubmissionForReview(input: {
+  userId: string;
+  checkinId: string;
+}) {
+  const checkin = await prisma.checkin.findUnique({
+    where: { id: input.checkinId },
+  });
+  if (!checkin) throw new Error("Check-in không tồn tại");
+  await assertChallengeAdmin(input.userId, checkin.challengeId);
+
+  const updated = await prisma.checkin.update({
+    where: { id: input.checkinId },
+    data: {
+      status: "PENDING",
+      reviewedById: null,
+      reviewedAt: null,
+      reviewNote: null,
+    },
+  });
+  logger.info(
+    { checkinId: input.checkinId, by: input.userId },
+    "[challenge] submission flagged for review"
+  );
+  return updated;
+}
+
+/**
+ * Bulk approve all PENDING check-ins of a challenge. Admin-only.
+ * Convenience when admin trusts the latest batch.
+ */
+export async function approveAllPending(input: {
+  userId: string;
+  challengeId: string;
+}) {
+  await assertChallengeAdmin(input.userId, input.challengeId);
+  const res = await prisma.checkin.updateMany({
+    where: { challengeId: input.challengeId, status: "PENDING" },
+    data: {
+      status: "APPROVED",
+      reviewedById: input.userId,
+      reviewedAt: new Date(),
+    },
+  });
+  logger.info(
+    { challengeId: input.challengeId, count: res.count, by: input.userId },
+    "[challenge] bulk approve pending"
+  );
+  return { count: res.count };
+}

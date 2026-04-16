@@ -34,6 +34,7 @@ model User {
   challengeMembers ChallengeMember[]
   taskCompletions  TaskCompletion[]
   checkins         Checkin[]
+  reviewedCheckins Checkin[]          @relation("CheckinReviewer")
   submissionVotes  SubmissionVote[]
   purchases        Purchase[]
   xpLedger         XPLedger[]
@@ -339,14 +340,20 @@ model Checkin {
   content     String   @db.Text
   linkUrl     String? // external evidence URL (e.g. screenshot host, notion, miro)
   imageUrl    String? // inline image URL (uploaded/pasted)
+  status      String   @default("APPROVED") // PENDING | APPROVED | REJECTED
+  reviewedById String?
+  reviewedAt  DateTime?
+  reviewNote  String?  @db.Text
   createdAt   DateTime @default(now())
 
-  challenge Challenge      @relation(fields: [challengeId], references: [id], onDelete: Cascade)
-  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  task      ChallengeTask? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  challenge  Challenge      @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task       ChallengeTask? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  reviewedBy User?          @relation("CheckinReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
 
   @@index([challengeId, createdAt])
   @@index([challengeId, userId, createdAt])
+  @@index([challengeId, status])
   @@index([taskId])
 }
 

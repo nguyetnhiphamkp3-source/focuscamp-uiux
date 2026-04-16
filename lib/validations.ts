@@ -47,6 +47,20 @@ export const JoinChallengeSchema = z.object({
   challengeId: z.string().cuid(),
 });
 
+export const ReviewSubmissionSchema = z.object({
+  checkinId: z.string().cuid(),
+  action: z.enum(["APPROVE", "REJECT"]),
+  note: z.string().trim().max(2000).optional().or(z.literal("")),
+});
+
+export const ApproveAllPendingSchema = z.object({
+  challengeId: z.string().cuid(),
+});
+
+export const FlagSubmissionSchema = z.object({
+  checkinId: z.string().cuid(),
+});
+
 export const ChallengeCheckinSchema = z.object({
   challengeId: z.string().cuid(),
   content: z.string().trim().min(5).max(1000),

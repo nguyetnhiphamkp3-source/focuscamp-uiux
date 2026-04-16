@@ -4,9 +4,12 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { CheckinForm } from "@/components/community/checkin-form";
+import { SubmissionReviewPanel } from "@/components/community/submission-review-panel";
+import type { SubmissionRow } from "@/components/community/submission-review-panel";
 import {
   getActiveChallenge,
   getChallengeLeaderboard,
+  listChallengeSubmissions,
 } from "@/lib/services/challenge";
 
 export const dynamic = "force-dynamic";
@@ -24,10 +27,13 @@ function diffLabel(d: string) {
 
 export default async function ChallengeDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string; challengeSlug: string }>;
+  searchParams: Promise<{ review?: string }>;
 }) {
   const { slug, challengeSlug } = await params;
+  const sp = await searchParams;
   const session = await auth();
 
   const challenge = await prisma.challenge.findFirst({
@@ -35,7 +41,7 @@ export default async function ChallengeDetailPage({
     include: {
       tasks: { orderBy: { dayNumber: "asc" } },
       _count: { select: { members: true } },
-      community: { select: { name: true, id: true } },
+      community: { select: { name: true, id: true, ownerId: true } },
       products: {
         orderBy: { relevance: "asc" },
         include: { product: true },
@@ -43,6 +49,50 @@ export default async function ChallengeDetailPage({
     },
   });
   if (!challenge) notFound();
+
+  const isOwner =
+    !!session?.user?.id && session.user.id === challenge.community.ownerId;
+
+  // Phase C — admin review panel data (only when owner)
+  type ReviewTab = "ALL" | "PENDING" | "APPROVED" | "REJECTED";
+  const reviewTab = ((): ReviewTab => {
+    const t = (sp.review || "").toUpperCase();
+    if (t === "PENDING" || t === "APPROVED" || t === "REJECTED" || t === "ALL")
+      return t as ReviewTab;
+    return "PENDING"; // default shows what needs attention
+  })();
+  let submissionData: {
+    rows: SubmissionRow[];
+    total: number;
+    pendingCount: number;
+  } | null = null;
+  if (isOwner) {
+    const res = await listChallengeSubmissions({
+      challengeId: challenge.id,
+      status: reviewTab,
+      limit: 50,
+    });
+    submissionData = {
+      rows: res.rows.map((r) => ({
+        id: r.id,
+        content: r.content,
+        linkUrl: r.linkUrl,
+        imageUrl: r.imageUrl,
+        status: r.status,
+        reviewNote: r.reviewNote,
+        reviewedAt: r.reviewedAt,
+        createdAt: r.createdAt,
+        dayNumber: r.dayNumber,
+        user: r.user,
+        task: r.task
+          ? { dayNumber: r.task.dayNumber, title: r.task.title, label: r.task.label }
+          : null,
+        reviewedBy: r.reviewedBy,
+      })),
+      total: res.total,
+      pendingCount: res.pendingCount,
+    };
+  }
 
   // Recent social check-ins (all members, last 20)
   const recentCheckins = await prisma.checkin.findMany({
@@ -151,6 +201,19 @@ export default async function ChallengeDetailPage({
         }}
       >
         <div className="ch-inner ch-detail">
+          {/* Admin-only submission review panel (Phase C) */}
+          {isOwner && submissionData && (
+            <SubmissionReviewPanel
+              challengeId={challenge.id}
+              communitySlug={slug}
+              challengeSlug={challengeSlug}
+              submissions={submissionData.rows}
+              total={submissionData.total}
+              pendingCount={submissionData.pendingCount}
+              activeStatus={reviewTab}
+            />
+          )}
+
           <div className="ch-detail-header">
             <div className={`ch-detail-banner ${diffClass(challenge.difficulty)}`}>
               <div
@@ -609,6 +672,48 @@ export default async function ChallengeDetailPage({
                           >
                             🔗 {c.linkUrl.replace(/^https?:\/\//, "").slice(0, 60)}
                           </a>
+                        )}
+                        {/* Status badge — visible to all, critical feedback for submitter */}
+                        {c.status !== "APPROVED" && (
+                          <div
+                            style={{
+                              marginTop: "var(--space-2)",
+                              display: "inline-flex",
+                              gap: 6,
+                              alignItems: "center",
+                              fontSize: "var(--text-xs)",
+                              padding: "3px 10px",
+                              borderRadius: 10,
+                              background:
+                                c.status === "PENDING"
+                                  ? "rgba(240,178,50,0.14)"
+                                  : "rgba(218,55,60,0.1)",
+                              color:
+                                c.status === "PENDING"
+                                  ? "var(--warning)"
+                                  : "var(--danger)",
+                              fontWeight: 700,
+                            }}
+                          >
+                            {c.status === "PENDING"
+                              ? "⏳ Đang chờ duyệt"
+                              : "✕ Bị từ chối"}
+                          </div>
+                        )}
+                        {c.reviewNote && c.status === "REJECTED" && (
+                          <div
+                            style={{
+                              marginTop: "var(--space-2)",
+                              padding: "var(--space-2) var(--space-3)",
+                              fontSize: "var(--text-xs)",
+                              background: "rgba(218,55,60,0.06)",
+                              border: "1px solid rgba(218,55,60,0.2)",
+                              borderRadius: "var(--r-sm)",
+                              color: "var(--text-normal)",
+                            }}
+                          >
+                            <strong>Admin ghi chú:</strong> {c.reviewNote}
+                          </div>
                         )}
                       </div>
                     </div>
