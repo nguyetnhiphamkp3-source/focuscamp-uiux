@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { ProductCard, fmtVnd } from "@/components/marketplace/product-card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { CreateProductButton } from "@/components/community/create-product-button";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +13,7 @@ export default async function MarketplacePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const session = await auth();
   const community = await prisma.community.findUnique({
     where: { slug },
     include: {
@@ -19,6 +22,7 @@ export default async function MarketplacePage({
     },
   });
   if (!community) notFound();
+  const isOwner = session?.user?.id === community.ownerId;
 
   const products = community.products;
   const featured = products.slice(0, 5);
@@ -40,6 +44,20 @@ export default async function MarketplacePage({
 
       <div className="mk-view">
         <div className="mk-inner">
+          {isOwner && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                marginBottom: "var(--space-4)",
+              }}
+            >
+              <CreateProductButton
+                communityId={community.id}
+                communitySlug={slug}
+              />
+            </div>
+          )}
           {/* Hero */}
           <div className="mk-hero">
             <div className="mk-hero-emoji">🛒</div>

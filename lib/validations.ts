@@ -351,6 +351,18 @@ export const DeleteLessonSchema = z.object({
   lessonId: z.string().cuid(),
 });
 
+export const CreateProductSchema = z.object({
+  communityId: z.string().cuid(),
+  slug: SlugSchema,
+  title: z.string().trim().min(2).max(160),
+  description: z.string().trim().max(5000).optional().or(z.literal("")),
+  type: z.string().max(40).optional(),
+  pillar: z.string().max(40).optional().or(z.literal("")),
+  priceVnd: z.number().nonnegative().optional(),
+  isFree: z.boolean().optional(),
+  externalUrl: z.string().url().optional().or(z.literal("")),
+});
+
 /* ========== Helper ========== */
 /** Parse FormData against a schema; throws with readable error if invalid. */
 export function parseFormData<T extends z.ZodTypeAny>(
