@@ -1,6 +1,16 @@
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import {
+  getPillars,
+  getClasses,
+  getCurrency,
+  getLevelTiers,
+} from "@/lib/community-config";
+import { PillarsEditor } from "@/components/settings/pillars-editor";
+import { ClassesEditor } from "@/components/settings/classes-editor";
+import { CurrencyEditor } from "@/components/settings/currency-editor";
+import { LevelsEditor } from "@/components/settings/levels-editor";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +28,11 @@ export default async function SettingsPage({
 
   const isOwner = community.ownerId === session.user.id;
 
+  const pillars = getPillars(community);
+  const classes = getClasses(community);
+  const currency = getCurrency(community);
+  const tiers = getLevelTiers(community);
+
   return (
     <>
       <header className="view-header">
@@ -31,7 +46,7 @@ export default async function SettingsPage({
           padding: "var(--space-6) var(--space-8)",
         }}
       >
-        <div style={{ maxWidth: 800 }}>
+        <div style={{ maxWidth: 860 }}>
           {!isOwner && (
             <div
               style={{
@@ -48,7 +63,10 @@ export default async function SettingsPage({
             </div>
           )}
 
-          <div className="ui-card ui-card-lg" style={{ marginBottom: "var(--space-4)" }}>
+          <div
+            className="ui-card ui-card-lg"
+            style={{ marginBottom: "var(--space-4)" }}
+          >
             <h2 style={{ marginBottom: "var(--space-3)" }}>Thông tin cộng đồng</h2>
             <Row label="Slug" value={community.slug} />
             <Row label="Name" value={community.name} />
@@ -60,10 +78,55 @@ export default async function SettingsPage({
             />
           </div>
 
-          <div className="ui-empty">
-            <div className="ui-empty-icon">⚙️</div>
-            Các tuỳ chỉnh khác đang hoàn thiện (classes, pillars, gems, billing...).
+          <div
+            style={{
+              fontSize: "var(--text-xl)",
+              fontWeight: 700,
+              color: "var(--header-primary)",
+              padding: "var(--space-6) 0 var(--space-3)",
+              borderTop: "1px solid var(--border-subtle)",
+              marginTop: "var(--space-4)",
+            }}
+          >
+            Concept
           </div>
+          <div
+            style={{
+              fontSize: "var(--text-sm)",
+              color: "var(--text-muted)",
+              marginBottom: "var(--space-4)",
+            }}
+          >
+            Tuỳ chỉnh “ngôn ngữ” riêng cho cộng đồng của bạn: chủ đề (pillars),
+            vai trò thành viên (classes), đồng điểm (currency), các bậc level
+            (tiers). Mỗi cộng đồng có taxonomy riêng, không bị ảnh hưởng bởi
+            cộng đồng khác.
+          </div>
+
+          <PillarsEditor
+            communityId={community.id}
+            communitySlug={slug}
+            initial={pillars}
+            disabled={!isOwner}
+          />
+          <ClassesEditor
+            communityId={community.id}
+            communitySlug={slug}
+            initial={classes}
+            disabled={!isOwner}
+          />
+          <CurrencyEditor
+            communityId={community.id}
+            communitySlug={slug}
+            initial={currency}
+            disabled={!isOwner}
+          />
+          <LevelsEditor
+            communityId={community.id}
+            communitySlug={slug}
+            initial={tiers}
+            disabled={!isOwner}
+          />
         </div>
       </div>
     </>

@@ -96,6 +96,60 @@ export const LoginRedirectSchema = z.object({
     .optional(),
 });
 
+/* ========== Community concept config ========== */
+
+const KeyString = z
+  .string()
+  .min(1)
+  .max(40)
+  .regex(/^[a-z0-9-]+$/, "Key chỉ gồm a-z, 0-9, -");
+
+const PillarItemSchema = z.object({
+  key: KeyString,
+  label: z.string().trim().min(1).max(60),
+  emoji: z.string().max(8).optional().or(z.literal("")),
+  cssClass: z.string().max(60).optional().or(z.literal("")),
+  color: z.string().max(40).optional().or(z.literal("")),
+});
+
+const ClassItemSchema = z.object({
+  key: KeyString,
+  label: z.string().trim().min(1).max(60),
+  emoji: z.string().max(8).optional().or(z.literal("")),
+  description: z.string().max(500).optional().or(z.literal("")),
+  color: z.string().max(40).optional().or(z.literal("")),
+});
+
+const LevelTierItemSchema = z.object({
+  minLevel: z.number().int().nonnegative().max(10000),
+  name: z.string().trim().min(1).max(40),
+  emoji: z.string().max(8).optional().or(z.literal("")),
+  color: z.string().max(40).optional().or(z.literal("")),
+});
+
+export const UpdatePillarsSchema = z.object({
+  communityId: z.string().cuid(),
+  pillars: z.array(PillarItemSchema).max(20),
+});
+
+export const UpdateClassesSchema = z.object({
+  communityId: z.string().cuid(),
+  classes: z.array(ClassItemSchema).max(20),
+});
+
+export const UpdateCurrencySchema = z.object({
+  communityId: z.string().cuid(),
+  currencyName: z.string().trim().min(1).max(30),
+  currencyIcon: z.string().trim().min(1).max(8),
+  gemsName: z.string().trim().max(30).optional().or(z.literal("")),
+  gemsIcon: z.string().trim().max(8).optional().or(z.literal("")),
+});
+
+export const UpdateLevelsSchema = z.object({
+  communityId: z.string().cuid(),
+  tiers: z.array(LevelTierItemSchema).max(50),
+});
+
 /* ========== Community slug ========== */
 export const SlugSchema = z
   .string()

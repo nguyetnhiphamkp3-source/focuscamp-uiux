@@ -93,6 +93,7 @@ model Community {
   classesConfig Json?
   pillarsConfig Json?
   gemsConfig    Json?
+  levelsConfig  Json?
   billingModel  Json?
 
   memberCount Int @default(0)
