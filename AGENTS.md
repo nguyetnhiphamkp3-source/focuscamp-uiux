@@ -6,6 +6,21 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ---
 
+# ⚠️ READ FIRST before planning features
+
+Source of truth docs (in this repo):
+
+1. **[`docs/roadmap.md`](docs/roadmap.md)** — full module status matrix (✅ / 🟡 / ❌ / 🚫). Update in-place when you ship something. Don't propose work that's already done.
+2. **[`docs/competitor-analysis.md`](docs/competitor-analysis.md)** — Skool + Whop + TAIP.IO analysis. Product positioning (challenge-first), USPs (AI Agent, custom domain), feature inheritance. Future agents: re-read this before "should we do X?" questions.
+3. **[`docs/module-challenges.md`](docs/module-challenges.md)** — detailed spec for the Challenge module (TAIP origin).
+4. **[`docs/design-system.md`](docs/design-system.md)** — Discord-inspired visual tokens.
+
+These are git-tracked at `app/docs/`. Check commit history to understand when things shipped.
+
+---
+
+---
+
 # focus.camp — Layout naming & rules (persistent memory)
 
 ## Shell terminology
