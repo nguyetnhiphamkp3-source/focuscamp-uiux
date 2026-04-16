@@ -31,7 +31,7 @@ jobs:
             sleep 5
             # Sync DB schema (idempotent; safe on every deploy)
             echo "=== Running prisma db push ==="
-            docker compose exec -T app npx prisma db push --skip-generate --accept-data-loss || echo "db push failed (non-fatal, check schema manually)"
+            docker compose exec -T app npx prisma@6.19.3 db push --accept-data-loss || echo "db push failed (non-fatal, check schema manually)"
             docker image prune -f
             echo "=== Deploy complete ==="
             docker compose ps
