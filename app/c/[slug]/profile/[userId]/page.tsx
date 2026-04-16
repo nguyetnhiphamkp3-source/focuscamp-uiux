@@ -61,6 +61,7 @@ export default async function UserProfilePage({
       ownedCommunities={data.ownedCommunities}
       latestActivityAt={data.latestActivityAt}
       heatmap={data.heatmap}
+      recentXp={data.recentXp}
       viewingUserId={data.user.id}
       viewerId={session.user.id}
       viewerIsFollowing={viewerIsFollowing}

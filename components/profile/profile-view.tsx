@@ -63,6 +63,24 @@ type OtherCommunity = {
   iconUrl: string | null;
 };
 
+type XpEntry = {
+  id: string;
+  amount: number;
+  reason: string;
+  reasonId: string | null;
+  createdAt: Date;
+};
+
+const XP_REASON_LABELS: Record<string, string> = {
+  POST_CREATED: "Đăng bài",
+  COMMENT_CREATED: "Bình luận",
+  CHECKIN: "Check-in challenge",
+  BEST_ANSWER: "Câu trả lời best",
+  SUBMISSION_APPROVED: "Submission approved",
+  ADMIN_GRANT: "Admin grant",
+  ADMIN_PENALTY: "Admin penalty",
+};
+
 export function ProfileView({
   community,
   user,
@@ -78,6 +96,7 @@ export function ProfileView({
   ownedCommunities = [],
   latestActivityAt = null,
   heatmap = [],
+  recentXp = [],
   viewingUserId,
   viewerId = null,
   viewerIsFollowing = false,
@@ -111,6 +130,8 @@ export function ProfileView({
   latestActivityAt?: Date | null;
   /** Per-day activity counts for the past 365 days. */
   heatmap?: HeatmapDay[];
+  /** Last 12 XP events, newest first. */
+  recentXp?: XpEntry[];
   /** Profile owner's userId — used to build cross-community profile links. */
   viewingUserId: string;
   /** Current viewer — for Follow button gating. */
@@ -367,6 +388,56 @@ export function ProfileView({
                 days={heatmap}
                 totalContributions={stats.contributions}
               />
+            </div>
+          )}
+
+          {/* XP history */}
+          {recentXp.length > 0 && (
+            <div className="pf-section" style={{ marginTop: 20 }}>
+              <h3>XP log gần đây</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {recentXp.map((x) => {
+                  const positive = x.amount >= 0;
+                  const label = XP_REASON_LABELS[x.reason] ?? x.reason;
+                  return (
+                    <div
+                      key={x.id}
+                      style={{
+                        display: "flex",
+                        gap: 8,
+                        alignItems: "center",
+                        padding: "6px 10px",
+                        background: "var(--bg-card)",
+                        border: "1px solid var(--border-subtle)",
+                        borderRadius: 6,
+                        fontSize: "var(--text-sm)",
+                      }}
+                    >
+                      <span
+                        style={{
+                          color: positive ? "var(--success)" : "var(--danger)",
+                          fontWeight: 700,
+                          minWidth: 52,
+                        }}
+                      >
+                        {positive ? "+" : ""}
+                        {x.amount} XP
+                      </span>
+                      <span style={{ flex: 1, color: "var(--text-normal)" }}>
+                        {label}
+                      </span>
+                      <span
+                        style={{
+                          color: "var(--text-muted)",
+                          fontSize: "var(--text-xs)",
+                        }}
+                      >
+                        {fmtRelativeTime(x.createdAt)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 

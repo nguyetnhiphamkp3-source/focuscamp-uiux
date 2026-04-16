@@ -127,6 +127,13 @@ export async function getCommunityProfile(input: {
   const peakHour = computePeakHour(allActivityDates);
   const activeDays = heatmap.filter((d) => d.count > 0).length;
 
+  // Recent XP events — last 12 for display on profile
+  const recentXp = await prisma.xPLedger.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    take: 12,
+  });
+
   return {
     user,
     /** Null if the user is NOT a member of this community */
@@ -156,6 +163,7 @@ export async function getCommunityProfile(input: {
     ownedCommunities,
     latestActivityAt: latestActivity,
     heatmap,
+    recentXp,
   };
 }
 

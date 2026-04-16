@@ -50,6 +50,7 @@ export default async function ProfilePage({
       ownedCommunities={data.ownedCommunities}
       latestActivityAt={data.latestActivityAt}
       heatmap={data.heatmap}
+      recentXp={data.recentXp}
       viewingUserId={data.user.id}
       viewerId={session.user.id}
       followerCount={counts.followers}
