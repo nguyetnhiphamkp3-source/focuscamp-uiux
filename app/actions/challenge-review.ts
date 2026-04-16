@@ -10,6 +10,7 @@ import {
   rejectChallengeMember,
   updateChallengeSettings,
   updateChallengeTask,
+  toggleCheckinVote,
 } from "@/lib/services/challenge";
 import {
   ReviewSubmissionSchema,
@@ -248,6 +249,34 @@ export async function updateTaskAction(input: {
     return { ok: true };
   } catch (err) {
     logError(err, { userId: s.user.id, taskId: input.taskId });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+const VoteSchema = z.object({ checkinId: z.string().cuid() });
+
+export async function toggleCheckinVoteAction(input: {
+  checkinId: string;
+  communitySlug: string;
+  challengeSlug: string;
+}): Promise<
+  | { ok: true; data: { voted: boolean; count: number } }
+  | { ok: false; reason: string }
+> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+  const parsed = VoteSchema.safeParse({ checkinId: input.checkinId });
+  if (!parsed.success) return { ok: false, reason: "invalid" };
+  try {
+    const res = await toggleCheckinVote({
+      userId: s.user.id,
+      checkinId: parsed.data.checkinId,
+    });
+    bumpChallenge(input.communitySlug, input.challengeSlug);
+    return { ok: true, data: res };
+  } catch (err) {
+    logError(err, { userId: s.user.id, checkinId: input.checkinId });
     if (err instanceof Error) return { ok: false, reason: err.message };
     return { ok: false, reason: "unknown" };
   }

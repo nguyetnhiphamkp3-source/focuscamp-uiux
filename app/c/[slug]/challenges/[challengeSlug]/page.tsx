@@ -8,6 +8,7 @@ import { SubmissionReviewPanel } from "@/components/community/submission-review-
 import type { SubmissionRow } from "@/components/community/submission-review-panel";
 import { PendingMembersPanel } from "@/components/community/pending-members-panel";
 import { ChallengeSettingsPanel } from "@/components/community/challenge-settings-panel";
+import { CheckinVoteButton } from "@/components/community/checkin-vote-button";
 import {
   getActiveChallenge,
   getChallengeLeaderboard,
@@ -98,13 +99,23 @@ export default async function ChallengeDetailPage({
     };
   }
 
-  // Recent social check-ins (all members, last 20)
+  // Recent social check-ins (all members, last 20) + vote counts + whether
+  // current user has voted
   const recentCheckins = await prisma.checkin.findMany({
     where: { challengeId: challenge.id },
     orderBy: { createdAt: "desc" },
     take: 20,
     include: {
       user: { select: { name: true, email: true, image: true } },
+      _count: { select: { votes: true } },
+      ...(session?.user?.id
+        ? {
+            votes: {
+              where: { userId: session.user.id },
+              select: { id: true },
+            },
+          }
+        : {}),
     },
   });
 
@@ -747,6 +758,23 @@ export default async function ChallengeDetailPage({
                             }}
                           >
                             <strong>Admin ghi chú:</strong> {c.reviewNote}
+                          </div>
+                        )}
+                        {/* Vote button — available to all community members */}
+                        {c.status !== "REJECTED" && (
+                          <div style={{ marginTop: "var(--space-2)" }}>
+                            <CheckinVoteButton
+                              checkinId={c.id}
+                              communitySlug={slug}
+                              challengeSlug={challengeSlug}
+                              initialCount={c._count?.votes ?? 0}
+                              initialVoted={
+                                "votes" in c && Array.isArray(c.votes)
+                                  ? c.votes.length > 0
+                                  : false
+                              }
+                              disabled={!session?.user?.id}
+                            />
                           </div>
                         )}
                       </div>

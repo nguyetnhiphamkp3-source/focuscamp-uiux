@@ -36,6 +36,7 @@ model User {
   checkins         Checkin[]
   reviewedCheckins Checkin[]          @relation("CheckinReviewer")
   submissionVotes  SubmissionVote[]
+  checkinVotes     CheckinVote[]
   notifications    Notification[]     @relation("NotifRecipient")
   triggeredNotifs  Notification[]     @relation("NotifActor")
   purchases        Purchase[]
@@ -356,11 +357,25 @@ model Checkin {
   user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   task       ChallengeTask? @relation(fields: [taskId], references: [id], onDelete: SetNull)
   reviewedBy User?          @relation("CheckinReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  votes      CheckinVote[]
 
   @@index([challengeId, createdAt])
   @@index([challengeId, userId, createdAt])
   @@index([challengeId, status])
   @@index([taskId])
+}
+
+model CheckinVote {
+  id        String   @id @default(cuid())
+  checkinId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  checkin Checkin @relation(fields: [checkinId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([checkinId, userId])
+  @@index([checkinId])
 }
 
 model SubmissionVote {

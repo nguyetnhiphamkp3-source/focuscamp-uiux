@@ -590,3 +590,43 @@ export async function updateChallengeTask(input: {
   );
   return updated;
 }
+
+/* ===== Checkin voting ===== */
+
+export async function toggleCheckinVote(input: {
+  userId: string;
+  checkinId: string;
+}) {
+  // Must be a member of the community that owns this challenge
+  const checkin = await prisma.checkin.findUnique({
+    where: { id: input.checkinId },
+    include: { challenge: { select: { communityId: true } } },
+  });
+  if (!checkin) throw new Error("Check-in không tồn tại");
+  const membership = await prisma.membership.findUnique({
+    where: {
+      userId_communityId: {
+        userId: input.userId,
+        communityId: checkin.challenge.communityId,
+      },
+    },
+  });
+  if (!membership) throw new Error("Phải là thành viên cộng đồng mới vote được");
+
+  const existing = await prisma.checkinVote.findUnique({
+    where: {
+      checkinId_userId: { checkinId: input.checkinId, userId: input.userId },
+    },
+  });
+  if (existing) {
+    await prisma.checkinVote.delete({ where: { id: existing.id } });
+  } else {
+    await prisma.checkinVote.create({
+      data: { checkinId: input.checkinId, userId: input.userId },
+    });
+  }
+  const count = await prisma.checkinVote.count({
+    where: { checkinId: input.checkinId },
+  });
+  return { voted: !existing, count };
+}
