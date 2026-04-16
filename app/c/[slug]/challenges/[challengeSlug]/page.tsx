@@ -9,6 +9,7 @@ import type { SubmissionRow } from "@/components/community/submission-review-pan
 import { PendingMembersPanel } from "@/components/community/pending-members-panel";
 import { ChallengeSettingsPanel } from "@/components/community/challenge-settings-panel";
 import { CheckinVoteButton } from "@/components/community/checkin-vote-button";
+import { ResubmitForm } from "@/components/community/resubmit-form";
 import {
   getActiveChallenge,
   getChallengeLeaderboard,
@@ -777,6 +778,21 @@ export default async function ChallengeDetailPage({
                             />
                           </div>
                         )}
+                        {/* Resubmit form — only for own rejected submissions */}
+                        {c.status === "REJECTED" &&
+                          session?.user?.id === c.userId && (
+                            <ResubmitForm
+                              checkinId={c.id}
+                              communitySlug={slug}
+                              challengeSlug={challengeSlug}
+                              initial={{
+                                content: c.content,
+                                linkUrl: c.linkUrl,
+                                imageUrl: c.imageUrl,
+                              }}
+                              rejectCount={c.rejectCount}
+                            />
+                          )}
                       </div>
                     </div>
                   );

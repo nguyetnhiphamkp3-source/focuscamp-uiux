@@ -332,6 +332,7 @@ export async function reviewSubmission(input: {
       reviewedById: input.userId,
       reviewedAt: new Date(),
       reviewNote: input.note?.trim() || null,
+      ...(input.action === "REJECT" ? { rejectCount: { increment: 1 } } : {}),
     },
   });
   logger.info(
@@ -629,4 +630,49 @@ export async function toggleCheckinVote(input: {
     where: { checkinId: input.checkinId },
   });
   return { voted: !existing, count };
+}
+
+/* ===== Resubmit after reject ===== */
+
+const REJECT_CAP = 2;
+
+export async function resubmitCheckin(input: {
+  userId: string;
+  checkinId: string;
+  content: string;
+  linkUrl?: string;
+  imageUrl?: string;
+}) {
+  const checkin = await prisma.checkin.findUnique({
+    where: { id: input.checkinId },
+  });
+  if (!checkin) throw new Error("Check-in không tồn tại");
+  if (checkin.userId !== input.userId)
+    throw new Error("Chỉ tác giả mới nộp lại được");
+  if (checkin.status !== "REJECTED")
+    throw new Error("Chỉ nộp lại được checkin đã bị từ chối");
+  if (checkin.rejectCount >= REJECT_CAP) {
+    throw new Error(
+      `Đã nộp lại ${REJECT_CAP} lần — liên hệ admin / cần thanh toán để resubmit (Phase 2)`
+    );
+  }
+
+  const updated = await prisma.checkin.update({
+    where: { id: input.checkinId },
+    data: {
+      content: input.content.trim(),
+      linkUrl: input.linkUrl?.trim() || null,
+      imageUrl: input.imageUrl?.trim() || null,
+      status: "PENDING",
+      reviewedById: null,
+      reviewedAt: null,
+      reviewNote: null,
+      // rejectCount persists — it counts "this submission has been rejected N times"
+    },
+  });
+  logger.info(
+    { checkinId: input.checkinId, by: input.userId, rejectCount: checkin.rejectCount },
+    "[challenge] submission resubmitted"
+  );
+  return updated;
 }

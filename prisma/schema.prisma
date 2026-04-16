@@ -347,11 +347,12 @@ model Checkin {
   content     String   @db.Text
   linkUrl     String? // external evidence URL (e.g. screenshot host, notion, miro)
   imageUrl    String? // inline image URL (uploaded/pasted)
-  status      String   @default("APPROVED") // PENDING | APPROVED | REJECTED
+  status       String   @default("APPROVED") // PENDING | APPROVED | REJECTED
   reviewedById String?
-  reviewedAt  DateTime?
-  reviewNote  String?  @db.Text
-  createdAt   DateTime @default(now())
+  reviewedAt   DateTime?
+  reviewNote   String?  @db.Text
+  rejectCount  Int      @default(0)
+  createdAt    DateTime @default(now())
 
   challenge  Challenge      @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)

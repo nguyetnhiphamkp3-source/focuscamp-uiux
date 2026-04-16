@@ -79,6 +79,13 @@ export const FlagSubmissionSchema = z.object({
   checkinId: z.string().cuid(),
 });
 
+export const ResubmitCheckinSchema = z.object({
+  checkinId: z.string().cuid(),
+  content: z.string().trim().min(5).max(1000),
+  linkUrl: z.string().url().optional().or(z.literal("")),
+  imageUrl: z.string().url().optional().or(z.literal("")),
+});
+
 export const ChallengeCheckinSchema = z.object({
   challengeId: z.string().cuid(),
   content: z.string().trim().min(5).max(1000),
