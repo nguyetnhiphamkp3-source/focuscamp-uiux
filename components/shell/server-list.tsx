@@ -17,12 +17,14 @@ export function ServerList({
           href="/"
           title="Điểm tập kết — focus.camp"
           style={{
-            width: 56,
-            height: 56,
+            /* Matches other server icons for visual balance */
+            width: 48,
+            height: 48,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             textDecoration: "none",
+            overflow: "hidden",
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -30,8 +32,10 @@ export function ServerList({
             src="/campfire.gif"
             alt="Điểm tập kết"
             style={{
-              width: 52,
-              height: 52,
+              /* 40x40 visible → balances the 40px-tall search bar on the right.
+                 Any future image dropped here will auto-fit the same slot. */
+              width: 40,
+              height: 40,
               objectFit: "contain",
               display: "block",
             }}
