@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 import { avatarColorFor, initials, fmtRelativeTime } from "@/lib/brand";
+import { followCounts, isFollowing } from "@/lib/services/follow";
+import { FollowButton } from "@/components/profile/follow-button";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +50,14 @@ export default async function UserGlobalPage({
     },
   });
   if (!user) notFound();
+
+  const session = await auth();
+  const viewerId = session?.user?.id;
+  const isSelf = viewerId === user.id;
+  const [counts, viewerIsFollowing] = await Promise.all([
+    followCounts(user.id),
+    viewerId && !isSelf ? isFollowing(viewerId, user.id) : Promise.resolve(false),
+  ]);
 
   const name = user.name || "Ẩn danh";
   const displayHandle = user.handle ?? user.id.slice(0, 8);
@@ -121,6 +132,35 @@ export default async function UserGlobalPage({
             >
               {user.location && <span>📍 {user.location}</span>}
               <span>Tham gia focus.camp {fmtRelativeTime(user.createdAt)}</span>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                gap: 16,
+                marginTop: 10,
+                fontSize: "var(--text-sm)",
+                alignItems: "center",
+              }}
+            >
+              <span>
+                <strong style={{ color: "var(--header-primary)" }}>
+                  {counts.followers}
+                </strong>{" "}
+                <span style={{ color: "var(--text-muted)" }}>Followers</span>
+              </span>
+              <span>
+                <strong style={{ color: "var(--header-primary)" }}>
+                  {counts.following}
+                </strong>{" "}
+                <span style={{ color: "var(--text-muted)" }}>Following</span>
+              </span>
+              {!isSelf && viewerId && (
+                <FollowButton
+                  targetUserId={user.id}
+                  initialFollowing={viewerIsFollowing}
+                  variant="compact"
+                />
+              )}
             </div>
           </div>
         </header>

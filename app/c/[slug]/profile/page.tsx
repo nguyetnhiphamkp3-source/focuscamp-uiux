@@ -9,6 +9,7 @@ import {
   getLevelTiers,
 } from "@/lib/community-config";
 import { ProfileView } from "@/components/profile/profile-view";
+import { followCounts } from "@/lib/services/follow";
 
 export const dynamic = "force-dynamic";
 
@@ -24,10 +25,13 @@ export default async function ProfilePage({
   const community = await prisma.community.findUnique({ where: { slug } });
   if (!community) notFound();
 
-  const data = await getCommunityProfile({
-    userId: session.user.id,
-    communityId: community.id,
-  });
+  const [data, counts] = await Promise.all([
+    getCommunityProfile({
+      userId: session.user.id,
+      communityId: community.id,
+    }),
+    followCounts(session.user.id),
+  ]);
   if (!data) notFound();
 
   return (
@@ -47,6 +51,9 @@ export default async function ProfilePage({
       latestActivityAt={data.latestActivityAt}
       heatmap={data.heatmap}
       viewingUserId={data.user.id}
+      viewerId={session.user.id}
+      followerCount={counts.followers}
+      followingCount={counts.following}
     />
   );
 }

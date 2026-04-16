@@ -18,6 +18,7 @@ import type {
 } from "@/lib/community-config";
 import type { HeatmapDay } from "@/lib/services/profile";
 import { ActivityHeatmap } from "./activity-heatmap";
+import { FollowButton } from "./follow-button";
 
 type Community = { name: string; slug: string };
 
@@ -78,6 +79,10 @@ export function ProfileView({
   latestActivityAt = null,
   heatmap = [],
   viewingUserId,
+  viewerId = null,
+  viewerIsFollowing = false,
+  followerCount = 0,
+  followingCount = 0,
 }: {
   community: Community;
   user: ProfileUser;
@@ -108,6 +113,11 @@ export function ProfileView({
   heatmap?: HeatmapDay[];
   /** Profile owner's userId — used to build cross-community profile links. */
   viewingUserId: string;
+  /** Current viewer — for Follow button gating. */
+  viewerId?: string | null;
+  viewerIsFollowing?: boolean;
+  followerCount?: number;
+  followingCount?: number;
 }) {
   const name = user.name || "Ẩn danh";
   const handle = user.handle || user.name?.toLowerCase().replace(/\s+/g, "") || "user";
@@ -213,9 +223,20 @@ export function ProfileView({
                     · Vào {community.name} {fmtRelativeTime(membership.joinedAt)}
                   </span>
                 )}
+                <span>
+                  ·{" "}
+                  <strong style={{ color: "var(--header-primary)" }}>
+                    {followerCount}
+                  </strong>{" "}
+                  followers ·{" "}
+                  <strong style={{ color: "var(--header-primary)" }}>
+                    {followingCount}
+                  </strong>{" "}
+                  following
+                </span>
               </div>
             </div>
-            {isSelf && (
+            {isSelf ? (
               <div className="pf-actions">
                 <button className="ui-btn ui-btn-secondary ui-btn-sm">
                   Chia sẻ
@@ -230,7 +251,14 @@ export function ProfileView({
                   communitySlug={community.slug}
                 />
               </div>
-            )}
+            ) : viewerId ? (
+              <div className="pf-actions">
+                <FollowButton
+                  targetUserId={user.id}
+                  initialFollowing={viewerIsFollowing}
+                />
+              </div>
+            ) : null}
           </div>
 
           {membership && (
