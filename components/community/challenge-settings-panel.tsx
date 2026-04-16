@@ -21,6 +21,9 @@ export function ChallengeSettingsPanel({
     title: string;
     description: string | null;
     requiresApproval: boolean;
+    freezeFromDay: number | null;
+    freezeStartsAt: Date | null;
+    freezeEndsAt: Date | null;
   };
 }) {
   const router = useRouter();
@@ -29,6 +32,15 @@ export function ChallengeSettingsPanel({
   const [description, setDescription] = useState(initial.description ?? "");
   const [requiresApproval, setRequiresApproval] = useState(
     initial.requiresApproval
+  );
+  const [freezeFromDay, setFreezeFromDay] = useState<string>(
+    initial.freezeFromDay?.toString() ?? ""
+  );
+  const [freezeStartsAt, setFreezeStartsAt] = useState<string>(
+    initial.freezeStartsAt ? toLocalInput(initial.freezeStartsAt) : ""
+  );
+  const [freezeEndsAt, setFreezeEndsAt] = useState<string>(
+    initial.freezeEndsAt ? toLocalInput(initial.freezeEndsAt) : ""
   );
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
@@ -43,6 +55,13 @@ export function ChallengeSettingsPanel({
         title: title.trim(),
         description: description.trim(),
         requiresApproval,
+        freezeFromDay: freezeFromDay ? parseInt(freezeFromDay, 10) : null,
+        freezeStartsAt: freezeStartsAt
+          ? new Date(freezeStartsAt).toISOString()
+          : null,
+        freezeEndsAt: freezeEndsAt
+          ? new Date(freezeEndsAt).toISOString()
+          : null,
         communitySlug,
         challengeSlug,
       });
@@ -171,6 +190,88 @@ export function ChallengeSettingsPanel({
             </div>
           </label>
 
+          <div
+            style={{
+              padding: "10px 12px",
+              background: "var(--bg-card)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: 8,
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: "var(--text-sm)",
+                  fontWeight: 600,
+                  color: "var(--header-primary)",
+                }}
+              >
+                ⏸ Freeze window
+              </div>
+              <div
+                style={{
+                  fontSize: "var(--text-xs)",
+                  color: "var(--text-muted)",
+                  marginTop: 2,
+                }}
+              >
+                Tạm dừng challenge trong khoảng thời gian (vd: Tết, nghỉ lễ).
+                Trong lúc freeze, người tham gia vẫn xem được nhưng banner
+                hiện trạng thái đóng băng.
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr 80px",
+                gap: 8,
+              }}
+            >
+              <label style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+                  Từ lúc
+                </span>
+                <input
+                  type="datetime-local"
+                  value={freezeStartsAt}
+                  onChange={(e) => setFreezeStartsAt(e.target.value)}
+                  disabled={pending}
+                  style={inputStyle}
+                />
+              </label>
+              <label style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+                  Đến lúc
+                </span>
+                <input
+                  type="datetime-local"
+                  value={freezeEndsAt}
+                  onChange={(e) => setFreezeEndsAt(e.target.value)}
+                  disabled={pending}
+                  style={inputStyle}
+                />
+              </label>
+              <label style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+                  Từ day
+                </span>
+                <input
+                  type="number"
+                  min={1}
+                  value={freezeFromDay}
+                  onChange={(e) => setFreezeFromDay(e.target.value)}
+                  disabled={pending}
+                  placeholder="N"
+                  style={inputStyle}
+                />
+              </label>
+            </div>
+          </div>
+
           <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
             <button
               type="button"
@@ -235,3 +336,9 @@ const inputStyle: React.CSSProperties = {
   fontSize: "var(--text-sm)",
   outline: "none",
 };
+
+/** Date → `YYYY-MM-DDTHH:MM` for <input type="datetime-local">. */
+function toLocalInput(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}

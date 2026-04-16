@@ -524,6 +524,9 @@ export async function updateChallengeSettings(input: {
   requiresApproval?: boolean;
   title?: string;
   description?: string;
+  freezeFromDay?: number | null;
+  freezeStartsAt?: string | null;
+  freezeEndsAt?: string | null;
 }) {
   const ch = await assertChallengeAdmin(input.userId, input.challengeId);
   await prisma.challenge.update({
@@ -535,6 +538,23 @@ export async function updateChallengeSettings(input: {
       ...(input.title !== undefined ? { title: input.title } : {}),
       ...(input.description !== undefined
         ? { description: input.description || null }
+        : {}),
+      ...(input.freezeFromDay !== undefined
+        ? { freezeFromDay: input.freezeFromDay }
+        : {}),
+      ...(input.freezeStartsAt !== undefined
+        ? {
+            freezeStartsAt: input.freezeStartsAt
+              ? new Date(input.freezeStartsAt)
+              : null,
+          }
+        : {}),
+      ...(input.freezeEndsAt !== undefined
+        ? {
+            freezeEndsAt: input.freezeEndsAt
+              ? new Date(input.freezeEndsAt)
+              : null,
+          }
         : {}),
     },
   });

@@ -10,6 +10,7 @@ import { PendingMembersPanel } from "@/components/community/pending-members-pane
 import { ChallengeSettingsPanel } from "@/components/community/challenge-settings-panel";
 import { CheckinVoteButton } from "@/components/community/checkin-vote-button";
 import { ResubmitForm } from "@/components/community/resubmit-form";
+import { TaskEditorButton } from "@/components/community/task-editor";
 import {
   getActiveChallenge,
   getChallengeLeaderboard,
@@ -220,6 +221,35 @@ export default async function ChallengeDetailPage({
         }}
       >
         <div className="ch-inner ch-detail">
+          {/* Freeze banner — visible to everyone when active */}
+          {challenge.freezeStartsAt &&
+            challenge.freezeEndsAt &&
+            new Date() >= challenge.freezeStartsAt &&
+            new Date() <= challenge.freezeEndsAt && (
+              <div
+                style={{
+                  padding: "12px 16px",
+                  marginBottom: "var(--space-4)",
+                  background:
+                    "linear-gradient(135deg, rgba(88,101,242,0.12), rgba(0,168,252,0.08))",
+                  border: "1px solid rgba(88,101,242,0.3)",
+                  borderRadius: 12,
+                  fontSize: "var(--text-sm)",
+                  color: "var(--info)",
+                  fontWeight: 600,
+                }}
+              >
+                ⏸ Challenge đang <strong>freeze</strong> đến{" "}
+                {challenge.freezeEndsAt.toLocaleString("vi-VN", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+                . Trong lúc này bạn không cần lo miss — tiếp tục khi hết freeze.
+              </div>
+            )}
+
           {/* Admin-only settings panel */}
           {isOwner && (
             <ChallengeSettingsPanel
@@ -230,6 +260,9 @@ export default async function ChallengeDetailPage({
                 title: challenge.title,
                 description: challenge.description,
                 requiresApproval: challenge.requiresApproval,
+                freezeFromDay: challenge.freezeFromDay,
+                freezeStartsAt: challenge.freezeStartsAt,
+                freezeEndsAt: challenge.freezeEndsAt,
               }}
             />
           )}
@@ -555,6 +588,22 @@ export default async function ChallengeDetailPage({
                             ✓ Xong
                           </span>
                         </span>
+                      )}
+                      {isOwner && (
+                        <TaskEditorButton
+                          taskId={t.id}
+                          communitySlug={slug}
+                          challengeSlug={challengeSlug}
+                          initial={{
+                            title: t.title,
+                            description: t.description,
+                            sopContent: t.sopContent,
+                            videoUrl: t.videoUrl,
+                            evidenceType: t.evidenceType,
+                            evidenceLabel: t.evidenceLabel,
+                            label: t.label,
+                          }}
+                        />
                       )}
                     </div>
                     {isCurrent && t.description && (

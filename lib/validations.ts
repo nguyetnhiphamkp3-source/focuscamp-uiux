@@ -52,6 +52,9 @@ export const UpdateChallengeSettingsSchema = z.object({
   requiresApproval: z.boolean().optional(),
   title: z.string().trim().min(1).max(120).optional(),
   description: z.string().trim().max(5000).optional().or(z.literal("")),
+  freezeFromDay: z.number().int().positive().optional().nullable(),
+  freezeStartsAt: z.string().datetime().optional().nullable().or(z.literal("")),
+  freezeEndsAt: z.string().datetime().optional().nullable().or(z.literal("")),
 });
 
 export const UpdateChallengeTaskSchema = z.object({

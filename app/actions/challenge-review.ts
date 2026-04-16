@@ -175,6 +175,9 @@ export async function updateChallengeSettingsAction(input: {
   requiresApproval?: boolean;
   title?: string;
   description?: string;
+  freezeFromDay?: number | null;
+  freezeStartsAt?: string | null;
+  freezeEndsAt?: string | null;
   communitySlug: string;
   challengeSlug: string;
 }): Promise<ActionResult> {
@@ -185,6 +188,9 @@ export async function updateChallengeSettingsAction(input: {
     requiresApproval: input.requiresApproval,
     title: input.title,
     description: input.description,
+    freezeFromDay: input.freezeFromDay,
+    freezeStartsAt: input.freezeStartsAt,
+    freezeEndsAt: input.freezeEndsAt,
   });
   if (!parsed.success) {
     return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
@@ -196,6 +202,9 @@ export async function updateChallengeSettingsAction(input: {
       requiresApproval: parsed.data.requiresApproval,
       title: parsed.data.title,
       description: parsed.data.description ?? undefined,
+      freezeFromDay: parsed.data.freezeFromDay ?? undefined,
+      freezeStartsAt: parsed.data.freezeStartsAt || null,
+      freezeEndsAt: parsed.data.freezeEndsAt || null,
     });
     bumpChallenge(input.communitySlug, input.challengeSlug);
     return { ok: true };
