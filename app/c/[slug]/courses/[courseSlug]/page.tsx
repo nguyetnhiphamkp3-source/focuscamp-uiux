@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { fmtDuration } from "@/lib/brand";
+import { CreateLessonButton } from "@/components/community/create-lesson-button";
 
 export const dynamic = "force-dynamic";
 
@@ -11,13 +13,16 @@ export default async function CourseDetailPage({
 }) {
   const { courseSlug, slug } = await params;
 
+  const session = await auth();
   const course = await prisma.course.findFirst({
     where: { community: { slug }, slug: courseSlug },
     include: {
       lessons: { orderBy: { position: "asc" } },
+      community: { select: { id: true, ownerId: true } },
     },
   });
   if (!course) notFound();
+  const isOwner = session?.user?.id === course.community.ownerId;
 
   const activeLesson = course.lessons[0];
   const totalDuration = course.lessons.reduce(
@@ -153,12 +158,21 @@ export default async function CourseDetailPage({
           )}
 
           {/* Fallback for no lessons */}
-          {course.lessons.length === 0 && (
+          {course.lessons.length === 0 && !isOwner && (
             <div className="ui-empty">
               <div className="ui-empty-icon">📘</div>
               <div className="ui-empty-title">Chưa có bài học nào</div>
               Khoá học đang được chuẩn bị.
             </div>
+          )}
+
+          {/* Admin: add lesson */}
+          {isOwner && (
+            <CreateLessonButton
+              courseId={course.id}
+              communitySlug={slug}
+              courseSlug={courseSlug}
+            />
           )}
         </div>
       </div>
