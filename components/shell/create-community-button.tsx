@@ -69,17 +69,26 @@ export function CreateCommunityButton({
     setErr(null);
   }
 
+  // Use a <div> — NOT <button> — for the server-list icon because
+  // <button> has browser-default padding/border/min-width that breaks
+  // the 42×42 circle styling of .server-icon.add-server.
   const trigger =
     variant === "server-list" ? (
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => setOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setOpen(true);
+          }
+        }}
         className="server-icon add-server"
         title="Tạo cộng đồng mới"
-        style={{ cursor: "pointer", border: "none" }}
       >
         +
-      </button>
+      </div>
     ) : (
       <button
         type="button"
