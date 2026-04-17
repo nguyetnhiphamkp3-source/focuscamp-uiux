@@ -18,6 +18,7 @@
  */
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { checkAndAwardBadges } from "./badge";
 
 export type XpReason =
   | "POST_CREATED"
@@ -115,6 +116,12 @@ export async function awardXp(input: {
     },
     "[xp] awarded"
   );
+
+  // Non-blocking badge check after every XP award
+  checkAndAwardBadges({
+    userId: input.userId,
+    communityId: input.communityId,
+  }).catch((err) => logger.warn({ err }, "[xp] badge check failed"));
 
   return { amount, newXp: nextXp, newLevel: nextLevel, multiplier: mult };
 }

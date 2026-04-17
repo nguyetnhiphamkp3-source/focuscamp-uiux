@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { fmtDuration } from "@/lib/brand";
 import { CreateLessonButton } from "@/components/community/create-lesson-button";
+import { CourseSettingsPanel } from "@/components/community/course-settings-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -48,6 +49,23 @@ export default async function CourseDetailPage({
           overflowY: "auto",
         }}
       >
+        {isOwner && (
+          <div style={{ padding: "var(--space-4) var(--space-4) 0" }}>
+            <CourseSettingsPanel
+              courseId={course.id}
+              communitySlug={slug}
+              courseSlug={courseSlug}
+              initial={{
+                title: course.title,
+                description: course.description,
+                level: course.level,
+                isPublished: course.isPublished,
+                pillar: course.pillar,
+                thumbnailUrl: course.thumbnailUrl,
+              }}
+            />
+          </div>
+        )}
         <div
           style={{
             maxWidth: 1040,

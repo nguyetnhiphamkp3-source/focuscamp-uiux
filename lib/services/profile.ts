@@ -128,11 +128,20 @@ export async function getCommunityProfile(input: {
   const activeDays = heatmap.filter((d) => d.count > 0).length;
 
   // Recent XP events — last 12 for display on profile
-  const recentXp = await prisma.xPLedger.findMany({
-    where: { userId },
-    orderBy: { createdAt: "desc" },
-    take: 12,
-  });
+  const [recentXp, badges] = await Promise.all([
+    prisma.xPLedger.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: 12,
+    }),
+    prisma.badgeAward.findMany({
+      where: { userId },
+      include: {
+        badge: { select: { slug: true, name: true, emoji: true, rarity: true, description: true } },
+      },
+      orderBy: { awardedAt: "desc" },
+    }),
+  ]);
 
   return {
     user,
@@ -164,6 +173,14 @@ export async function getCommunityProfile(input: {
     latestActivityAt: latestActivity,
     heatmap,
     recentXp,
+    badges: badges.map((ba) => ({
+      slug: ba.badge.slug,
+      name: ba.badge.name,
+      emoji: ba.badge.emoji,
+      rarity: ba.badge.rarity,
+      description: ba.badge.description,
+      awardedAt: ba.awardedAt,
+    })),
   };
 }
 
