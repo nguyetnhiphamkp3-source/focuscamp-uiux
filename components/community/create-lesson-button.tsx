@@ -96,7 +96,7 @@ export function CreateLessonButton({
         >
           <div
             style={{
-              background: "var(--bg-main)",
+              background: "var(--bg-floating)",
               borderRadius: 14,
               border: "1px solid var(--border-subtle)",
               maxWidth: 640,
