@@ -102,6 +102,8 @@ model Community {
   gemsConfig    Json?
   levelsConfig  Json?
   bossConfig    Json?
+  /** Subscription tier config — defines tiers + pricing + gates */
+  tiersConfig   Json?
   billingModel  Json?
 
   memberCount Int @default(0)

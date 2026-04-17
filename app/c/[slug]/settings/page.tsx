@@ -14,6 +14,8 @@ import { LevelsEditor } from "@/components/settings/levels-editor";
 import { MembersEditor } from "@/components/settings/members-editor";
 import { CommunityInfoEditor } from "@/components/settings/community-info-editor";
 import { CommunityStatsCard } from "@/components/settings/community-stats-card";
+import { TiersViewer } from "@/components/settings/tiers-editor";
+import { getTiersConfig } from "@/lib/services/subscription";
 import { listMembers } from "@/lib/services/community-settings";
 
 export const dynamic = "force-dynamic";
@@ -36,6 +38,7 @@ export default async function SettingsPage({
   const classes = getClasses(community);
   const currency = getCurrency(community);
   const tiers = getLevelTiers(community);
+  const subscriptionTiers = getTiersConfig(community.tiersConfig);
 
   const { members, total } = await listMembers({
     communityId: community.id,
@@ -162,6 +165,20 @@ export default async function SettingsPage({
             initial={tiers}
             disabled={!isOwner}
           />
+
+          <div
+            style={{
+              fontSize: "var(--text-xl)",
+              fontWeight: 700,
+              color: "var(--header-primary)",
+              padding: "var(--space-6) 0 var(--space-3)",
+              borderTop: "1px solid var(--border-subtle)",
+              marginTop: "var(--space-4)",
+            }}
+          >
+            Subscription Tiers
+          </div>
+          <TiersViewer tiers={subscriptionTiers} />
 
           <div
             style={{
