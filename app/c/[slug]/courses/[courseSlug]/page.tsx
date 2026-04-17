@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { fmtDuration } from "@/lib/brand";
 import { CreateLessonButton } from "@/components/community/create-lesson-button";
 import { CourseSettingsPanel } from "@/components/community/course-settings-panel";
+import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
+import { checkGate, getTiersConfig } from "@/lib/services/subscription";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +26,49 @@ export default async function CourseDetailPage({
   });
   if (!course) notFound();
   const isOwner = session?.user?.id === course.community.ownerId;
+
+  // Tier gate for non-BASIC courses
+  let courseGateBlock: { message: string; requiredTier: string } | null = null;
+  if (
+    session?.user?.id &&
+    !isOwner &&
+    course.level !== "BASIC"
+  ) {
+    const communityFull = await prisma.community.findUnique({
+      where: { id: course.community.id },
+      select: { tiersConfig: true },
+    });
+    const tiersConfig = getTiersConfig(communityFull?.tiersConfig);
+    const gateResult = await checkGate({
+      userId: session.user.id,
+      communityId: course.community.id,
+      tiersConfig,
+      check: { type: "course_level", level: course.level },
+    });
+    if (!gateResult.allowed) {
+      courseGateBlock = {
+        message: gateResult.message,
+        requiredTier: gateResult.requiredTier,
+      };
+    }
+  }
+
+  // If gated, show upgrade prompt instead of content
+  if (courseGateBlock) {
+    return (
+      <>
+        <header className="view-header">
+          <span className="view-title">{course.title}</span>
+          <span className="view-subtitle">🔒 Yêu cầu nâng cấp</span>
+        </header>
+        <UpgradePrompt
+          message={courseGateBlock.message}
+          requiredTier={courseGateBlock.requiredTier}
+          communitySlug={slug}
+        />
+      </>
+    );
+  }
 
   const activeLesson = course.lessons[0];
   const totalDuration = course.lessons.reduce(

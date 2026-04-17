@@ -12,6 +12,8 @@ import { CheckinVoteButton } from "@/components/community/checkin-vote-button";
 import { ResubmitForm } from "@/components/community/resubmit-form";
 import { TaskEditorButton } from "@/components/community/task-editor";
 import { CreateTaskButton } from "@/components/community/create-task-button";
+import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
+import { checkGate, getTiersConfig } from "@/lib/services/subscription";
 import {
   getActiveChallenge,
   getChallengeLeaderboard,
@@ -59,6 +61,28 @@ export default async function ChallengeDetailPage({
 
   const isOwner =
     !!session?.user?.id && session.user.id === challenge.community.ownerId;
+
+  // Tier gate check — non-owners must have sufficient tier for this difficulty
+  let tierGateBlock: { message: string; requiredTier: string } | null = null;
+  if (session?.user?.id && !isOwner && challenge.difficulty !== "NORMAL") {
+    const communityFull = await prisma.community.findUnique({
+      where: { id: challenge.community.id },
+      select: { tiersConfig: true },
+    });
+    const tiersConfig = getTiersConfig(communityFull?.tiersConfig);
+    const gateResult = await checkGate({
+      userId: session.user.id,
+      communityId: challenge.community.id,
+      tiersConfig,
+      check: { type: "challenge_difficulty", difficulty: challenge.difficulty },
+    });
+    if (!gateResult.allowed) {
+      tierGateBlock = {
+        message: gateResult.message,
+        requiredTier: gateResult.requiredTier,
+      };
+    }
+  }
 
   // Phase C — admin review panel data (only when owner)
   type ReviewTab = "ALL" | "PENDING" | "APPROVED" | "REJECTED";
@@ -431,6 +455,12 @@ export default async function ChallengeDetailPage({
                 );
               })()}
             </>
+          ) : tierGateBlock ? (
+            <UpgradePrompt
+              message={tierGateBlock.message}
+              requiredTier={tierGateBlock.requiredTier}
+              communitySlug={slug}
+            />
           ) : (
             session?.user && (
               <form action={join} style={{ marginTop: "var(--space-5)" }}>
