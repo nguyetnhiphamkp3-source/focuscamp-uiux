@@ -28,19 +28,11 @@ export function ServerList({
             overflow: "hidden",
           }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/campfire.gif"
-            alt="Điểm tập kết"
-            style={{
-              /* 40x40 visible → balances the 40px-tall search bar on the right.
-                 Any future image dropped here will auto-fit the same slot. */
-              width: 40,
-              height: 40,
-              objectFit: "contain",
-              display: "block",
-            }}
-          />
+          <span
+            role="img"
+            aria-label="Điểm tập kết"
+            style={{ fontSize: 28, lineHeight: 1, display: "block" }}
+          >🔥</span>
         </Link>
       </div>
 
