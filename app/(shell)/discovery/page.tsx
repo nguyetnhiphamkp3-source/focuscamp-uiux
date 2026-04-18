@@ -50,10 +50,12 @@ export default async function DiscoveryPage() {
       <div className="dc-inner">
         {/* Hero */}
         <section className="dc-hero">
-          <div className="dc-hero-title">🔭 Discover — Cross-community marketplace</div>
-          <div className="dc-hero-desc">
-            Tìm cộng đồng phù hợp, tham gia challenge mới, mua products độc quyền từ
-            creators trên toàn focus.camp — một cửa sổ duy nhất.
+          <div className="dc-hero-left">
+            <div className="dc-hero-title">🔭 Discover — Cross-community marketplace</div>
+            <div className="dc-hero-desc">
+              Tìm cộng đồng phù hợp, tham gia challenge mới, mua products độc quyền từ
+              creators trên toàn focus.camp — một cửa sổ duy nhất.
+            </div>
           </div>
           <div className="dc-hero-stats">
             <div className="dc-hero-stat">
