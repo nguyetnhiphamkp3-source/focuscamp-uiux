@@ -57,14 +57,15 @@ export function CreateCourseButton({
         type="button"
         onClick={() => setOpen(true)}
         style={{
-          padding: "8px 16px",
+          padding: "10px 16px",
           borderRadius: 8,
           border: "none",
           background: "var(--brand-green)",
           color: "#fff",
           fontWeight: 600,
-          fontSize: "var(--text-sm)",
+          fontSize: "var(--text-base)",
           cursor: "pointer",
+          minHeight: 44,
         }}
       >
         + Tạo Course mới
@@ -104,9 +105,9 @@ export function CreateCourseButton({
           >
             <div
               style={{
-                padding: "18px 20px",
+                padding: "20px 24px",
                 borderBottom: "1px solid var(--border-subtle)",
-                fontSize: "var(--text-lg)",
+                fontSize: "var(--text-xl)",
                 fontWeight: 700,
                 color: "var(--header-primary)",
               }}
@@ -116,10 +117,10 @@ export function CreateCourseButton({
 
             <div
               style={{
-                padding: 20,
+                padding: "20px 24px",
                 display: "flex",
                 flexDirection: "column",
-                gap: 12,
+                gap: 16,
               }}
             >
               <Field label="Tên course *">
@@ -198,7 +199,7 @@ export function CreateCourseButton({
                   onChange={(e) => setIsPublished(e.target.checked)}
                   disabled={pending}
                 />
-                <div style={{ fontSize: "var(--text-sm)" }}>
+                <div style={{ fontSize: "var(--text-base)" }}>
                   <strong>Publish ngay</strong> — tắt để tạo draft
                 </div>
               </label>
@@ -207,7 +208,7 @@ export function CreateCourseButton({
             {err && (
               <div
                 style={{
-                  padding: "0 20px 8px",
+                  padding: "0 24px 8px",
                   fontSize: "var(--text-sm)",
                   color: "var(--danger)",
                 }}
@@ -218,7 +219,7 @@ export function CreateCourseButton({
 
             <div
               style={{
-                padding: "14px 20px",
+                padding: "16px 24px",
                 borderTop: "1px solid var(--border-subtle)",
                 display: "flex",
                 gap: 8,
@@ -229,13 +230,14 @@ export function CreateCourseButton({
                 onClick={() => !pending && setOpen(false)}
                 disabled={pending}
                 style={{
-                  padding: "10px 18px",
+                  padding: "11px 20px",
                   borderRadius: 8,
                   border: "1px solid var(--border-subtle)",
                   background: "transparent",
                   color: "var(--interactive-normal)",
                   cursor: "pointer",
-                  fontSize: "var(--text-sm)",
+                  fontSize: "var(--text-base)",
+                  minHeight: 44,
                 }}
               >
                 Huỷ
@@ -246,7 +248,7 @@ export function CreateCourseButton({
                 disabled={pending || !title.trim() || !slug.trim()}
                 style={{
                   marginLeft: "auto",
-                  padding: "10px 22px",
+                  padding: "11px 24px",
                   borderRadius: 8,
                   border: "none",
                   background:
@@ -255,7 +257,8 @@ export function CreateCourseButton({
                       : "var(--bg-modifier-hover)",
                   color: "#fff",
                   fontWeight: 600,
-                  fontSize: "var(--text-sm)",
+                  fontSize: "var(--text-base)",
+                  minHeight: 44,
                   cursor: pending ? "not-allowed" : "pointer",
                   opacity: pending ? 0.6 : 1,
                 }}
@@ -280,9 +283,9 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+    <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-        <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+        <span style={{ fontSize: "var(--text-sm)", fontWeight: 500, color: "var(--text-muted)" }}>
           {label}
         </span>
         {hint && (
@@ -298,12 +301,13 @@ function Field({
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
-  padding: "10px 12px",
+  padding: "11px 14px",
   borderRadius: 8,
   border: "1px solid var(--border-subtle)",
   background: "var(--bg-chat)",
   color: "var(--text-normal)",
-  fontSize: "var(--text-sm)",
+  fontSize: "var(--text-base)",
   outline: "none",
   fontFamily: "inherit",
+  minHeight: 44,
 };

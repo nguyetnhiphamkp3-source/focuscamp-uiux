@@ -139,9 +139,9 @@ export function CreateCommunityButton({
           >
             <div
               style={{
-                padding: "18px 20px",
+                padding: "20px 24px",
                 borderBottom: "1px solid var(--border-subtle)",
-                fontSize: "var(--text-lg)",
+                fontSize: "var(--text-xl)",
                 fontWeight: 700,
                 color: "var(--header-primary)",
               }}
@@ -151,10 +151,10 @@ export function CreateCommunityButton({
 
             <div
               style={{
-                padding: 20,
+                padding: "20px 24px",
                 display: "flex",
                 flexDirection: "column",
-                gap: 12,
+                gap: 16,
               }}
             >
               <Field
@@ -221,7 +221,7 @@ export function CreateCommunityButton({
             {err && (
               <div
                 style={{
-                  padding: "0 20px 8px",
+                  padding: "0 24px 8px",
                   fontSize: "var(--text-sm)",
                   color: "var(--danger)",
                 }}
@@ -232,11 +232,11 @@ export function CreateCommunityButton({
 
             <div
               style={{
-                padding: "14px 20px",
+                padding: "16px 24px",
                 borderTop: "1px solid var(--border-subtle)",
                 display: "flex",
-                gap: 8,
-                alignItems: "center",
+                flexDirection: "column",
+                gap: 12,
               }}
             >
               <div
@@ -248,6 +248,7 @@ export function CreateCommunityButton({
                 Bạn sẽ là owner. Sau khi tạo vào{" "}
                 <code>Settings</code> để thiết lập pillars, classes, currency.
               </div>
+              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
               <button
                 type="button"
                 onClick={() => {
@@ -256,14 +257,14 @@ export function CreateCommunityButton({
                 }}
                 disabled={pending}
                 style={{
-                  marginLeft: "auto",
-                  padding: "10px 18px",
+                  padding: "11px 20px",
                   borderRadius: 8,
                   border: "1px solid var(--border-subtle)",
                   background: "transparent",
                   color: "var(--interactive-normal)",
                   cursor: "pointer",
-                  fontSize: "var(--text-sm)",
+                  fontSize: "var(--text-base)",
+                  minHeight: 44,
                 }}
               >
                 Huỷ
@@ -273,7 +274,7 @@ export function CreateCommunityButton({
                 onClick={submit}
                 disabled={pending || !name.trim() || !slug.trim()}
                 style={{
-                  padding: "10px 22px",
+                  padding: "11px 24px",
                   borderRadius: 8,
                   border: "none",
                   background:
@@ -282,16 +283,19 @@ export function CreateCommunityButton({
                       : "var(--bg-modifier-hover)",
                   color: "#fff",
                   fontWeight: 600,
-                  fontSize: "var(--text-sm)",
+                  fontSize: "var(--text-base)",
+                  minHeight: 44,
                   cursor:
                     name.trim() && slug.trim() && !pending
                       ? "pointer"
                       : "not-allowed",
                   opacity: pending ? 0.6 : 1,
+                  whiteSpace: "nowrap",
                 }}
               >
                 {pending ? "Đang tạo…" : "Tạo cộng đồng"}
               </button>
+              </div>
             </div>
           </div>
         </div>,
@@ -311,9 +315,9 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+    <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-        <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+        <span style={{ fontSize: "var(--text-sm)", fontWeight: 500, color: "var(--text-muted)" }}>
           {label}
         </span>
         {hint && (
@@ -329,12 +333,13 @@ function Field({
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
-  padding: "10px 12px",
+  padding: "11px 14px",
   borderRadius: 8,
   border: "1px solid var(--border-subtle)",
   background: "var(--bg-chat)",
   color: "var(--text-normal)",
-  fontSize: "var(--text-sm)",
+  fontSize: "var(--text-base)",
   outline: "none",
   fontFamily: "inherit",
+  minHeight: 44,
 };
