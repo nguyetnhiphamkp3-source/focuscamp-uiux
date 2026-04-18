@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createChallengeAction } from "@/app/actions/challenge-review";
+import { toSlug } from "@/lib/brand";
 
 export function CreateChallengeButton({
   communityId,
@@ -28,16 +29,7 @@ export function CreateChallengeButton({
   function onTitleChange(v: string) {
     setTitle(v);
     if (!slugTouched) {
-      setSlug(
-        v
-          .toLowerCase()
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .replace(/đ/g, "d")
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-+|-+$/g, "")
-          .slice(0, 60)
-      );
+      setSlug(toSlug(v));
     }
   }
 

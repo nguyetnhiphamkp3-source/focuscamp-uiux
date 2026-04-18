@@ -1,15 +1,3 @@
-import Link from "next/link";
-import {
-  avatarColorFor,
-  initials,
-  fmtRelativeTime,
-} from "@/lib/brand";
-import { EditProfileButton } from "./edit-profile-modal";
-import {
-  classByKey,
-  pillarByKey,
-  tierForLevel,
-} from "@/lib/community-config";
 import type {
   ClassConfig,
   PillarConfig,
@@ -17,8 +5,11 @@ import type {
   LevelTier,
 } from "@/lib/community-config";
 import type { HeatmapDay } from "@/lib/services/profile";
-import { ActivityHeatmap } from "./activity-heatmap";
-import { FollowButton } from "./follow-button";
+import { ProfileHeader } from "./profile-header";
+import { ProfileStats } from "./profile-stats";
+import { ProfileHeatmap } from "./profile-heatmap";
+import { ProfileCommunityList } from "./profile-community-list";
+import { ProfileRecentPosts } from "./profile-recent-posts";
 
 type Community = { name: string; slug: string };
 
@@ -69,16 +60,6 @@ type XpEntry = {
   reason: string;
   reasonId: string | null;
   createdAt: Date;
-};
-
-const XP_REASON_LABELS: Record<string, string> = {
-  POST_CREATED: "Đăng bài",
-  COMMENT_CREATED: "Bình luận",
-  CHECKIN: "Check-in challenge",
-  BEST_ANSWER: "Câu trả lời best",
-  SUBMISSION_APPROVED: "Submission approved",
-  ADMIN_GRANT: "Admin grant",
-  ADMIN_PENALTY: "Admin penalty",
 };
 
 export function ProfileView({
@@ -140,12 +121,8 @@ export function ProfileView({
   followerCount?: number;
   followingCount?: number;
 }) {
-  const name = user.name || "Ẩn danh";
-  const handle = user.handle || user.name?.toLowerCase().replace(/\s+/g, "") || "user";
-  const myClass = classByKey(membership?.className, classes);
-  const tier = membership
-    ? tierForLevel(membership.level, levelTiers)
-    : null;
+  const handle =
+    user.handle || user.name?.toLowerCase().replace(/\s+/g, "") || "user";
 
   return (
     <>
@@ -158,486 +135,50 @@ export function ProfileView({
       <div className="pf-view">
         <div className="pf-banner"></div>
         <div className="pf-inner">
-          <div className="pf-header">
-            {user.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={user.image}
-                alt={name}
-                referrerPolicy="no-referrer"
-                className="pf-avatar-lg"
-                style={{ objectFit: "cover" }}
-              />
-            ) : (
-              <div
-                className="pf-avatar-lg"
-                style={{ background: avatarColorFor(user.id) }}
-              >
-                {initials(name)}
-              </div>
-            )}
-            <div className="pf-identity">
-              <div className="pf-name-row">
-                <span className="pf-name">{name}</span>
-                <span className="pf-handle">@{handle}</span>
-              </div>
-              <div className="pf-bio">
-                {user.bio ||
-                  (membership
-                    ? `${membership.role} · ${tier?.name ?? membership.tier} của ${community.name}`
-                    : `Chưa là thành viên của ${community.name}`)}
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  gap: 8,
-                  alignItems: "center",
-                  flexWrap: "wrap",
-                  marginTop: 6,
-                  fontSize: "var(--text-sm)",
-                  color: "var(--text-muted)",
-                }}
-              >
-                {myClass && (
-                  <span
-                    style={{
-                      padding: "3px 10px",
-                      borderRadius: 10,
-                      background: "var(--bg-card)",
-                      border: "1px solid var(--border-subtle)",
-                    }}
-                  >
-                    {myClass.emoji ? `${myClass.emoji} ` : ""}
-                    {myClass.label}
-                  </span>
-                )}
-                {ownedCommunities.length > 0 && (
-                  <span
-                    style={{
-                      padding: "3px 10px",
-                      borderRadius: 10,
-                      background: "rgba(240,179,50,0.12)",
-                      border: "1px solid rgba(240,179,50,0.3)",
-                      color: "var(--premium-gold)",
-                      fontWeight: 600,
-                    }}
-                    title={ownedCommunities
-                      .map((c) => c.name)
-                      .join(", ")}
-                  >
-                    ★ Owner ({ownedCommunities.length})
-                  </span>
-                )}
-                {user.location && <span>📍 {user.location}</span>}
-                {latestActivityAt ? (
-                  <span>
-                    ● Active {fmtRelativeTime(latestActivityAt)}
-                  </span>
-                ) : (
-                  <span>● Chưa hoạt động ở {community.name}</span>
-                )}
-                <span>
-                  · Tham gia focus.camp {fmtRelativeTime(user.createdAt)}
-                </span>
-                {membership && (
-                  <span>
-                    · Vào {community.name} {fmtRelativeTime(membership.joinedAt)}
-                  </span>
-                )}
-                <span>
-                  ·{" "}
-                  <strong style={{ color: "var(--header-primary)" }}>
-                    {followerCount}
-                  </strong>{" "}
-                  followers ·{" "}
-                  <strong style={{ color: "var(--header-primary)" }}>
-                    {followingCount}
-                  </strong>{" "}
-                  following
-                </span>
-              </div>
-            </div>
-            {isSelf ? (
-              <div className="pf-actions">
-                <button className="ui-btn ui-btn-secondary ui-btn-sm">
-                  Chia sẻ
-                </button>
-                <EditProfileButton
-                  initial={{
-                    name: user.name,
-                    handle: user.handle,
-                    bio: user.bio,
-                    location: user.location,
-                  }}
-                  communitySlug={community.slug}
-                />
-              </div>
-            ) : viewerId ? (
-              <div className="pf-actions">
-                <FollowButton
-                  targetUserId={user.id}
-                  initialFollowing={viewerIsFollowing}
-                />
-              </div>
-            ) : null}
-          </div>
+          <ProfileHeader
+            community={community}
+            user={user}
+            membership={membership}
+            isSelf={isSelf}
+            classes={classes}
+            levelTiers={levelTiers}
+            ownedCommunities={ownedCommunities}
+            latestActivityAt={latestActivityAt}
+            viewerId={viewerId}
+            viewerIsFollowing={viewerIsFollowing}
+            followerCount={followerCount}
+            followingCount={followingCount}
+          />
 
           {membership && (
-            <>
-              <div className="pf-level-card">
-                <div className="pf-level-badge">{membership.level}</div>
-                <div className="pf-level-info">
-                  <div className="pf-level-row">
-                    <span className="pf-level-title">
-                      Level {membership.level}
-                      {tier ? ` — ${tier.name}` : ` — ${membership.tier}`}
-                    </span>
-                  </div>
-                  <div className="pf-level-bar">
-                    <div
-                      className="pf-level-fill"
-                      style={{ width: `${Math.min(100, membership.xp % 100)}%` }}
-                    ></div>
-                  </div>
-                  <div className="pf-level-hint">
-                    {membership.xp} XP · còn {100 - (membership.xp % 100)} XP để
-                    lên level tiếp theo
-                  </div>
-                </div>
-              </div>
-
-              <div className="pf-stats-grid">
-                <Stat
-                  label="⭐ Total XP"
-                  value={membership.xp.toLocaleString()}
-                  sub="Điểm kinh nghiệm"
-                />
-                <Stat
-                  label={`${currency.currencyIcon} ${currency.currencyName}`}
-                  value={membership.aip.toLocaleString()}
-                  sub="Đồng điểm chính"
-                />
-                {currency.gemsName && (
-                  <Stat
-                    label={`${currency.gemsIcon ?? "💎"} ${currency.gemsName}`}
-                    value={membership.gems.toLocaleString()}
-                    sub="Đồng điểm phụ"
-                  />
-                )}
-                <Stat
-                  label="🔥 Streak"
-                  value={membership.streakDays.toString()}
-                  sub="ngày liên tục"
-                />
-                <Stat
-                  label="🎯 Tổng hoạt động"
-                  value={stats.contributions.toLocaleString()}
-                  sub={`${stats.posts}P · ${stats.comments}C · ${stats.checkins}✓`}
-                />
-                <Stat
-                  label="📅 Ngày active"
-                  value={stats.activeDays.toString()}
-                  sub="trong 12 tháng"
-                />
-                <Stat
-                  label="🔥 Streak hiện tại"
-                  value={`${stats.currentStreak}d`}
-                  sub={
-                    stats.currentStreak > 0
-                      ? "ngày liên tục"
-                      : "bắt đầu chuỗi mới"
-                  }
-                />
-                <Stat
-                  label="🏆 Streak dài nhất"
-                  value={`${stats.longestStreak}d`}
-                  sub="kỷ lục trong 12 tháng"
-                />
-                <Stat
-                  label="⏰ Peak hour"
-                  value={
-                    stats.peakHour !== null
-                      ? `${stats.peakHour}:00`
-                      : "—"
-                  }
-                  sub={
-                    stats.peakHour !== null
-                      ? `${hourLabel(stats.peakHour)}`
-                      : "chưa có dữ liệu"
-                  }
-                />
-                <Stat label="📝 Posts" value={stats.posts.toString()} sub="đã đăng" />
-                <Stat
-                  label="💬 Comments"
-                  value={stats.comments.toString()}
-                  sub="đã bình luận"
-                />
-                <Stat
-                  label="✓ Check-ins"
-                  value={stats.checkins.toString()}
-                  sub="challenges"
-                />
-              </div>
-            </>
+            <ProfileStats
+              membership={membership}
+              stats={stats}
+              currency={currency}
+              levelTiers={levelTiers}
+              recentXp={recentXp}
+            />
           )}
 
-          {/* Activity heatmap — 365-day grid of posts+comments+checkins */}
-          {heatmap.length > 0 && stats.contributions > 0 && (
-            <div style={{ marginTop: 20 }}>
-              <ActivityHeatmap
-                days={heatmap}
-                totalContributions={stats.contributions}
-              />
-            </div>
-          )}
+          <ProfileHeatmap
+            heatmap={heatmap}
+            totalContributions={stats.contributions}
+          />
 
-          {/* XP history */}
-          {recentXp.length > 0 && (
-            <div className="pf-section" style={{ marginTop: 20 }}>
-              <h3>XP log gần đây</h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                {recentXp.map((x) => {
-                  const positive = x.amount >= 0;
-                  const label = XP_REASON_LABELS[x.reason] ?? x.reason;
-                  return (
-                    <div
-                      key={x.id}
-                      style={{
-                        display: "flex",
-                        gap: 8,
-                        alignItems: "center",
-                        padding: "6px 10px",
-                        background: "var(--bg-card)",
-                        border: "1px solid var(--border-subtle)",
-                        borderRadius: 6,
-                        fontSize: "var(--text-sm)",
-                      }}
-                    >
-                      <span
-                        style={{
-                          color: positive ? "var(--success)" : "var(--danger)",
-                          fontWeight: 700,
-                          minWidth: 52,
-                        }}
-                      >
-                        {positive ? "+" : ""}
-                        {x.amount} XP
-                      </span>
-                      <span style={{ flex: 1, color: "var(--text-normal)" }}>
-                        {label}
-                      </span>
-                      <span
-                        style={{
-                          color: "var(--text-muted)",
-                          fontSize: "var(--text-xs)",
-                        }}
-                      >
-                        {fmtRelativeTime(x.createdAt)}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          <ProfileCommunityList
+            otherCommunities={otherCommunities}
+            viewingUserId={viewingUserId}
+            isSelf={isSelf}
+          />
 
-          {otherCommunities.length > 0 && (
-            <div className="pf-section" style={{ marginTop: 20 }}>
-              <h3>
-                {isSelf
-                  ? `Bạn cũng active ở ${otherCommunities.length} cộng đồng khác`
-                  : `Cũng active ở ${otherCommunities.length} cộng đồng khác`}
-              </h3>
-              <div
-                style={{
-                  fontSize: "var(--text-xs)",
-                  color: "var(--text-muted)",
-                  marginBottom: 10,
-                }}
-              >
-                Chỉ hiển thị danh sách cộng đồng — class / level / XP của từng
-                cộng đồng là riêng tư và chỉ hiện khi bạn vào cộng đồng đó.
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: 8,
-                }}
-              >
-                {otherCommunities.map((c) => (
-                  <Link
-                    key={c.id}
-                    href={`/c/${c.slug}/profile/${viewingUserId}`}
-                    style={{
-                      display: "flex",
-                      gap: 8,
-                      alignItems: "center",
-                      padding: "8px 12px",
-                      background: "var(--bg-card)",
-                      border: "1px solid var(--border-subtle)",
-                      borderRadius: 999,
-                      textDecoration: "none",
-                      color: "var(--text-normal)",
-                      fontSize: "var(--text-sm)",
-                    }}
-                  >
-                    {c.iconUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={c.iconUrl}
-                        alt=""
-                        style={{
-                          width: 24,
-                          height: 24,
-                          borderRadius: "50%",
-                          objectFit: "cover",
-                          flexShrink: 0,
-                        }}
-                      />
-                    ) : (
-                      <div
-                        style={{
-                          width: 24,
-                          height: 24,
-                          borderRadius: "50%",
-                          background: avatarColorFor(c.id),
-                          color: "#fff",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: "var(--text-xs)",
-                          fontWeight: 700,
-                          flexShrink: 0,
-                        }}
-                      >
-                        {initials(c.name)}
-                      </div>
-                    )}
-                    <span style={{ fontWeight: 500 }}>{c.name}</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="pf-section" style={{ marginTop: 20 }}>
-            <h3>Bài viết gần đây</h3>
-            {recentPosts.length === 0 ? (
-              <div
-                style={{
-                  padding: 14,
-                  color: "var(--text-muted)",
-                  fontSize: "var(--text-sm)",
-                  fontStyle: "italic",
-                }}
-              >
-                {isSelf
-                  ? "Bạn chưa đăng bài nào trong cộng đồng này."
-                  : "Chưa có bài viết."}
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {recentPosts.map((p) => {
-                  const pillar = pillarByKey(p.pillar, pillars);
-                  const typeTag =
-                    p.type === "QUESTION"
-                      ? "❓"
-                      : p.type === "SIGNAL"
-                        ? "⚡"
-                        : "📝";
-                  return (
-                    <Link
-                      key={p.id}
-                      href={`/c/${community.slug}/p/${p.id}`}
-                      style={{
-                        display: "flex",
-                        gap: 10,
-                        padding: 12,
-                        background: "var(--bg-card)",
-                        border: "1px solid var(--border-subtle)",
-                        borderRadius: 10,
-                        textDecoration: "none",
-                        color: "inherit",
-                      }}
-                    >
-                      <div style={{ fontSize: 20, flexShrink: 0 }}>{typeTag}</div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div
-                          style={{
-                            fontSize: "var(--text-base)",
-                            fontWeight: 600,
-                            color: "var(--header-primary)",
-                            marginBottom: 2,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {p.title ||
-                            p.body.slice(0, 80) +
-                              (p.body.length > 80 ? "…" : "")}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: "var(--text-xs)",
-                            color: "var(--text-muted)",
-                            display: "flex",
-                            gap: 8,
-                            alignItems: "center",
-                          }}
-                        >
-                          <span>{fmtRelativeTime(p.createdAt)}</span>
-                          {pillar && (
-                            <span>
-                              · {pillar.emoji ? `${pillar.emoji} ` : ""}
-                              {pillar.label}
-                            </span>
-                          )}
-                          {p.isCot && (
-                            <span style={{ color: "var(--premium-gold)" }}>
-                              · ⭐ CỐT
-                            </span>
-                          )}
-                          <span>· ❤️ {p.reactionCount}</span>
-                          <span>· 💬 {p.commentCount}</span>
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          <ProfileRecentPosts
+            recentPosts={recentPosts}
+            communitySlug={community.slug}
+            pillars={pillars}
+            isSelf={isSelf}
+          />
         </div>
       </div>
     </>
   );
-}
-
-function Stat({
-  label,
-  value,
-  sub,
-}: {
-  label: string;
-  value: string;
-  sub: string;
-}) {
-  return (
-    <div className="pf-stat">
-      <div className="pf-stat-label">{label}</div>
-      <div className="pf-stat-value">{value}</div>
-      <div className="pf-stat-sub">{sub}</div>
-    </div>
-  );
-}
-
-/** Human label for hour of day — "sáng", "chiều", etc. */
-function hourLabel(h: number): string {
-  if (h >= 5 && h < 11) return "sáng";
-  if (h >= 11 && h < 13) return "trưa";
-  if (h >= 13 && h < 18) return "chiều";
-  if (h >= 18 && h < 22) return "tối";
-  return "khuya";
 }

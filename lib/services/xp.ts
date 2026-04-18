@@ -18,7 +18,7 @@
  */
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
-import { checkAndAwardBadges } from "./badge";
+import { enqueueBadgeCheck } from "@/lib/queue";
 
 export type XpReason =
   | "POST_CREATED"
@@ -97,6 +97,7 @@ export async function awardXp(input: {
     prisma.xPLedger.create({
       data: {
         userId: input.userId,
+        communityId: input.communityId,
         amount,
         reason: input.reason,
         reasonId: input.reasonId ?? null,
@@ -117,11 +118,11 @@ export async function awardXp(input: {
     "[xp] awarded"
   );
 
-  // Non-blocking badge check after every XP award
-  checkAndAwardBadges({
+  // Defer badge check to background queue (inline fallback if no Redis)
+  enqueueBadgeCheck({
     userId: input.userId,
     communityId: input.communityId,
-  }).catch((err) => logger.warn({ err }, "[xp] badge check failed"));
+  }).catch((err) => logger.warn({ err }, "[xp] badge enqueue failed"));
 
   return { amount, newXp: nextXp, newLevel: nextLevel, multiplier: mult };
 }

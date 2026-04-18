@@ -14,7 +14,10 @@ import {
   createChallenge,
   createChallengeTask,
   deleteChallengeTask,
+  joinChallenge,
 } from "@/lib/services/challenge";
+import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
 import {
   ReviewSubmissionSchema,
   FlagSubmissionSchema,
@@ -415,5 +418,36 @@ export async function deleteTaskAction(input: {
     logError(err, { userId: s.user.id, taskId: input.taskId });
     if (err instanceof Error) return { ok: false, reason: err.message };
     return { ok: false, reason: "unknown" };
+  }
+}
+
+export async function joinChallengeAction(input: {
+  challengeId: string;
+  communityId: string;
+  communitySlug: string;
+  challengeSlug: string;
+  requiresApproval: boolean;
+}) {
+  const s = await auth();
+  if (!s?.user?.id) redirect("/login");
+
+  const communityMembership = await prisma.membership.findUnique({
+    where: {
+      userId_communityId: {
+        userId: s.user.id,
+        communityId: input.communityId,
+      },
+    },
+  });
+  if (!communityMembership) redirect(`/c/${input.communitySlug}`);
+
+  try {
+    await joinChallenge({
+      userId: s.user.id,
+      challengeId: input.challengeId,
+    });
+    bumpChallenge(input.communitySlug, input.challengeSlug);
+  } catch (err) {
+    logError(err, { userId: s.user.id, challengeId: input.challengeId });
   }
 }

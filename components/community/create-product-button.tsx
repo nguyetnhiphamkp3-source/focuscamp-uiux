@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createProductAction } from "@/app/actions/marketplace";
+import { toSlug } from "@/lib/brand";
 
 export function CreateProductButton({
   communityId,
@@ -26,16 +27,7 @@ export function CreateProductButton({
   function onTitleChange(v: string) {
     setTitle(v);
     if (!slugTouched) {
-      setSlug(
-        v
-          .toLowerCase()
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .replace(/đ/g, "d")
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-+|-+$/g, "")
-          .slice(0, 60)
-      );
+      setSlug(toSlug(v));
     }
   }
 

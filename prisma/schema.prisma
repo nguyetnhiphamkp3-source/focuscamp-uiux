@@ -121,6 +121,7 @@ model Community {
   products      Product[]
   badges        Badge[]
   subscriptions Subscription[]
+  xpLedgers     XPLedger[]
 }
 
 model Membership {
@@ -424,6 +425,8 @@ model Post {
   bookmarks Bookmark[]
 
   @@index([communityId, type, createdAt])
+  @@index([communityId, isPinned, createdAt])
+  @@index([userId, createdAt])
 }
 
 model Comment {
@@ -439,6 +442,8 @@ model Comment {
   user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   parent  Comment?  @relation("CommentReply", fields: [parentId], references: [id])
   replies Comment[] @relation("CommentReply")
+
+  @@index([postId, createdAt])
 }
 
 model Reaction {
@@ -534,6 +539,9 @@ model Purchase {
 
   product Product @relation(fields: [productId], references: [id])
   user    User    @relation(fields: [userId], references: [id])
+
+  @@index([userId, productId])
+  @@index([productId, status])
 }
 
 // ============= PAYMENT (SePay) =============
@@ -609,16 +617,19 @@ model Notification {
 // ============= GAMIFICATION =============
 
 model XPLedger {
-  id        String   @id @default(cuid())
-  userId    String
-  amount    Int
-  reason    String
-  reasonId  String?
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  userId      String
+  communityId String?
+  amount      Int
+  reason      String
+  reasonId    String?
+  createdAt   DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  community Community? @relation(fields: [communityId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+  @@index([communityId, createdAt])
 }
 
 model Badge {
@@ -665,7 +676,7 @@ model Subscription {
 
   community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
 
-  @@index([userId, communityId])
+  @@index([userId, communityId, status])
 }
 
 // ============= AFFILIATE =============

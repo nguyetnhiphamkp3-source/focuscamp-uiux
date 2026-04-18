@@ -58,6 +58,18 @@ export function ytThumb(url: string | null | undefined): string | null {
   return id ? `https://img.youtube.com/vi/${id}/mqdefault.jpg` : null;
 }
 
+/** Vietnamese-safe slug: strip diacritics, đ→d, kebab-case, max 60 chars */
+export function toSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+}
+
 /* ======== Avatar colors (for anonymous / initials avatars) ======== */
 export const AVATAR_COLORS = [
   "linear-gradient(135deg,#5865F2,#7289DA)",

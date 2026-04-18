@@ -200,6 +200,7 @@ export async function checkAndAwardBadges(input: {
   const maxLevel = Math.max(0, ...memberships.map((m) => m.level));
   const maxStreak = Math.max(0, ...memberships.map((m) => m.streakDays));
 
+  const toAward: typeof badges = [];
   for (const badge of badges) {
     if (awarded.has(badge.id)) continue;
     const c = badge.criteria as unknown as Criteria;
@@ -233,30 +234,38 @@ export async function checkAndAwardBadges(input: {
     }
 
     if (eligible) {
-      try {
-        await prisma.badgeAward.create({
-          data: { badgeId: badge.id, userId: input.userId },
-        });
-        logger.info(
-          { badge: badge.slug, userId: input.userId },
-          "[badge] awarded"
-        );
-        await createNotification({
+      toAward.push(badge);
+    }
+  }
+
+  if (toAward.length === 0) return;
+
+  // Batch insert all awards at once
+  try {
+    await prisma.badgeAward.createMany({
+      data: toAward.map((b) => ({ badgeId: b.id, userId: input.userId })),
+      skipDuplicates: true,
+    });
+    for (const badge of toAward) {
+      logger.info(
+        { badge: badge.slug, userId: input.userId },
+        "[badge] awarded"
+      );
+    }
+    // Fire notifications in parallel
+    await Promise.all(
+      toAward.map((badge) =>
+        createNotification({
           userId: input.userId,
-          type: "POST_COT", // reuse CỐT icon for badge (shows ⭐)
+          type: "POST_COT",
           title: `Bạn đạt badge: ${badge.emoji} ${badge.name}`,
           body: badge.description ?? undefined,
-        });
-      } catch (err) {
-        // Unique constraint — already awarded (race condition)
-        if (
-          err instanceof Prisma.PrismaClientKnownRequestError &&
-          err.code === "P2002"
-        ) {
-          continue;
-        }
-        logger.warn({ err, badge: badge.slug }, "[badge] award failed");
-      }
-    }
+        }).catch((err) =>
+          logger.warn({ err, badge: badge.slug }, "[badge] notification failed")
+        )
+      )
+    );
+  } catch (err) {
+    logger.warn({ err }, "[badge] batch award failed");
   }
 }

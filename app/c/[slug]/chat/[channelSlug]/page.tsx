@@ -2,9 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
-import { SendMessageSchema } from "@/lib/validations";
-import { logError } from "@/lib/logger";
+import { sendMessageAction } from "@/app/actions/chat";
 import { avatarColorFor as colorFor, nameColorFor as nameColor } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
@@ -93,29 +91,6 @@ export default async function ChannelPage({
     ...categoryOrder.filter((c) => byCategory[c]),
     ...Object.keys(byCategory).filter((c) => !categoryOrder.includes(c)),
   ];
-
-  async function sendMessage(formData: FormData) {
-    "use server";
-    const s = await auth();
-    if (!s?.user?.id) return;
-    try {
-      const { content } = SendMessageSchema.parse({
-        content: formData.get("content"),
-      });
-      await prisma.message.create({
-        data: {
-          channelId: channel!.id,
-          userId: s.user.id,
-          content,
-        },
-      });
-      revalidatePath(`/c/${slug}/chat/${channelSlug}`);
-    } catch (err) {
-      logError(err, { channelId: channel!.id, userId: s.user.id });
-      // Swallow — UI just won't show new msg; in a fuller impl we'd return
-      // errors to the client.
-    }
-  }
 
   return (
     <div className="chat-module-layout">
@@ -297,7 +272,10 @@ export default async function ChannelPage({
         </div>
 
         <div className="chat-input-wrapper" data-view-part="chat">
-          <form action={sendMessage}>
+          <form action={sendMessageAction}>
+            <input type="hidden" name="channelId" value={channel.id} />
+            <input type="hidden" name="communitySlug" value={slug} />
+            <input type="hidden" name="channelSlug" value={channelSlug} />
             <div className="chat-input">
               <div className="plus-btn">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">

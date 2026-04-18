@@ -3,7 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { EmptyState } from "@/components/ui/empty-state";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function CommunityHomePage({
   params,

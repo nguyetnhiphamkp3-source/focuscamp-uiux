@@ -3,20 +3,22 @@
 import { useEffect, useState } from "react";
 
 /**
- * Client-side bell badge that polls /api/notifications/unread-count every
- * 30s so users see new notifications without page refresh.
+ * Client-side bell badge with SSE real-time push + polling fallback.
  *
+ * Priority: SSE stream → if connection fails, falls back to 30s polling.
  * Starts from the server-rendered `initial` count for zero-flash first paint.
- * Stops polling when tab is hidden (document.visibilityState) — resumes on
- * focus.
+ * Stops when tab is hidden — resumes on focus.
  */
 export function NotifBadge({ initial }: { initial: number }) {
   const [count, setCount] = useState(initial);
 
   useEffect(() => {
     let stopped = false;
+    let eventSource: EventSource | null = null;
+    let pollInterval: ReturnType<typeof setInterval> | null = null;
 
-    async function refresh() {
+    // Fetch current count from REST endpoint
+    async function refreshCount() {
       try {
         const r = await fetch("/api/notifications/unread-count", {
           cache: "no-store",
@@ -29,20 +31,55 @@ export function NotifBadge({ initial }: { initial: number }) {
       }
     }
 
-    // Poll every 30s but only when tab visible
-    const interval = window.setInterval(() => {
-      if (document.visibilityState === "visible") refresh();
-    }, 30_000);
+    // Try SSE connection
+    function connectSSE() {
+      if (stopped) return;
+      try {
+        eventSource = new EventSource("/api/notifications/stream");
+        eventSource.addEventListener("notification", () => {
+          // Increment optimistically, then refresh for accurate count
+          setCount((c) => c + 1);
+          refreshCount();
+        });
+        eventSource.onerror = () => {
+          // SSE failed — close and fall back to polling
+          eventSource?.close();
+          eventSource = null;
+          startPolling();
+        };
+      } catch {
+        startPolling();
+      }
+    }
 
-    // Immediate refresh when tab regains visibility
+    // Fallback: poll every 30s
+    function startPolling() {
+      if (stopped || pollInterval) return;
+      pollInterval = setInterval(() => {
+        if (document.visibilityState === "visible") refreshCount();
+      }, 30_000);
+    }
+
+    // Visibility handler — reconnect SSE or refresh on tab focus
     function onVisibility() {
-      if (document.visibilityState === "visible") refresh();
+      if (document.visibilityState === "visible") {
+        refreshCount();
+        if (!eventSource) connectSSE();
+      } else {
+        // Close SSE when hidden to save resources
+        eventSource?.close();
+        eventSource = null;
+      }
     }
     document.addEventListener("visibilitychange", onVisibility);
 
+    // Start
+    connectSSE();
+
     return () => {
       stopped = true;
-      window.clearInterval(interval);
+      eventSource?.close();
+      if (pollInterval) clearInterval(pollInterval);
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);

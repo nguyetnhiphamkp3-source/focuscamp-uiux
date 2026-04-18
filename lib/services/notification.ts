@@ -12,6 +12,7 @@
  */
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { publish } from "@/lib/realtime";
 
 export type NotificationType =
   | "POST_COMMENT"
@@ -43,7 +44,7 @@ export async function createNotification(input: {
     return null;
   }
   try {
-    return await prisma.notification.create({
+    const notif = await prisma.notification.create({
       data: {
         userId: input.userId,
         type: input.type,
@@ -56,6 +57,15 @@ export async function createNotification(input: {
         commentId: input.commentId ?? null,
       },
     });
+    // Push to SSE stream (non-blocking)
+    publish(`notification:${input.userId}`, {
+      id: notif.id,
+      type: input.type,
+      title: input.title,
+      body: input.body,
+      createdAt: notif.createdAt,
+    }).catch(() => {});
+    return notif;
   } catch (err) {
     // Never let notification failures break the main action
     logger.error(

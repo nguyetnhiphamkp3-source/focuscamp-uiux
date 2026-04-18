@@ -15,12 +15,6 @@ export async function CommunityStatsCard({
   const d30 = new Date();
   d30.setDate(d30.getDate() - 30);
 
-  const memberIds = await prisma.membership.findMany({
-    where: { communityId },
-    select: { userId: true },
-  });
-  const memberIdList = memberIds.map((m) => m.userId);
-
   const [
     posts7, posts30, postsAll,
     comments7, comments30, commentsAll,
@@ -46,23 +40,15 @@ export async function CommunityStatsCard({
     }),
     prisma.checkin.count({ where: { challenge: { communityId } } }),
     prisma.xPLedger.aggregate({
-      where: {
-        userId: { in: memberIdList },
-        createdAt: { gte: d7 },
-        amount: { gt: 0 },
-      },
+      where: { communityId, createdAt: { gte: d7 }, amount: { gt: 0 } },
       _sum: { amount: true },
     }),
     prisma.xPLedger.aggregate({
-      where: {
-        userId: { in: memberIdList },
-        createdAt: { gte: d30 },
-        amount: { gt: 0 },
-      },
+      where: { communityId, createdAt: { gte: d30 }, amount: { gt: 0 } },
       _sum: { amount: true },
     }),
     prisma.xPLedger.aggregate({
-      where: { userId: { in: memberIdList }, amount: { gt: 0 } },
+      where: { communityId, amount: { gt: 0 } },
       _sum: { amount: true },
     }),
     prisma.membership.findMany({

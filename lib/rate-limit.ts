@@ -1,8 +1,11 @@
 /**
- * Simple in-memory rate limiter.
- * Works on single-instance VPS deployments.
- * TODO: swap to @upstash/ratelimit + Redis when scaling to multi-instance.
+ * Rate limiter with Redis backend + in-memory fallback.
+ * Redis: works across multiple instances.
+ * In-memory: works on single-instance VPS when Redis is unavailable.
  */
+import { redis } from "./redis";
+
+/* ===== In-memory fallback ===== */
 
 interface Bucket {
   count: number;
@@ -10,7 +13,6 @@ interface Bucket {
 }
 
 const buckets = new Map<string, Bucket>();
-// Periodic cleanup to prevent unbounded growth
 if (typeof setInterval !== "undefined") {
   setInterval(() => {
     const now = Date.now();
@@ -21,11 +23,8 @@ if (typeof setInterval !== "undefined") {
 }
 
 export interface RateLimitOptions {
-  /** Unique key for the caller (IP, user ID, route etc.) */
   key: string;
-  /** Max requests allowed per window */
   limit: number;
-  /** Window size in seconds */
   windowSec: number;
 }
 
@@ -35,7 +34,7 @@ export interface RateLimitResult {
   resetAt: number;
 }
 
-export function rateLimit(opts: RateLimitOptions): RateLimitResult {
+function rateLimitMemory(opts: RateLimitOptions): RateLimitResult {
   const now = Date.now();
   const { key, limit, windowSec } = opts;
   const bucket = buckets.get(key);
@@ -55,9 +54,37 @@ export function rateLimit(opts: RateLimitOptions): RateLimitResult {
   };
 }
 
+/* ===== Redis-backed rate limiter ===== */
+
+async function rateLimitRedis(opts: RateLimitOptions): Promise<RateLimitResult> {
+  const { key, limit, windowSec } = opts;
+  const redisKey = `rl:${key}`;
+  try {
+    const count = await redis!.incr(redisKey);
+    if (count === 1) {
+      await redis!.expire(redisKey, windowSec);
+    }
+    const ttl = await redis!.ttl(redisKey);
+    const resetAt = Date.now() + ttl * 1000;
+    if (count > limit) {
+      return { ok: false, remaining: 0, resetAt };
+    }
+    return { ok: true, remaining: limit - count, resetAt };
+  } catch {
+    // Redis failed — fall back to memory
+    return rateLimitMemory(opts);
+  }
+}
+
+/* ===== Public API ===== */
+
+export async function rateLimit(opts: RateLimitOptions): Promise<RateLimitResult> {
+  if (redis) return rateLimitRedis(opts);
+  return rateLimitMemory(opts);
+}
+
 /**
  * Extract client IP from NextRequest headers.
- * Falls back to "unknown" if not available.
  */
 export function getClientIp(req: Request): string {
   const xff = req.headers.get("x-forwarded-for");

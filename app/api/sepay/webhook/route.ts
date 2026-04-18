@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   // 0. Rate limit per IP (60 req / min — SePay rarely sends >1/sec)
   const ip = getClientIp(req);
-  const rl = rateLimit({ key: `sepay:${ip}`, limit: 60, windowSec: 60 });
+  const rl = await rateLimit({ key: `sepay:${ip}`, limit: 60, windowSec: 60 });
   if (!rl.ok) {
     logger.warn({ ip, resetAt: rl.resetAt }, "[SePay webhook] rate limited");
     return NextResponse.json(

@@ -24,7 +24,6 @@ const PUBLIC_PREFIXES = [
   "/pay",
   "/api/auth",
   "/api/sepay",
-  "/api/payments",
   "/api/health",
   "/api/notifications",
 ];
@@ -59,6 +58,14 @@ export default function middleware(req: NextRequest) {
   res.headers.set(
     "Permissions-Policy",
     "camera=(), microphone=(), geolocation=()"
+  );
+  res.headers.set(
+    "Strict-Transport-Security",
+    "max-age=63072000; includeSubDomains; preload"
+  );
+  res.headers.set(
+    "Content-Security-Policy",
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https:; frame-src 'self' https://www.youtube.com;"
   );
 
   if (isPublic(pathname)) return res;

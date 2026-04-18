@@ -167,6 +167,7 @@ export async function getPostWithComments(postId: string, userId?: string) {
     where: { postId },
     include: { user: { select: { id: true, name: true, image: true } } },
     orderBy: [{ isBestAnswer: "desc" }, { createdAt: "asc" }],
+    take: 100,
   });
 
   return {

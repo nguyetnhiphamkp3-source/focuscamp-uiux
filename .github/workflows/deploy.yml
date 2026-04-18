@@ -71,16 +71,23 @@ jobs:
             set -e
             cd /opt/focus-camp/app
             git fetch origin main
-            git reset --hard origin/main
+            git checkout main
+            git pull origin main --ff-only
             cd /opt/focus-camp
             echo "=== Pulling new image ==="
             docker compose pull app
             echo "=== Recreating app container ==="
             docker compose up -d --no-build
-            # Wait for app to be ready
-            sleep 5
-            echo "=== Running prisma db push ==="
-            docker compose exec -T app npx prisma@6.19.3 db push --accept-data-loss || echo "db push failed (non-fatal, check schema manually)"
+            echo "=== Waiting for app to be ready ==="
+            for i in $(seq 1 15); do
+              if docker compose exec -T app wget -q -O /dev/null http://localhost:3000/api/health 2>/dev/null; then
+                echo "App is ready after ${i}s"
+                break
+              fi
+              sleep 1
+            done
+            echo "=== Running prisma migrate deploy ==="
+            docker compose exec -T app npx prisma@6.19.3 migrate deploy
             echo "=== Pruning old images ==="
             docker image prune -f
             echo "=== Deploy complete ==="

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
+import { joinChallengeAction } from "@/app/actions/challenge-review";
 import { CheckinForm } from "@/components/community/checkin-form";
 import { SubmissionReviewPanel } from "@/components/community/submission-review-panel";
 import type { SubmissionRow } from "@/components/community/submission-review-panel";
@@ -178,39 +178,13 @@ export default async function ChallengeDetailPage({
     myMembership = m;
   }
 
-  async function join() {
-    "use server";
-    const s = await auth();
-    if (!s?.user?.id) redirect("/login");
-    const communityMembership = await prisma.membership.findUnique({
-      where: {
-        userId_communityId: {
-          userId: s.user!.id!,
-          communityId: challenge!.community.id,
-        },
-      },
-    });
-    if (!communityMembership) redirect(`/c/${slug}`);
-    // If challenge requires approval, new joins go to PENDING (no timer).
-    // Otherwise auto-ACTIVE + start personal timer (existing behavior).
-    const requiresApproval = challenge!.requiresApproval;
-    await prisma.challengeMember.upsert({
-      where: {
-        challengeId_userId: {
-          challengeId: challenge!.id,
-          userId: s.user!.id!,
-        },
-      },
-      update: {},
-      create: {
-        challengeId: challenge!.id,
-        userId: s.user!.id!,
-        status: requiresApproval ? "PENDING" : "ACTIVE",
-        personalStartsAt: requiresApproval ? null : new Date(),
-      },
-    });
-    revalidatePath(`/c/${slug}/challenges/${challengeSlug}`);
-  }
+  const joinAction = joinChallengeAction.bind(null, {
+    challengeId: challenge.id,
+    communityId: challenge.community.id,
+    communitySlug: slug,
+    challengeSlug,
+    requiresApproval: challenge.requiresApproval,
+  });
 
   const dayNow =
     myMembership?.personalStartsAt
@@ -463,7 +437,7 @@ export default async function ChallengeDetailPage({
             />
           ) : (
             session?.user && (
-              <form action={join} style={{ marginTop: "var(--space-5)" }}>
+              <form action={joinAction} style={{ marginTop: "var(--space-5)" }}>
                 <button type="submit" className="ui-btn ui-btn-primary ui-btn-lg">
                   Tham gia challenge
                 </button>

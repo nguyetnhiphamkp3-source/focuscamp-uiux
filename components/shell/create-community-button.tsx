@@ -4,6 +4,7 @@ import { useState, useTransition, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { createCommunityAction } from "@/app/actions/community";
+import { toSlug } from "@/lib/brand";
 
 /**
  * "+ Tạo cộng đồng" button — opens modal with form. Auto-generates slug
@@ -29,16 +30,7 @@ export function CreateCommunityButton({
     setName(v);
     if (!slugTouched) {
       // Auto-slugify
-      setSlug(
-        v
-          .toLowerCase()
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "") // strip diacritics
-          .replace(/đ/g, "d")
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-+|-+$/g, "")
-          .slice(0, 60)
-      );
+      setSlug(toSlug(v));
     }
   }
 

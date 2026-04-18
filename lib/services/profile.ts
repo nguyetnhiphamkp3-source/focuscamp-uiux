@@ -92,40 +92,46 @@ export async function getCommunityProfile(input: {
     }),
     // Latest activity timestamp across posts/comments/checkins in this community
     getLatestActivityAt(userId, communityId),
-    // Heatmap data — 3 parallel aggregations by day for the past 365 days
-    prisma.post.findMany({
-      where: { userId, communityId, createdAt: { gte: heatmapStart } },
-      select: { createdAt: true },
-    }),
-    prisma.comment.findMany({
-      where: {
-        userId,
-        post: { communityId },
-        createdAt: { gte: heatmapStart },
-      },
-      select: { createdAt: true },
-    }),
-    prisma.checkin.findMany({
-      where: {
-        userId,
-        challenge: { communityId },
-        createdAt: { gte: heatmapStart },
-      },
-      select: { createdAt: true },
-    }),
+    // Heatmap data — raw SQL aggregation by day (avoids loading individual rows)
+    prisma.$queryRaw<{ day: string; cnt: bigint }[]>`
+      SELECT to_char("createdAt" AT TIME ZONE 'Asia/Ho_Chi_Minh', 'YYYY-MM-DD') AS day,
+             COUNT(*)::bigint AS cnt
+      FROM "Post"
+      WHERE "userId" = ${userId} AND "communityId" = ${communityId}
+        AND "createdAt" >= ${heatmapStart}
+      GROUP BY day`,
+    prisma.$queryRaw<{ day: string; cnt: bigint }[]>`
+      SELECT to_char(c."createdAt" AT TIME ZONE 'Asia/Ho_Chi_Minh', 'YYYY-MM-DD') AS day,
+             COUNT(*)::bigint AS cnt
+      FROM "Comment" c
+      JOIN "Post" p ON c."postId" = p."id"
+      WHERE c."userId" = ${userId} AND p."communityId" = ${communityId}
+        AND c."createdAt" >= ${heatmapStart}
+      GROUP BY day`,
+    prisma.$queryRaw<{ day: string; cnt: bigint }[]>`
+      SELECT to_char(ci."createdAt" AT TIME ZONE 'Asia/Ho_Chi_Minh', 'YYYY-MM-DD') AS day,
+             COUNT(*)::bigint AS cnt
+      FROM "Checkin" ci
+      JOIN "Challenge" ch ON ci."challengeId" = ch."id"
+      WHERE ci."userId" = ${userId} AND ch."communityId" = ${communityId}
+        AND ci."createdAt" >= ${heatmapStart}
+      GROUP BY day`,
   ]);
 
   if (!user) return null;
 
-  const allActivityDates = [
-    ...heatmapPosts,
-    ...heatmapComments,
-    ...heatmapCheckins,
-  ].map((x) => x.createdAt);
-  const heatmap = buildHeatmap(allActivityDates, heatmapStart);
+  // Merge day-level aggregates from raw SQL into a single map
+  const dayCounts = new Map<string, number>();
+  for (const rows of [heatmapPosts, heatmapComments, heatmapCheckins]) {
+    for (const r of rows) {
+      dayCounts.set(r.day, (dayCounts.get(r.day) ?? 0) + Number(r.cnt));
+    }
+  }
+  const heatmap = buildHeatmapFromCounts(dayCounts, heatmapStart);
   const streaks = computeStreaksFromHeatmap(heatmap);
-  const peakHour = computePeakHour(allActivityDates);
   const activeDays = heatmap.filter((d) => d.count > 0).length;
+  // Peak hour not available from day-level aggregation — skip (low value)
+  const peakHour: number | null = null;
 
   // Recent XP events — last 12 for display on profile
   const [recentXp, badges] = await Promise.all([
@@ -219,27 +225,6 @@ function computeStreaksFromHeatmap(days: HeatmapDay[]): {
 }
 
 /**
- * Hour-of-day (0–23) that has the most activity events. Null if no activity.
- * Uses local timezone of the server (same as heatmap keys).
- */
-function computePeakHour(dates: Date[]): number | null {
-  if (dates.length === 0) return null;
-  const buckets = new Array<number>(24).fill(0);
-  for (const d of dates) {
-    buckets[d.getHours()] += 1;
-  }
-  let best = 0;
-  let bestIdx = 0;
-  for (let h = 0; h < 24; h++) {
-    if (buckets[h] > best) {
-      best = buckets[h];
-      bestIdx = h;
-    }
-  }
-  return best > 0 ? bestIdx : null;
-}
-
-/**
  * Most recent `createdAt` across post / comment / checkin of the user in this
  * community. Returns null if the user has no activity in this community.
  */
@@ -272,17 +257,10 @@ async function getLatestActivityAt(
 }
 
 /**
- * Bucket a list of timestamps into per-day counts, from start (365 days ago)
- * to today. Days with zero activity still return {date, count:0} so the
- * heatmap grid has a consistent shape.
+ * Build heatmap from pre-aggregated day counts (from raw SQL groupBy).
+ * Days with zero activity still return {date, count:0} for consistent grid shape.
  */
-function buildHeatmap(dates: Date[], start: Date): HeatmapDay[] {
-  const counts = new Map<string, number>();
-  for (const d of dates) {
-    const key = toDateKey(d);
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-  }
-
+function buildHeatmapFromCounts(counts: Map<string, number>, start: Date): HeatmapDay[] {
   const out: HeatmapDay[] = [];
   const cursor = new Date(start);
   const today = new Date();

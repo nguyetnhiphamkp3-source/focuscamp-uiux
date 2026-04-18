@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AVATAR_COLORS } from "@/lib/brand";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 type Period = "all" | "month" | "week";
 
@@ -58,29 +58,32 @@ export default async function LeaderboardPage({
     if (period === "month") since.setDate(since.getDate() - 30);
     else since.setDate(since.getDate() - 7);
 
-    // Aggregate XP in timeframe, only among members of this community
-    const memberIds = await prisma.membership.findMany({
-      where: { communityId: community.id },
-      select: { userId: true, tier: true, role: true },
-    });
-    const memberMap = new Map(
-      memberIds.map((m) => [m.userId, { tier: m.tier, role: m.role }])
-    );
+    // Aggregate XP in timeframe using communityId on XPLedger directly
     const sums = await prisma.xPLedger.groupBy({
       by: ["userId"],
       where: {
-        userId: { in: memberIds.map((m) => m.userId) },
+        communityId: community.id,
         createdAt: { gte: since },
-        amount: { gt: 0 }, // ignore penalties for leaderboard
+        amount: { gt: 0 },
       },
       _sum: { amount: true },
       orderBy: { _sum: { amount: "desc" } },
       take: 30,
     });
-    const users = await prisma.user.findMany({
-      where: { id: { in: sums.map((s) => s.userId) } },
-      select: { id: true, name: true, email: true, image: true },
-    });
+    const topUserIds = sums.map((s) => s.userId);
+    const [members, users] = await Promise.all([
+      prisma.membership.findMany({
+        where: { communityId: community.id, userId: { in: topUserIds } },
+        select: { userId: true, tier: true, role: true },
+      }),
+      prisma.user.findMany({
+        where: { id: { in: topUserIds } },
+        select: { id: true, name: true, email: true, image: true },
+      }),
+    ]);
+    const memberMap = new Map(
+      members.map((m) => [m.userId, { tier: m.tier, role: m.role }])
+    );
     const userMap = new Map(users.map((u) => [u.id, u]));
     rows = sums
       .map((s) => {
