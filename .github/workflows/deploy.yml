@@ -95,10 +95,13 @@ jobs:
             done
 
             echo "=== Running database migrations ==="
-            # Mark baseline as applied if not yet done (idempotent — harmless if already applied)
-            docker compose exec -T app npx prisma migrate resolve --applied 0_initial 2>/dev/null || true
+            cd /opt/focus-camp/app
+            npm install --no-save prisma@6.19.3 2>/dev/null || true
+            # Mark baseline as applied if not yet done (idempotent)
+            npx prisma@6.19.3 migrate resolve --applied 0_initial 2>/dev/null || true
             # Run any pending migrations
-            docker compose exec -T app npx prisma migrate deploy
+            npx prisma@6.19.3 migrate deploy
+            cd /opt/focus-camp
 
             echo "=== Pruning old images ==="
             docker image prune -f
