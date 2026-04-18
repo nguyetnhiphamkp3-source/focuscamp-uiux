@@ -73,21 +73,33 @@ jobs:
             git fetch origin main
             git checkout main
             git pull origin main --ff-only
+
+            # Ensure REDIS_URL is in .env
+            grep -q "REDIS_URL" .env 2>/dev/null || echo 'REDIS_URL=redis://redis:6379' >> .env
+
+            # Copy docker-compose.yml to parent dir (where VPS runs compose from)
+            cp -f docker-compose.yml /opt/focus-camp/docker-compose.yml
+
             cd /opt/focus-camp
             echo "=== Pulling new image ==="
             docker compose pull app
-            echo "=== Recreating app container ==="
-            docker compose up -d --no-build
+            echo "=== Starting all services ==="
+            docker compose up -d
             echo "=== Waiting for app to be ready ==="
-            for i in $(seq 1 15); do
+            for i in $(seq 1 20); do
               if docker compose exec -T app wget -q -O /dev/null http://localhost:3000/api/health 2>/dev/null; then
                 echo "App is ready after ${i}s"
                 break
               fi
-              sleep 1
+              sleep 2
             done
-            echo "=== Running prisma migrate deploy ==="
-            docker compose exec -T app npx prisma@6.19.3 migrate deploy
+
+            echo "=== Running database migrations ==="
+            # Mark baseline as applied if not yet done (idempotent — harmless if already applied)
+            docker compose exec -T app npx prisma migrate resolve --applied 0_initial 2>/dev/null || true
+            # Run any pending migrations
+            docker compose exec -T app npx prisma migrate deploy
+
             echo "=== Pruning old images ==="
             docker image prune -f
             echo "=== Deploy complete ==="
