@@ -20,6 +20,11 @@ RUN pnpm prisma generate
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm build
 
+# ---- prisma CLI extract ----
+# Install prisma CLI in a clean layer so we can copy it to runner
+FROM node:20-alpine AS prisma-cli
+RUN npm install --prefix /prisma-cli prisma@6.19.3
+
 # ---- runner ----
 FROM node:20-alpine AS runner
 RUN apk add --no-cache openssl
@@ -39,8 +44,10 @@ COPY --from=builder /app/node_modules/.pnpm/@prisma+client*/node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
 COPY --from=builder /app/prisma ./prisma
 
-# Install prisma CLI in runner so migrate deploy works inside the container
-RUN npm install --no-save prisma@6.19.3
+# Copy prisma CLI from clean install
+COPY --from=prisma-cli /prisma-cli/node_modules/prisma ./node_modules/prisma
+COPY --from=prisma-cli /prisma-cli/node_modules/.bin/prisma ./node_modules/.bin/prisma
+COPY --from=prisma-cli /prisma-cli/node_modules/@prisma/engines ./node_modules/@prisma/engines
 
 USER nextjs
 EXPOSE 3000
