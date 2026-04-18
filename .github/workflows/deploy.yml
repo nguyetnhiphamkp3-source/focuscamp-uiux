@@ -95,13 +95,16 @@ jobs:
             done
 
             echo "=== Running database migrations ==="
-            cd /opt/focus-camp/app
-            npm install --no-save prisma@6.19.3 2>/dev/null || true
-            # Mark baseline as applied if not yet done (idempotent)
-            npx prisma@6.19.3 migrate resolve --applied 0_initial 2>/dev/null || true
-            # Run any pending migrations
-            npx prisma@6.19.3 migrate deploy
-            cd /opt/focus-camp
+            # Run migrations via a temporary container with full prisma CLI
+            docker run --rm --network focus-camp_default \
+              -v /opt/focus-camp/app/prisma:/app/prisma \
+              -e DATABASE_URL="$(grep DATABASE_URL /opt/focus-camp/app/.env | cut -d= -f2- | sed 's/localhost/db/g')" \
+              node:20-alpine sh -c "
+                npm install --prefix /tmp/prisma prisma@6.19.3 2>/dev/null
+                cd /app
+                /tmp/prisma/node_modules/.bin/prisma migrate resolve --applied 0_initial 2>/dev/null || true
+                /tmp/prisma/node_modules/.bin/prisma migrate deploy
+              "
 
             echo "=== Pruning old images ==="
             docker image prune -f
