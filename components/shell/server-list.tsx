@@ -16,22 +16,17 @@ export function ServerList({
       <div className="server-icon-wrapper">
         <Link
           href="/"
+          className="server-icon"
           title="Điểm tập kết — focus.camp"
           style={{
-            /* Matches other server icons for visual balance */
-            width: 48,
-            height: 48,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            background: "var(--white)",
             textDecoration: "none",
-            overflow: "hidden",
           }}
         >
           <span
             role="img"
             aria-label="Điểm tập kết"
-            style={{ fontSize: 28, lineHeight: 1, display: "block" }}
+            style={{ fontSize: 22, lineHeight: 1 }}
           >🔥</span>
         </Link>
       </div>
