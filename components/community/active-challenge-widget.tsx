@@ -126,7 +126,7 @@ export async function ActiveChallengeWidget({
             minWidth: 0,
             fontSize: "var(--text-sm)",
             fontWeight: "var(--fw-bold)",
-            color: "var(--text-heading)",
+            color: "#ffffff",
             lineHeight: "var(--lh-tight)",
             textDecoration: "none",
             overflow: "hidden",
@@ -143,7 +143,7 @@ export async function ActiveChallengeWidget({
       <div
         style={{
           fontSize: "var(--text-xs)",
-          color: "var(--text-muted)",
+          color: "#aaa",
           marginBottom: "var(--space-2)",
           display: "flex",
           gap: "var(--space-2)",
@@ -152,7 +152,7 @@ export async function ActiveChallengeWidget({
       >
         <span>
           Day{" "}
-          <strong style={{ color: "var(--text-heading)" }}>
+          <strong style={{ color: "#fff" }}>
             {active.currentDay}
           </strong>
           /{active.requiredDays}
@@ -160,7 +160,7 @@ export async function ActiveChallengeWidget({
         <span style={{ opacity: 0.4 }}>·</span>
         <span>
           🔥{" "}
-          <strong style={{ color: "var(--text-heading)" }}>
+          <strong style={{ color: "#fff" }}>
             {active.streak}
           </strong>
         </span>
@@ -170,7 +170,7 @@ export async function ActiveChallengeWidget({
       <div
         style={{
           height: 4,
-          background: "var(--bg-elevated)",
+          background: "#333",
           borderRadius: 2,
           overflow: "hidden",
           marginBottom: "var(--space-3)",
@@ -195,15 +195,12 @@ export async function ActiveChallengeWidget({
           padding: "6px 10px",
           borderRadius: "var(--r-md)",
           background: active.checkedInToday
-            ? "var(--bg-elevated)"
+            ? "#333"
             : "var(--brand-green)",
-          color: active.checkedInToday ? "var(--text-muted)" : "#fff",
+          color: active.checkedInToday ? "#aaa" : "#fff",
           fontSize: "var(--text-xs)",
           fontWeight: "var(--fw-bold)",
           textDecoration: "none",
-          border: active.checkedInToday
-            ? "1px solid var(--border-subtle)"
-            : "none",
         }}
       >
         {active.checkedInToday
@@ -219,10 +216,10 @@ function WidgetShell({ children }: { children: React.ReactNode }) {
     <div
       style={{
         padding: "var(--space-3)",
-        background: "var(--bg-elevated)",
+        background: "#1a1a1a",
         borderRadius: "var(--r-md)",
         margin: "var(--space-2) var(--space-3)",
-        border: "1px solid var(--border-subtle)",
+        color: "#e0e0e0",
       }}
     >
       {children}
