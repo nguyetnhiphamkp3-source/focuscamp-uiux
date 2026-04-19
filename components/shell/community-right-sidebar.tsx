@@ -1,4 +1,5 @@
 import { JoinButton } from "./join-button";
+import { CommunitySearchBar } from "./community-header";
 import { classByKey } from "@/lib/community-config";
 import type { ClassConfig } from "@/lib/community-config";
 
@@ -75,6 +76,7 @@ function GuestView({
           .join("")
           .toUpperCase()}
       </div>
+      <CommunitySearchBar name={community.name} />
       <div className="rs-body">
         <div className="rs-card">
           <div className="rs-community-name">{community.name}</div>
@@ -195,6 +197,7 @@ function MemberView({
           🏕️ Chào mừng trở lại!
         </div>
       </div>
+      <CommunitySearchBar name={community.name} />
       <div className="rs-body">
         <div className="rs-card">
           <div
