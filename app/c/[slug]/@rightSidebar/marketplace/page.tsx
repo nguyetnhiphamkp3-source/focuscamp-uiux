@@ -1,12 +1,4 @@
-import { DefaultRightSidebar } from "../_default-sidebar";
-
-export const dynamic = "force-dynamic";
-
-export default async function Page({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = await params;
-  return <DefaultRightSidebar slug={slug} />;
+// Hide right sidebar on marketplace — more space for products
+export default function MarketplaceSidebar() {
+  return null;
 }
