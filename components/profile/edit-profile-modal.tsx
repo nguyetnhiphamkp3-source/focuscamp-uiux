@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateProfileAction } from "@/app/actions/user";
+import { uploadImage } from "@/lib/upload-client";
+import { avatarColorFor, initials } from "@/lib/brand";
 
 export function EditProfileButton({
   initial,
@@ -13,6 +15,8 @@ export function EditProfileButton({
     handle: string | null;
     bio: string | null;
     location: string | null;
+    image: string | null;
+    userId: string;
   };
   communitySlug: string;
 }) {
@@ -22,8 +26,27 @@ export function EditProfileButton({
   const [handle, setHandle] = useState(initial.handle ?? "");
   const [bio, setBio] = useState(initial.bio ?? "");
   const [location, setLocation] = useState(initial.location ?? "");
+  const [image, setImage] = useState<string | null>(initial.image);
+  const [uploading, setUploading] = useState(false);
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setErr(null);
+    setUploading(true);
+    try {
+      const url = await uploadImage(file, "avatar");
+      setImage(url);
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : "upload_failed");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   function submit() {
     setErr(null);
@@ -33,6 +56,7 @@ export function EditProfileButton({
         handle: handle.trim() || undefined,
         bio: bio.trim() || undefined,
         location: location.trim() || undefined,
+        image: image ?? "",
         communitySlug,
       });
       if (res.ok) {
@@ -105,6 +129,91 @@ export function EditProfileButton({
                 overflowY: "auto",
               }}
             >
+              <Field label="Ảnh đại diện">
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  {image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={image}
+                      alt="avatar"
+                      referrerPolicy="no-referrer"
+                      style={{
+                        width: 72,
+                        height: 72,
+                        borderRadius: "50%",
+                        objectFit: "cover",
+                        border: "1px solid var(--border-subtle)",
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: 72,
+                        height: 72,
+                        borderRadius: "50%",
+                        background: avatarColorFor(initial.userId),
+                        color: "#fff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontWeight: 700,
+                        fontSize: "var(--text-lg)",
+                      }}
+                    >
+                      {initials(name || "U")}
+                    </div>
+                  )}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+                      onChange={onPickFile}
+                      style={{ display: "none" }}
+                    />
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading || pending}
+                        style={{
+                          padding: "8px 14px",
+                          borderRadius: 8,
+                          border: "1px solid var(--border-subtle)",
+                          background: "var(--bg-card)",
+                          color: "var(--interactive-normal)",
+                          cursor: uploading ? "not-allowed" : "pointer",
+                          fontSize: "var(--text-sm)",
+                        }}
+                      >
+                        {uploading ? "Đang tải…" : image ? "Đổi ảnh" : "Tải ảnh lên"}
+                      </button>
+                      {image && (
+                        <button
+                          type="button"
+                          onClick={() => setImage(null)}
+                          disabled={uploading || pending}
+                          style={{
+                            padding: "8px 14px",
+                            borderRadius: 8,
+                            border: "1px solid var(--border-subtle)",
+                            background: "transparent",
+                            color: "var(--text-muted)",
+                            cursor: "pointer",
+                            fontSize: "var(--text-sm)",
+                          }}
+                        >
+                          Xoá
+                        </button>
+                      )}
+                    </div>
+                    <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+                      JPG, PNG, WebP, GIF. Tối đa 2MB.
+                    </span>
+                  </div>
+                </div>
+              </Field>
+
               <Field label="Tên hiển thị">
                 <input
                   type="text"

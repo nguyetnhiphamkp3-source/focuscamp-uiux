@@ -13,16 +13,21 @@ export async function updateOwnProfile(input: {
   bio?: string;
   location?: string;
   handle?: string;
+  image?: string;
 }) {
   try {
+    const data: Prisma.UserUpdateInput = {
+      name: input.name?.trim() || null,
+      bio: input.bio?.trim() || null,
+      location: input.location?.trim() || null,
+      handle: input.handle?.trim().toLowerCase() || null,
+    };
+    if (input.image !== undefined) {
+      data.image = input.image.trim() || null;
+    }
     const updated = await prisma.user.update({
       where: { id: input.userId },
-      data: {
-        name: input.name?.trim() || null,
-        bio: input.bio?.trim() || null,
-        location: input.location?.trim() || null,
-        handle: input.handle?.trim().toLowerCase() || null,
-      },
+      data,
     });
     logger.info({ userId: input.userId }, "[user] profile updated");
     return updated;

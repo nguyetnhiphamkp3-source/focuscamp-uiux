@@ -179,6 +179,8 @@ export function ProfileHeader({
               handle: user.handle,
               bio: user.bio,
               location: user.location,
+              image: user.image,
+              userId: user.id,
             }}
             communitySlug={community.slug}
           />

@@ -13,6 +13,7 @@ export async function updateProfileAction(input: {
   bio?: string;
   location?: string;
   handle?: string;
+  image?: string;
   /** Community slug to revalidate the profile page under */
   communitySlug?: string;
 }): Promise<ActionResult> {
@@ -24,6 +25,7 @@ export async function updateProfileAction(input: {
     bio: input.bio,
     location: input.location,
     handle: input.handle,
+    image: input.image,
   });
   if (!parsed.success) {
     return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
@@ -36,6 +38,7 @@ export async function updateProfileAction(input: {
       bio: parsed.data.bio || undefined,
       location: parsed.data.location || undefined,
       handle: parsed.data.handle || undefined,
+      image: input.image,
     });
     if (input.communitySlug) {
       revalidatePath(`/c/${input.communitySlug}/profile`);

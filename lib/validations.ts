@@ -224,6 +224,7 @@ export const UpdateProfileSchema = z.object({
     .regex(/^[a-z0-9_-]+$/, "Handle chỉ gồm a-z, 0-9, -, _")
     .optional()
     .or(z.literal("")),
+  image: z.string().url().max(500).optional().or(z.literal("")),
 });
 
 /* ========== Auth ========== */
