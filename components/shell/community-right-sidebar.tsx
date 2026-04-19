@@ -1,8 +1,6 @@
 import { JoinButton } from "./join-button";
-import { BossWidget } from "./pixel-wolf";
 import { classByKey } from "@/lib/community-config";
 import type { ClassConfig } from "@/lib/community-config";
-import type { BossState } from "@/lib/services/community-boss";
 
 type Community = {
   id: string;
@@ -25,13 +23,12 @@ export async function CommunityRightSidebar({
   community,
   membership,
   classes,
-  boss,
 }: {
   community: Community;
   membership: Membership;
   isLoggedIn: boolean;
   classes: ClassConfig[];
-  boss: BossState;
+  boss?: unknown;
 }) {
   return (
     <aside className="right-sidebar" id="rightSidebar">
@@ -44,14 +41,6 @@ export async function CommunityRightSidebar({
       ) : (
         <GuestView community={community} classes={classes} />
       )}
-      <BossWidget
-        name={boss.name}
-        tagline={boss.tagline}
-        hpPct={boss.hpPct}
-        currentHp={boss.currentHp}
-        maxHp={boss.maxHp}
-        defeated={boss.defeated}
-      />
     </aside>
   );
 }

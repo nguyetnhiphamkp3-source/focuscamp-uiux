@@ -7,7 +7,7 @@ import { UserPanel } from "@/components/shell/user-panel";
 import { KeyboardShortcuts } from "@/components/shell/keyboard-shortcuts";
 import { ShortcutSheet } from "@/components/shell/shortcut-sheet";
 import { CommunityHeader } from "@/components/shell/community-header";
-import { ActiveChallengeWidget } from "@/components/community/active-challenge-widget";
+import { BossChallengeCard } from "@/components/community/boss-challenge-card";
 
 export const dynamic = "force-dynamic";
 
@@ -62,8 +62,8 @@ export default async function CommunityLayout({
               isMember={!!membership}
             />
 
-            {/* Active challenge widget — top of sidebar */}
-            <ActiveChallengeWidget
+            {/* Boss + Challenge combined card */}
+            <BossChallengeCard
               userId={session?.user?.id ?? null}
               communityId={community.id}
               communitySlug={slug}
