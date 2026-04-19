@@ -77,23 +77,24 @@ export async function BossChallengeCard({
           </div>
         </div>
 
-        {/* Boss name */}
+        {/* Boss name + HP on same row */}
         <div
           style={{
-            fontSize: "var(--text-sm)",
-            fontWeight: 700,
-            color: "#fff",
-            marginBottom: 2,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 4,
           }}
         >
-          {boss.name}
+          <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "#fff" }}>
+            {boss.name}
+          </span>
+          <span style={{ fontSize: 10, color: "#888" }}>
+            {boss.defeated ? "💀 Đã hạ" : `HP ${boss.currentHp}/${boss.maxHp}`}
+          </span>
         </div>
 
-        {boss.defeated ? (
-          <div style={{ fontSize: "var(--text-xs)", color: "#aaa" }}>
-            💀 Đã bị hạ
-          </div>
-        ) : (
+        {!boss.defeated && (
           <>
             {/* HP bar */}
             <div
@@ -102,7 +103,6 @@ export async function BossChallengeCard({
                 background: "#333",
                 borderRadius: 3,
                 overflow: "hidden",
-                margin: "6px 0 4px",
               }}
             >
               <div
@@ -113,9 +113,6 @@ export async function BossChallengeCard({
                   transition: "width 0.5s ease",
                 }}
               />
-            </div>
-            <div style={{ fontSize: 10, color: "#888" }}>
-              HP {boss.currentHp}/{boss.maxHp}
             </div>
           </>
         )}
