@@ -5202,11 +5202,7 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
 }
 .boss-tagline-defeated { color: var(--danger); font-weight: 700; font-style: normal; }
 .boss-scene {
-  /* Shrink scene — wolf is 98px wide (14 × 7px) but shadow adds width.
-     Set scene height to match smaller wolf post-scale. */
-  height: 56px;
-  transform: scale(0.7);
-  transform-origin: center bottom;
+  height: 70px;
   margin: -8px 0 -8px;
 }
 .wolf-wrap-defeated {
@@ -5259,8 +5255,8 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
 .wolf {
   image-rendering: pixelated;
   display: grid;
-  grid-template-columns: repeat(14, 7px);
-  grid-template-rows: repeat(12, 7px);
+  grid-template-columns: repeat(16, 5px);
+  grid-template-rows: repeat(13, 5px);
   gap: 0;
   animation: wolf-bob 0.4s steps(1) infinite;
 }
@@ -5270,7 +5266,7 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
   50% { margin-bottom: 2px; }
 }
 
-.wolf .px { width: 7px; height: 7px; }
+.wolf .px { width: 5px; height: 5px; }
 .wolf .px-t  { background: transparent; }
 .wolf .px-dg { background: #3A3550; }
 .wolf .px-g  { background: #5C5878; }

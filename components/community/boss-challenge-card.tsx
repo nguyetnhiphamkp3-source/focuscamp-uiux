@@ -280,30 +280,33 @@ export async function BossChallengeCard({
   );
 }
 
-/* ===== Pixel wolf data (from pixel-wolf.tsx) ===== */
+/* ===== Pixel wolf data — 16x14 side-view wolf ===== */
 
 const CODE_TO_CLASS: Record<string, string> = {
-  ".": "px-t",
-  D: "px-dg",
-  G: "px-g",
-  L: "px-lg",
-  W: "px-wh",
-  K: "px-bl",
-  R: "px-rd",
-  Y: "px-yw",
+  ".": "px-t",   // transparent
+  D: "px-dg",    // dark gray (outline)
+  G: "px-g",     // gray (body)
+  L: "px-lg",    // light gray (belly)
+  W: "px-wh",    // white (teeth, eye highlight)
+  K: "px-bl",    // black (nose, claws)
+  R: "px-rd",    // red (eye, tongue)
+  Y: "px-yw",    // yellow (eye)
 };
 
+// Side-view wolf: pointed ears, long snout, bushy tail, legs
+// 16 columns x 14 rows
 const WOLF_ROWS = [
-  "..DD...DD.....",
-  ".DGGD.DGD.....",
-  ".DGGGDGGGD....",
-  ".GRYGGGRYGD...",
-  ".GGGGWGGGGD...",
-  "..GWWKWWG.....",
-  ".DGGDDDGDDDD..",
-  ".DLGGGGGGGGDD.",
-  ".DGGWWWWGGGGD.",
-  "..DG..DG.GD...",
-  "..DD..DD.DD...",
-  "..KK..KK.KK...",
+  "....DDD.....D...",  // tail tip + ear
+  "...DGGDD...DGD..",  // tail + ear
+  "..DGGGGGDDDGGD..",  // tail connects to body + head
+  "..DGGGGGGGGGGD..",  // body + head
+  ".DGGGGGGGGRYGD..",  // body + eye (R=red, Y=yellow)
+  ".DGGGGGGGGGGKD..",  // body + snout + nose(K)
+  ".DLLLGGGGGGWWD..",  // belly(L) + teeth(W)
+  ".DGGGGGGGGGRD...",  // body + tongue(R)
+  "..DGGGGGGGGD....",  // body
+  "..DGDGGDDGD.....",  // legs separating
+  "..DGD.GD.DGD....",  // legs
+  "..DKD.DK..DKD...",  // paws(K)
+  "...D...D...D....",  // ground contact
 ];
