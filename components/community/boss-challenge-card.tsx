@@ -28,12 +28,7 @@ export async function BossChallengeCard({
   ]);
 
   const hpPct = Math.max(0, Math.min(1, boss.hpPct));
-  const hpBarColor =
-    hpPct > 0.5
-      ? "#da373c"
-      : hpPct > 0.2
-        ? "#f0b232"
-        : "#248046";
+  const hpBarColor = "#9b59b6";
 
   return (
     <div
