@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { checkinAction } from "@/app/actions/checkin";
+import { ImageUploadField } from "@/components/shared/image-upload-field";
 
 interface TodayTask {
   id: string;
@@ -290,7 +291,7 @@ export function CheckinForm({
           </div>
         )}
 
-        {/* Evidence: Image URL */}
+        {/* Evidence: Image upload */}
         {needsImage && (
           <div>
             <label
@@ -304,40 +305,17 @@ export function CheckinForm({
                 marginBottom: "var(--space-2)",
               }}
             >
-              {task?.evidenceLabel || "Ảnh chứng cứ (URL)"}{" "}
+              {task?.evidenceLabel || "Ảnh chứng cứ"}{" "}
               <span style={{ color: "var(--danger)" }}>*</span>
             </label>
-            <input
-              type="url"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="https://… (upload lên imgur/s3 rồi paste link)"
-              style={{
-                width: "100%",
-                padding: "10px 12px",
-                border: "1px solid var(--border-subtle)",
-                borderRadius: "var(--r-md)",
-                background: "var(--bg-elevated)",
-                fontSize: "var(--text-sm)",
-                color: "var(--text-normal)",
-                fontFamily: "inherit",
-                outline: "none",
-              }}
+            <ImageUploadField
+              value={imageUrl || null}
+              onChange={(url) => setImageUrl(url ?? "")}
+              context="checkin"
+              shape="banner"
+              disabled={pending}
+              maxSizeNote="Tối đa 10MB"
             />
-            {imageUrl && imageOk && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={imageUrl}
-                alt="preview"
-                style={{
-                  marginTop: "var(--space-2)",
-                  maxWidth: "100%",
-                  maxHeight: 200,
-                  borderRadius: "var(--r-md)",
-                  border: "1px solid var(--border-subtle)",
-                }}
-              />
-            )}
           </div>
         )}
 

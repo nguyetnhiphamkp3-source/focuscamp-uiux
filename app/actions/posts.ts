@@ -32,6 +32,7 @@ export async function createPostAction(input: {
   body: string;
   pillar?: string;
   bountyAip?: number;
+  imageUrl?: string;
 }): Promise<ActionResult<{ postId: string }>> {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
@@ -43,6 +44,7 @@ export async function createPostAction(input: {
     body: input.body,
     pillar: input.pillar,
     bountyAip: input.bountyAip,
+    imageUrl: input.imageUrl,
   });
   if (!parsed.success) {
     return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
@@ -57,6 +59,7 @@ export async function createPostAction(input: {
       body: parsed.data.body,
       pillar: parsed.data.pillar || undefined,
       bountyAip: parsed.data.bountyAip,
+      imageUrl: parsed.data.imageUrl || undefined,
     });
     // Revalidate all feed-like views (feed / cot / qa / signals) for the community
     revalidatePath(`/c/${input.communitySlug}/feed`);

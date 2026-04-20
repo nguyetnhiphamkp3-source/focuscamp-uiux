@@ -152,6 +152,7 @@ export const CreatePostSchema = z.object({
     .optional()
     .or(z.literal("")),
   bountyAip: z.number().int().nonnegative().optional(),
+  imageUrl: z.string().url().max(500).optional().or(z.literal("")),
 });
 
 export const ReactPostSchema = z.object({

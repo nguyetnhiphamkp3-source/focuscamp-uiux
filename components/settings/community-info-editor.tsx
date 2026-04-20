@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateCommunityInfoAction } from "@/app/actions/community";
+import { ImageUploadField } from "@/components/shared/image-upload-field";
 import {
   inputStyle,
   btnPrimary,
@@ -113,33 +114,33 @@ export function CommunityInfoEditor({
           />
         </label>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
-              Banner URL
+              Banner (1600×600 khuyến nghị)
             </span>
-            <input
-              type="url"
-              value={bannerUrl}
-              onChange={(e) => setBannerUrl(e.target.value)}
+            <ImageUploadField
+              value={bannerUrl || null}
+              onChange={(url) => setBannerUrl(url ?? "")}
+              context="community"
+              shape="banner"
               disabled={disabled || pending}
-              placeholder="https://..."
-              style={inputStyle}
+              maxSizeNote="Tối đa 5MB"
             />
-          </label>
-          <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
-              Icon URL
+              Icon (vuông, 256×256)
             </span>
-            <input
-              type="url"
-              value={iconUrl}
-              onChange={(e) => setIconUrl(e.target.value)}
+            <ImageUploadField
+              value={iconUrl || null}
+              onChange={(url) => setIconUrl(url ?? "")}
+              context="community"
+              shape="square"
               disabled={disabled || pending}
-              placeholder="https://..."
-              style={inputStyle}
+              maxSizeNote="Tối đa 5MB"
             />
-          </label>
+          </div>
         </div>
       </div>
 

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createPostAction } from "@/app/actions/posts";
 import { avatarColorFor, initials } from "@/lib/brand";
+import { ImageUploadField } from "@/components/shared/image-upload-field";
 import type { PillarConfig } from "@/lib/community-config";
 
 export function PostComposer({
@@ -31,6 +32,7 @@ export function PostComposer({
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [pillar, setPillar] = useState<string>("");
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -42,6 +44,7 @@ export function PostComposer({
     setTitle("");
     setBody("");
     setPillar("");
+    setImageUrl(null);
     setExpanded(false);
     setError(null);
   }
@@ -57,6 +60,7 @@ export function PostComposer({
         title: title.trim() || undefined,
         body: body.trim(),
         pillar: pillar || undefined,
+        imageUrl: imageUrl || undefined,
       });
       if (res.ok) {
         reset();
@@ -135,6 +139,15 @@ export function PostComposer({
             disabled={pending}
             autoFocus
             style={{ resize: "vertical", minHeight: 96, fontFamily: "inherit" }}
+          />
+          <ImageUploadField
+            value={imageUrl}
+            onChange={setImageUrl}
+            context="post"
+            shape="banner"
+            disabled={pending}
+            maxSizeNote="Tối đa 10MB"
+            placeholder="Ảnh kèm (tuỳ chọn)"
           />
         </div>
       </div>

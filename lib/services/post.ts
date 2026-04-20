@@ -119,6 +119,7 @@ export async function listFeed(params: {
     isPinned: p.isPinned,
     isCot: p.isCot,
     bountyAip: p.bountyAip,
+    imageUrl: p.imageUrl,
     createdAt: p.createdAt,
     user: p.user,
     commentCount: p._count.comments,
@@ -212,8 +213,9 @@ export async function createPost(input: {
   body: string;
   pillar?: string;
   bountyAip?: number;
+  imageUrl?: string;
 }) {
-  const { userId, communityId, type = "POST", title, body, pillar, bountyAip } = input;
+  const { userId, communityId, type = "POST", title, body, pillar, bountyAip, imageUrl } = input;
 
   // Membership check (+ load community config to validate pillar)
   const [membership, community] = await Promise.all([
@@ -244,6 +246,7 @@ export async function createPost(input: {
       body: body.trim(),
       pillar: validatedPillar,
       bountyAip: bountyAip ?? null,
+      imageUrl: imageUrl?.trim() || null,
     },
   });
   logger.info({ postId: post.id, userId, type }, "[post] created");

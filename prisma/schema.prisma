@@ -413,6 +413,7 @@ model Post {
   isCot         Boolean   @default(false)
   cotApprovedAt DateTime?
   bountyAip     Int?
+  imageUrl      String?
   viewCount     Int       @default(0)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

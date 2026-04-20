@@ -136,6 +136,23 @@ export function PostCard({
       <div className="feed-post-body" style={{ whiteSpace: "pre-wrap" }}>
         {post.body}
       </div>
+      {post.imageUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={post.imageUrl}
+          alt=""
+          referrerPolicy="no-referrer"
+          style={{
+            marginTop: 10,
+            maxWidth: "100%",
+            maxHeight: 480,
+            borderRadius: 8,
+            border: "1px solid var(--border-subtle)",
+            objectFit: "cover",
+            display: "block",
+          }}
+        />
+      )}
       <LinkPreview body={post.body} />
 
       <div className="feed-post-actions">
