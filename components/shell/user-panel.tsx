@@ -36,7 +36,6 @@ export function UserPanel({
       <div className="user-panel-info">
         <div className="user-panel-name">{displayName}</div>
         <div className="user-panel-status-text">
-          <span className="in-voice-dot"></span>
           {subtitle || (user ? "Online" : "Guest")}
         </div>
       </div>

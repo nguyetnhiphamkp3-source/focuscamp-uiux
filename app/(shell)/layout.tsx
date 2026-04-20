@@ -38,7 +38,12 @@ export default async function ShellLayout({
           <ServerList communities={myCommunities} />
           <HomeSidebar notifUnread={notifUnread} />
         </div>
-        <UserPanel user={session?.user} />
+        <UserPanel
+          user={session?.user}
+          profileHref={
+            session?.user?.id ? `/u/${session.user.id}` : undefined
+          }
+        />
       </div>
       <main className="main-content">{children}</main>
       <KeyboardShortcuts />
