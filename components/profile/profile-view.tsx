@@ -10,6 +10,7 @@ import { ProfileStats } from "./profile-stats";
 import { ProfileHeatmap } from "./profile-heatmap";
 import { ProfileCommunityList } from "./profile-community-list";
 import { ProfileRecentPosts } from "./profile-recent-posts";
+import { toSlug } from "@/lib/brand";
 
 type Community = { name: string; slug: string };
 
@@ -121,8 +122,7 @@ export function ProfileView({
   followerCount?: number;
   followingCount?: number;
 }) {
-  const handle =
-    user.handle || user.name?.toLowerCase().replace(/\s+/g, "") || "user";
+  const handle = user.handle || (user.name ? toSlug(user.name) : "user");
 
   return (
     <>

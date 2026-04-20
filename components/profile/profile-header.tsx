@@ -2,6 +2,7 @@ import {
   avatarColorFor,
   initials,
   fmtRelativeTime,
+  toSlug,
 } from "@/lib/brand";
 import { EditProfileButton } from "./edit-profile-modal";
 import { FollowButton } from "./follow-button";
@@ -67,8 +68,7 @@ export function ProfileHeader({
   followingCount: number;
 }) {
   const name = user.name || "Ẩn danh";
-  const handle =
-    user.handle || user.name?.toLowerCase().replace(/\s+/g, "") || "user";
+  const handle = user.handle || (user.name ? toSlug(user.name) : "user");
   const myClass = classByKey(membership?.className, classes);
   const tier = membership ? tierForLevel(membership.level, levelTiers) : null;
 
@@ -93,7 +93,18 @@ export function ProfileHeader({
       )}
       <div className="pf-identity">
         <div className="pf-name-row">
-          <span className="pf-name">{name}</span>
+          <span
+            className="pf-name"
+            style={{
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              maxWidth: "100%",
+            }}
+            title={name}
+          >
+            {name}
+          </span>
           <span className="pf-handle">@{handle}</span>
         </div>
         <div className="pf-bio">
@@ -108,7 +119,7 @@ export function ProfileHeader({
             gap: 8,
             alignItems: "center",
             flexWrap: "wrap",
-            marginTop: 6,
+            marginTop: 8,
             fontSize: "var(--text-sm)",
             color: "var(--text-muted)",
           }}
@@ -142,30 +153,36 @@ export function ProfileHeader({
             </span>
           )}
           {user.location && <span>📍 {user.location}</span>}
-          {latestActivityAt ? (
-            <span>● Active {fmtRelativeTime(latestActivityAt)}</span>
-          ) : (
-            <span>● Chưa hoạt động ở {community.name}</span>
-          )}
+        </div>
+        <div
+          style={{
+            display: "flex",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+            marginTop: 6,
+            fontSize: "var(--text-sm)",
+            color: "var(--text-muted)",
+          }}
+        >
           <span>
-            · Tham gia focus.camp {fmtRelativeTime(user.createdAt)}
-          </span>
-          {membership && (
-            <span>
-              · Vào {community.name} {fmtRelativeTime(membership.joinedAt)}
-            </span>
-          )}
-          <span>
-            ·{" "}
             <strong style={{ color: "var(--header-primary)" }}>
               {followerCount}
             </strong>{" "}
-            followers ·{" "}
+            followers
+          </span>
+          <span>
             <strong style={{ color: "var(--header-primary)" }}>
               {followingCount}
             </strong>{" "}
             following
           </span>
+          {latestActivityAt ? (
+            <span>● Active {fmtRelativeTime(latestActivityAt)}</span>
+          ) : (
+            <span>● Chưa hoạt động</span>
+          )}
+          <span>Tham gia {fmtRelativeTime(user.createdAt)}</span>
         </div>
       </div>
       {isSelf ? (
