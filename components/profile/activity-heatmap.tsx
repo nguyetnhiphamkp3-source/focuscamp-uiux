@@ -137,66 +137,100 @@ export function ActivityHeatmap({
         <div
           style={{
             display: "inline-flex",
-            flexDirection: "column",
-            gap: 3,
+            alignItems: "flex-start",
+            gap: 6,
           }}
         >
-          {/* Month labels row */}
+          {/* Weekday labels column — aligned with grid rows, offset by month header */}
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: `repeat(${weeks.length}, 12px)`,
+              gridTemplateRows: "repeat(7, 12px)",
               gap: 3,
-              height: 14,
+              marginTop: 14 + 3, // month labels row height + gap
               fontSize: 10,
               color: "var(--text-muted)",
-              position: "relative",
             }}
           >
-            {monthTicks.map((t) => (
+            {["", "Mon", "", "Wed", "", "Fri", ""].map((label, i) => (
               <span
-                key={t.col}
+                key={i}
                 style={{
-                  gridColumn: t.col + 1,
-                  whiteSpace: "nowrap",
+                  height: 12,
+                  lineHeight: "12px",
+                  paddingRight: 2,
                 }}
               >
-                {t.label}
+                {label}
               </span>
             ))}
           </div>
 
-          {/* Grid */}
+          {/* Right side: month row + grid stacked */}
           <div
             style={{
-              display: "grid",
-              gridTemplateColumns: `repeat(${weeks.length}, 12px)`,
-              gridTemplateRows: "repeat(7, 12px)",
-              gridAutoFlow: "column",
+              display: "inline-flex",
+              flexDirection: "column",
               gap: 3,
             }}
           >
-            {weeks.flatMap((week, colIdx) =>
-              week.map((day, rowIdx) =>
-                day ? (
-                  <div
-                    key={`${colIdx}-${rowIdx}`}
-                    title={`${day.date}: ${day.count} hoạt động`}
-                    style={{
-                      width: 12,
-                      height: 12,
-                      background: LEVEL_COLORS[level(day.count)],
-                      borderRadius: 2,
-                    }}
-                  />
-                ) : (
-                  <div
-                    key={`${colIdx}-${rowIdx}-empty`}
-                    style={{ width: 12, height: 12 }}
-                  />
+            {/* Month labels row */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: `repeat(${weeks.length}, 12px)`,
+                gap: 3,
+                height: 14,
+                fontSize: 10,
+                color: "var(--text-muted)",
+                position: "relative",
+              }}
+            >
+              {monthTicks.map((t) => (
+                <span
+                  key={t.col}
+                  style={{
+                    gridColumn: t.col + 1,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {t.label}
+                </span>
+              ))}
+            </div>
+
+            {/* Grid */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: `repeat(${weeks.length}, 12px)`,
+                gridTemplateRows: "repeat(7, 12px)",
+                gridAutoFlow: "column",
+                gap: 3,
+              }}
+            >
+              {weeks.flatMap((week, colIdx) =>
+                week.map((day, rowIdx) =>
+                  day ? (
+                    <div
+                      key={`${colIdx}-${rowIdx}`}
+                      title={`${day.date}: ${day.count} hoạt động`}
+                      style={{
+                        width: 12,
+                        height: 12,
+                        background: LEVEL_COLORS[level(day.count)],
+                        borderRadius: 2,
+                      }}
+                    />
+                  ) : (
+                    <div
+                      key={`${colIdx}-${rowIdx}-empty`}
+                      style={{ width: 12, height: 12 }}
+                    />
+                  )
                 )
-              )
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
