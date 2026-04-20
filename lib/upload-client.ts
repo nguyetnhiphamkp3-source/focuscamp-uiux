@@ -12,15 +12,20 @@ export async function uploadImage(
   file: File,
   context: UploadContext,
 ): Promise<string> {
-  const presignRes = await fetch("/api/upload", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      fileName: file.name,
-      contentType: file.type,
-      context,
-    }),
-  });
+  let presignRes: Response;
+  try {
+    presignRes = await fetch("/api/upload", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        fileName: file.name,
+        contentType: file.type,
+        context,
+      }),
+    });
+  } catch {
+    throw new Error("Không gọi được /api/upload (server lỗi?)");
+  }
 
   if (!presignRes.ok) {
     const err = await presignRes.json().catch(() => ({}));
@@ -40,14 +45,21 @@ export async function uploadImage(
     );
   }
 
-  const putRes = await fetch(uploadUrl, {
-    method: "PUT",
-    headers: { "content-type": file.type },
-    body: file,
-  });
+  let putRes: Response;
+  try {
+    putRes = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: { "content-type": file.type },
+      body: file,
+    });
+  } catch {
+    throw new Error(
+      "CORS block — vào Cloudflare R2 → bucket → Settings → CORS Policy, add PUT từ focus.camp",
+    );
+  }
 
   if (!putRes.ok) {
-    throw new Error(`upload_failed_${putRes.status}`);
+    throw new Error(`R2 từ chối upload (HTTP ${putRes.status})`);
   }
 
   return publicUrl;
