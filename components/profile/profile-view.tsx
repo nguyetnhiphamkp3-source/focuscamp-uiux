@@ -133,7 +133,6 @@ export function ProfileView({
         </span>
       </header>
       <div className="pf-view">
-        <div className="pf-banner"></div>
         <div className="pf-inner">
           <ProfileHeader
             community={community}
