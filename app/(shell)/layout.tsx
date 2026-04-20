@@ -18,17 +18,23 @@ export default async function ShellLayout({
 
   let myCommunities: { id: string; slug: string; name: string }[] = [];
   let notifUnread = 0;
+  let freshUser: { id: string; name: string | null; email: string | null; image: string | null } | null = null;
   if (session?.user?.id) {
-    const [mems, n] = await Promise.all([
+    const [mems, n, u] = await Promise.all([
       prisma.membership.findMany({
         where: { userId: session.user.id },
         include: { community: { select: { id: true, slug: true, name: true } } },
         orderBy: { joinedAt: "asc" },
       }),
       unreadCount(session.user.id),
+      prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { id: true, name: true, email: true, image: true },
+      }),
     ]);
     myCommunities = mems.map((m) => m.community);
     notifUnread = n;
+    freshUser = u;
   }
 
   return (
@@ -39,7 +45,7 @@ export default async function ShellLayout({
           <HomeSidebar notifUnread={notifUnread} />
         </div>
         <UserPanel
-          user={session?.user}
+          user={freshUser ?? session?.user}
           profileHref={
             session?.user?.id ? `/u/${session.user.id}` : undefined
           }

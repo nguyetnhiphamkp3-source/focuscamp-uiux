@@ -30,21 +30,31 @@ export default async function CommunityLayout({
 
   let membership = null;
   let myCommunities: { id: string; slug: string; name: string }[] = [];
+  let freshUser: { id: string; name: string | null; email: string | null; image: string | null } | null = null;
   if (session?.user?.id) {
-    membership = await prisma.membership.findUnique({
-      where: {
-        userId_communityId: { userId: session.user.id, communityId: community.id },
-      },
-    });
-    const mems = await prisma.membership.findMany({
-      where: { userId: session.user.id },
-      include: { community: { select: { id: true, slug: true, name: true } } },
-      orderBy: { joinedAt: "asc" },
-    });
-    myCommunities = mems.map((m) => m.community);
+    [membership, , freshUser] = await Promise.all([
+      prisma.membership.findUnique({
+        where: {
+          userId_communityId: { userId: session.user.id, communityId: community.id },
+        },
+      }),
+      prisma.membership
+        .findMany({
+          where: { userId: session.user.id },
+          include: { community: { select: { id: true, slug: true, name: true } } },
+          orderBy: { joinedAt: "asc" },
+        })
+        .then((mems) => {
+          myCommunities = mems.map((m) => m.community);
+        }),
+      prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { id: true, name: true, email: true, image: true },
+      }),
+    ]);
   }
 
-  const user = session?.user;
+  const user = freshUser ?? session?.user;
 
   return (
     <div className="community-shell">
