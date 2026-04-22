@@ -293,7 +293,14 @@ export default async function ChallengeDetailPage({
           )}
 
           <div className="ch-detail-header">
-            <div className={`ch-detail-banner ${diffClass(challenge.difficulty)}`}>
+            <div
+              className={`ch-detail-banner ${diffClass(challenge.difficulty)}`}
+              style={
+                challenge.bannerUrl
+                  ? ({ ["--bg-img" as string]: `url("${challenge.bannerUrl}")` } as React.CSSProperties)
+                  : undefined
+              }
+            >
               <div
                 className="ch-diff-badge"
                 style={{ position: "absolute", top: 14, left: 14 }}

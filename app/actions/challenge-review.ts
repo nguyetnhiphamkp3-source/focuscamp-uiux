@@ -309,6 +309,7 @@ export async function createChallengeAction(input: {
   difficulty?: "NORMAL" | "HARD" | "CHAOS";
   requiredDays?: number;
   requiresApproval?: boolean;
+  bannerUrl?: string;
 }): Promise<
   | { ok: true; slug: string }
   | { ok: false; reason: string }
@@ -323,6 +324,7 @@ export async function createChallengeAction(input: {
     difficulty: input.difficulty,
     requiredDays: input.requiredDays,
     requiresApproval: input.requiresApproval,
+    bannerUrl: input.bannerUrl,
   });
   if (!parsed.success) {
     return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
@@ -337,6 +339,7 @@ export async function createChallengeAction(input: {
       difficulty: parsed.data.difficulty,
       requiredDays: parsed.data.requiredDays,
       requiresApproval: parsed.data.requiresApproval,
+      bannerUrl: parsed.data.bannerUrl || undefined,
     });
     revalidatePath(`/c/${input.communitySlug}/challenges`);
     return { ok: true, slug: ch.slug };

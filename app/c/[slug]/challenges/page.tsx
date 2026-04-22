@@ -484,6 +484,7 @@ function ChallengeCard({
     description: string | null;
     difficulty: string;
     requiredDays: number;
+    bannerUrl?: string | null;
     _count: { members: number };
   };
   cta?: string;
@@ -494,7 +495,14 @@ function ChallengeCard({
       className="ch-card"
       style={{ textDecoration: "none", color: "inherit" }}
     >
-      <div className={`ch-card-banner ${diffClass(challenge.difficulty)}`}>
+      <div
+        className={`ch-card-banner ${diffClass(challenge.difficulty)}`}
+        style={
+          challenge.bannerUrl
+            ? ({ ["--bg-img" as string]: `url("${challenge.bannerUrl}")` } as React.CSSProperties)
+            : undefined
+        }
+      >
         <span className="ch-diff-badge">{diffLabel(challenge.difficulty)}</span>
         <div className="ch-card-banner-title">{challenge.title}</div>
       </div>

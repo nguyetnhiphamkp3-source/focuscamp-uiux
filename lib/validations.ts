@@ -72,6 +72,7 @@ export const CreateChallengeSchema = z.object({
   difficulty: z.enum(["NORMAL", "HARD", "CHAOS"]).optional(),
   requiredDays: z.number().int().positive().max(365).optional(),
   requiresApproval: z.boolean().optional(),
+  bannerUrl: z.string().url().max(500).optional().or(z.literal("")),
 });
 
 export const CreateChallengeTaskSchema = z.object({

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createChallengeAction } from "@/app/actions/challenge-review";
 import { toSlug } from "@/lib/brand";
+import { ImageUploadField } from "@/components/shared/image-upload-field";
 
 export function CreateChallengeButton({
   communityId,
@@ -23,6 +24,7 @@ export function CreateChallengeButton({
   );
   const [requiredDays, setRequiredDays] = useState("21");
   const [requiresApproval, setRequiresApproval] = useState(false);
+  const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
 
@@ -45,6 +47,7 @@ export function CreateChallengeButton({
         difficulty,
         requiredDays: parseInt(requiredDays, 10) || 21,
         requiresApproval,
+        bannerUrl: bannerUrl || undefined,
       });
       if (res.ok) {
         setOpen(false);
@@ -169,6 +172,18 @@ export function CreateChallengeButton({
                   disabled={pending}
                   style={{ ...inputStyle, resize: "vertical", fontFamily: "inherit" }}
                   placeholder="Challenge làm gì, dành cho ai, kết quả mong đợi..."
+                />
+              </Field>
+
+              <Field label="Banner (tuỳ chọn)">
+                <ImageUploadField
+                  value={bannerUrl}
+                  onChange={setBannerUrl}
+                  context="community"
+                  shape="banner"
+                  disabled={pending}
+                  maxSizeNote="Tối đa 5MB"
+                  placeholder="Chưa có banner — dùng gradient"
                 />
               </Field>
 

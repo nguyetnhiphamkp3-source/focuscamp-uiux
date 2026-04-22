@@ -386,6 +386,7 @@ export async function createChallenge(input: {
   difficulty?: string;
   requiredDays?: number;
   requiresApproval?: boolean;
+  bannerUrl?: string;
 }) {
   await assertCommunityOwner(input.userId, input.communityId);
   const existing = await prisma.challenge.findFirst({
@@ -404,6 +405,7 @@ export async function createChallenge(input: {
       difficulty: input.difficulty || "NORMAL",
       requiredDays: input.requiredDays ?? 21,
       requiresApproval: input.requiresApproval ?? false,
+      bannerUrl: input.bannerUrl?.trim() || null,
       leaderId: input.userId,
       status: "OPEN",
     },
