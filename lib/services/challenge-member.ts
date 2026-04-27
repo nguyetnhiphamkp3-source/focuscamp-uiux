@@ -426,6 +426,7 @@ export async function updateChallengeSettings(input: {
   freezeFromDay?: number | null;
   freezeStartsAt?: string | null;
   freezeEndsAt?: string | null;
+  bannerUrl?: string | null;
 }) {
   const ch = await assertChallengeAdmin(input.userId, input.challengeId);
   await prisma.challenge.update({
@@ -454,6 +455,9 @@ export async function updateChallengeSettings(input: {
               ? new Date(input.freezeEndsAt)
               : null,
           }
+        : {}),
+      ...(input.bannerUrl !== undefined
+        ? { bannerUrl: input.bannerUrl?.trim() || null }
         : {}),
     },
   });

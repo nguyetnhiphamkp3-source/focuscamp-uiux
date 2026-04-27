@@ -187,6 +187,7 @@ export async function updateChallengeSettingsAction(input: {
   freezeFromDay?: number | null;
   freezeStartsAt?: string | null;
   freezeEndsAt?: string | null;
+  bannerUrl?: string | null;
   communitySlug: string;
   challengeSlug: string;
 }): Promise<ActionResult> {
@@ -200,6 +201,7 @@ export async function updateChallengeSettingsAction(input: {
     freezeFromDay: input.freezeFromDay,
     freezeStartsAt: input.freezeStartsAt,
     freezeEndsAt: input.freezeEndsAt,
+    bannerUrl: input.bannerUrl,
   });
   if (!parsed.success) {
     return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
@@ -214,6 +216,7 @@ export async function updateChallengeSettingsAction(input: {
       freezeFromDay: parsed.data.freezeFromDay ?? undefined,
       freezeStartsAt: parsed.data.freezeStartsAt || null,
       freezeEndsAt: parsed.data.freezeEndsAt || null,
+      bannerUrl: parsed.data.bannerUrl === undefined ? undefined : parsed.data.bannerUrl || null,
     });
     bumpChallenge(input.communitySlug, input.challengeSlug);
     return { ok: true };

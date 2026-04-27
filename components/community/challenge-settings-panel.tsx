@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateChallengeSettingsAction } from "@/app/actions/challenge-review";
+import { ImageUploadField } from "@/components/shared/image-upload-field";
 
 /**
  * Inline admin settings panel on challenge detail page.
@@ -24,6 +25,7 @@ export function ChallengeSettingsPanel({
     freezeFromDay: number | null;
     freezeStartsAt: Date | null;
     freezeEndsAt: Date | null;
+    bannerUrl: string | null;
   };
 }) {
   const router = useRouter();
@@ -33,6 +35,7 @@ export function ChallengeSettingsPanel({
   const [requiresApproval, setRequiresApproval] = useState(
     initial.requiresApproval
   );
+  const [bannerUrl, setBannerUrl] = useState<string | null>(initial.bannerUrl);
   const [freezeFromDay, setFreezeFromDay] = useState<string>(
     initial.freezeFromDay?.toString() ?? ""
   );
@@ -55,6 +58,7 @@ export function ChallengeSettingsPanel({
         title: title.trim(),
         description: description.trim(),
         requiresApproval,
+        bannerUrl: bannerUrl ?? "",
         freezeFromDay: freezeFromDay ? parseInt(freezeFromDay, 10) : null,
         freezeStartsAt: freezeStartsAt
           ? new Date(freezeStartsAt).toISOString()
@@ -147,6 +151,21 @@ export function ChallengeSettingsPanel({
               style={{ ...inputStyle, resize: "vertical", fontFamily: "inherit" }}
             />
           </label>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+              Banner
+            </span>
+            <ImageUploadField
+              value={bannerUrl}
+              onChange={setBannerUrl}
+              context="community"
+              shape="banner"
+              disabled={pending}
+              maxSizeNote="Tối đa 5MB"
+              placeholder="Chưa có banner — dùng gradient"
+            />
+          </div>
 
           <label
             style={{

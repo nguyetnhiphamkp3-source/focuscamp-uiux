@@ -262,6 +262,7 @@ export default async function ChallengeDetailPage({
                 freezeFromDay: challenge.freezeFromDay,
                 freezeStartsAt: challenge.freezeStartsAt,
                 freezeEndsAt: challenge.freezeEndsAt,
+                bannerUrl: challenge.bannerUrl,
               }}
             />
           )}
