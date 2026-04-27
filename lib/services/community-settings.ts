@@ -10,6 +10,7 @@ import type {
   ClassConfig,
   GemsConfig,
   LevelTier,
+  FeatureKey,
 } from "@/lib/community-config";
 
 async function assertOwner(userId: string, communityId: string): Promise<void> {
@@ -260,5 +261,28 @@ export async function updateLevelsConfig(input: {
   logger.info(
     { communityId: input.communityId, count: cleaned.length, userId: input.userId },
     "[community-settings] levels updated"
+  );
+}
+
+export async function updateUiConfig(input: {
+  userId: string;
+  communityId: string;
+  hiddenFeatures: FeatureKey[];
+}) {
+  await assertOwner(input.userId, input.communityId);
+  // Dedupe + normalise (preserve input ordering)
+  const seen = new Set<FeatureKey>();
+  const hidden = input.hiddenFeatures.filter((k) => {
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+  await prisma.community.update({
+    where: { id: input.communityId },
+    data: { uiConfig: { hiddenFeatures: hidden } },
+  });
+  logger.info(
+    { communityId: input.communityId, hidden, userId: input.userId },
+    "[community-settings] ui config updated"
   );
 }

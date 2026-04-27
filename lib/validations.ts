@@ -293,6 +293,24 @@ export const UpdateLevelsSchema = z.object({
   tiers: z.array(LevelTierItemSchema).max(50),
 });
 
+export const FeatureKeySchema = z.enum([
+  "chat",
+  "feed",
+  "cot",
+  "signals",
+  "qa",
+  "courses",
+  "challenges",
+  "leaderboard",
+  "marketplace",
+  "agent",
+]);
+
+export const UpdateUiConfigSchema = z.object({
+  communityId: z.string().cuid(),
+  hiddenFeatures: z.array(FeatureKeySchema).max(20),
+});
+
 export const UpdateMemberRoleSchema = z.object({
   communityId: z.string().cuid(),
   targetUserId: z.string().cuid(),

@@ -60,7 +60,45 @@ export type CommunityConfigSource = {
   classesConfig?: unknown;
   gemsConfig?: unknown;
   levelsConfig?: unknown;
+  uiConfig?: unknown;
 };
+
+/* ===== UI visibility config ===== */
+
+/** Feature menu keys — keep in sync with community layout sidebar. */
+export const FEATURE_KEYS = [
+  "chat",
+  "feed",
+  "cot",
+  "signals",
+  "qa",
+  "courses",
+  "challenges",
+  "leaderboard",
+  "marketplace",
+  "agent",
+] as const;
+export type FeatureKey = (typeof FEATURE_KEYS)[number];
+
+export const FEATURE_LABELS: Record<FeatureKey, string> = {
+  chat: "Chat",
+  feed: "Bảng tin",
+  cot: "Cốt",
+  signals: "Tín hiệu",
+  qa: "Hỏi đáp",
+  courses: "Khóa học",
+  challenges: "Challenge",
+  leaderboard: "Bảng xếp hạng",
+  marketplace: "Marketplace",
+  agent: "AI Agent",
+};
+
+export const UiConfigSchema = z.object({
+  hiddenFeatures: z.array(z.enum(FEATURE_KEYS)).default([]),
+});
+export type UiConfig = z.infer<typeof UiConfigSchema>;
+
+export const DEFAULT_UI_CONFIG: UiConfig = { hiddenFeatures: [] };
 
 /* ===== Defaults (when community has no config set) ===== */
 
@@ -137,4 +175,27 @@ export function tierForLevel(level: number, tiers: LevelTier[]): LevelTier | nul
     else break;
   }
   return current;
+}
+
+/** UI config of a community — defaults to all features visible. */
+export function getUiConfig(c: CommunityConfigSource): UiConfig {
+  if (c.uiConfig === null || c.uiConfig === undefined) return DEFAULT_UI_CONFIG;
+  const parsed = UiConfigSchema.safeParse(c.uiConfig);
+  if (parsed.success) return parsed.data;
+  logger.warn({ issues: parsed.error.issues }, "[community-config] bad uiConfig, using default");
+  return DEFAULT_UI_CONFIG;
+}
+
+/**
+ * Whether a feature menu link should render.
+ * Owner sees everything by default; if previewing as member, owner sees the same as members.
+ */
+export function isFeatureVisible(
+  ui: UiConfig,
+  feature: FeatureKey,
+  isOwner: boolean,
+  previewAsMember: boolean,
+): boolean {
+  if (isOwner && !previewAsMember) return true;
+  return !ui.hiddenFeatures.includes(feature);
 }

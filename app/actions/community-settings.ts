@@ -9,6 +9,7 @@ import {
   updateLevelsConfig,
   updateMemberRole,
   removeMember,
+  updateUiConfig,
 } from "@/lib/services/community-settings";
 import {
   UpdatePillarsSchema,
@@ -17,6 +18,7 @@ import {
   UpdateLevelsSchema,
   UpdateMemberRoleSchema,
   RemoveMemberSchema,
+  UpdateUiConfigSchema,
 } from "@/lib/validations";
 import { logError } from "@/lib/logger";
 import type {
@@ -24,6 +26,7 @@ import type {
   ClassConfig,
   GemsConfig,
   LevelTier,
+  FeatureKey,
 } from "@/lib/community-config";
 
 type ActionResult = { ok: true } | { ok: false; reason: string };
@@ -220,6 +223,37 @@ export async function removeMemberAction(input: {
       communityId: input.communityId,
       target: input.targetUserId,
     });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+export async function updateUiConfigAction(input: {
+  communityId: string;
+  communitySlug: string;
+  hiddenFeatures: FeatureKey[];
+}): Promise<ActionResult> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+
+  const parsed = UpdateUiConfigSchema.safeParse({
+    communityId: input.communityId,
+    hiddenFeatures: input.hiddenFeatures,
+  });
+  if (!parsed.success) {
+    return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
+  }
+
+  try {
+    await updateUiConfig({
+      userId: s.user.id,
+      communityId: parsed.data.communityId,
+      hiddenFeatures: parsed.data.hiddenFeatures,
+    });
+    bump(input.communitySlug);
+    return { ok: true };
+  } catch (err) {
+    logError(err, { userId: s.user.id, communityId: input.communityId });
     if (err instanceof Error) return { ok: false, reason: err.message };
     return { ok: false, reason: "unknown" };
   }

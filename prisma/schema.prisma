@@ -105,6 +105,8 @@ model Community {
   /** Subscription tier config — defines tiers + pricing + gates */
   tiersConfig   Json?
   billingModel  Json?
+  /** UI visibility config — { hiddenFeatures: FeatureKey[] } */
+  uiConfig      Json?
 
   memberCount Int @default(0)
   onlineCount Int @default(0)

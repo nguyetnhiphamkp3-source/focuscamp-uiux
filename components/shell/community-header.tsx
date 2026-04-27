@@ -1,17 +1,20 @@
 import Link from "next/link";
+import { PreviewAsMemberToggle } from "./preview-as-member-toggle";
 
 /**
- * Community header — community name + settings gear.
+ * Community header — community name + settings gear + (owner) preview toggle.
  */
 export function CommunityHeader({
   slug,
   name,
   isOwner = false,
+  previewAsMember = false,
 }: {
   slug: string;
   name: string;
   isOwner?: boolean;
   isMember?: boolean;
+  previewAsMember?: boolean;
 }) {
   return (
     <div
@@ -37,6 +40,8 @@ export function CommunityHeader({
       >
         {name}
       </div>
+
+      {isOwner && <PreviewAsMemberToggle active={previewAsMember} />}
 
       {isOwner && (
         <Link
