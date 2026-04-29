@@ -20,6 +20,7 @@ import { UiConfigEditor } from "@/components/settings/ui-config-editor";
 import { CommunityPlanPanel } from "@/components/settings/community-plan-panel";
 import { AgentConfigEditor } from "@/components/settings/agent-config-editor";
 import { ApiKeysPanel } from "@/components/settings/api-keys-panel";
+import { AgentActivityPanel } from "@/components/settings/agent-activity-panel";
 import { listApiKeys } from "@/app/actions/api-keys";
 import { getPlanStatus } from "@/lib/platform-plans";
 import { getTiersConfig } from "@/lib/services/subscription";
@@ -127,6 +128,8 @@ export default async function SettingsPage({
               initial={apiKeys}
             />
           )}
+
+          {isOwner && <AgentActivityPanel communityId={community.id} />}
 
           {isOwner && <CommunityStatsCard communityId={community.id} />}
 

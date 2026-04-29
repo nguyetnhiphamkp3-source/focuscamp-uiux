@@ -26,6 +26,7 @@ const PUBLIC_PREFIXES = [
   "/terms",
   "/privacy",
   "/refund",
+  "/docs",
   "/api/auth",
   "/api/sepay",
   "/api/health",

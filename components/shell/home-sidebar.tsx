@@ -127,6 +127,8 @@ export function HomeSidebar({ notifUnread = 0 }: { notifUnread?: number }) {
       >
         <a href="/pricing" className="legal-link">Pricing</a>
         <span>·</span>
+        <a href="/docs/mcp" className="legal-link">MCP API</a>
+        <span>·</span>
         <a href="/terms" className="legal-link">Điều khoản</a>
         <span>·</span>
         <a href="/privacy" className="legal-link">Bảo mật</a>
