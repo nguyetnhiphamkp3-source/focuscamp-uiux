@@ -23,7 +23,8 @@ export type NotificationType =
   | "SUBMISSION_APPROVED"
   | "SUBMISSION_REJECTED"
   | "FOLLOW"
-  | "UNFOLLOW";
+  | "UNFOLLOW"
+  | "AGENT_BROADCAST";
 
 /**
  * Create a notification. No-op (and logs) when recipient === actor — we

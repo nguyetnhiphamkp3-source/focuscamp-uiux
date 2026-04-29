@@ -30,6 +30,7 @@ const PUBLIC_PREFIXES = [
   "/api/sepay",
   "/api/health",
   "/api/notifications",
+  "/api/mcp",
 ];
 
 function isPublic(pathname: string): boolean {
