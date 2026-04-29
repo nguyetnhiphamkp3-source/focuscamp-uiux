@@ -18,12 +18,43 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "focus.camp — Community platform with challenges + AI",
+  title: {
+    default: "focus.camp — Cộng đồng challenge-first cho creator Việt",
+    template: "%s | focus.camp",
+  },
   description:
-    "Platform cộng đồng: học, làm thử thách, mua power-ups, cùng AI Agent đồng hành.",
+    "Nền tảng SaaS cho creator/coach build cộng đồng challenge-first. Học bằng challenges 21-90 ngày, đồng hành cùng AI Agent, ship sản phẩm thực.",
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+    process.env.NEXT_PUBLIC_APP_URL || "https://focus.camp"
   ),
+  openGraph: {
+    type: "website",
+    locale: "vi_VN",
+    url: "/",
+    siteName: "focus.camp",
+    title: "focus.camp — Cộng đồng challenge-first cho creator Việt",
+    description:
+      "Build cộng đồng riêng. Bán gói. Có AI Agent đồng hành. Thanh toán VietQR.",
+    images: [
+      {
+        url: "/og-default.png",
+        width: 1200,
+        height: 630,
+        alt: "focus.camp",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "focus.camp",
+    description:
+      "Cộng đồng challenge-first với AI Agent. Build, bán, ship.",
+    images: ["/og-default.png"],
+  },
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { submitCheckin } from "@/lib/services/challenge";
 import { ChallengeCheckinSchema } from "@/lib/validations";
 import { logError } from "@/lib/logger";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function checkinAction(input: {
   challengeId: string;
@@ -18,6 +19,14 @@ export async function checkinAction(input: {
 }): Promise<{ ok: boolean; reason?: string; redirectTo?: string }> {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+
+  // 5 checkins/min/user — typically only 1/day per challenge but cap spam
+  const rl = await rateLimit({
+    key: `checkin:${s.user.id}`,
+    limit: 5,
+    windowSec: 60,
+  });
+  if (!rl.ok) return { ok: false, reason: "rate_limited" };
 
   const parsed = ChallengeCheckinSchema.safeParse({
     challengeId: input.challengeId,
