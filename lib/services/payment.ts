@@ -149,7 +149,11 @@ export async function matchSePayTransactionToPayment(params: {
   // Community across services. Idempotent: extending expiry from current value.
   if (payment.refType === "community") {
     try {
-      await activateCommunityPlan(payment.refId);
+      await activateCommunityPlan(payment.refId, {
+        paymentCode: payment.paymentCode,
+        transactionId,
+        amountVnd: paymentAmount,
+      });
     } catch (err) {
       logger.error(
         { err, paymentCode, communityId: payment.refId },

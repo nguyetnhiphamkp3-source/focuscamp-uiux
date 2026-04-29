@@ -231,11 +231,24 @@ export async function renewCommunityPlan(input: {
 /**
  * Apply a successful community_plan payment — extend expiry by 30 days from
  * current expiry (or now if expired/null). Called by payment webhook matcher.
+ * Also triggers the receipt email for the owner.
  */
-export async function activateCommunityPlan(communityId: string) {
+export async function activateCommunityPlan(
+  communityId: string,
+  paymentMeta?: {
+    paymentCode: string;
+    transactionId: string;
+    amountVnd: number;
+  }
+) {
   const c = await prisma.community.findUnique({
     where: { id: communityId },
-    select: { planExpiresAt: true },
+    select: {
+      planExpiresAt: true,
+      planTier: true,
+      name: true,
+      owner: { select: { email: true } },
+    },
   });
   if (!c) throw new Error("community_not_found");
   const newExpiry = extendExpiry(c.planExpiresAt);
@@ -247,6 +260,28 @@ export async function activateCommunityPlan(communityId: string) {
     { communityId, newExpiry },
     "[community] plan activated/extended"
   );
+
+  // Receipt email (best-effort)
+  if (paymentMeta && c.owner?.email) {
+    try {
+      const { sendEmail } = await import("@/lib/email");
+      const { paymentReceiptEmail } = await import("@/lib/email-templates");
+      await sendEmail({
+        to: c.owner.email,
+        ...paymentReceiptEmail({
+          amountVnd: paymentMeta.amountVnd,
+          communityName: c.name,
+          planTier: (c.planTier || "SOLO") as PlanTier,
+          expiresAt: newExpiry,
+          paymentCode: paymentMeta.paymentCode,
+          transactionId: paymentMeta.transactionId,
+        }),
+      });
+    } catch (err) {
+      logger.warn({ err, communityId }, "[community] receipt email failed");
+    }
+  }
+
   return newExpiry;
 }
 
