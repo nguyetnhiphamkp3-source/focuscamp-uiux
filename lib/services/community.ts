@@ -6,6 +6,35 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { logger } from "@/lib/logger";
 import { getClasses } from "@/lib/community-config";
+import {
+  PLATFORM_PLANS,
+  extendExpiry,
+  getPlanStatus,
+  canWrite,
+  type PlanTier,
+} from "@/lib/platform-plans";
+import { createPayment } from "@/lib/sepay";
+
+/**
+ * Assert the community plan allows writing (post, challenge, course, etc).
+ * Throws a translated error if the plan is expired or pending.
+ */
+export async function assertCommunityCanWrite(communityId: string) {
+  const c = await prisma.community.findUnique({
+    where: { id: communityId },
+    select: { planTier: true, planExpiresAt: true },
+  });
+  if (!c) throw new Error("community_not_found");
+  const state = getPlanStatus(c);
+  if (!canWrite(state)) {
+    if (state.status === "pending") {
+      throw new Error("Cộng đồng chưa kích hoạt — owner cần thanh toán gói");
+    }
+    if (state.status === "expired") {
+      throw new Error("Gói đã hết hạn — owner cần gia hạn để tiếp tục");
+    }
+  }
+}
 
 export async function getCommunityBySlug(slug: string) {
   return prisma.community.findUnique({ where: { slug } });
@@ -93,7 +122,10 @@ export async function joinCommunity(
 
 /**
  * Create a new community with the current user as owner. Creates the
- * owner's Membership in the same transaction and bumps memberCount.
+ * owner's Membership + a PENDING Payment for the chosen plan in the same
+ * flow. Community is created with planExpiresAt = null (PENDING).
+ *
+ * Returns { community, paymentCode } so the caller can redirect to /pay/<code>.
  */
 export async function createCommunity(input: {
   userId: string;
@@ -101,6 +133,7 @@ export async function createCommunity(input: {
   slug: string;
   tagline?: string;
   description?: string;
+  planTier: PlanTier;
 }) {
   // Slug format already validated upstream by Zod. Here we check uniqueness.
   const existing = await prisma.community.findUnique({
@@ -111,8 +144,14 @@ export async function createCommunity(input: {
     throw new Error(`Slug "${input.slug}" đã có cộng đồng khác dùng rồi`);
   }
 
-  return await prisma.$transaction(async (tx) => {
-    const community = await tx.community.create({
+  const tier = input.planTier;
+  if (tier === "GRANDFATHER") {
+    throw new Error("Không thể tạo community với GRANDFATHER tier");
+  }
+  const plan = PLATFORM_PLANS[tier];
+
+  const community = await prisma.$transaction(async (tx) => {
+    const c = await tx.community.create({
       data: {
         name: input.name,
         slug: input.slug,
@@ -120,22 +159,95 @@ export async function createCommunity(input: {
         description: input.description?.trim() || null,
         ownerId: input.userId,
         memberCount: 1,
+        planTier: tier,
+        planExpiresAt: null, // PENDING until payment matches
       },
     });
     await tx.membership.create({
       data: {
         userId: input.userId,
-        communityId: community.id,
+        communityId: c.id,
         role: "ADMIN",
         tier: "OWNER",
       },
     });
     logger.info(
-      { communityId: community.id, slug: community.slug, userId: input.userId },
-      "[community] created"
+      { communityId: c.id, slug: c.slug, userId: input.userId, planTier: tier },
+      "[community] created (pending payment)"
     );
-    return community;
+    return c;
   });
+
+  // Create a Payment row + return code for SePay QR. Outside the txn
+  // because createPayment loops on uniqueness and is safe to retry.
+  const payment = await createPayment({
+    userId: input.userId,
+    communityId: community.id,
+    purpose: "community_plan",
+    refType: "community",
+    refId: community.id,
+    amountVnd: plan.priceVnd,
+  });
+
+  return { community, paymentCode: payment.paymentCode };
+}
+
+/**
+ * Renew an existing community plan — creates a new PENDING Payment.
+ * On match, payment service extends planExpiresAt by 30 days.
+ */
+export async function renewCommunityPlan(input: {
+  userId: string;
+  communityId: string;
+}) {
+  const c = await prisma.community.findUnique({
+    where: { id: input.communityId },
+    select: { id: true, ownerId: true, planTier: true, slug: true },
+  });
+  if (!c) throw new Error("Cộng đồng không tồn tại");
+  if (c.ownerId !== input.userId) {
+    throw new Error("Chỉ chủ cộng đồng mới gia hạn được");
+  }
+  const tier = (c.planTier || "SOLO") as PlanTier;
+  if (tier === "GRANDFATHER") {
+    throw new Error("Cộng đồng grandfather, không cần gia hạn");
+  }
+  const plan = PLATFORM_PLANS[tier];
+  const payment = await createPayment({
+    userId: input.userId,
+    communityId: c.id,
+    purpose: "community_plan",
+    refType: "community",
+    refId: c.id,
+    amountVnd: plan.priceVnd,
+  });
+  logger.info(
+    { communityId: c.id, userId: input.userId, paymentCode: payment.paymentCode },
+    "[community] renewal payment created"
+  );
+  return { paymentCode: payment.paymentCode, slug: c.slug };
+}
+
+/**
+ * Apply a successful community_plan payment — extend expiry by 30 days from
+ * current expiry (or now if expired/null). Called by payment webhook matcher.
+ */
+export async function activateCommunityPlan(communityId: string) {
+  const c = await prisma.community.findUnique({
+    where: { id: communityId },
+    select: { planExpiresAt: true },
+  });
+  if (!c) throw new Error("community_not_found");
+  const newExpiry = extendExpiry(c.planExpiresAt);
+  await prisma.community.update({
+    where: { id: communityId },
+    data: { planExpiresAt: newExpiry },
+  });
+  logger.info(
+    { communityId, newExpiry },
+    "[community] plan activated/extended"
+  );
+  return newExpiry;
 }
 
 /**

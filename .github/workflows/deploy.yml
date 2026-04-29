@@ -97,6 +97,25 @@ jobs:
             echo "=== Syncing database schema ==="
             docker compose exec -T app npx prisma@6.19.3 db push --skip-generate || echo "db push failed (check schema)"
 
+            echo "=== Grandfathering pre-launch communities (idempotent) ==="
+            docker compose exec -T app node -e "
+              const { PrismaClient } = require('@prisma/client');
+              const prisma = new PrismaClient();
+              (async () => {
+                const cutoff = new Date('2026-04-29T00:00:00Z');
+                const r = await prisma.community.updateMany({
+                  where: {
+                    planTier: 'SOLO',
+                    planExpiresAt: null,
+                    createdAt: { lt: cutoff }
+                  },
+                  data: { planTier: 'GRANDFATHER' }
+                });
+                console.log('Grandfathered communities:', r.count);
+                await prisma.\$disconnect();
+              })().catch(e => { console.error(e); process.exit(1); });
+            " || echo "grandfather script failed (check logs)"
+
             echo "=== Pruning old images ==="
             docker image prune -f
             echo "=== Deploy complete ==="

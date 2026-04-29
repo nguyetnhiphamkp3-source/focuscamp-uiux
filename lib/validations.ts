@@ -322,11 +322,18 @@ export const RemoveMemberSchema = z.object({
   targetUserId: z.string().cuid(),
 });
 
+export const PlanTierSchema = z.enum(["SOLO", "PRO", "AGENCY"]);
+
 export const CreateCommunitySchema = z.object({
   name: z.string().trim().min(2).max(80),
   slug: SlugSchema,
   tagline: z.string().trim().max(160).optional().or(z.literal("")),
   description: z.string().trim().max(5000).optional().or(z.literal("")),
+  planTier: PlanTierSchema,
+});
+
+export const RenewCommunityPlanSchema = z.object({
+  communityId: z.string().cuid(),
 });
 
 export const UpdateCommunityInfoSchema = z.object({

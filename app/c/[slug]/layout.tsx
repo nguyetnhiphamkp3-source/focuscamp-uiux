@@ -14,6 +14,8 @@ import {
   isFeatureVisible,
   type FeatureKey,
 } from "@/lib/community-config";
+import { getPlanStatus } from "@/lib/platform-plans";
+import { PlanStatusBanner } from "@/components/community/plan-status-banner";
 
 export const PREVIEW_MEMBER_COOKIE = "fc_preview_member";
 
@@ -69,6 +71,7 @@ export default async function CommunityLayout({
   const cookieStore = await cookies();
   const previewAsMember =
     isOwner && cookieStore.get(PREVIEW_MEMBER_COOKIE)?.value === "1";
+  const planState = getPlanStatus(community);
 
   const visible = (k: FeatureKey) =>
     isFeatureVisible(ui, k, isOwner, previewAsMember);
@@ -190,7 +193,14 @@ export default async function CommunityLayout({
       </div>
 
       {/* MAIN CONTENT */}
-      <main className="main-content">{children}</main>
+      <main className="main-content">
+        <PlanStatusBanner
+          state={planState}
+          isOwner={isOwner}
+          communityId={community.id}
+        />
+        {children}
+      </main>
 
       {/* RIGHT SIDEBAR (parallel route slot) */}
       {rightSidebar}

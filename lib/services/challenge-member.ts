@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { createNotification } from "./notification";
 import { awardXp } from "./xp";
+import { assertCommunityCanWrite } from "./community";
 
 export type SubmissionStatus = "PENDING" | "APPROVED" | "REJECTED";
 
@@ -389,6 +390,7 @@ export async function createChallenge(input: {
   bannerUrl?: string;
 }) {
   await assertCommunityOwner(input.userId, input.communityId);
+  await assertCommunityCanWrite(input.communityId);
   const existing = await prisma.challenge.findFirst({
     where: { communityId: input.communityId, slug: input.slug },
     select: { id: true },
@@ -574,9 +576,10 @@ export async function joinChallenge(input: {
 }): Promise<{ status: "ACTIVE" | "PENDING" }> {
   const challenge = await prisma.challenge.findUnique({
     where: { id: input.challengeId },
-    select: { requiresApproval: true },
+    select: { requiresApproval: true, communityId: true },
   });
   if (!challenge) throw new Error("Challenge không tồn tại");
+  await assertCommunityCanWrite(challenge.communityId);
 
   const status = challenge.requiresApproval ? "PENDING" : "ACTIVE";
   await prisma.challengeMember.upsert({

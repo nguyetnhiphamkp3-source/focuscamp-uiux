@@ -8,6 +8,7 @@ import { logger } from "@/lib/logger";
 import { getPillars } from "@/lib/community-config";
 import { createNotification } from "./notification";
 import { awardXp } from "./xp";
+import { assertCommunityCanWrite } from "./community";
 
 const LIKE_EMOJI = "❤️";
 
@@ -216,6 +217,9 @@ export async function createPost(input: {
   imageUrl?: string;
 }) {
   const { userId, communityId, type = "POST", title, body, pillar, bountyAip, imageUrl } = input;
+
+  // Plan gate first — blocks if expired/pending
+  await assertCommunityCanWrite(communityId);
 
   // Membership check (+ load community config to validate pillar)
   const [membership, community] = await Promise.all([

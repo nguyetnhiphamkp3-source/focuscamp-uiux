@@ -17,6 +17,8 @@ import { CommunityInfoEditor } from "@/components/settings/community-info-editor
 import { CommunityStatsCard } from "@/components/settings/community-stats-card";
 import { TiersViewer } from "@/components/settings/tiers-editor";
 import { UiConfigEditor } from "@/components/settings/ui-config-editor";
+import { CommunityPlanPanel } from "@/components/settings/community-plan-panel";
+import { getPlanStatus } from "@/lib/platform-plans";
 import { getTiersConfig } from "@/lib/services/subscription";
 import { listMembers } from "@/lib/services/community-settings";
 
@@ -42,6 +44,7 @@ export default async function SettingsPage({
   const tiers = getLevelTiers(community);
   const subscriptionTiers = getTiersConfig(community.tiersConfig);
   const uiConfig = getUiConfig(community);
+  const planState = getPlanStatus(community);
 
   const { members, total } = await listMembers({
     communityId: community.id,
@@ -90,6 +93,10 @@ export default async function SettingsPage({
             }}
             disabled={!isOwner}
           />
+
+          {isOwner && (
+            <CommunityPlanPanel communityId={community.id} state={planState} />
+          )}
 
           {isOwner && (
             <UiConfigEditor

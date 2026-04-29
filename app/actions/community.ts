@@ -6,12 +6,15 @@ import {
   joinCommunity,
   createCommunity,
   updateCommunityInfo,
+  renewCommunityPlan,
 } from "@/lib/services/community";
 import {
   JoinCommunitySchema,
   CreateCommunitySchema,
   UpdateCommunityInfoSchema,
+  RenewCommunityPlanSchema,
 } from "@/lib/validations";
+import type { PlanTier } from "@/lib/platform-plans";
 import { logError } from "@/lib/logger";
 
 type ActionResult = { ok: true } | { ok: false; reason: string };
@@ -60,8 +63,9 @@ export async function createCommunityAction(input: {
   slug: string;
   tagline?: string;
   description?: string;
+  planTier: PlanTier;
 }): Promise<
-  | { ok: true; slug: string }
+  | { ok: true; slug: string; paymentCode: string }
   | { ok: false; reason: string }
 > {
   const s = await auth();
@@ -72,24 +76,55 @@ export async function createCommunityAction(input: {
     slug: input.slug,
     tagline: input.tagline,
     description: input.description,
+    planTier: input.planTier,
   });
   if (!parsed.success) {
     return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
   }
 
   try {
-    const c = await createCommunity({
+    const { community, paymentCode } = await createCommunity({
       userId: s.user.id,
       name: parsed.data.name,
       slug: parsed.data.slug,
       tagline: parsed.data.tagline || undefined,
       description: parsed.data.description || undefined,
+      planTier: parsed.data.planTier,
     });
     revalidatePath("/discovery");
     revalidatePath("/");
-    return { ok: true, slug: c.slug };
+    return { ok: true, slug: community.slug, paymentCode };
   } catch (err) {
     logError(err, { userId: s.user.id, slug: input.slug });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+export async function renewCommunityPlanAction(input: {
+  communityId: string;
+}): Promise<
+  | { ok: true; paymentCode: string; slug: string }
+  | { ok: false; reason: string }
+> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+
+  const parsed = RenewCommunityPlanSchema.safeParse({
+    communityId: input.communityId,
+  });
+  if (!parsed.success) {
+    return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
+  }
+
+  try {
+    const res = await renewCommunityPlan({
+      userId: s.user.id,
+      communityId: parsed.data.communityId,
+    });
+    return { ok: true, paymentCode: res.paymentCode, slug: res.slug };
+  } catch (err) {
+    logError(err, { userId: s.user.id, communityId: input.communityId });
     if (err instanceof Error) return { ok: false, reason: err.message };
     return { ok: false, reason: "unknown" };
   }

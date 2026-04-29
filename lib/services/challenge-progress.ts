@@ -139,6 +139,17 @@ export async function submitCheckin(params: {
 }) {
   const { userId, challengeId, content, taskId, dayNumber, linkUrl, imageUrl } =
     params;
+
+  // Plan gate — refuse checkin if community plan is expired/pending
+  const challengeMeta = await prisma.challenge.findUnique({
+    where: { id: challengeId },
+    select: { communityId: true },
+  });
+  if (challengeMeta) {
+    const { assertCommunityCanWrite } = await import("./community");
+    await assertCommunityCanWrite(challengeMeta.communityId);
+  }
+
   const member = await prisma.challengeMember.findFirst({
     where: { userId, challengeId, status: "ACTIVE" },
   });

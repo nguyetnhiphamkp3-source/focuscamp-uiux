@@ -5,6 +5,7 @@
 import { prisma } from "@/lib/prisma";
 import { createPayment } from "@/lib/sepay";
 import { logger } from "@/lib/logger";
+import { activateCommunityPlan } from "@/lib/services/community";
 import type { Prisma } from "@prisma/client";
 
 export async function startProductPurchase(params: {
@@ -144,8 +145,21 @@ export async function matchSePayTransactionToPayment(params: {
     }
   });
 
+  // Community plan activation runs OUTSIDE the txn because it reads + updates
+  // Community across services. Idempotent: extending expiry from current value.
+  if (payment.refType === "community") {
+    try {
+      await activateCommunityPlan(payment.refId);
+    } catch (err) {
+      logger.error(
+        { err, paymentCode, communityId: payment.refId },
+        "[payment] community plan activation failed (payment still completed)"
+      );
+    }
+  }
+
   logger.info(
-    { paymentCode, transactionId, amount },
+    { paymentCode, transactionId, amount, refType: payment.refType },
     "[payment] matched + activated"
   );
   return { matched: true };

@@ -4,6 +4,7 @@
  */
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { assertCommunityCanWrite } from "./community";
 
 async function assertCommunityOwner(userId: string, communityId: string) {
   const c = await prisma.community.findUnique({
@@ -37,6 +38,7 @@ export async function createCourse(input: {
   isPublished?: boolean;
 }) {
   await assertCommunityOwner(input.userId, input.communityId);
+  await assertCommunityCanWrite(input.communityId);
   const existing = await prisma.course.findFirst({
     where: { communityId: input.communityId, slug: input.slug },
     select: { id: true },

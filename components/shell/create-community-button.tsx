@@ -1,10 +1,13 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { createCommunityAction } from "@/app/actions/community";
-import { toSlug } from "@/lib/brand";
+import { toSlug, fmtVnd } from "@/lib/brand";
+import { PLATFORM_PLANS } from "@/lib/platform-plans";
+
+type PaidTier = "SOLO" | "PRO" | "AGENCY";
 
 /**
  * "+ Tạo cộng đồng" button — opens modal with form. Auto-generates slug
@@ -23,6 +26,7 @@ export function CreateCommunityButton({
   const [slugTouched, setSlugTouched] = useState(false);
   const [tagline, setTagline] = useState("");
   const [description, setDescription] = useState("");
+  const [planTier, setPlanTier] = useState<PaidTier>("SOLO");
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
 
@@ -42,10 +46,11 @@ export function CreateCommunityButton({
         slug: slug.trim(),
         tagline: tagline.trim() || undefined,
         description: description.trim() || undefined,
+        planTier,
       });
       if (res.ok) {
         setOpen(false);
-        router.push(`/c/${res.slug}`);
+        router.push(`/pay/${res.paymentCode}`);
       } else {
         setErr(res.reason);
       }
@@ -58,6 +63,7 @@ export function CreateCommunityButton({
     setSlugTouched(false);
     setTagline("");
     setDescription("");
+    setPlanTier("SOLO");
     setErr(null);
   }
 
@@ -216,6 +222,89 @@ export function CreateCommunityButton({
                   style={{ ...inputStyle, resize: "vertical", fontFamily: "inherit" }}
                 />
               </Field>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <span
+                  style={{
+                    fontSize: "var(--text-sm)",
+                    fontWeight: 500,
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  Chọn gói (thanh toán hàng tháng) *
+                </span>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr 1fr",
+                    gap: 8,
+                  }}
+                >
+                  {(["SOLO", "PRO", "AGENCY"] as const).map((tier) => {
+                    const plan = PLATFORM_PLANS[tier];
+                    const selected = planTier === tier;
+                    return (
+                      <button
+                        key={tier}
+                        type="button"
+                        onClick={() => setPlanTier(tier)}
+                        disabled={pending}
+                        style={{
+                          padding: "10px 8px",
+                          borderRadius: 8,
+                          border: `2px solid ${selected ? "var(--brand-green)" : "var(--border-subtle)"}`,
+                          background: selected ? "rgba(27,158,117,0.08)" : "var(--bg-card)",
+                          color: "var(--text-normal)",
+                          cursor: "pointer",
+                          textAlign: "left",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 4,
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontWeight: 700,
+                            fontSize: "var(--text-base)",
+                            color: selected ? "var(--brand-green)" : "var(--header-primary)",
+                          }}
+                        >
+                          {plan.label}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: "var(--text-sm)",
+                            color: "var(--header-primary)",
+                            fontWeight: 600,
+                          }}
+                        >
+                          {fmtVnd(plan.priceVnd)}đ
+                          <span
+                            style={{
+                              fontSize: "var(--text-xs)",
+                              color: "var(--text-muted)",
+                              fontWeight: 400,
+                            }}
+                          >
+                            /tháng
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div
+                  style={{
+                    fontSize: "var(--text-xs)",
+                    color: "var(--text-muted)",
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {PLATFORM_PLANS[planTier].features.map((f: string, i: number) => (
+                    <div key={i}>· {f}</div>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {err && (
@@ -245,8 +334,8 @@ export function CreateCommunityButton({
                   color: "var(--text-muted)",
                 }}
               >
-                Bạn sẽ là owner. Sau khi tạo vào{" "}
-                <code>Settings</code> để thiết lập pillars, classes, currency.
+                Bấm Tiếp tục → quét QR thanh toán {fmtVnd(PLATFORM_PLANS[planTier].priceVnd)}đ qua SePay.
+                Sau khi giao dịch xong cộng đồng sẽ active 30 ngày.
               </div>
               <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
               <button
@@ -293,7 +382,7 @@ export function CreateCommunityButton({
                   whiteSpace: "nowrap",
                 }}
               >
-                {pending ? "Đang tạo…" : "Tạo cộng đồng"}
+                {pending ? "Đang tạo…" : "Tiếp tục → thanh toán"}
               </button>
               </div>
             </div>

@@ -108,6 +108,11 @@ model Community {
   /** UI visibility config — { hiddenFeatures: FeatureKey[] } */
   uiConfig      Json?
 
+  /** Platform-level plan tier paid by owner: SOLO | PRO | AGENCY | GRANDFATHER */
+  planTier      String  @default("SOLO")
+  /** Null = not active yet (PENDING payment) OR grandfathered (lifetime free). Otherwise expiry date. */
+  planExpiresAt DateTime?
+
   memberCount Int @default(0)
   onlineCount Int @default(0)
 
