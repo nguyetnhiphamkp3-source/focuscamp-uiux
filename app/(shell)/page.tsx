@@ -146,6 +146,21 @@ export default async function Home() {
           >
             Khám phá
           </Link>
+          <Link
+            href="/pricing"
+            style={{
+              padding: "14px 28px",
+              borderRadius: 10,
+              fontWeight: 700,
+              fontSize: "var(--text-base)",
+              color: "var(--text-heading)",
+              background: "var(--bg-card)",
+              border: "1px solid var(--border-subtle)",
+              textDecoration: "none",
+            }}
+          >
+            Pricing
+          </Link>
         </div>
 
         {/* Stats */}
