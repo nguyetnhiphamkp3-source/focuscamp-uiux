@@ -320,6 +320,16 @@ body[data-theme="luxury"] .settings-panel-title {
   overflow: hidden;
 }
 
+.legal-link {
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 120ms;
+}
+.legal-link:hover {
+  color: var(--header-primary);
+  text-decoration: underline;
+}
+
 .server-banner {
   position: relative;
   height: 140px;

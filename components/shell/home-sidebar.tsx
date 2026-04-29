@@ -111,6 +111,28 @@ export function HomeSidebar({ notifUnread = 0 }: { notifUnread?: number }) {
           <span className="feature-name">Cài đặt</span>
         </div>
       </div>
+
+      <div
+        style={{
+          marginTop: "auto",
+          padding: "12px 14px",
+          borderTop: "1px solid var(--border-subtle)",
+          fontSize: "var(--text-xs)",
+          color: "var(--text-muted)",
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 6,
+          rowGap: 4,
+        }}
+      >
+        <a href="/pricing" className="legal-link">Pricing</a>
+        <span>·</span>
+        <a href="/terms" className="legal-link">Điều khoản</a>
+        <span>·</span>
+        <a href="/privacy" className="legal-link">Bảo mật</a>
+        <span>·</span>
+        <a href="/refund" className="legal-link">Hoàn tiền</a>
+      </div>
     </aside>
   );
 }
