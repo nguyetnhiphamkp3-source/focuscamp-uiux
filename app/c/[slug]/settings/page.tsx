@@ -18,6 +18,7 @@ import { CommunityStatsCard } from "@/components/settings/community-stats-card";
 import { TiersViewer } from "@/components/settings/tiers-editor";
 import { UiConfigEditor } from "@/components/settings/ui-config-editor";
 import { CommunityPlanPanel } from "@/components/settings/community-plan-panel";
+import { AgentConfigEditor } from "@/components/settings/agent-config-editor";
 import { getPlanStatus } from "@/lib/platform-plans";
 import { getTiersConfig } from "@/lib/services/subscription";
 import { listMembers } from "@/lib/services/community-settings";
@@ -103,6 +104,14 @@ export default async function SettingsPage({
               communityId={community.id}
               communitySlug={slug}
               initial={{ hiddenFeatures: uiConfig.hiddenFeatures }}
+            />
+          )}
+
+          {isOwner && (
+            <AgentConfigEditor
+              communityId={community.id}
+              communitySlug={slug}
+              initial={{ prompt: community.agentSystemPrompt ?? "" }}
             />
           )}
 

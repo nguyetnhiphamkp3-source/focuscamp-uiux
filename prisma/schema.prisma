@@ -47,6 +47,7 @@ model User {
   badgeAwards      BadgeAward[]
   affiliateLinks   AffiliateLink[]
   referrals        Referral[]
+  agentConversations AgentConversation[]
 }
 
 model Account {
@@ -113,6 +114,9 @@ model Community {
   /** Null = not active yet (PENDING payment) OR grandfathered (lifetime free). Otherwise expiry date. */
   planExpiresAt DateTime?
 
+  /** AI Agent system prompt configured by owner. Empty = generic helper. */
+  agentSystemPrompt String? @db.Text
+
   memberCount Int @default(0)
   onlineCount Int @default(0)
 
@@ -129,6 +133,7 @@ model Community {
   badges        Badge[]
   subscriptions Subscription[]
   xpLedgers     XPLedger[]
+  agentConversations AgentConversation[]
 }
 
 model Membership {
@@ -711,4 +716,33 @@ model Referral {
 
   link         AffiliateLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
   referredUser User          @relation(fields: [referredUserId], references: [id])
+}
+
+// ============= AI AGENT =============
+
+model AgentConversation {
+  id          String   @id @default(cuid())
+  userId      String
+  communityId String
+  title       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  community Community      @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  messages  AgentMessage[]
+
+  @@index([userId, communityId, updatedAt])
+}
+
+model AgentMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           String   // user | assistant
+  content        String   @db.Text
+  createdAt      DateTime @default(now())
+
+  conversation AgentConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
 }
