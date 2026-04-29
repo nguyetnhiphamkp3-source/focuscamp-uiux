@@ -5,6 +5,7 @@ import { UserPanel } from "@/components/shell/user-panel";
 import { HomeSidebar } from "@/components/shell/home-sidebar";
 import { KeyboardShortcuts } from "@/components/shell/keyboard-shortcuts";
 import { ShortcutSheet } from "@/components/shell/shortcut-sheet";
+import { MobileMenuToggle } from "@/components/shell/mobile-menu-toggle";
 import { unreadCount } from "@/lib/services/notification";
 
 export const dynamic = "force-dynamic";
@@ -39,6 +40,7 @@ export default async function ShellLayout({
 
   return (
     <div className="community-shell">
+      <MobileMenuToggle />
       <div className="left-section">
         <div className="left-section-top">
           <ServerList communities={myCommunities} />

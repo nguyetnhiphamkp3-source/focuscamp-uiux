@@ -9,6 +9,7 @@ import { KeyboardShortcuts } from "@/components/shell/keyboard-shortcuts";
 import { ShortcutSheet } from "@/components/shell/shortcut-sheet";
 import { CommunityHeader } from "@/components/shell/community-header";
 import { BossChallengeCard } from "@/components/community/boss-challenge-card";
+import { MobileMenuToggle } from "@/components/shell/mobile-menu-toggle";
 import {
   getUiConfig,
   isFeatureVisible,
@@ -79,6 +80,8 @@ export default async function CommunityLayout({
 
   return (
     <div className="community-shell">
+      <MobileMenuToggle />
+
       {/* LEFT SECTION */}
       <div className="left-section">
         <div className="left-section-top">

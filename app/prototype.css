@@ -5348,3 +5348,106 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
   0%  { transform: scaleX(1);    opacity: 0.8; }
   50% { transform: scaleX(0.85); opacity: 0.5; }
 }
+
+/* ==========================================
+   RESPONSIVE / MOBILE
+   ========================================== */
+
+/* Hamburger button — only shown on mobile via media query below */
+.mobile-menu-btn {
+  display: none;
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 200;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--header-primary);
+  font-size: 20px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+}
+.mobile-menu-btn:hover { background: var(--bg-elevated); }
+.mobile-drawer-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 100;
+}
+
+/* Hide right sidebar on tablet/mobile (<1024px) */
+@media (max-width: 1023.98px) {
+  .community-shell > [class*="right-sidebar"],
+  .community-shell > .right-sidebar,
+  .community-shell > aside.right-sidebar,
+  .rs-banner,
+  .right-sidebar {
+    display: none !important;
+  }
+}
+
+/* Mobile (<768px): left section becomes off-canvas drawer */
+@media (max-width: 767.98px) {
+  .community-shell {
+    flex-direction: row;
+  }
+  .left-section {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: 86%;
+    max-width: 340px;
+    transform: translateX(-100%);
+    transition: transform 220ms ease;
+    z-index: 150;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25);
+  }
+  html.mobile-drawer-open .left-section {
+    transform: translateX(0);
+  }
+  html.mobile-drawer-open .mobile-drawer-backdrop {
+    display: block;
+  }
+  .channel-sidebar,
+  .server-list {
+    width: auto;
+    min-width: 0;
+  }
+  .main-content {
+    width: 100%;
+    flex: 1 1 auto;
+    padding-top: 56px; /* space for hamburger */
+  }
+  .mobile-menu-btn {
+    display: flex;
+  }
+
+  /* In-page padding shrinks */
+  .view-header {
+    padding: 12px 16px !important;
+  }
+  /* Discord-style cards full-width */
+  .ui-card,
+  .ui-card-lg {
+    border-radius: 8px;
+  }
+}
+
+/* Very small (<480px): tighten further */
+@media (max-width: 479.98px) {
+  .left-section {
+    width: 92%;
+    max-width: none;
+  }
+  .pf-inner {
+    padding: 16px !important;
+  }
+  .pf-avatar-lg {
+    width: 64px !important;
+    height: 64px !important;
+  }
+}
