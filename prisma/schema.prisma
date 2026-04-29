@@ -48,6 +48,7 @@ model User {
   affiliateLinks   AffiliateLink[]
   referrals        Referral[]
   agentConversations AgentConversation[]
+  apiKeys          ApiKey[]
 }
 
 model Account {
@@ -134,6 +135,7 @@ model Community {
   subscriptions Subscription[]
   xpLedgers     XPLedger[]
   agentConversations AgentConversation[]
+  apiKeys       ApiKey[]
 }
 
 model Membership {
@@ -745,4 +747,43 @@ model AgentMessage {
   conversation AgentConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@index([conversationId, createdAt])
+}
+
+// ============= MCP / API KEYS =============
+
+model ApiKey {
+  id          String    @id @default(cuid())
+  communityId String
+  ownerId     String
+  name        String
+  keyHash     String    @unique
+  keyPrefix   String
+  scopes      String[]  @default(["read", "write", "admin"])
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  owner     User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([communityId])
+  @@index([keyHash])
+}
+
+model AgentToolCall {
+  id           String   @id @default(cuid())
+  apiKeyId     String?
+  communityId  String
+  userId       String?
+  toolName     String
+  argsJson     Json
+  resultJson   Json?
+  errorMessage String?
+  durationMs   Int
+  createdAt    DateTime @default(now())
+
+  @@index([communityId, createdAt])
+  @@index([toolName, createdAt])
+  @@index([apiKeyId, createdAt])
 }

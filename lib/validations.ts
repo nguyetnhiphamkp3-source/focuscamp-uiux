@@ -336,6 +336,17 @@ export const RenewCommunityPlanSchema = z.object({
   communityId: z.string().cuid(),
 });
 
+export const CreateApiKeySchema = z.object({
+  communityId: z.string().cuid(),
+  name: z.string().trim().min(1).max(60),
+  expiresInDays: z.number().int().positive().max(365 * 5).optional().nullable(),
+});
+
+export const RevokeApiKeySchema = z.object({
+  communityId: z.string().cuid(),
+  apiKeyId: z.string().cuid(),
+});
+
 export const UpdateCommunityInfoSchema = z.object({
   communityId: z.string().cuid(),
   name: z.string().trim().min(2).max(80).optional(),

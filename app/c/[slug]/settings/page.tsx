@@ -19,6 +19,8 @@ import { TiersViewer } from "@/components/settings/tiers-editor";
 import { UiConfigEditor } from "@/components/settings/ui-config-editor";
 import { CommunityPlanPanel } from "@/components/settings/community-plan-panel";
 import { AgentConfigEditor } from "@/components/settings/agent-config-editor";
+import { ApiKeysPanel } from "@/components/settings/api-keys-panel";
+import { listApiKeys } from "@/app/actions/api-keys";
 import { getPlanStatus } from "@/lib/platform-plans";
 import { getTiersConfig } from "@/lib/services/subscription";
 import { listMembers } from "@/lib/services/community-settings";
@@ -46,6 +48,9 @@ export default async function SettingsPage({
   const subscriptionTiers = getTiersConfig(community.tiersConfig);
   const uiConfig = getUiConfig(community);
   const planState = getPlanStatus(community);
+  const apiKeys = isOwner
+    ? await listApiKeys(community.id, session.user.id)
+    : [];
 
   const { members, total } = await listMembers({
     communityId: community.id,
@@ -112,6 +117,14 @@ export default async function SettingsPage({
               communityId={community.id}
               communitySlug={slug}
               initial={{ prompt: community.agentSystemPrompt ?? "" }}
+            />
+          )}
+
+          {isOwner && (
+            <ApiKeysPanel
+              communityId={community.id}
+              communitySlug={slug}
+              initial={apiKeys}
             />
           )}
 
