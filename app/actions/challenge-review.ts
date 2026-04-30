@@ -189,6 +189,7 @@ export async function updateChallengeSettingsAction(input: {
   freezeEndsAt?: string | null;
   bannerUrl?: string | null;
   featuredOnGlobal?: boolean;
+  requiredTier?: string | null;
   communitySlug: string;
   challengeSlug: string;
 }): Promise<ActionResult> {
@@ -204,6 +205,7 @@ export async function updateChallengeSettingsAction(input: {
     freezeEndsAt: input.freezeEndsAt,
     bannerUrl: input.bannerUrl,
     featuredOnGlobal: input.featuredOnGlobal,
+    requiredTier: input.requiredTier,
   });
   if (!parsed.success) {
     return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
@@ -220,6 +222,7 @@ export async function updateChallengeSettingsAction(input: {
       freezeEndsAt: parsed.data.freezeEndsAt || null,
       bannerUrl: parsed.data.bannerUrl === undefined ? undefined : parsed.data.bannerUrl || null,
       featuredOnGlobal: parsed.data.featuredOnGlobal,
+      requiredTier: parsed.data.requiredTier === undefined ? undefined : parsed.data.requiredTier || null,
     });
     bumpChallenge(input.communitySlug, input.challengeSlug);
     revalidatePath(`/marketplace`);

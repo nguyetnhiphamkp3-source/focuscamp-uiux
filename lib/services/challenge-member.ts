@@ -430,6 +430,7 @@ export async function updateChallengeSettings(input: {
   freezeEndsAt?: string | null;
   bannerUrl?: string | null;
   featuredOnGlobal?: boolean;
+  requiredTier?: string | null;
 }) {
   const ch = await assertChallengeAdmin(input.userId, input.challengeId);
   await prisma.challenge.update({
@@ -464,6 +465,9 @@ export async function updateChallengeSettings(input: {
         : {}),
       ...(input.featuredOnGlobal !== undefined
         ? { featuredOnGlobal: input.featuredOnGlobal }
+        : {}),
+      ...(input.requiredTier !== undefined
+        ? { requiredTier: input.requiredTier?.trim() || null }
         : {}),
     },
   });

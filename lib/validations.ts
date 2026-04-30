@@ -64,6 +64,7 @@ export const UpdateChallengeSettingsSchema = z.object({
   freezeEndsAt: z.string().datetime().optional().nullable().or(z.literal("")),
   bannerUrl: z.string().url().max(500).optional().nullable().or(z.literal("")),
   featuredOnGlobal: z.boolean().optional(),
+  requiredTier: z.string().trim().max(40).optional().nullable().or(z.literal("")),
 });
 
 export const CreateChallengeSchema = z.object({
