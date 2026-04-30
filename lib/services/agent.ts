@@ -49,17 +49,28 @@ export async function getOrCreateConversation(input: {
   userId: string;
   communityId: string;
   conversationId?: string;
+  channel?: "web" | "telegram";
 }) {
+  const channel = input.channel ?? "web";
   if (input.conversationId) {
     const existing = await prisma.agentConversation.findUnique({
       where: { id: input.conversationId },
     });
     if (existing && existing.userId === input.userId) return existing;
   }
+  // For telegram, reuse latest conversation per (user, community, telegram channel)
+  if (channel === "telegram") {
+    const existing = await prisma.agentConversation.findFirst({
+      where: { userId: input.userId, communityId: input.communityId, channel: "telegram" },
+      orderBy: { updatedAt: "desc" },
+    });
+    if (existing) return existing;
+  }
   return prisma.agentConversation.create({
     data: {
       userId: input.userId,
       communityId: input.communityId,
+      channel,
     },
   });
 }

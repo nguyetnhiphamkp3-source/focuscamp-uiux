@@ -18,6 +18,11 @@ model User {
   handle        String?   @unique
   bio           String?
   location      String?
+  /** Linked Telegram user id — same person can chat AI agent via web or Telegram. */
+  telegramUserId   String? @unique
+  telegramUsername String?
+  /** Default community for cross-channel agent context (optional). */
+  defaultCommunityId String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -754,6 +759,8 @@ model AgentConversation {
   userId      String
   communityId String
   title       String?
+  /** Source channel — "web" or "telegram". Same userId can have one of each. */
+  channel     String   @default("web")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -762,6 +769,17 @@ model AgentConversation {
   messages  AgentMessage[]
 
   @@index([userId, communityId, updatedAt])
+  @@index([userId, channel])
+}
+
+model TelegramLinkCode {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model AgentMessage {
