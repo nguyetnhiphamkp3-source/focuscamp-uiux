@@ -199,25 +199,6 @@ function MemberView({
             display: "block",
           }}
         />
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "#fff",
-            fontSize: "var(--text-md)",
-            fontWeight: "var(--fw-bold)",
-            textAlign: "center",
-            padding: "var(--space-4)",
-            background:
-              "linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.45) 100%)",
-            textShadow: "0 1px 3px rgba(0,0,0,0.5)",
-          }}
-        >
-          🏕️ Chào mừng trở lại!
-        </div>
       </div>
       <CommunitySearchBar name={community.name} />
       <div className="rs-body">
