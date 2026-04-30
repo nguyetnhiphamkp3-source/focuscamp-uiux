@@ -21,6 +21,8 @@ export async function createProductAction(input: {
   priceVnd?: number;
   isFree?: boolean;
   externalUrl?: string;
+  fileUrl?: string;
+  thumbnailUrl?: string;
 }): Promise<ActionResult<{ slug: string }>> {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
@@ -35,6 +37,8 @@ export async function createProductAction(input: {
     priceVnd: input.priceVnd,
     isFree: input.isFree,
     externalUrl: input.externalUrl,
+    fileUrl: input.fileUrl,
+    thumbnailUrl: input.thumbnailUrl,
   });
   if (!parsed.success) {
     return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
@@ -52,6 +56,8 @@ export async function createProductAction(input: {
       priceVnd: parsed.data.priceVnd,
       isFree: parsed.data.isFree,
       externalUrl: parsed.data.externalUrl ?? undefined,
+      fileUrl: parsed.data.fileUrl ?? undefined,
+      thumbnailUrl: parsed.data.thumbnailUrl ?? undefined,
     });
     revalidatePath(`/c/${input.communitySlug}/marketplace`);
     return { ok: true, data: { slug: p.slug } };

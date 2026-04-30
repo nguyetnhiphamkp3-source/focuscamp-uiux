@@ -11,12 +11,28 @@ import { auth } from "@/auth";
 import { getPresignedUploadUrl, isStorageConfigured } from "@/lib/storage";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
-const ALLOWED_TYPES = new Set([
+const IMAGE_TYPES = new Set([
   "image/jpeg",
   "image/png",
   "image/webp",
   "image/gif",
   "image/avif",
+]);
+const FILE_TYPES = new Set([
+  "application/pdf",
+  "application/zip",
+  "application/x-zip-compressed",
+  "application/octet-stream",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "video/mp4",
+  "video/quicktime",
+  "audio/mpeg",
+  "audio/mp4",
+  "text/plain",
+  "text/csv",
+  "text/markdown",
 ]);
 
 const MAX_FILE_SIZES: Record<string, number> = {
@@ -24,9 +40,15 @@ const MAX_FILE_SIZES: Record<string, number> = {
   community: 5 * 1024 * 1024, // 5MB
   post: 10 * 1024 * 1024, // 10MB
   checkin: 10 * 1024 * 1024, // 10MB
+  "product-file": 200 * 1024 * 1024, // 200MB for digital products
 };
 
-type UploadContext = "avatar" | "community" | "post" | "checkin";
+type UploadContext =
+  | "avatar"
+  | "community"
+  | "post"
+  | "checkin"
+  | "product-file";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -66,9 +88,14 @@ export async function POST(req: Request) {
     );
   }
 
-  if (!ALLOWED_TYPES.has(contentType)) {
+  // Image-only contexts vs file-allowed contexts
+  const fileAllowed = context === "product-file";
+  const allowedSet = fileAllowed
+    ? new Set([...IMAGE_TYPES, ...FILE_TYPES])
+    : IMAGE_TYPES;
+  if (!allowedSet.has(contentType)) {
     return NextResponse.json(
-      { error: "unsupported_type", allowed: [...ALLOWED_TYPES] },
+      { error: "unsupported_type", allowed: [...allowedSet] },
       { status: 400 },
     );
   }

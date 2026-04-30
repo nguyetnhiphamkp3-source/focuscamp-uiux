@@ -6,7 +6,12 @@
  *   const url = await uploadImage(file, "avatar");
  */
 
-export type UploadContext = "avatar" | "community" | "post" | "checkin";
+export type UploadContext =
+  | "avatar"
+  | "community"
+  | "post"
+  | "checkin"
+  | "product-file";
 
 export async function uploadImage(
   file: File,

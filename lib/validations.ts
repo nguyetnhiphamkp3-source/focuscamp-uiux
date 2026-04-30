@@ -412,6 +412,8 @@ export const CreateProductSchema = z.object({
   priceVnd: z.number().nonnegative().optional(),
   isFree: z.boolean().optional(),
   externalUrl: z.string().url().optional().or(z.literal("")),
+  fileUrl: z.string().url().optional().or(z.literal("")),
+  thumbnailUrl: z.string().url().optional().or(z.literal("")),
 });
 
 /* ========== Helper ========== */

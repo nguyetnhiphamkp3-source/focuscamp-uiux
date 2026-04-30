@@ -21,11 +21,13 @@ export async function createProduct(input: {
   slug: string;
   title: string;
   description?: string;
-  type?: string; // TEMPLATE | TOOL | SOP | BUNDLE
+  type?: string; // TEMPLATE | TOOL | SOP | BUNDLE | LICENSE
   pillar?: string;
   priceVnd?: number;
   isFree?: boolean;
   externalUrl?: string;
+  fileUrl?: string;
+  thumbnailUrl?: string;
 }) {
   await assertCommunityOwner(input.userId, input.communityId);
   const existing = await prisma.product.findFirst({
@@ -46,6 +48,8 @@ export async function createProduct(input: {
       priceVnd: input.priceVnd ?? 0,
       isFree: input.isFree ?? (!input.priceVnd || input.priceVnd === 0),
       externalUrl: input.externalUrl?.trim() || null,
+      fileUrl: input.fileUrl?.trim() || null,
+      thumbnailUrl: input.thumbnailUrl?.trim() || null,
     },
   });
   logger.info({ productId: product.id, by: input.userId }, "[product] created");

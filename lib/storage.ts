@@ -13,6 +13,7 @@
 import {
   S3Client,
   PutObjectCommand,
+  GetObjectCommand,
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -110,6 +111,47 @@ export async function getPresignedUploadUrl(input: {
 export function getPublicUrl(key: string): string | null {
   if (!S3_PUBLIC_URL) return null;
   return `${S3_PUBLIC_URL.replace(/\/$/, "")}/${key}`;
+}
+
+/**
+ * Presigned download URL — for private files only available to authorized users.
+ * Caller is responsible for permission checks before generating.
+ */
+export async function getPresignedDownloadUrl(input: {
+  key: string;
+  expiresIn?: number; // seconds, default 900 (15 min)
+  filename?: string; // forces Content-Disposition: attachment; filename=...
+}): Promise<string | null> {
+  if (!s3 || !S3_BUCKET) return null;
+  try {
+    const command = new GetObjectCommand({
+      Bucket: S3_BUCKET,
+      Key: input.key,
+      ...(input.filename
+        ? {
+            ResponseContentDisposition: `attachment; filename="${input.filename.replace(/"/g, "")}"`,
+          }
+        : {}),
+    });
+    const url = await getSignedUrl(s3, command, {
+      expiresIn: input.expiresIn ?? 900,
+    });
+    return url;
+  } catch (err) {
+    logger.error({ err, key: input.key }, "[storage] download presign failed");
+    return null;
+  }
+}
+
+/**
+ * Extract the storage key from a public URL. Used when we have stored
+ * fileUrl as the public CDN url but need to re-sign for download.
+ */
+export function keyFromPublicUrl(url: string): string | null {
+  if (!S3_PUBLIC_URL) return null;
+  const prefix = S3_PUBLIC_URL.replace(/\/$/, "") + "/";
+  if (!url.startsWith(prefix)) return null;
+  return url.slice(prefix.length);
 }
 
 /**

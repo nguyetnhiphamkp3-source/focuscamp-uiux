@@ -32,18 +32,33 @@ export default async function ProductDetailPage({
 
   const session = await auth();
   let isMember = false;
+  let hasPurchased = false;
   if (session?.user?.id) {
-    const m = await prisma.membership.findUnique({
-      where: {
-        userId_communityId: {
-          userId: session.user.id,
-          communityId: product.communityId,
+    const [m, p] = await Promise.all([
+      prisma.membership.findUnique({
+        where: {
+          userId_communityId: {
+            userId: session.user.id,
+            communityId: product.communityId,
+          },
         },
-      },
-      select: { id: true },
-    });
+        select: { id: true },
+      }),
+      prisma.purchase.findFirst({
+        where: {
+          userId: session.user.id,
+          productId: product.id,
+          status: "COMPLETED",
+        },
+        select: { id: true },
+      }),
+    ]);
     isMember = !!m;
+    hasPurchased = !!p;
   }
+  // Free products available to any member
+  const canDownload =
+    !!product.fileUrl && (hasPurchased || (product.isFree && isMember));
 
   async function buy() {
     "use server";
@@ -227,6 +242,37 @@ export default async function ProductDetailPage({
                     ⚔️ {link.challenge.title}
                   </a>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Download (after purchase) */}
+          {canDownload && (
+            <div className="ui-card" style={{ marginBottom: "var(--space-3)" }}>
+              <div
+                style={{
+                  fontSize: "var(--text-sm)",
+                  color: "var(--text-muted)",
+                  marginBottom: "var(--space-2)",
+                }}
+              >
+                ✓ Bạn đã{hasPurchased ? " mua" : " là member"} — file đã sẵn sàng
+              </div>
+              <a
+                href={`/api/products/${product.id}/download`}
+                className="ui-btn ui-btn-primary ui-btn-lg"
+                style={{ textDecoration: "none" }}
+              >
+                📥 Download file
+              </a>
+              <div
+                style={{
+                  fontSize: "var(--text-xs)",
+                  color: "var(--text-muted)",
+                  marginTop: "var(--space-2)",
+                }}
+              >
+                Link download có hiệu lực 15 phút sau click.
               </div>
             </div>
           )}

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createProductAction } from "@/app/actions/marketplace";
 import { toSlug } from "@/lib/brand";
+import { FileUploadField } from "@/components/shared/file-upload-field";
 
 export function CreateProductButton({
   communityId,
@@ -21,6 +22,7 @@ export function CreateProductButton({
   const [type, setType] = useState("TEMPLATE");
   const [priceVnd, setPriceVnd] = useState("");
   const [externalUrl, setExternalUrl] = useState("");
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
 
@@ -45,6 +47,7 @@ export function CreateProductButton({
         priceVnd: price,
         isFree: price === 0,
         externalUrl: externalUrl.trim() || undefined,
+        fileUrl: fileUrl || undefined,
       });
       if (res.ok && res.data) {
         setOpen(false);
@@ -203,6 +206,17 @@ export function CreateProductButton({
                   disabled={pending}
                   placeholder="https://notion.so/..."
                   style={inputStyle}
+                />
+              </Field>
+
+              <Field label="Hoặc upload file delivery (PDF / ZIP / video — tuỳ chọn)">
+                <FileUploadField
+                  value={fileUrl}
+                  onChange={setFileUrl}
+                  context="product-file"
+                  disabled={pending}
+                  accept=".pdf,.zip,.docx,.xlsx,.pptx,.mp4,.mov,.mp3,.txt,.csv,.md,application/pdf,application/zip,video/*,audio/*"
+                  maxSizeNote="Tối đa 200MB. File chỉ deliver sau khi user mua thành công."
                 />
               </Field>
             </div>
