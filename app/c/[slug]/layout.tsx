@@ -40,7 +40,7 @@ export default async function CommunityLayout({
   if (!community) notFound();
 
   let membership = null;
-  let myCommunities: { id: string; slug: string; name: string }[] = [];
+  let myCommunities: { id: string; slug: string; name: string; iconUrl: string | null }[] = [];
   let freshUser: { id: string; name: string | null; email: string | null; image: string | null } | null = null;
   if (session?.user?.id) {
     [membership, , freshUser] = await Promise.all([
@@ -52,7 +52,7 @@ export default async function CommunityLayout({
       prisma.membership
         .findMany({
           where: { userId: session.user.id },
-          include: { community: { select: { id: true, slug: true, name: true } } },
+          include: { community: { select: { id: true, slug: true, name: true, iconUrl: true } } },
           orderBy: { joinedAt: "asc" },
         })
         .then((mems) => {

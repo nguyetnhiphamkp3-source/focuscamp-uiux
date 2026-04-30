@@ -9,6 +9,8 @@ type Community = {
   name: string;
   tagline: string | null;
   description: string | null;
+  bannerUrl: string | null;
+  iconUrl: string | null;
   memberCount: number;
   onlineCount: number;
 };
@@ -58,7 +60,9 @@ function GuestView({
       <div
         className="rs-banner"
         style={{
-          background: "linear-gradient(135deg,#c77a2d,#8a4f1e)",
+          background: community.bannerUrl
+            ? "transparent"
+            : "linear-gradient(135deg,#c77a2d,#8a4f1e)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -66,15 +70,32 @@ function GuestView({
           fontSize: "var(--text-3xl)",
           fontWeight: 800,
           fontFamily: "var(--font-heading)",
+          position: "relative",
+          overflow: "hidden",
         }}
       >
-        {community.name
-          .split(/\s+/)
-          .filter(Boolean)
-          .slice(0, 2)
-          .map((w) => w[0])
-          .join("")
-          .toUpperCase()}
+        {community.bannerUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={community.bannerUrl}
+            alt={community.name}
+            referrerPolicy="no-referrer"
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              display: "block",
+            }}
+          />
+        ) : (
+          community.name
+            .split(/\s+/)
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((w) => w[0])
+            .join("")
+            .toUpperCase()
+        )}
       </div>
       <CommunitySearchBar name={community.name} />
       <div className="rs-body">
@@ -168,8 +189,9 @@ function MemberView({
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/campfire.jpg"
-          alt="Campfire"
+          src={community.bannerUrl || "/campfire.jpg"}
+          alt={community.name}
+          referrerPolicy="no-referrer"
           style={{
             width: "100%",
             height: "100%",

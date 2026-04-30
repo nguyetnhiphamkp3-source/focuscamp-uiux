@@ -7,7 +7,7 @@ export function ServerList({
   activeSlug,
   onDiscovery,
 }: {
-  communities: { id: string; slug: string; name: string }[];
+  communities: { id: string; slug: string; name: string; iconUrl?: string | null }[];
   activeSlug?: string;
   onDiscovery?: boolean;
 }) {
@@ -40,11 +40,30 @@ export function ServerList({
             <div className={`indicator ${active ? "active" : ""}`}></div>
             <Link
               href={`/c/${c.slug}`}
-              className={`server-icon server-icon-text ${active ? "active" : ""}`}
-              style={{ background: BRAND_GRADIENTS[i % BRAND_GRADIENTS.length] }}
+              className={`server-icon ${c.iconUrl ? "" : "server-icon-text"} ${active ? "active" : ""}`}
+              style={
+                c.iconUrl
+                  ? { background: "var(--bg-card)", overflow: "hidden", padding: 0 }
+                  : { background: BRAND_GRADIENTS[i % BRAND_GRADIENTS.length] }
+              }
               title={c.name}
             >
-              {initials(c.name)}
+              {c.iconUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={c.iconUrl}
+                  alt={c.name}
+                  referrerPolicy="no-referrer"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    display: "block",
+                  }}
+                />
+              ) : (
+                initials(c.name)
+              )}
             </Link>
           </div>
         );

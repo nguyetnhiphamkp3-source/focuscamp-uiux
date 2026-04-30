@@ -17,14 +17,14 @@ export default async function ShellLayout({
 }) {
   const session = await auth();
 
-  let myCommunities: { id: string; slug: string; name: string }[] = [];
+  let myCommunities: { id: string; slug: string; name: string; iconUrl: string | null }[] = [];
   let notifUnread = 0;
   let freshUser: { id: string; name: string | null; email: string | null; image: string | null } | null = null;
   if (session?.user?.id) {
     const [mems, n, u] = await Promise.all([
       prisma.membership.findMany({
         where: { userId: session.user.id },
-        include: { community: { select: { id: true, slug: true, name: true } } },
+        include: { community: { select: { id: true, slug: true, name: true, iconUrl: true } } },
         orderBy: { joinedAt: "asc" },
       }),
       unreadCount(session.user.id),

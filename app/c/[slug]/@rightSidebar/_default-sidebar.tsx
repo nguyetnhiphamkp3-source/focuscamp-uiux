@@ -42,6 +42,8 @@ export async function DefaultRightSidebar({
         name: community.name,
         tagline: community.tagline,
         description: community.description,
+        bannerUrl: community.bannerUrl,
+        iconUrl: community.iconUrl,
         memberCount: community.memberCount,
         onlineCount: community.onlineCount,
       }}
