@@ -10,6 +10,7 @@ import {
   updateMemberRole,
   removeMember,
   updateUiConfig,
+  updateChannelConfig,
 } from "@/lib/services/community-settings";
 import {
   UpdatePillarsSchema,
@@ -19,6 +20,7 @@ import {
   UpdateMemberRoleSchema,
   RemoveMemberSchema,
   UpdateUiConfigSchema,
+  UpdateChannelConfigSchema,
 } from "@/lib/validations";
 import { logError } from "@/lib/logger";
 import type {
@@ -223,6 +225,40 @@ export async function removeMemberAction(input: {
       communityId: input.communityId,
       target: input.targetUserId,
     });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+export async function updateChannelConfigAction(input: {
+  communityId: string;
+  communitySlug: string;
+  discord: { webhookUrl: string; eventTypes: string[] } | null;
+  telegram: { botToken: string; chatId: string; eventTypes: string[] } | null;
+}): Promise<ActionResult> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+
+  const parsed = UpdateChannelConfigSchema.safeParse({
+    communityId: input.communityId,
+    discord: input.discord,
+    telegram: input.telegram,
+  });
+  if (!parsed.success) {
+    return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
+  }
+
+  try {
+    await updateChannelConfig({
+      userId: s.user.id,
+      communityId: parsed.data.communityId,
+      discord: parsed.data.discord,
+      telegram: parsed.data.telegram,
+    });
+    bump(input.communitySlug);
+    return { ok: true };
+  } catch (err) {
+    logError(err, { userId: s.user.id, communityId: input.communityId });
     if (err instanceof Error) return { ok: false, reason: err.message };
     return { ok: false, reason: "unknown" };
   }

@@ -102,6 +102,18 @@ export async function joinCommunity(
         where: { id: communityId },
         data: { memberCount: { increment: 1 } },
       });
+      // External channel notification (Discord/Telegram) — non-blocking
+      const u = await tx.user.findUnique({
+        where: { id: userId },
+        select: { name: true, email: true },
+      });
+      const displayName = u?.name || u?.email?.split("@")[0] || "Thành viên mới";
+      void import("./external-notify").then((m) =>
+        m.dispatchToChannels(communityId, "new_member", {
+          title: `🎉 ${displayName} vừa join cộng đồng`,
+          description: `Welcome ${displayName}!`,
+        }).catch(() => {})
+      );
       return { created: true, membership };
     });
   } catch (err) {

@@ -303,6 +303,7 @@ export const FeatureKeySchema = z.enum([
   "qa",
   "courses",
   "challenges",
+  "events",
   "leaderboard",
   "marketplace",
   "agent",
@@ -311,6 +312,31 @@ export const FeatureKeySchema = z.enum([
 export const UpdateUiConfigSchema = z.object({
   communityId: z.string().cuid(),
   hiddenFeatures: z.array(FeatureKeySchema).max(20),
+});
+
+export const ExternalEventTypeSchema = z.enum([
+  "new_member",
+  "checkin_submitted",
+  "post_cot",
+  "purchase_completed",
+  "challenge_completed",
+]);
+
+export const UpdateChannelConfigSchema = z.object({
+  communityId: z.string().cuid(),
+  discord: z
+    .object({
+      webhookUrl: z.string().url().or(z.literal("")),
+      eventTypes: z.array(ExternalEventTypeSchema),
+    })
+    .nullable(),
+  telegram: z
+    .object({
+      botToken: z.string().trim().min(0).max(200),
+      chatId: z.string().trim().min(0).max(80),
+      eventTypes: z.array(ExternalEventTypeSchema),
+    })
+    .nullable(),
 });
 
 export const UpdateMemberRoleSchema = z.object({

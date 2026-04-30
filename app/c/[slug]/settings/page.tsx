@@ -24,6 +24,7 @@ import { AgentActivityPanel } from "@/components/settings/agent-activity-panel";
 import { listApiKeys } from "@/app/actions/api-keys";
 import { AffiliateConfigEditor } from "@/components/settings/affiliate-config-editor";
 import { getAffiliateConfig } from "@/lib/services/affiliate";
+import { ChannelConfigEditor } from "@/components/settings/channel-config-editor";
 import { getPlanStatus } from "@/lib/platform-plans";
 import { getTiersConfig } from "@/lib/services/subscription";
 import { listMembers } from "@/lib/services/community-settings";
@@ -138,6 +139,29 @@ export default async function SettingsPage({
               initial={getAffiliateConfig(community)}
             />
           )}
+
+          {isOwner &&
+            (() => {
+              const cfg = (community.channelConfig ?? {}) as {
+                discord?: { webhookUrl: string; eventTypes: string[] };
+                telegram?: { chatId: string; eventTypes: string[] };
+              };
+              return (
+                <ChannelConfigEditor
+                  communityId={community.id}
+                  communitySlug={slug}
+                  initial={{
+                    discord: cfg.discord ?? null,
+                    telegram: cfg.telegram
+                      ? {
+                          chatId: cfg.telegram.chatId,
+                          eventTypes: cfg.telegram.eventTypes,
+                        }
+                      : null,
+                  }}
+                />
+              );
+            })()}
 
           {isOwner && <AgentActivityPanel communityId={community.id} />}
 

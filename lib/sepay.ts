@@ -52,8 +52,13 @@ export function buildVietQRUrl(params: {
 export async function createPayment(params: {
   userId: string;
   communityId?: string;
-  purpose: "subscription" | "product" | "challenge_deposit" | "community_plan";
-  refType: "subscription" | "product" | "challenge" | "community";
+  purpose:
+    | "subscription"
+    | "product"
+    | "challenge_deposit"
+    | "community_plan"
+    | "event";
+  refType: "subscription" | "product" | "challenge" | "community" | "event";
   refId: string;
   amountVnd: number;
   ttlMinutes?: number;

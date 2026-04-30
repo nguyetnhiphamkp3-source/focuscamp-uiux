@@ -176,6 +176,39 @@ export async function matchSePayTransactionToPayment(params: {
     } catch (err) {
       logger.warn({ err, purchaseId: payment.refId }, "[payment] referral conversion failed");
     }
+    // External notif: purchase completed
+    try {
+      const purchase = await prisma.purchase.findUnique({
+        where: { id: payment.refId },
+        select: {
+          amountVnd: true,
+          product: { select: { title: true, communityId: true } },
+        },
+      });
+      if (purchase) {
+        const { dispatchToChannels } = await import("./external-notify");
+        await dispatchToChannels(
+          purchase.product.communityId,
+          "purchase_completed",
+          {
+            title: `💰 Đơn hàng mới: ${purchase.product.title}`,
+            description: `${Number(purchase.amountVnd).toLocaleString("vi-VN")}đ`,
+          },
+        ).catch(() => {});
+      }
+    } catch {
+      /* swallow */
+    }
+  }
+
+  // Event booking confirm
+  if (payment.refType === "event") {
+    try {
+      const { confirmEventBooking } = await import("./event");
+      await confirmEventBooking(payment.refId, transactionId);
+    } catch (err) {
+      logger.warn({ err, bookingId: payment.refId }, "[payment] event confirm failed");
+    }
   }
 
   logger.info(

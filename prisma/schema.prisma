@@ -49,6 +49,8 @@ model User {
   referrals        Referral[]
   agentConversations AgentConversation[]
   apiKeys          ApiKey[]
+  ownedEvents      Event[]
+  eventBookings    EventBooking[]
 }
 
 model Account {
@@ -145,6 +147,7 @@ model Community {
   xpLedgers     XPLedger[]
   agentConversations AgentConversation[]
   apiKeys       ApiKey[]
+  events        Event[]
 }
 
 model Membership {
@@ -771,6 +774,49 @@ model AgentMessage {
   conversation AgentConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@index([conversationId, createdAt])
+}
+
+// ============= EVENTS / CALENDAR =============
+
+model Event {
+  id          String   @id @default(cuid())
+  communityId String
+  ownerId     String
+  type        String   @default("GROUP_LIVE") // ONE_ON_ONE | GROUP_LIVE | WORKSHOP
+  title       String
+  description String?  @db.Text
+  startsAt    DateTime
+  durationMin Int      @default(60)
+  capacity    Int      @default(1)
+  priceVnd    Int      @default(0)
+  isFree      Boolean  @default(false)
+  meetingUrl  String?
+  bannerUrl   String?
+  status      String   @default("OPEN") // OPEN | CANCELLED | COMPLETED
+  featuredOnGlobal Boolean @default(false)
+  createdAt   DateTime @default(now())
+
+  community Community      @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  owner     User           @relation(fields: [ownerId], references: [id])
+  bookings  EventBooking[]
+
+  @@index([communityId, startsAt])
+  @@index([featuredOnGlobal, startsAt])
+}
+
+model EventBooking {
+  id         String   @id @default(cuid())
+  eventId    String
+  userId     String
+  status     String   @default("PENDING") // PENDING | CONFIRMED | ATTENDED | NO_SHOW | REFUNDED
+  paymentRef String?
+  createdAt  DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@unique([eventId, userId])
+  @@index([userId, createdAt])
 }
 
 // ============= MCP / API KEYS =============

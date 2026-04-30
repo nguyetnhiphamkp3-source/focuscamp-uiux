@@ -4,6 +4,7 @@
  * levelsConfig). These are the dynamic "taxonomy" each community defines.
  */
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { logger } from "@/lib/logger";
 import type {
   PillarConfig,
@@ -261,6 +262,50 @@ export async function updateLevelsConfig(input: {
   logger.info(
     { communityId: input.communityId, count: cleaned.length, userId: input.userId },
     "[community-settings] levels updated"
+  );
+}
+
+export async function updateChannelConfig(input: {
+  userId: string;
+  communityId: string;
+  discord: { webhookUrl: string; eventTypes: string[] } | null;
+  telegram: { botToken: string; chatId: string; eventTypes: string[] } | null;
+}) {
+  await assertOwner(input.userId, input.communityId);
+  const { encryptSecret } = await import("@/lib/integrations/encryption");
+
+  const config: Record<string, unknown> = {};
+  if (input.discord && input.discord.webhookUrl.trim()) {
+    config.discord = {
+      webhookUrl: input.discord.webhookUrl.trim(),
+      eventTypes: input.discord.eventTypes,
+    };
+  }
+  if (
+    input.telegram &&
+    input.telegram.botToken.trim() &&
+    input.telegram.chatId.trim()
+  ) {
+    config.telegram = {
+      botToken: encryptSecret(input.telegram.botToken.trim()),
+      chatId: input.telegram.chatId.trim(),
+      eventTypes: input.telegram.eventTypes,
+    };
+  }
+
+  await prisma.community.update({
+    where: { id: input.communityId },
+    data: {
+      channelConfig: Object.keys(config).length ? (config as object) : Prisma.JsonNull,
+    },
+  });
+  logger.info(
+    {
+      communityId: input.communityId,
+      hasDiscord: !!config.discord,
+      hasTelegram: !!config.telegram,
+    },
+    "[community-settings] channel config updated"
   );
 }
 

@@ -145,7 +145,7 @@ export default async function CommunityLayout({
                 </FeatureLink>
               )}
 
-              {anyVisible("courses", "challenges", "leaderboard") && (
+              {anyVisible("courses", "challenges", "events", "leaderboard") && (
                 <div className="features-section-title">Học tập</div>
               )}
               {visible("courses") && (
@@ -158,6 +158,12 @@ export default async function CommunityLayout({
                 <FeatureLink href={`/c/${slug}/challenges`}>
                   <span className="feature-icon"><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></span>
                   <span className="feature-name">Challenge</span>
+                </FeatureLink>
+              )}
+              {visible("events") && (
+                <FeatureLink href={`/c/${slug}/events`}>
+                  <span className="feature-icon"><svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg></span>
+                  <span className="feature-name">Events</span>
                 </FeatureLink>
               )}
               {visible("leaderboard") && (
