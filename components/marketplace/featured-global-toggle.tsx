@@ -3,13 +3,18 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { setProductFeaturedGlobalAction } from "@/app/actions/marketplace";
+import { setCourseFeaturedGlobalAction } from "@/app/actions/course";
+
+export type FeaturedKind = "product" | "course";
 
 export function FeaturedGlobalToggle({
-  productId,
+  kind,
+  resourceId,
   communitySlug,
   initial,
 }: {
-  productId: string;
+  kind: FeaturedKind;
+  resourceId: string;
   communitySlug: string;
   initial: boolean;
 }) {
@@ -23,11 +28,18 @@ export function FeaturedGlobalToggle({
     setFeatured(next);
     setErr(null);
     start(async () => {
-      const res = await setProductFeaturedGlobalAction({
-        productId,
-        communitySlug,
-        featured: next,
-      });
+      const res =
+        kind === "product"
+          ? await setProductFeaturedGlobalAction({
+              productId: resourceId,
+              communitySlug,
+              featured: next,
+            })
+          : await setCourseFeaturedGlobalAction({
+              courseId: resourceId,
+              communitySlug,
+              featured: next,
+            });
       if (!res.ok) {
         setFeatured(!next);
         setErr(res.reason);

@@ -10,7 +10,7 @@ export const metadata = {
     "Khám phá digital products + challenges từ tất cả community trên focus.camp",
 };
 
-type Tab = "products" | "challenges";
+type Tab = "products" | "challenges" | "courses";
 
 export default async function GlobalMarketplacePage({
   searchParams,
@@ -19,7 +19,7 @@ export default async function GlobalMarketplacePage({
 }) {
   const { tab = "products" } = await searchParams;
 
-  const [products, challenges] = await Promise.all([
+  const [products, challenges, courses] = await Promise.all([
     prisma.product.findMany({
       where: { featuredOnGlobal: true },
       orderBy: { createdAt: "desc" },
@@ -38,6 +38,15 @@ export default async function GlobalMarketplacePage({
       include: {
         community: { select: { slug: true, name: true, iconUrl: true } },
         _count: { select: { members: true } },
+      },
+    }),
+    prisma.course.findMany({
+      where: { featuredOnGlobal: true, isPublished: true },
+      orderBy: { createdAt: "desc" },
+      take: 60,
+      include: {
+        community: { select: { slug: true, name: true, iconUrl: true } },
+        _count: { select: { lessons: true } },
       },
     }),
   ]);
@@ -62,6 +71,7 @@ export default async function GlobalMarketplacePage({
           }}
         >
           <TabLink current={tab} to="products" label={`🛒 Products (${products.length})`} />
+          <TabLink current={tab} to="courses" label={`📚 Courses (${courses.length})`} />
           <TabLink current={tab} to="challenges" label={`⚔️ Challenges (${challenges.length})`} />
         </div>
 
@@ -114,6 +124,72 @@ export default async function GlobalMarketplacePage({
                       <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
                         {p.soldCount} đã bán
                       </span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )
+        )}
+
+        {tab === "courses" && (
+          courses.length === 0 ? (
+            <Empty
+              title="Chưa có khoá học nào public"
+              desc="Chủ community cần publish course + bật toggle 'Hiện global' trong courses list."
+            />
+          ) : (
+            <div className="mk-grid">
+              {courses.map((c) => (
+                <Link
+                  key={c.id}
+                  href={`/c/${c.community.slug}/courses/${c.slug}`}
+                  style={{
+                    background: "var(--bg-card)",
+                    border: "1px solid var(--border-subtle)",
+                    borderRadius: 12,
+                    overflow: "hidden",
+                    display: "flex",
+                    flexDirection: "column",
+                    textDecoration: "none",
+                    color: "inherit",
+                  }}
+                >
+                  {c.thumbnailUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={c.thumbnailUrl}
+                      alt={c.title}
+                      style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover" }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        aspectRatio: "16 / 9",
+                        background:
+                          "linear-gradient(135deg, #5b7ba3, #2d4b72)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 36,
+                      }}
+                    >
+                      📚
+                    </div>
+                  )}
+                  <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 6 }}>
+                    <CommunityBadge community={c.community} />
+                    <div style={{ fontWeight: 700, fontSize: "var(--text-md)", color: "var(--header-primary)", lineHeight: 1.3 }}>
+                      {c.title}
+                    </div>
+                    {c.description && (
+                      <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                        {c.description}
+                      </div>
+                    )}
+                    <div style={{ display: "flex", gap: 12, fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 2 }}>
+                      <span>📹 {c._count.lessons} bài</span>
+                      <span>🎓 {c.level}</span>
                     </div>
                   </div>
                 </Link>

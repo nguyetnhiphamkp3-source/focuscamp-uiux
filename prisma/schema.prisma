@@ -212,12 +212,15 @@ model Course {
   xpReward     Int      @default(0)
   aipReward    Int      @default(0)
   isPublished  Boolean  @default(false)
+  /** Owner opt-in: include this course on the global marketplace. */
+  featuredOnGlobal Boolean @default(false)
   createdAt    DateTime @default(now())
 
   community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
   lessons   Lesson[]
 
   @@unique([communityId, slug])
+  @@index([featuredOnGlobal, createdAt])
 }
 
 model Lesson {

@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CreateCourseButton } from "@/components/community/create-course-button";
+import { FeaturedGlobalToggle } from "@/components/marketplace/featured-global-toggle";
 
 export const dynamic = "force-dynamic";
 
@@ -90,8 +91,8 @@ export default async function CoursesPage({
                 const isPro =
                   c.requiredTier === "PRO" || c.level === "ADVANCED";
                 return (
+                  <div key={c.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <Link
-                    key={c.id}
                     href={`/c/${slug}/courses/${c.slug}`}
                     className="course-card"
                     style={{ textDecoration: "none", color: "inherit" }}
@@ -137,6 +138,15 @@ export default async function CoursesPage({
                       </span>
                     </div>
                   </Link>
+                  {isOwner && (
+                    <FeaturedGlobalToggle
+                      kind="course"
+                      resourceId={c.id}
+                      communitySlug={slug}
+                      initial={c.featuredOnGlobal}
+                    />
+                  )}
+                  </div>
                 );
               })}
             </div>

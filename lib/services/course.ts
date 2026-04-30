@@ -73,6 +73,7 @@ export async function updateCourse(input: {
   level?: string;
   isPublished?: boolean;
   thumbnailUrl?: string | null;
+  featuredOnGlobal?: boolean;
 }) {
   await assertCourseAdmin(input.userId, input.courseId);
   const updated = await prisma.course.update({
@@ -90,9 +91,28 @@ export async function updateCourse(input: {
       ...(input.thumbnailUrl !== undefined
         ? { thumbnailUrl: input.thumbnailUrl }
         : {}),
+      ...(input.featuredOnGlobal !== undefined
+        ? { featuredOnGlobal: input.featuredOnGlobal }
+        : {}),
     },
   });
   return updated;
+}
+
+export async function setCourseFeaturedGlobal(input: {
+  userId: string;
+  courseId: string;
+  featured: boolean;
+}) {
+  await assertCourseAdmin(input.userId, input.courseId);
+  await prisma.course.update({
+    where: { id: input.courseId },
+    data: { featuredOnGlobal: input.featured },
+  });
+  logger.info(
+    { courseId: input.courseId, featured: input.featured, by: input.userId },
+    "[course] featuredOnGlobal toggled"
+  );
 }
 
 export async function createLesson(input: {

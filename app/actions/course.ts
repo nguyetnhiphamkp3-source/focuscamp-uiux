@@ -8,6 +8,7 @@ import {
   createLesson,
   updateLesson,
   deleteLesson,
+  setCourseFeaturedGlobal,
 } from "@/lib/services/course";
 import {
   CreateCourseSchema,
@@ -223,6 +224,29 @@ export async function deleteLessonAction(input: {
     return { ok: true };
   } catch (err) {
     logError(err, { userId: s.user.id, lessonId: input.lessonId });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+export async function setCourseFeaturedGlobalAction(input: {
+  courseId: string;
+  communitySlug: string;
+  featured: boolean;
+}): Promise<ActionResult> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+  try {
+    await setCourseFeaturedGlobal({
+      userId: s.user.id,
+      courseId: input.courseId,
+      featured: input.featured,
+    });
+    revalidatePath(`/c/${input.communitySlug}/courses`);
+    revalidatePath(`/marketplace`);
+    return { ok: true };
+  } catch (err) {
+    logError(err, { userId: s.user.id, courseId: input.courseId });
     if (err instanceof Error) return { ok: false, reason: err.message };
     return { ok: false, reason: "unknown" };
   }

@@ -160,7 +160,8 @@ export default async function MarketplacePage({
                   />
                   {isOwner && (
                     <FeaturedGlobalToggle
-                      productId={p.id}
+                      kind="product"
+                      resourceId={p.id}
                       communitySlug={slug}
                       initial={p.featuredOnGlobal}
                     />
