@@ -54,8 +54,16 @@ export function ImageUploadField({
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+        onChange={onPick}
+        disabled={disabled}
+        style={{ display: "none" }}
+      />
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         {value ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -66,6 +74,7 @@ export function ImageUploadField({
               ...dim,
               objectFit: "cover",
               border: "1px solid var(--border-subtle)",
+              flexShrink: 0,
             }}
           />
         ) : (
@@ -81,66 +90,59 @@ export function ImageUploadField({
               fontSize: "var(--text-xs)",
               textAlign: "center",
               padding: 4,
+              flexShrink: 0,
             }}
           >
             {placeholder || "Chưa có ảnh"}
           </div>
         )}
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
-            onChange={onPick}
-            disabled={disabled}
-            style={{ display: "none" }}
-          />
-          <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            disabled={disabled || uploading}
+            style={{
+              padding: "6px 10px",
+              borderRadius: 6,
+              border: "1px solid var(--border-subtle)",
+              background: "var(--bg-card)",
+              color: "var(--interactive-normal)",
+              fontSize: "var(--text-sm)",
+              cursor: uploading ? "not-allowed" : "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {uploading ? "Đang tải…" : value ? "Đổi ảnh" : "Tải ảnh lên"}
+          </button>
+          {value && (
             <button
               type="button"
-              onClick={() => inputRef.current?.click()}
+              onClick={() => onChange(null)}
               disabled={disabled || uploading}
               style={{
-                padding: "7px 12px",
+                padding: "6px 10px",
                 borderRadius: 6,
                 border: "1px solid var(--border-subtle)",
-                background: "var(--bg-card)",
-                color: "var(--interactive-normal)",
+                background: "transparent",
+                color: "var(--text-muted)",
                 fontSize: "var(--text-sm)",
-                cursor: uploading ? "not-allowed" : "pointer",
+                cursor: "pointer",
+                whiteSpace: "nowrap",
               }}
             >
-              {uploading ? "Đang tải…" : value ? "Đổi ảnh" : "Tải ảnh lên"}
+              Xoá
             </button>
-            {value && (
-              <button
-                type="button"
-                onClick={() => onChange(null)}
-                disabled={disabled || uploading}
-                style={{
-                  padding: "7px 12px",
-                  borderRadius: 6,
-                  border: "1px solid var(--border-subtle)",
-                  background: "transparent",
-                  color: "var(--text-muted)",
-                  fontSize: "var(--text-sm)",
-                  cursor: "pointer",
-                }}
-              >
-                Xoá
-              </button>
-            )}
-          </div>
-          <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
-            JPG, PNG, WebP. {maxSizeNote}.
-          </span>
+          )}
         </div>
       </div>
-      {err && (
-        <span style={{ fontSize: "var(--text-xs)", color: "var(--danger)" }}>
-          {err}
-        </span>
-      )}
+      <div
+        style={{
+          fontSize: "var(--text-xs)",
+          color: err ? "var(--danger)" : "var(--text-muted)",
+        }}
+      >
+        {err || `JPG, PNG, WebP · ${maxSizeNote}`}
+      </div>
     </div>
   );
 }
