@@ -2,13 +2,29 @@ import { auth, signIn } from "@/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
-export default async function LoginPage() {
-  const session = await auth();
-  if (session?.user) redirect("/");
+function safeRedirect(value: string | string[] | undefined): string {
+  const v = Array.isArray(value) ? value[0] : value;
+  if (!v) return "/";
+  // Only allow relative URLs starting with single "/"
+  if (!v.startsWith("/") || v.startsWith("//")) return "/";
+  return v;
+}
 
-  async function handleGoogleSignIn() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ redirectTo?: string }>;
+}) {
+  const { redirectTo: redirectParam } = await searchParams;
+  const redirectTo = safeRedirect(redirectParam);
+
+  const session = await auth();
+  if (session?.user) redirect(redirectTo);
+
+  async function handleGoogleSignIn(formData: FormData) {
     "use server";
-    await signIn("google", { redirectTo: "/" });
+    const target = safeRedirect(formData.get("redirectTo") as string | undefined);
+    await signIn("google", { redirectTo: target });
   }
 
   return (
@@ -38,6 +54,7 @@ export default async function LoginPage() {
         </p>
 
         <form action={handleGoogleSignIn}>
+          <input type="hidden" name="redirectTo" value={redirectTo} />
           <button
             type="submit"
             className="w-full px-6 py-3 rounded-lg font-bold flex items-center justify-center gap-3"
