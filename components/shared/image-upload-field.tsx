@@ -5,13 +5,16 @@ import { uploadImage, type UploadContext } from "@/lib/upload-client";
 
 type Shape = "circle" | "square" | "banner";
 
-const SHAPE_STYLE: Record<
-  Shape,
-  { width: number; height: number; borderRadius: number | string }
-> = {
+const SHAPE_STYLE: Record<Shape, React.CSSProperties> = {
   circle: { width: 72, height: 72, borderRadius: "50%" },
   square: { width: 72, height: 72, borderRadius: 12 },
-  banner: { width: 200, height: 80, borderRadius: 8 },
+  // Match recommended banner 1600×600 = 8:3 ratio. Width responsive up to 280px.
+  banner: {
+    width: "100%",
+    maxWidth: 280,
+    aspectRatio: "8 / 3",
+    borderRadius: 8,
+  },
 };
 
 export function ImageUploadField({
@@ -63,7 +66,7 @@ export function ImageUploadField({
         disabled={disabled}
         style={{ display: "none" }}
       />
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         {value ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
