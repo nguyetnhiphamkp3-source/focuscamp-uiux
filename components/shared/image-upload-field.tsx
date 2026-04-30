@@ -8,11 +8,11 @@ type Shape = "circle" | "square" | "banner";
 const SHAPE_STYLE: Record<Shape, React.CSSProperties> = {
   circle: { width: 72, height: 72, borderRadius: "50%" },
   square: { width: 72, height: 72, borderRadius: 12 },
-  // Match recommended banner 1600×600 = 8:3 ratio. Width responsive up to 280px.
+  // Match actual banner render (16:9). Width responsive up to 280px.
   banner: {
     width: "100%",
     maxWidth: 280,
-    aspectRatio: "8 / 3",
+    aspectRatio: "16 / 9",
     borderRadius: 8,
   },
 };

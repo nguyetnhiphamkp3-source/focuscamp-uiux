@@ -117,7 +117,7 @@ export function CommunityInfoEditor({
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
-              Banner (1600×600 khuyến nghị)
+              Banner (1600×900 / 16:9 khuyến nghị)
             </span>
             <ImageUploadField
               value={bannerUrl || null}
