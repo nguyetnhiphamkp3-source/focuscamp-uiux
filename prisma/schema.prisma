@@ -110,6 +110,15 @@ model Community {
   /** UI visibility config — { hiddenFeatures: FeatureKey[] } */
   uiConfig      Json?
 
+  /** Affiliate program config — { enabled, commissionPercent, cookieDays } */
+  affiliateConfig Json?
+
+  /** External notification channels — { discord?: { webhookUrl, eventTypes }, telegram?: { botToken, chatId, eventTypes } } */
+  channelConfig Json?
+
+  /** Agency tier toggle — hide focus.camp brand footer */
+  whiteLabel    Boolean @default(false)
+
   /** Platform-level plan tier paid by owner: SOLO | PRO | AGENCY | GRANDFATHER */
   planTier      String  @default("SOLO")
   /** Null = not active yet (PENDING payment) OR grandfathered (lifetime free). Otherwise expiry date. */
@@ -544,6 +553,8 @@ model Product {
   soldCount          Int      @default(0)
   /** Owner opt-in: include this product on the global marketplace. */
   featuredOnGlobal   Boolean  @default(false)
+  /** Template for generated license keys, e.g. "FC-{XXXX}-{XXXX}". Only used when type=LICENSE. */
+  licenseKeyTemplate String?
   createdAt          DateTime @default(now())
 
   community  Community          @relation(fields: [communityId], references: [id], onDelete: Cascade)
@@ -561,6 +572,8 @@ model Purchase {
   amountVnd  Decimal  @db.Decimal(15, 2)
   paymentRef String?
   status     String   @default("PENDING")
+  /** Auto-generated license key (only set for LICENSE-type products after activation). */
+  licenseKey String?
   createdAt  DateTime @default(now())
 
   product Product @relation(fields: [productId], references: [id])

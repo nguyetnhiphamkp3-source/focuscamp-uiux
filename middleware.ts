@@ -56,9 +56,21 @@ const SESSION_COOKIES = [
 ];
 
 export default function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+  const { pathname, searchParams } = req.nextUrl;
 
   const res = NextResponse.next();
+
+  // Affiliate tracking: ?ref=<code> sets cookie fc_ref for 30 days
+  const refCode = searchParams.get("ref");
+  if (refCode && /^[A-Za-z0-9]{4,16}$/.test(refCode)) {
+    res.cookies.set("fc_ref", refCode, {
+      maxAge: 30 * 24 * 60 * 60,
+      path: "/",
+      sameSite: "lax",
+      httpOnly: false,
+    });
+  }
+
   res.headers.set("X-Content-Type-Options", "nosniff");
   res.headers.set("X-Frame-Options", "SAMEORIGIN");
   res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");

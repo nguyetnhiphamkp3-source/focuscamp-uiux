@@ -39,6 +39,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       } catch (err) {
         logger.warn({ err, email: user.email }, "[auth] welcome email failed");
       }
+      // Affiliate referral attribution from cookie
+      try {
+        const { cookies } = await import("next/headers");
+        const c = await cookies();
+        const ref = c.get("fc_ref")?.value;
+        if (ref && user.id) {
+          const { attributeReferralOnSignup } = await import(
+            "@/lib/services/affiliate"
+          );
+          await attributeReferralOnSignup({
+            referredUserId: user.id,
+            refCode: ref,
+          });
+        }
+      } catch (err) {
+        logger.warn({ err }, "[auth] affiliate attribution failed");
+      }
     },
   },
 });

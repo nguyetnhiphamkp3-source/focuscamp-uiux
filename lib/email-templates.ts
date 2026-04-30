@@ -173,6 +173,20 @@ export function challengeJoinedEmail(input: {
   return { subject, html, text };
 }
 
+/* ─── License key delivery ───────────────────────────────────── */
+export function licenseKeyEmail(input: { key: string; productName: string }) {
+  const subject = `🔑 Key cho ${input.productName}`;
+  const html = shell(
+    subject,
+    `<h2 style="margin:0 0 12px;font-size:20px;">License key của bạn</h2>
+     <p>Cảm ơn bạn đã mua <strong>${escape(input.productName)}</strong>. Đây là license key:</p>
+     <pre style="background:#f4f1ea;border:1px solid #e8e2d5;border-radius:8px;padding:14px 16px;font-family:monospace;font-size:16px;letter-spacing:1px;text-align:center;color:${BRAND_GREEN};margin:16px 0;">${escape(input.key)}</pre>
+     <p style="font-size:13px;color:#7c7568;">Lưu key cẩn thận. Bạn cũng có thể xem lại trên trang sản phẩm bất kỳ lúc nào.</p>`
+  );
+  const text = `License key cho ${input.productName}: ${input.key}`;
+  return { subject, html, text };
+}
+
 /* ─── 6. Refund processed ─────────────────────────────────────── */
 export function refundProcessedEmail(input: {
   amountVnd: number;

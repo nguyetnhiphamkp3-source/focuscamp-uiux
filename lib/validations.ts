@@ -414,6 +414,7 @@ export const CreateProductSchema = z.object({
   externalUrl: z.string().url().optional().or(z.literal("")),
   fileUrl: z.string().url().optional().or(z.literal("")),
   thumbnailUrl: z.string().url().optional().or(z.literal("")),
+  licenseKeyTemplate: z.string().trim().max(80).optional().or(z.literal("")),
 });
 
 /* ========== Helper ========== */

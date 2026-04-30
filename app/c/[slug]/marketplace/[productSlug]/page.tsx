@@ -33,6 +33,7 @@ export default async function ProductDetailPage({
   const session = await auth();
   let isMember = false;
   let hasPurchased = false;
+  let licenseKey: string | null = null;
   if (session?.user?.id) {
     const [m, p] = await Promise.all([
       prisma.membership.findUnique({
@@ -50,11 +51,12 @@ export default async function ProductDetailPage({
           productId: product.id,
           status: "COMPLETED",
         },
-        select: { id: true },
+        select: { id: true, licenseKey: true },
       }),
     ]);
     isMember = !!m;
     hasPurchased = !!p;
+    licenseKey = p?.licenseKey ?? null;
   }
   // Free products available to any member
   const canDownload =
@@ -243,6 +245,38 @@ export default async function ProductDetailPage({
                   </a>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* License key (after LICENSE purchase) */}
+          {licenseKey && (
+            <div className="ui-card" style={{ marginBottom: "var(--space-3)" }}>
+              <div
+                style={{
+                  fontSize: "var(--text-sm)",
+                  color: "var(--text-muted)",
+                  marginBottom: "var(--space-2)",
+                }}
+              >
+                🔑 License key của bạn (đã gửi qua email)
+              </div>
+              <code
+                style={{
+                  display: "block",
+                  background: "var(--bg-elevated)",
+                  border: "1px solid var(--border-subtle)",
+                  borderRadius: 8,
+                  padding: "12px 14px",
+                  fontFamily: "monospace",
+                  fontSize: "var(--text-md)",
+                  letterSpacing: 1,
+                  color: "var(--brand-green)",
+                  textAlign: "center",
+                  userSelect: "all",
+                }}
+              >
+                {licenseKey}
+              </code>
             </div>
           )}
 

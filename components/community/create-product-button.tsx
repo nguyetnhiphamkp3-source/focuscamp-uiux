@@ -23,6 +23,7 @@ export function CreateProductButton({
   const [priceVnd, setPriceVnd] = useState("");
   const [externalUrl, setExternalUrl] = useState("");
   const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const [licenseKeyTemplate, setLicenseKeyTemplate] = useState("FC-{XXXX}-{XXXX}");
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
 
@@ -48,6 +49,8 @@ export function CreateProductButton({
         isFree: price === 0,
         externalUrl: externalUrl.trim() || undefined,
         fileUrl: fileUrl || undefined,
+        licenseKeyTemplate:
+          type === "LICENSE" ? licenseKeyTemplate.trim() || undefined : undefined,
       });
       if (res.ok && res.data) {
         setOpen(false);
@@ -182,6 +185,8 @@ export function CreateProductButton({
                     <option value="TOOL">🛠️ Tool</option>
                     <option value="SOP">📋 SOP</option>
                     <option value="BUNDLE">📦 Bundle</option>
+                    <option value="PROMPT">💬 Prompt</option>
+                    <option value="LICENSE">🔑 License (Software)</option>
                   </select>
                 </Field>
                 <Field label="Giá (VND, 0 = miễn phí)">
@@ -219,6 +224,23 @@ export function CreateProductButton({
                   maxSizeNote="Tối đa 200MB. File chỉ deliver sau khi user mua thành công."
                 />
               </Field>
+
+              {type === "LICENSE" && (
+                <Field
+                  label="License key template"
+                  hint="{XXXX} = 4 ký tự random. VD: FC-{XXXX}-{XXXX} → FC-A8K2-X9P4"
+                >
+                  <input
+                    type="text"
+                    value={licenseKeyTemplate}
+                    onChange={(e) => setLicenseKeyTemplate(e.target.value)}
+                    maxLength={80}
+                    disabled={pending}
+                    style={inputStyle}
+                    placeholder="FC-{XXXX}-{XXXX}"
+                  />
+                </Field>
+              )}
             </div>
 
             {err && (

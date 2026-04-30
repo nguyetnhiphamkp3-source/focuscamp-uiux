@@ -162,6 +162,22 @@ export async function matchSePayTransactionToPayment(params: {
     }
   }
 
+  // License key + affiliate conversion for product purchase
+  if (payment.refType === "product") {
+    try {
+      const { assignLicenseKey } = await import("./license");
+      await assignLicenseKey(payment.refId);
+    } catch (err) {
+      logger.warn({ err, purchaseId: payment.refId }, "[payment] license assign failed");
+    }
+    try {
+      const { convertReferralFromPurchase } = await import("./affiliate");
+      await convertReferralFromPurchase(payment.refId, payment.userId);
+    } catch (err) {
+      logger.warn({ err, purchaseId: payment.refId }, "[payment] referral conversion failed");
+    }
+  }
+
   logger.info(
     { paymentCode, transactionId, amount, refType: payment.refType },
     "[payment] matched + activated"

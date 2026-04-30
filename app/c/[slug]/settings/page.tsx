@@ -22,6 +22,8 @@ import { AgentConfigEditor } from "@/components/settings/agent-config-editor";
 import { ApiKeysPanel } from "@/components/settings/api-keys-panel";
 import { AgentActivityPanel } from "@/components/settings/agent-activity-panel";
 import { listApiKeys } from "@/app/actions/api-keys";
+import { AffiliateConfigEditor } from "@/components/settings/affiliate-config-editor";
+import { getAffiliateConfig } from "@/lib/services/affiliate";
 import { getPlanStatus } from "@/lib/platform-plans";
 import { getTiersConfig } from "@/lib/services/subscription";
 import { listMembers } from "@/lib/services/community-settings";
@@ -126,6 +128,14 @@ export default async function SettingsPage({
               communityId={community.id}
               communitySlug={slug}
               initial={apiKeys}
+            />
+          )}
+
+          {isOwner && (
+            <AffiliateConfigEditor
+              communityId={community.id}
+              communitySlug={slug}
+              initial={getAffiliateConfig(community)}
             />
           )}
 

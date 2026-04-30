@@ -23,6 +23,7 @@ export async function createProductAction(input: {
   externalUrl?: string;
   fileUrl?: string;
   thumbnailUrl?: string;
+  licenseKeyTemplate?: string;
 }): Promise<ActionResult<{ slug: string }>> {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
@@ -39,6 +40,7 @@ export async function createProductAction(input: {
     externalUrl: input.externalUrl,
     fileUrl: input.fileUrl,
     thumbnailUrl: input.thumbnailUrl,
+    licenseKeyTemplate: input.licenseKeyTemplate,
   });
   if (!parsed.success) {
     return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
@@ -58,6 +60,7 @@ export async function createProductAction(input: {
       externalUrl: parsed.data.externalUrl ?? undefined,
       fileUrl: parsed.data.fileUrl ?? undefined,
       thumbnailUrl: parsed.data.thumbnailUrl ?? undefined,
+      licenseKeyTemplate: parsed.data.licenseKeyTemplate || undefined,
     });
     revalidatePath(`/c/${input.communitySlug}/marketplace`);
     return { ok: true, data: { slug: p.slug } };

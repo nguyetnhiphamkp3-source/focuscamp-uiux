@@ -28,6 +28,7 @@ export async function createProduct(input: {
   externalUrl?: string;
   fileUrl?: string;
   thumbnailUrl?: string;
+  licenseKeyTemplate?: string;
 }) {
   await assertCommunityOwner(input.userId, input.communityId);
   const existing = await prisma.product.findFirst({
@@ -50,6 +51,10 @@ export async function createProduct(input: {
       externalUrl: input.externalUrl?.trim() || null,
       fileUrl: input.fileUrl?.trim() || null,
       thumbnailUrl: input.thumbnailUrl?.trim() || null,
+      licenseKeyTemplate:
+        input.type === "LICENSE"
+          ? input.licenseKeyTemplate?.trim() || "FC-{XXXX}-{XXXX}"
+          : null,
     },
   });
   logger.info({ productId: product.id, by: input.userId }, "[product] created");
