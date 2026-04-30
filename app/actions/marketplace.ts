@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
-import { createProduct } from "@/lib/services/marketplace";
+import { createProduct, setProductFeaturedGlobal } from "@/lib/services/marketplace";
 import { CreateProductSchema } from "@/lib/validations";
 import { logError } from "@/lib/logger";
 
@@ -57,6 +57,29 @@ export async function createProductAction(input: {
     return { ok: true, data: { slug: p.slug } };
   } catch (err) {
     logError(err, { userId: s.user.id, communityId: input.communityId });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+export async function setProductFeaturedGlobalAction(input: {
+  productId: string;
+  communitySlug: string;
+  featured: boolean;
+}): Promise<ActionResult> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+  try {
+    await setProductFeaturedGlobal({
+      userId: s.user.id,
+      productId: input.productId,
+      featured: input.featured,
+    });
+    revalidatePath(`/c/${input.communitySlug}/marketplace`);
+    revalidatePath(`/marketplace`);
+    return { ok: true };
+  } catch (err) {
+    logError(err, { userId: s.user.id, productId: input.productId });
     if (err instanceof Error) return { ok: false, reason: err.message };
     return { ok: false, reason: "unknown" };
   }

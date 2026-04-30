@@ -51,3 +51,27 @@ export async function createProduct(input: {
   logger.info({ productId: product.id, by: input.userId }, "[product] created");
   return product;
 }
+
+/**
+ * Owner toggles whether this product appears on the global marketplace.
+ */
+export async function setProductFeaturedGlobal(input: {
+  userId: string;
+  productId: string;
+  featured: boolean;
+}) {
+  const product = await prisma.product.findUnique({
+    where: { id: input.productId },
+    select: { communityId: true },
+  });
+  if (!product) throw new Error("Sản phẩm không tồn tại");
+  await assertCommunityOwner(input.userId, product.communityId);
+  await prisma.product.update({
+    where: { id: input.productId },
+    data: { featuredOnGlobal: input.featured },
+  });
+  logger.info(
+    { productId: input.productId, featured: input.featured, by: input.userId },
+    "[product] featuredOnGlobal toggled"
+  );
+}

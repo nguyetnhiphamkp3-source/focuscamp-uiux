@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { ProductCard, fmtVnd } from "@/components/marketplace/product-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CreateProductButton } from "@/components/community/create-product-button";
+import { FeaturedGlobalToggle } from "@/components/marketplace/featured-global-toggle";
 
 export const dynamic = "force-dynamic";
 
@@ -151,12 +152,20 @@ export default async function MarketplacePage({
           ) : (
             <div className="mk-grid">
               {products.map((p, idx) => (
-                <ProductCard
-                  key={p.id}
-                  product={p}
-                  communitySlug={slug}
-                  idx={idx}
-                />
+                <div key={p.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <ProductCard
+                    product={p}
+                    communitySlug={slug}
+                    idx={idx}
+                  />
+                  {isOwner && (
+                    <FeaturedGlobalToggle
+                      productId={p.id}
+                      communitySlug={slug}
+                      initial={p.featuredOnGlobal}
+                    />
+                  )}
+                </div>
               ))}
             </div>
           )}

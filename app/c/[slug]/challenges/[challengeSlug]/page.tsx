@@ -263,6 +263,7 @@ export default async function ChallengeDetailPage({
                 freezeStartsAt: challenge.freezeStartsAt,
                 freezeEndsAt: challenge.freezeEndsAt,
                 bannerUrl: challenge.bannerUrl,
+                featuredOnGlobal: challenge.featuredOnGlobal,
               }}
             />
           )}

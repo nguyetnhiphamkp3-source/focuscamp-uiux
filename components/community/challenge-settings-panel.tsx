@@ -26,6 +26,7 @@ export function ChallengeSettingsPanel({
     freezeStartsAt: Date | null;
     freezeEndsAt: Date | null;
     bannerUrl: string | null;
+    featuredOnGlobal: boolean;
   };
 }) {
   const router = useRouter();
@@ -36,6 +37,7 @@ export function ChallengeSettingsPanel({
     initial.requiresApproval
   );
   const [bannerUrl, setBannerUrl] = useState<string | null>(initial.bannerUrl);
+  const [featuredOnGlobal, setFeaturedOnGlobal] = useState(initial.featuredOnGlobal);
   const [freezeFromDay, setFreezeFromDay] = useState<string>(
     initial.freezeFromDay?.toString() ?? ""
   );
@@ -59,6 +61,7 @@ export function ChallengeSettingsPanel({
         description: description.trim(),
         requiresApproval,
         bannerUrl: bannerUrl ?? "",
+        featuredOnGlobal,
         freezeFromDay: freezeFromDay ? parseInt(freezeFromDay, 10) : null,
         freezeStartsAt: freezeStartsAt
           ? new Date(freezeStartsAt).toISOString()
@@ -205,6 +208,48 @@ export function ChallengeSettingsPanel({
               >
                 Khi bật: người tham gia phải chờ admin duyệt mới bắt đầu timer.
                 Khi tắt (mặc định): auto ACTIVE + bắt đầu ngay.
+              </div>
+            </div>
+          </label>
+
+          <label
+            style={{
+              display: "flex",
+              gap: 10,
+              alignItems: "flex-start",
+              cursor: "pointer",
+              padding: "8px 12px",
+              background: "var(--bg-card)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: 8,
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={featuredOnGlobal}
+              onChange={(e) => setFeaturedOnGlobal(e.target.checked)}
+              disabled={pending}
+              style={{ marginTop: 3 }}
+            />
+            <div>
+              <div
+                style={{
+                  fontSize: "var(--text-sm)",
+                  fontWeight: 600,
+                  color: "var(--header-primary)",
+                }}
+              >
+                🌐 Hiện trên Marketplace chung
+              </div>
+              <div
+                style={{
+                  fontSize: "var(--text-xs)",
+                  color: "var(--text-muted)",
+                  marginTop: 2,
+                }}
+              >
+                Cho phép challenge này xuất hiện ở /marketplace public — user
+                ngoài cộng đồng có thể khám phá và join.
               </div>
             </div>
           </label>
