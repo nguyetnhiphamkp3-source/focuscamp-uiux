@@ -6,8 +6,8 @@ import type {
 } from "@/lib/community-config";
 import type { HeatmapDay } from "@/lib/services/profile";
 import { ProfileHeader } from "./profile-header";
-import { ProfileStats } from "./profile-stats";
-import { ProfileHeatmap } from "./profile-heatmap";
+import { ProfileLevelCard } from "./profile-stats";
+import { ProfileOverviewCard } from "./profile-overview-card";
 import { ProfileCommunityList } from "./profile-community-list";
 import { ProfileRecentPosts } from "./profile-recent-posts";
 import { toSlug } from "@/lib/brand";
@@ -150,19 +150,20 @@ export function ProfileView({
           />
 
           {membership && (
-            <ProfileStats
-              membership={membership}
-              stats={stats}
-              currency={currency}
-              levelTiers={levelTiers}
-              recentXp={recentXp}
-            />
+            <>
+              <ProfileLevelCard
+                membership={membership}
+                levelTiers={levelTiers}
+              />
+              <ProfileOverviewCard
+                membership={membership}
+                stats={stats}
+                levelTiers={levelTiers}
+                heatmap={heatmap}
+                recentXp={recentXp}
+              />
+            </>
           )}
-
-          <ProfileHeatmap
-            heatmap={heatmap}
-            totalContributions={stats.contributions}
-          />
 
           <ProfileCommunityList
             otherCommunities={otherCommunities}
