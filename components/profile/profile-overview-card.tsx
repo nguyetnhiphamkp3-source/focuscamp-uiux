@@ -271,7 +271,7 @@ function CompactHeatmap({ days }: { days: HeatmapDay[] }) {
       <div
         className="pf-mini-heatmap-grid"
         style={{
-          gridTemplateColumns: `repeat(${weeks.length}, 1fr)`,
+          gridTemplateColumns: `repeat(${weeks.length}, 14px)`,
         }}
       >
         {weeks.flatMap((week, colIdx) =>
