@@ -83,9 +83,19 @@ export default function middleware(req: NextRequest) {
     "Strict-Transport-Security",
     "max-age=63072000; includeSubDomains; preload"
   );
+  // connect-src narrowed: self + Cloudflare R2 (uploads) + Sentry (telemetry).
+  // If you add a new external XHR target, whitelist it here — don't fall back to https:.
   res.headers.set(
     "Content-Security-Policy",
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https:; frame-src 'self' https://www.youtube.com;"
+    [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: https:",
+      "font-src 'self' https://fonts.gstatic.com",
+      "connect-src 'self' https://*.r2.cloudflarestorage.com https://*.r2.dev https://*.ingest.sentry.io https://o.ingest.sentry.io",
+      "frame-src 'self' https://www.youtube.com",
+    ].join("; ") + ";"
   );
 
   if (isPublic(pathname)) return res;

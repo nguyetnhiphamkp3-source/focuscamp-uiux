@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sendEmail } from "@/lib/email";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function GET(req: NextRequest) {
   // Only the community owner can trigger
@@ -14,6 +15,16 @@ export async function GET(req: NextRequest) {
   });
   if (!owner || owner.email !== session.user.email) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+
+  // Cap at 5 sends / 5 min — defense-in-depth if owner account is compromised
+  const rl = await rateLimit({
+    key: `email-test:${session.user.id}`,
+    limit: 5,
+    windowSec: 300,
+  });
+  if (!rl.ok) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   }
 
   const to =

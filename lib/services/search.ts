@@ -78,9 +78,12 @@ export async function searchAll(input: {
 /* ===== Full-text search queries ===== */
 
 async function searchPostsFts(tsq: string, limit: number, communityId?: string) {
-  const communityFilter = communityId
-    ? `AND p."communityId" = '${communityId}'`
-    : "";
+  const args: unknown[] = [tsq, limit];
+  let communityClause = "";
+  if (communityId) {
+    args.push(communityId);
+    communityClause = `AND p."communityId" = $${args.length}`;
+  }
   return prisma.$queryRawUnsafe<
     {
       id: string;
@@ -109,11 +112,10 @@ async function searchPostsFts(tsq: string, limit: number, communityId?: string) 
      JOIN "User" u ON p."userId" = u."id"
      JOIN "Community" c ON p."communityId" = c."id"
      WHERE p."searchVector" @@ to_tsquery('simple', $1)
-     ${communityFilter}
+     ${communityClause}
      ORDER BY "rank" DESC, p."createdAt" DESC
      LIMIT $2`,
-    tsq,
-    limit,
+    ...args,
   );
 }
 

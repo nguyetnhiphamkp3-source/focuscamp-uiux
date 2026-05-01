@@ -6,10 +6,11 @@
  *
  * Returns: { uploadUrl, publicUrl } or 503 if storage not configured.
  */
+import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getPresignedUploadUrl, isStorageConfigured } from "@/lib/storage";
-import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { rateLimit } from "@/lib/rate-limit";
 
 const IMAGE_TYPES = new Set([
   "image/jpeg",
@@ -18,11 +19,12 @@ const IMAGE_TYPES = new Set([
   "image/gif",
   "image/avif",
 ]);
+// Whitelist of concrete MIME types — `application/octet-stream` deliberately
+// excluded because it lets clients smuggle arbitrary binaries.
 const FILE_TYPES = new Set([
   "application/pdf",
   "application/zip",
   "application/x-zip-compressed",
-  "application/octet-stream",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "application/vnd.openxmlformats-officedocument.presentationml.presentation",
@@ -107,7 +109,7 @@ export async function POST(req: Request) {
   // Generate unique key: context/userId/timestamp-random.ext
   const ext = fileName.split(".").pop()?.toLowerCase() || "bin";
   const ts = Date.now();
-  const rand = Math.random().toString(36).slice(2, 8);
+  const rand = randomBytes(3).toString("hex");
   const key = `${context}/${session.user.id}/${ts}-${rand}.${ext}`;
 
   const result = await getPresignedUploadUrl({ key, contentType });

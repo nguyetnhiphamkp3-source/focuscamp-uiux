@@ -8,17 +8,19 @@
  * 4. handleWebhook() match paymentCode → activate purchase/subscription
  */
 
+import { randomBytes } from "crypto";
 import { prisma } from "./prisma";
 
 /**
- * Generate a unique payment code (prefix + timestamp + random).
- * Example: FC1A2B3C4D (10 chars, A-Z0-9)
+ * Generate a unique payment code with crypto-grade randomness.
+ * Example: FC1A2B3C4D (10 chars, A-Z0-9, no 0/O/1/I).
  */
 export function generatePaymentCode(prefix = "FC"): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O/1/I confusion
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const buf = randomBytes(8);
   let suffix = "";
   for (let i = 0; i < 8; i++) {
-    suffix += chars[Math.floor(Math.random() * chars.length)];
+    suffix += chars[buf[i] % chars.length];
   }
   return `${prefix}${suffix}`;
 }
