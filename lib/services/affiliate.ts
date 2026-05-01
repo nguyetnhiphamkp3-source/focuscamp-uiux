@@ -79,8 +79,59 @@ export async function trackClick(code: string) {
 }
 
 /**
+ * Normalize a Gmail-style address so `user@gmail.com`, `u.s.e.r@gmail.com`,
+ * and `user+anything@gmail.com` collapse to the same canonical form. Used
+ * to detect multi-account self-referral fraud.
+ */
+function canonicalizeEmail(email: string | null | undefined): string | null {
+  if (!email) return null;
+  const lower = email.trim().toLowerCase();
+  const at = lower.indexOf("@");
+  if (at <= 0) return null;
+  let local = lower.slice(0, at);
+  const domain = lower.slice(at + 1);
+  // Strip +tag for any provider
+  const plus = local.indexOf("+");
+  if (plus !== -1) local = local.slice(0, plus);
+  // Gmail/Googlemail ignores dots in local part
+  if (domain === "gmail.com" || domain === "googlemail.com") {
+    local = local.replace(/\./g, "");
+  }
+  return `${local}@${domain}`;
+}
+
+/**
+ * Heuristic: same canonical email = same person. Catches gmail+tag abuse
+ * and dot-trick. Doesn't catch totally separate email providers — that's
+ * what holding-period + manual review are for.
+ */
+async function detectSelfReferralByEmail(
+  referrerUserId: string,
+  referredUserId: string,
+): Promise<boolean> {
+  const [a, b] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: referrerUserId },
+      select: { email: true },
+    }),
+    prisma.user.findUnique({
+      where: { id: referredUserId },
+      select: { email: true },
+    }),
+  ]);
+  const ca = canonicalizeEmail(a?.email);
+  const cb = canonicalizeEmail(b?.email);
+  return !!(ca && cb && ca === cb);
+}
+
+/**
  * Called on signup: if user has fc_ref cookie, create pending Referral row.
  * Owner = AffiliateLink.userId, referredUserId = new user.
+ *
+ * Status:
+ *   PENDING    — normal, will auto-convert on Purchase
+ *   SUSPICIOUS — fraud heuristic tripped (same canonical email, etc.)
+ *                Skipped by auto-convert; owner must manually approve.
  */
 export async function attributeReferralOnSignup(input: {
   referredUserId: string;
@@ -91,7 +142,7 @@ export async function attributeReferralOnSignup(input: {
     select: { id: true, userId: true },
   });
   if (!link) return null;
-  if (link.userId === input.referredUserId) return null; // self-referral block
+  if (link.userId === input.referredUserId) return null; // direct self-referral
   const existing = await prisma.referral.findFirst({
     where: {
       linkId: link.id,
@@ -99,16 +150,27 @@ export async function attributeReferralOnSignup(input: {
     },
   });
   if (existing) return existing;
+
+  // Multi-account self-ref detection (gmail+tag, dots, etc.)
+  const sameEmail = await detectSelfReferralByEmail(
+    link.userId,
+    input.referredUserId,
+  );
+
   const ref = await prisma.referral.create({
     data: {
       linkId: link.id,
       referredUserId: input.referredUserId,
-      status: "PENDING",
+      status: sameEmail ? "SUSPICIOUS" : "PENDING",
     },
   });
   logger.info(
-    { linkId: link.id, referredUserId: input.referredUserId },
-    "[affiliate] referral attributed"
+    {
+      linkId: link.id,
+      referredUserId: input.referredUserId,
+      status: ref.status,
+    },
+    "[affiliate] referral attributed",
   );
   return ref;
 }
@@ -117,6 +179,9 @@ export async function attributeReferralOnSignup(input: {
  * Called from payment match: when a user makes a successful purchase, find
  * any pending referral attributed to them and convert it. Commission is
  * computed from the COMMUNITY's affiliateConfig where the product lives.
+ *
+ * SUSPICIOUS referrals are skipped here — owner must manually approve them
+ * via the affiliate dashboard before commission is awarded.
  */
 export async function convertReferralFromPurchase(
   purchaseId: string,
@@ -125,7 +190,7 @@ export async function convertReferralFromPurchase(
   const ref = await prisma.referral.findFirst({
     where: {
       referredUserId: buyerUserId,
-      status: "PENDING",
+      status: "PENDING", // SUSPICIOUS deliberately excluded
     },
     include: { link: true },
   });

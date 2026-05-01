@@ -17,6 +17,7 @@ import {
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
 import { logger } from "./logger";
 
 const S3_ENDPOINT = process.env.S3_ENDPOINT;
@@ -76,27 +77,39 @@ export async function uploadFile(input: {
 }
 
 /**
- * Get a presigned URL for client-side direct upload.
- * Client PUTs the file directly to S3 — no server memory pressure.
+ * Presigned POST upload — server signs a policy that constrains file size,
+ * content type, and key. Client uploads via FormData POST. The signed policy
+ * is enforced by S3/R2 itself, so a client cannot bypass the size cap by
+ * tampering with the request (unlike PUT presigned, which has no size limit).
  */
 export async function getPresignedUploadUrl(input: {
   key: string;
   contentType: string;
+  maxSize: number; // bytes
   expiresIn?: number; // seconds, default 300 (5 min)
-}): Promise<{ uploadUrl: string; publicUrl: string } | null> {
+}): Promise<{
+  uploadUrl: string;
+  fields: Record<string, string>;
+  publicUrl: string;
+} | null> {
   if (!s3 || !S3_BUCKET) return null;
   try {
-    const command = new PutObjectCommand({
+    const { url, fields } = await createPresignedPost(s3, {
       Bucket: S3_BUCKET,
       Key: input.key,
-      ContentType: input.contentType,
-      CacheControl: "public, max-age=31536000, immutable",
-    });
-    const uploadUrl = await getSignedUrl(s3, command, {
-      expiresIn: input.expiresIn ?? 300,
+      Conditions: [
+        ["content-length-range", 0, input.maxSize],
+        ["eq", "$Content-Type", input.contentType],
+      ],
+      Fields: {
+        "Content-Type": input.contentType,
+        "Cache-Control": "public, max-age=31536000, immutable",
+      },
+      Expires: input.expiresIn ?? 300,
     });
     return {
-      uploadUrl,
+      uploadUrl: url,
+      fields,
       publicUrl: getPublicUrl(input.key)!,
     };
   } catch (err) {

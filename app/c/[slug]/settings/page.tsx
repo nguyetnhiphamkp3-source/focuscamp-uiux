@@ -52,9 +52,7 @@ export default async function SettingsPage({
   const subscriptionTiers = getTiersConfig(community.tiersConfig);
   const uiConfig = getUiConfig(community);
   const planState = getPlanStatus(community);
-  const apiKeys = isOwner
-    ? await listApiKeys(community.id, session.user.id)
-    : [];
+  const apiKeys = isOwner ? await listApiKeys(community.id) : [];
 
   const { members, total } = await listMembers({
     communityId: community.id,

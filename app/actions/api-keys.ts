@@ -105,9 +105,13 @@ export async function revokeApiKeyAction(input: {
   }
 }
 
-export async function listApiKeys(communityId: string, ownerId: string) {
+export async function listApiKeys(communityId: string) {
+  const s = await auth();
+  if (!s?.user?.id) throw new Error("unauthorized");
+  // Scope strictly to the caller's own keys — never trust an ownerId argument
+  // from the client (server actions are network-callable).
   return prisma.apiKey.findMany({
-    where: { communityId, ownerId },
+    where: { communityId, ownerId: s.user.id },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,

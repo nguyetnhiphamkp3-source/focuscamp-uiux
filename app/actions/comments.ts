@@ -14,6 +14,7 @@ import {
   UpdateCommentSchema,
 } from "@/lib/validations";
 import { logError } from "@/lib/logger";
+import { rateLimit } from "@/lib/rate-limit";
 
 type ActionResult<T = unknown> =
   | { ok: true; data?: T }
@@ -35,6 +36,14 @@ export async function createCommentAction(input: {
 }): Promise<ActionResult<{ commentId: string }>> {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+
+  // 30 comments/min/user — generous but caps spam bursts
+  const rl = await rateLimit({
+    key: `comment-create:${s.user.id}`,
+    limit: 30,
+    windowSec: 60,
+  });
+  if (!rl.ok) return { ok: false, reason: "rate_limited" };
 
   const parsed = CreateCommentSchema.safeParse({
     postId: input.postId,

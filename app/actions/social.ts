@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { toggleBookmark } from "@/lib/services/bookmark";
 import { toggleFollow } from "@/lib/services/follow";
 import { logError } from "@/lib/logger";
+import { rateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
 
 type ActionResult<T = unknown> =
@@ -46,6 +47,14 @@ export async function toggleFollowAction(input: {
 }): Promise<ActionResult<{ following: boolean }>> {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+
+  // 30 follow toggles/min/user — prevent notification flood / scrape-bot
+  const rl = await rateLimit({
+    key: `follow:${s.user.id}`,
+    limit: 30,
+    windowSec: 60,
+  });
+  if (!rl.ok) return { ok: false, reason: "rate_limited" };
 
   const parsed = FollowSchema.safeParse({ followeeId: input.followeeId });
   if (!parsed.success) return { ok: false, reason: "invalid" };

@@ -1,6 +1,8 @@
 /**
- * Client-side upload helper — asks the server for a presigned URL, then PUTs
- * the file directly to R2/S3. Returns the public URL on success.
+ * Client-side upload helper — asks the server for a presigned POST policy,
+ * then uploads the file as multipart/form-data. The policy enforces size
+ * + content-type server-side, so a client cannot smuggle larger files than
+ * the per-context cap.
  *
  * Usage:
  *   const url = await uploadImage(file, "avatar");
@@ -12,6 +14,13 @@ export type UploadContext =
   | "post"
   | "checkin"
   | "product-file";
+
+interface PresignResponse {
+  uploadUrl: string;
+  fields: Record<string, string>;
+  publicUrl: string;
+  maxSize: number;
+}
 
 export async function uploadImage(
   file: File,
@@ -37,34 +46,36 @@ export async function uploadImage(
     throw new Error(err.error || `presign_failed_${presignRes.status}`);
   }
 
-  const {
-    uploadUrl,
-    publicUrl,
-    maxSize,
-  }: { uploadUrl: string; publicUrl: string; maxSize: number } =
+  const { uploadUrl, fields, publicUrl, maxSize }: PresignResponse =
     await presignRes.json();
 
+  // Early friendly error before sending bytes — server policy will reject too,
+  // but this saves the round-trip + gives a localized message.
   if (file.size > maxSize) {
     throw new Error(
       `File quá lớn (tối đa ${Math.round(maxSize / 1024 / 1024)}MB)`,
     );
   }
 
-  let putRes: Response;
+  const form = new FormData();
+  for (const [k, v] of Object.entries(fields)) form.append(k, v);
+  form.append("file", file); // must be the LAST field
+
+  let postRes: Response;
   try {
-    putRes = await fetch(uploadUrl, {
-      method: "PUT",
-      headers: { "content-type": file.type },
-      body: file,
-    });
+    postRes = await fetch(uploadUrl, { method: "POST", body: form });
   } catch {
     throw new Error(
-      "CORS block — vào Cloudflare R2 → bucket → Settings → CORS Policy, add PUT từ focus.camp",
+      "CORS block — vào Cloudflare R2 → bucket → Settings → CORS Policy, add POST từ focus.camp",
     );
   }
 
-  if (!putRes.ok) {
-    throw new Error(`R2 từ chối upload (HTTP ${putRes.status})`);
+  if (!postRes.ok) {
+    // 412 = policy condition (size/content-type) failed
+    if (postRes.status === 412) {
+      throw new Error(`File vượt giới hạn (${Math.round(maxSize / 1024 / 1024)}MB)`);
+    }
+    throw new Error(`R2 từ chối upload (HTTP ${postRes.status})`);
   }
 
   return publicUrl;

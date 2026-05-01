@@ -112,7 +112,8 @@ export async function POST(req: Request) {
   const rand = randomBytes(3).toString("hex");
   const key = `${context}/${session.user.id}/${ts}-${rand}.${ext}`;
 
-  const result = await getPresignedUploadUrl({ key, contentType });
+  const maxSize = MAX_FILE_SIZES[context as UploadContext];
+  const result = await getPresignedUploadUrl({ key, contentType, maxSize });
   if (!result) {
     return NextResponse.json(
       { error: "presign_failed" },
@@ -122,8 +123,9 @@ export async function POST(req: Request) {
 
   return NextResponse.json({
     uploadUrl: result.uploadUrl,
+    fields: result.fields,
     publicUrl: result.publicUrl,
     key,
-    maxSize: MAX_FILE_SIZES[context as UploadContext],
+    maxSize,
   });
 }
