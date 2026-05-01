@@ -6,3 +6,5 @@ node_modules
 *.log
 README.md
 .DS_Store
+cli
+plans

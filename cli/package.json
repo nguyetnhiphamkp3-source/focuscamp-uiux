@@ -1,0 +1,32 @@
+{
+  "name": "@focus-camp/cli",
+  "version": "0.1.0",
+  "description": "Command-line interface for focus.camp — wraps the MCP API for humans and AI agents.",
+  "type": "module",
+  "bin": {
+    "fc": "./dist/bin/fc.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && chmod +x dist/bin/fc.js",
+    "dev": "tsx src/bin/fc.ts",
+    "prepublishOnly": "pnpm build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "commander": "^12.1.0",
+    "prompts": "^2.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/prompts": "^2.4.9",
+    "tsx": "^4.21.0",
+    "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
