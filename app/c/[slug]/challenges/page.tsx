@@ -17,6 +17,12 @@ function diffLabel(d: string) {
   if (d === "CHAOS") return "🔥 Chaos";
   return "🛡️ Normal";
 }
+/** Hex anchor color per difficulty — used for accent strips, pill tints, etc. */
+function diffColor(d: string): string {
+  if (d === "HARD") return "#c97a3f";
+  if (d === "CHAOS") return "#b8455a";
+  return "#3a8a70";
+}
 
 type Tab = "active" | "completed" | "explore";
 
@@ -287,81 +293,143 @@ function ActiveTab({
             )
           : 1;
         const pct = Math.round((day / m.challenge.requiredDays) * 100);
+        const accent = diffColor(m.challenge.difficulty);
         return (
           <Link
             key={m.id}
             href={`/c/${slug}/challenges/${m.challenge.slug}`}
-            className="ui-card"
             style={{
-              display: "grid",
-              gridTemplateColumns: "1fr auto",
-              gap: "var(--space-3)",
-              alignItems: "center",
+              position: "relative",
+              display: "block",
+              padding: "18px 20px 18px 24px",
+              background: "var(--bg-card)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: 14,
               textDecoration: "none",
               color: "inherit",
+              overflow: "hidden",
             }}
           >
-            <div style={{ minWidth: 0 }}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "var(--space-2)",
-                  marginBottom: "var(--space-1)",
-                }}
-              >
-                <span className={`ch-diff-badge ${diffClass(m.challenge.difficulty)}`}
-                  style={{ position: "static", padding: "2px 8px", borderRadius: "var(--r-sm)" }}
-                >
-                  {diffLabel(m.challenge.difficulty)}
-                </span>
-              </div>
-              <div
-                style={{
-                  fontSize: "var(--text-md)",
-                  fontWeight: "var(--fw-bold)",
-                  color: "var(--text-heading)",
-                  marginBottom: "var(--space-2)",
-                }}
-              >
-                {m.challenge.title}
-              </div>
-              <div
-                style={{
-                  height: 6,
-                  background: "var(--bg-elevated)",
-                  borderRadius: 3,
-                  overflow: "hidden",
-                }}
-              >
-                <div
-                  style={{
-                    width: `${pct}%`,
-                    height: "100%",
-                    background: "var(--brand-green)",
-                  }}
-                />
-              </div>
-              <div
-                style={{
-                  fontSize: "var(--text-xs)",
-                  color: "var(--text-muted)",
-                  marginTop: "var(--space-1)",
-                }}
-              >
-                Day {day} / {m.challenge.requiredDays} ·{" "}
-                {m.challenge._count.members} thành viên
-              </div>
-            </div>
+            {/* Left accent stripe — color per difficulty */}
             <span
+              aria-hidden
               style={{
-                fontSize: "var(--text-xs)",
-                fontWeight: "var(--fw-bold)",
-                color: "var(--brand-green)",
+                position: "absolute",
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: 4,
+                background: accent,
+              }}
+            />
+
+            {/* Top row: difficulty pill · day chip · CTA */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                marginBottom: 10,
+                flexWrap: "wrap",
               }}
             >
-              Tiếp tục →
-            </span>
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  padding: "3px 9px",
+                  background: `${accent}1a`, // ~10% alpha
+                  color: accent,
+                  border: `1px solid ${accent}40`,
+                  borderRadius: 999,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.04em",
+                }}
+              >
+                {diffLabel(m.challenge.difficulty)}
+              </span>
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  padding: "3px 9px",
+                  background: "var(--bg-elevated)",
+                  color: "var(--text-muted)",
+                  borderRadius: 999,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  fontVariantNumeric: "tabular-nums",
+                }}
+              >
+                Day {day} / {m.challenge.requiredDays}
+              </span>
+              <span
+                style={{
+                  marginLeft: "auto",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: "var(--brand-green)",
+                }}
+              >
+                Tiếp tục →
+              </span>
+            </div>
+
+            {/* Title */}
+            <div
+              style={{
+                fontSize: 18,
+                fontWeight: 800,
+                color: "var(--text-heading)",
+                lineHeight: 1.3,
+                marginBottom: 12,
+              }}
+            >
+              {m.challenge.title}
+            </div>
+
+            {/* Progress bar with embedded % */}
+            <div
+              style={{
+                position: "relative",
+                height: 8,
+                background: "var(--bg-elevated)",
+                borderRadius: 999,
+                overflow: "hidden",
+                marginBottom: 8,
+              }}
+            >
+              <div
+                style={{
+                  width: `${pct}%`,
+                  height: "100%",
+                  background: `linear-gradient(90deg, ${accent} 0%, var(--brand-green) 100%)`,
+                  borderRadius: 999,
+                  transition: "width 0.3s ease",
+                }}
+              />
+            </div>
+
+            {/* Bottom meta row */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                fontSize: 12,
+                color: "var(--text-muted)",
+              }}
+            >
+              <span style={{ fontWeight: 700, color: "var(--text-normal)" }}>
+                {pct}%
+              </span>
+              <span>·</span>
+              <span>👥 {m.challenge._count.members} thành viên</span>
+            </div>
           </Link>
         );
       })}
