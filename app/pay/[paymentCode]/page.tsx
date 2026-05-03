@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { buildVietQRUrl } from "@/lib/sepay";
 import { PaymentStatusPoller } from "./poller";
@@ -35,119 +36,133 @@ export default async function PaymentPage({
 
   return (
     <main
-      className="min-h-screen flex items-center justify-center p-6"
-      style={{ background: "var(--bg-body)" }}
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 24,
+        background: "var(--bg-body)",
+      }}
     >
       <div
-        className="max-w-lg w-full rounded-2xl p-8"
         style={{
+          width: "100%",
+          maxWidth: 480,
           background: "var(--bg-card)",
           border: "1px solid var(--border-subtle)",
+          borderRadius: 20,
           boxShadow: "0 1px 3px rgba(60, 45, 20, 0.08)",
+          padding: 28,
         }}
       >
-        <div className="text-4xl mb-2">💸</div>
+        <Link
+          href="/"
+          style={{
+            display: "inline-block",
+            fontSize: 28,
+            marginBottom: 8,
+            textDecoration: "none",
+          }}
+        >
+          🏕️🔥
+        </Link>
         <h1
-          className="text-2xl font-extrabold mb-2"
-          style={{ color: "var(--text-heading)" }}
+          style={{
+            fontSize: 22,
+            fontWeight: 800,
+            color: "var(--text-heading)",
+            margin: "4px 0 4px",
+          }}
         >
           Thanh toán
         </h1>
 
         {payment.status === "COMPLETED" ? (
-          <div
-            className="rounded-lg p-6 text-center my-4"
-            style={{
-              background: "var(--brand-green-soft)",
-              border: "1px solid var(--brand-green)",
-            }}
-          >
-            <div className="text-4xl mb-2">✅</div>
-            <div
-              className="font-bold text-lg"
-              style={{ color: "var(--brand-green)" }}
-            >
-              Đã nhận thanh toán
-            </div>
-            <div
-              className="text-sm mt-1"
-              style={{ color: "var(--text-muted)" }}
-            >
-              Giao dịch hoàn tất. Bạn có thể đóng trang này.
-            </div>
-          </div>
+          <StatusBox
+            emoji="✅"
+            title="Đã nhận thanh toán"
+            subtitle="Giao dịch hoàn tất. Bạn có thể đóng trang này."
+            tone="success"
+          />
         ) : payment.status === "EXPIRED" ? (
-          <div
-            className="rounded-lg p-6 text-center my-4"
-            style={{
-              background: "rgba(242, 63, 67, 0.08)",
-              border: "1px solid var(--dnd-red)",
-            }}
-          >
-            <div className="text-4xl mb-2">⏱️</div>
-            <div
-              className="font-bold text-lg"
-              style={{ color: "var(--dnd-red)" }}
-            >
-              Phiên thanh toán đã hết hạn
-            </div>
-            <div
-              className="text-sm mt-1"
-              style={{ color: "var(--text-muted)" }}
-            >
-              Hãy quay lại tạo đơn mới.
-            </div>
-          </div>
+          <StatusBox
+            emoji="⏱️"
+            title="Phiên thanh toán đã hết hạn"
+            subtitle="Hãy quay lại tạo đơn mới."
+            tone="danger"
+          />
         ) : (
           <>
             <p
-              className="text-sm mb-6"
-              style={{ color: "var(--text-muted)" }}
+              style={{
+                fontSize: 13,
+                color: "var(--text-muted)",
+                margin: "8px 0 20px",
+                lineHeight: 1.5,
+              }}
             >
-              Quét QR bằng app ngân hàng, hoặc chuyển khoản theo thông tin bên
-              dưới. Giao dịch được ghi nhận tự động trong vài giây.
+              Quét QR bằng app ngân hàng. Giao dịch tự động ghi nhận trong vài
+              giây.
             </p>
 
-            <div className="grid gap-4" style={{ gridTemplateColumns: "220px 1fr" }}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 16,
+              }}
+            >
               {qrUrl ? (
                 <div
-                  className="rounded-lg p-2"
                   style={{
+                    width: 240,
                     background: "#fff",
                     border: "1px solid var(--border-subtle)",
+                    borderRadius: 12,
+                    padding: 8,
                   }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={qrUrl}
                     alt="VietQR"
-                    className="w-full h-auto"
+                    style={{ width: "100%", height: "auto", display: "block" }}
                   />
                 </div>
               ) : (
                 <div
-                  className="rounded-lg p-8 text-center text-xs"
                   style={{
                     background: "var(--bg-elevated)",
                     color: "var(--text-muted)",
+                    padding: 24,
+                    borderRadius: 12,
+                    textAlign: "center",
+                    fontSize: 12,
                   }}
                 >
-                  QR chưa sẵn sàng — SEPAY_BANK_ACCOUNT chưa set trong .env
+                  QR chưa sẵn sàng — SEPAY_BANK_ACCOUNT chưa set
                 </div>
               )}
 
-              <div className="flex flex-col gap-2 text-sm">
+              <div
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                  fontSize: 14,
+                }}
+              >
                 <Row label="Ngân hàng" value={bankName} />
-                <Row label="Số TK" value={bankAccount || "chưa cấu hình"} />
+                <Row label="Số TK" value={bankAccount || "chưa cấu hình"} mono />
                 <Row label="Chủ TK" value={bankAccountHolder || "—"} />
                 <Row
                   label="Số tiền"
                   value={
                     <span
-                      style={{
-                        color: "var(--brand-green)",
-                        fontWeight: 800,
-                      }}
+                      style={{ color: "var(--brand-green)", fontWeight: 800 }}
                     >
                       {amountFormatted}đ
                     </span>
@@ -157,13 +172,14 @@ export default async function PaymentPage({
                   label="Nội dung CK"
                   value={
                     <code
-                      className="font-mono text-base"
                       style={{
+                        fontFamily: "ui-monospace, monospace",
                         background: "var(--bg-elevated)",
-                        padding: "2px 6px",
-                        borderRadius: 4,
+                        padding: "3px 8px",
+                        borderRadius: 6,
                         color: "var(--brand-green)",
                         fontWeight: 700,
+                        fontSize: 13,
                       }}
                     >
                       {payment.paymentCode}
@@ -171,18 +187,25 @@ export default async function PaymentPage({
                   }
                 />
               </div>
-            </div>
 
-            <div
-              className="mt-6 rounded-lg p-3 text-xs"
-              style={{
-                background: "rgba(240, 178, 50, 0.12)",
-                color: "#a16207",
-              }}
-            >
-              ⚠️ Nội dung chuyển khoản <strong>phải có</strong> mã{" "}
-              <code>{payment.paymentCode}</code> để hệ thống tự nhận. App ngân
-              hàng khi quét QR sẽ tự điền.
+              <div
+                style={{
+                  width: "100%",
+                  background: "rgba(240, 178, 50, 0.12)",
+                  color: "#a16207",
+                  padding: "10px 12px",
+                  borderRadius: 8,
+                  fontSize: 12,
+                  lineHeight: 1.5,
+                  marginTop: 4,
+                }}
+              >
+                ⚠️ Nội dung chuyển khoản <strong>phải có</strong> mã{" "}
+                <code style={{ fontFamily: "ui-monospace, monospace" }}>
+                  {payment.paymentCode}
+                </code>
+                . App ngân hàng khi quét QR sẽ tự điền.
+              </div>
             </div>
 
             <PaymentStatusPoller paymentCode={payment.paymentCode} />
@@ -193,13 +216,81 @@ export default async function PaymentPage({
   );
 }
 
-function Row({ label, value }: { label: string; value: React.ReactNode }) {
+function StatusBox({
+  emoji,
+  title,
+  subtitle,
+  tone,
+}: {
+  emoji: string;
+  title: string;
+  subtitle: string;
+  tone: "success" | "danger";
+}) {
+  const palette =
+    tone === "success"
+      ? {
+          bg: "var(--brand-green-soft)",
+          border: "var(--brand-green)",
+          text: "var(--brand-green)",
+        }
+      : {
+          bg: "rgba(242, 63, 67, 0.08)",
+          border: "var(--dnd-red)",
+          text: "var(--dnd-red)",
+        };
   return (
-    <div className="flex items-baseline justify-between gap-3">
-      <span style={{ color: "var(--text-muted)" }}>{label}:</span>
+    <div
+      style={{
+        background: palette.bg,
+        border: `1px solid ${palette.border}`,
+        borderRadius: 12,
+        padding: 24,
+        textAlign: "center",
+        margin: "16px 0",
+      }}
+    >
+      <div style={{ fontSize: 32, marginBottom: 8 }}>{emoji}</div>
+      <div style={{ fontWeight: 700, fontSize: 16, color: palette.text }}>
+        {title}
+      </div>
+      <div
+        style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 6 }}
+      >
+        {subtitle}
+      </div>
+    </div>
+  );
+}
+
+function Row({
+  label,
+  value,
+  mono,
+}: {
+  label: string;
+  value: React.ReactNode;
+  mono?: boolean;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "baseline",
+        justifyContent: "space-between",
+        gap: 12,
+      }}
+    >
+      <span style={{ color: "var(--text-muted)", fontSize: 13 }}>{label}</span>
       <span
-        className="font-semibold text-right"
-        style={{ color: "var(--text-heading)" }}
+        style={{
+          fontWeight: 600,
+          color: "var(--text-heading)",
+          textAlign: "right",
+          fontFamily: mono
+            ? "ui-monospace, monospace"
+            : "var(--font-body, inherit)",
+        }}
       >
         {value}
       </span>
