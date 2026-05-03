@@ -302,7 +302,7 @@ function ActiveTab({
             style={{
               position: "relative",
               display: "grid",
-              gridTemplateColumns: "112px 1fr",
+              gridTemplateColumns: "192px 1fr",
               gap: 16,
               padding: 14,
               paddingLeft: 18,
@@ -327,15 +327,16 @@ function ActiveTab({
               }}
             />
 
-            {/* Thumbnail — banner image or generated gradient */}
+            {/* Thumbnail — 16:9 to match detail-page banner */}
             <div
               style={{
                 position: "relative",
-                width: 112,
-                aspectRatio: "1 / 1",
+                width: 192,
+                aspectRatio: "16 / 9",
                 borderRadius: 10,
                 overflow: "hidden",
                 flexShrink: 0,
+                alignSelf: "center",
                 background: m.challenge.bannerUrl
                   ? `url("${m.challenge.bannerUrl}") center/cover no-repeat`
                   : `linear-gradient(135deg, ${accent} 0%, ${accent}aa 100%)`,
