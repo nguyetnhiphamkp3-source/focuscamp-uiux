@@ -65,7 +65,7 @@ export default async function PaymentPage({
             textDecoration: "none",
           }}
         >
-          🏕️🔥
+          🔥🏕️
         </Link>
         <h1
           style={{

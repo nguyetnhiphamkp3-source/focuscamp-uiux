@@ -59,7 +59,7 @@ export default async function Home() {
           borderBottom: "1px solid var(--border-subtle)",
         }}
       >
-        <div style={{ fontSize: "var(--text-3xl)", marginBottom: 12 }}>🏕️🔥</div>
+        <div style={{ fontSize: "var(--text-3xl)", marginBottom: 12 }}>🔥🏕️</div>
         <h1
           style={{
             fontSize: "var(--text-3xl)",

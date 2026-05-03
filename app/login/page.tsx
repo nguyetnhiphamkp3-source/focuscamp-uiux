@@ -41,7 +41,7 @@ export default async function LoginPage({
         }}
       >
         <Link href="/" className="text-3xl inline-block mb-4">
-          🏕️🔥
+          🔥🏕️
         </Link>
         <h1
           className="text-2xl font-extrabold mb-2"

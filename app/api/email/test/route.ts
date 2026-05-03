@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
     subject: "focus.camp — Email test",
     html: `
       <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#faf8f1;border-radius:12px;">
-        <div style="font-size:32px;margin-bottom:8px;">🏕️🔥</div>
+        <div style="font-size:32px;margin-bottom:8px;">🔥🏕️</div>
         <h1 style="color:#191919;margin:0 0 8px;font-size:22px;">focus.camp — Email works!</h1>
         <p style="color:#484645;line-height:1.5;">
           Nếu bạn đọc được email này, Resend đã kết nối thành công.

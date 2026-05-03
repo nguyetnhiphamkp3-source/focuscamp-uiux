@@ -70,7 +70,7 @@ export function LoginModal({
             >
               ✕
             </button>
-            <div style={{ fontSize: "var(--text-3xl)", marginBottom: 8 }}>🏕️🔥</div>
+            <div style={{ fontSize: "var(--text-3xl)", marginBottom: 8 }}>🔥🏕️</div>
             <h1
               style={{
                 fontSize: "var(--text-xl)",
