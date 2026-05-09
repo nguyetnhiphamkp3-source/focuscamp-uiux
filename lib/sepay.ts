@@ -58,6 +58,7 @@ export async function createPayment(params: {
     | "subscription"
     | "product"
     | "challenge_deposit"
+    | "challenge_entry"
     | "community_plan"
     | "event";
   refType: "subscription" | "product" | "challenge" | "community" | "event";

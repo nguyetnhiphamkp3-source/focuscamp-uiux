@@ -11,46 +11,24 @@ import type { Prisma } from "@prisma/client";
 export async function startProductPurchase(params: {
   userId: string;
   productId: string;
+  effectiveAmountVnd?: number; // override from pricingConfig; defaults to product.priceVnd
 }) {
   const { userId, productId } = params;
   return prisma.$transaction(async (tx) => {
     const product = await tx.product.findUnique({
       where: { id: productId },
-      select: {
-        id: true,
-        communityId: true,
-        priceVnd: true,
-        isFree: true,
-      },
+      select: { id: true, communityId: true, priceVnd: true, isFree: true },
     });
     if (!product) throw new Error("product_not_found");
     if (product.isFree) throw new Error("product_is_free");
 
-    const membership = await tx.membership.findUnique({
-      where: {
-        userId_communityId: { userId, communityId: product.communityId },
-      },
-      select: { id: true },
-    });
-    if (!membership) throw new Error("not_a_member");
+    const amountVnd = params.effectiveAmountVnd ?? Number(product.priceVnd);
+    if (amountVnd <= 0) throw new Error("product_is_free");
 
     const purchase = await tx.purchase.create({
-      data: {
-        userId,
-        productId: product.id,
-        amountVnd: product.priceVnd,
-        status: "PENDING",
-      },
+      data: { userId, productId: product.id, amountVnd, status: "PENDING" },
     });
-
-    // Payment row is created with short expiry via createPayment from lib/sepay.
-    // We call it outside the transaction because it uses prisma.payment.findUnique
-    // to ensure unique code and this helper may loop. Safe to keep outside.
-    return {
-      purchase,
-      productCommunityId: product.communityId,
-      amountVnd: Number(product.priceVnd),
-    };
+    return { purchase, productCommunityId: product.communityId, amountVnd };
   }).then(async (ctx) => {
     const payment = await createPayment({
       userId,
@@ -66,6 +44,30 @@ export async function startProductPurchase(params: {
     );
     return { purchase: ctx.purchase, payment };
   });
+}
+
+export async function startChallengePurchase(params: {
+  userId: string;
+  challengeId: string;
+  communityId: string;
+  amountVnd: number;
+}) {
+  const { userId, challengeId, communityId, amountVnd } = params;
+  const member = await prisma.challengeMember.upsert({
+    where: { challengeId_userId: { challengeId, userId } },
+    update: { status: "PAYMENT_PENDING" },
+    create: { challengeId, userId, status: "PAYMENT_PENDING" },
+  });
+  const payment = await createPayment({
+    userId,
+    communityId,
+    purpose: "challenge_entry",
+    refType: "challenge",
+    refId: member.id,
+    amountVnd,
+  });
+  logger.info({ userId, challengeId, paymentCode: payment.paymentCode }, "[payment] challenge entry started");
+  return { member, payment };
 }
 
 export async function getPaymentStatus(paymentCode: string) {
@@ -133,6 +135,25 @@ export async function matchSePayTransactionToPayment(params: {
         where: { id: payment.refId },
         data: { status: "COMPLETED", paymentRef: transactionId } as unknown as Prisma.PurchaseUpdateManyMutationInput,
       });
+    } else if (payment.refType === "challenge") {
+      // refId = ChallengeMember.id — activate after payment
+      const member = await tx.challengeMember.findUnique({
+        where: { id: payment.refId },
+        select: { challengeId: true },
+      });
+      if (member) {
+        const challenge = await tx.challenge.findUnique({
+          where: { id: member.challengeId },
+          select: { requiresApproval: true },
+        });
+        await tx.challengeMember.update({
+          where: { id: payment.refId },
+          data: {
+            status: challenge?.requiresApproval ? "PENDING" : "ACTIVE",
+            approvedAt: challenge?.requiresApproval ? undefined : new Date(),
+          },
+        });
+      }
     } else if (payment.refType === "subscription") {
       await tx.subscription.updateMany({
         where: { id: payment.refId },

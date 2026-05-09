@@ -54,6 +54,14 @@ export const JoinChallengeSchema = z.object({
   challengeId: z.string().cuid(),
 });
 
+const PricingConfigSchema = z.object({
+  guestVnd: z.number().nonnegative().optional(),
+  memberVnd: z.number().nonnegative().optional(),
+  tierPrices: z.record(z.string(), z.number().nonnegative()).optional(),
+  aipPrice: z.number().nonnegative().optional(),
+  aipEnabled: z.boolean().optional(),
+}).nullable().optional();
+
 export const UpdateChallengeSettingsSchema = z.object({
   challengeId: z.string().cuid(),
   requiresApproval: z.boolean().optional(),
@@ -65,6 +73,7 @@ export const UpdateChallengeSettingsSchema = z.object({
   bannerUrl: z.string().url().max(500).optional().nullable().or(z.literal("")),
   featuredOnGlobal: z.boolean().optional(),
   requiredTier: z.string().trim().max(40).optional().nullable().or(z.literal("")),
+  pricingConfig: PricingConfigSchema,
 });
 
 export const CreateChallengeSchema = z.object({

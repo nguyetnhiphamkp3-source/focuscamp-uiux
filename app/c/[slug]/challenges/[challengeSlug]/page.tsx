@@ -13,7 +13,9 @@ import { ResubmitForm } from "@/components/community/resubmit-form";
 import { TaskEditorButton } from "@/components/community/task-editor";
 import { CreateTaskButton } from "@/components/community/create-task-button";
 import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
-import { checkGate, getTiersConfig } from "@/lib/services/subscription";
+import { checkGate, getTiersConfig, getUserTier } from "@/lib/services/subscription";
+import { parsePricingConfig, calculateEffectivePrice } from "@/lib/services/pricing";
+import { PayWithAipButton } from "@/components/community/pay-with-aip-button";
 import {
   getActiveChallenge,
   getChallengeLeaderboard,
@@ -50,7 +52,7 @@ export default async function ChallengeDetailPage({
     include: {
       tasks: { orderBy: { dayNumber: "asc" } },
       _count: { select: { members: true } },
-      community: { select: { name: true, id: true, ownerId: true } },
+      community: { select: { name: true, id: true, ownerId: true, tiersConfig: true } },
       products: {
         orderBy: { relevance: "asc" },
         include: { product: true },
@@ -186,6 +188,27 @@ export default async function ChallengeDetailPage({
     requiresApproval: challenge.requiresApproval,
   });
 
+  // Effective price for current user
+  const pricingConfig = parsePricingConfig(challenge.pricingConfig);
+  let effectivePrice: { vnd: number; canPayAip: boolean; aipPrice: number; aipBalance: number } | null = null;
+  if (pricingConfig && session?.user?.id) {
+    const communityMembership = await prisma.membership.findUnique({
+      where: { userId_communityId: { userId: session.user.id, communityId: challenge.community.id } },
+      select: { aip: true },
+    });
+    const { tierKey } = communityMembership
+      ? await getUserTier({ userId: session.user.id, communityId: challenge.community.id })
+      : { tierKey: null };
+    effectivePrice = calculateEffectivePrice(pricingConfig, {
+      isMember: !!communityMembership,
+      tierKey,
+      aipBalance: communityMembership?.aip ?? 0,
+    });
+  } else if (pricingConfig && !session?.user?.id) {
+    // Guest — show guest price without AIP
+    effectivePrice = calculateEffectivePrice(pricingConfig, { isMember: false, tierKey: null, aipBalance: 0 });
+  }
+
   const dayNow =
     myMembership?.personalStartsAt
       ? Math.min(
@@ -264,6 +287,8 @@ export default async function ChallengeDetailPage({
                 freezeEndsAt: challenge.freezeEndsAt,
                 bannerUrl: challenge.bannerUrl,
                 featuredOnGlobal: challenge.featuredOnGlobal,
+                pricingConfig: parsePricingConfig(challenge.pricingConfig),
+                tiers: getTiersConfig(challenge.community.tiersConfig).map((t) => ({ key: t.key, label: t.label })),
               }}
             />
           )}
@@ -364,7 +389,11 @@ export default async function ChallengeDetailPage({
           )}
 
           {/* Progress (if joined) */}
-          {myMembership ? (
+          {myMembership?.status === "PAYMENT_PENDING" ? (
+            <div style={{ marginTop: "var(--space-5)", padding: "16px 20px", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.3)", borderRadius: 12, fontSize: "var(--text-sm)", color: "var(--warning)" }}>
+              ⏳ Đang chờ xác nhận thanh toán…
+            </div>
+          ) : myMembership ? (
             <>
               {/* Missed day warning */}
               {(() => {
@@ -445,13 +474,26 @@ export default async function ChallengeDetailPage({
               communitySlug={slug}
             />
           ) : (
-            session?.user && (
-              <form action={joinAction} style={{ marginTop: "var(--space-5)" }}>
-                <button type="submit" className="ui-btn ui-btn-primary ui-btn-lg">
-                  Tham gia challenge
+            <div style={{ marginTop: "var(--space-5)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+              <form action={joinAction}>
+                <button type="submit" className="ui-btn ui-btn-primary ui-btn-lg" style={{ width: "100%" }}>
+                  {effectivePrice && effectivePrice.vnd > 0
+                    ? `Tham gia — ${Number(effectivePrice.vnd).toLocaleString("vi-VN")}đ`
+                    : "Tham gia challenge"}
                 </button>
               </form>
-            )
+              {effectivePrice?.canPayAip && (
+                <PayWithAipButton
+                  challengeId={challenge.id}
+                  communityId={challenge.community.id}
+                  communitySlug={slug}
+                  challengeSlug={challengeSlug}
+                  requiresApproval={challenge.requiresApproval}
+                  aipPrice={effectivePrice.aipPrice}
+                  aipBalance={effectivePrice.aipBalance}
+                />
+              )}
+            </div>
           )}
 
           {/* Equipment — related marketplace items */}

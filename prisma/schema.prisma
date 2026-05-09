@@ -294,6 +294,8 @@ model Challenge {
   featuredOnGlobal Boolean @default(false)
   /** Subscription tier required to join. Null = free for any member. */
   requiredTier   String?
+  /** Tiered pricing config. Null = free join. Shape: PricingConfig in lib/services/pricing.ts */
+  pricingConfig  Json?
   createdAt      DateTime  @default(now())
 
   community Community         @relation(fields: [communityId], references: [id], onDelete: Cascade)
@@ -563,6 +565,8 @@ model Product {
   featuredOnGlobal   Boolean  @default(false)
   /** Template for generated license keys, e.g. "FC-{XXXX}-{XXXX}". Only used when type=LICENSE. */
   licenseKeyTemplate String?
+  /** Tiered pricing config. Null = use priceVnd as flat price. Shape: PricingConfig in lib/services/pricing.ts */
+  pricingConfig      Json?
   createdAt          DateTime @default(now())
 
   community  Community          @relation(fields: [communityId], references: [id], onDelete: Cascade)

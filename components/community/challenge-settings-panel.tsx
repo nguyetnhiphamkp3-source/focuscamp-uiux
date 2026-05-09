@@ -4,11 +4,9 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateChallengeSettingsAction } from "@/app/actions/challenge-review";
 import { ImageUploadField } from "@/components/shared/image-upload-field";
+import { ChallengePricingEditor } from "@/components/community/challenge-pricing-editor";
+import type { PricingConfig } from "@/lib/services/pricing";
 
-/**
- * Inline admin settings panel on challenge detail page.
- * Collapsed by default; expand to tweak title / description / approval gate.
- */
 export function ChallengeSettingsPanel({
   challengeId,
   communitySlug,
@@ -27,17 +25,18 @@ export function ChallengeSettingsPanel({
     freezeEndsAt: Date | null;
     bannerUrl: string | null;
     featuredOnGlobal: boolean;
+    pricingConfig: PricingConfig | null;
+    tiers: { key: string; label: string }[];
   };
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(initial.title);
   const [description, setDescription] = useState(initial.description ?? "");
-  const [requiresApproval, setRequiresApproval] = useState(
-    initial.requiresApproval
-  );
+  const [requiresApproval, setRequiresApproval] = useState(initial.requiresApproval);
   const [bannerUrl, setBannerUrl] = useState<string | null>(initial.bannerUrl);
   const [featuredOnGlobal, setFeaturedOnGlobal] = useState(initial.featuredOnGlobal);
+  const [pricingConfig, setPricingConfig] = useState<PricingConfig | null>(initial.pricingConfig);
   const [freezeFromDay, setFreezeFromDay] = useState<string>(
     initial.freezeFromDay?.toString() ?? ""
   );
@@ -62,6 +61,7 @@ export function ChallengeSettingsPanel({
         requiresApproval,
         bannerUrl: bannerUrl ?? "",
         featuredOnGlobal,
+        pricingConfig: pricingConfig as Record<string, unknown> | null,
         freezeFromDay: freezeFromDay ? parseInt(freezeFromDay, 10) : null,
         freezeStartsAt: freezeStartsAt
           ? new Date(freezeStartsAt).toISOString()
@@ -334,6 +334,17 @@ export function ChallengeSettingsPanel({
                 />
               </label>
             </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              Giá tham gia
+            </div>
+            <ChallengePricingEditor
+              value={pricingConfig}
+              onChange={setPricingConfig}
+              tiers={initial.tiers}
+            />
           </div>
 
           <div style={{ display: "flex", gap: 8, marginTop: 4 }}>

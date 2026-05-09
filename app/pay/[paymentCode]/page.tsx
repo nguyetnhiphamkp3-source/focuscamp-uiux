@@ -6,10 +6,14 @@ import { PaymentStatusPoller } from "./poller";
 
 export default async function PaymentPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ paymentCode: string }>;
+  searchParams: Promise<{ return?: string }>;
 }) {
   const { paymentCode } = await params;
+  const sp = await searchParams;
+  const returnUrl = sp.return && sp.return.startsWith("/") ? sp.return : null;
 
   const payment = await prisma.payment.findUnique({
     where: { paymentCode },
@@ -79,12 +83,33 @@ export default async function PaymentPage({
         </h1>
 
         {payment.status === "COMPLETED" ? (
-          <StatusBox
-            emoji="✅"
-            title="Đã nhận thanh toán"
-            subtitle="Giao dịch hoàn tất. Bạn có thể đóng trang này."
-            tone="success"
-          />
+          <>
+            <StatusBox
+              emoji="✅"
+              title="Đã nhận thanh toán"
+              subtitle="Giao dịch hoàn tất."
+              tone="success"
+            />
+            {returnUrl && (
+              <Link
+                href={returnUrl}
+                style={{
+                  display: "block",
+                  marginTop: 16,
+                  padding: "12px 20px",
+                  background: "var(--brand-green)",
+                  color: "#fff",
+                  borderRadius: 10,
+                  textAlign: "center",
+                  fontWeight: 700,
+                  fontSize: "var(--text-md)",
+                  textDecoration: "none",
+                }}
+              >
+                Tiếp tục →
+              </Link>
+            )}
+          </>
         ) : payment.status === "EXPIRED" ? (
           <StatusBox
             emoji="⏱️"

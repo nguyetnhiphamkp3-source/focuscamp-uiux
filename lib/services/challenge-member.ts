@@ -3,6 +3,7 @@
  * submission review, settings, task CRUD, voting, resubmit.
  */
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { logger } from "@/lib/logger";
 import { createNotification } from "./notification";
 import { awardXp } from "./xp";
@@ -431,43 +432,27 @@ export async function updateChallengeSettings(input: {
   bannerUrl?: string | null;
   featuredOnGlobal?: boolean;
   requiredTier?: string | null;
+  pricingConfig?: Record<string, unknown> | null;
 }) {
   const ch = await assertChallengeAdmin(input.userId, input.challengeId);
   await prisma.challenge.update({
     where: { id: input.challengeId },
     data: {
-      ...(input.requiresApproval !== undefined
-        ? { requiresApproval: input.requiresApproval }
-        : {}),
+      ...(input.requiresApproval !== undefined ? { requiresApproval: input.requiresApproval } : {}),
       ...(input.title !== undefined ? { title: input.title } : {}),
-      ...(input.description !== undefined
-        ? { description: input.description || null }
-        : {}),
-      ...(input.freezeFromDay !== undefined
-        ? { freezeFromDay: input.freezeFromDay }
-        : {}),
+      ...(input.description !== undefined ? { description: input.description || null } : {}),
+      ...(input.freezeFromDay !== undefined ? { freezeFromDay: input.freezeFromDay } : {}),
       ...(input.freezeStartsAt !== undefined
-        ? {
-            freezeStartsAt: input.freezeStartsAt
-              ? new Date(input.freezeStartsAt)
-              : null,
-          }
+        ? { freezeStartsAt: input.freezeStartsAt ? new Date(input.freezeStartsAt) : null }
         : {}),
       ...(input.freezeEndsAt !== undefined
-        ? {
-            freezeEndsAt: input.freezeEndsAt
-              ? new Date(input.freezeEndsAt)
-              : null,
-          }
+        ? { freezeEndsAt: input.freezeEndsAt ? new Date(input.freezeEndsAt) : null }
         : {}),
-      ...(input.bannerUrl !== undefined
-        ? { bannerUrl: input.bannerUrl?.trim() || null }
-        : {}),
-      ...(input.featuredOnGlobal !== undefined
-        ? { featuredOnGlobal: input.featuredOnGlobal }
-        : {}),
-      ...(input.requiredTier !== undefined
-        ? { requiredTier: input.requiredTier?.trim() || null }
+      ...(input.bannerUrl !== undefined ? { bannerUrl: input.bannerUrl?.trim() || null } : {}),
+      ...(input.featuredOnGlobal !== undefined ? { featuredOnGlobal: input.featuredOnGlobal } : {}),
+      ...(input.requiredTier !== undefined ? { requiredTier: input.requiredTier?.trim() || null } : {}),
+      ...("pricingConfig" in input
+        ? { pricingConfig: input.pricingConfig === null ? Prisma.DbNull : (input.pricingConfig as Prisma.InputJsonValue) }
         : {}),
     },
   });

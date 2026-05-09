@@ -16,6 +16,9 @@ import {
   deleteChallengeTask,
   joinChallenge,
 } from "@/lib/services/challenge";
+import { startChallengePurchase } from "@/lib/services/payment";
+import { parsePricingConfig, calculateEffectivePrice } from "@/lib/services/pricing";
+import { getUserTier } from "@/lib/services/subscription";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import {
@@ -190,6 +193,7 @@ export async function updateChallengeSettingsAction(input: {
   bannerUrl?: string | null;
   featuredOnGlobal?: boolean;
   requiredTier?: string | null;
+  pricingConfig?: Record<string, unknown> | null;
   communitySlug: string;
   challengeSlug: string;
 }): Promise<ActionResult> {
@@ -206,6 +210,7 @@ export async function updateChallengeSettingsAction(input: {
     bannerUrl: input.bannerUrl,
     featuredOnGlobal: input.featuredOnGlobal,
     requiredTier: input.requiredTier,
+    pricingConfig: input.pricingConfig,
   });
   if (!parsed.success) {
     return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
@@ -223,6 +228,7 @@ export async function updateChallengeSettingsAction(input: {
       bannerUrl: parsed.data.bannerUrl === undefined ? undefined : parsed.data.bannerUrl || null,
       featuredOnGlobal: parsed.data.featuredOnGlobal,
       requiredTier: parsed.data.requiredTier === undefined ? undefined : parsed.data.requiredTier || null,
+      pricingConfig: "pricingConfig" in parsed.data ? (parsed.data.pricingConfig as Record<string, unknown> | null) : undefined,
     });
     bumpChallenge(input.communitySlug, input.challengeSlug);
     revalidatePath(`/marketplace`);
@@ -442,25 +448,89 @@ export async function joinChallengeAction(input: {
   requiresApproval: boolean;
 }) {
   const s = await auth();
-  if (!s?.user?.id) redirect("/login");
+  const returnUrl = `/c/${input.communitySlug}/challenges/${input.challengeSlug}`;
+  if (!s?.user?.id) redirect(`/login?redirectTo=${encodeURIComponent(returnUrl)}`);
 
-  const communityMembership = await prisma.membership.findUnique({
-    where: {
-      userId_communityId: {
-        userId: s.user.id,
-        communityId: input.communityId,
-      },
-    },
+  const challenge = await prisma.challenge.findUnique({
+    where: { id: input.challengeId },
+    select: { pricingConfig: true },
   });
-  if (!communityMembership) redirect(`/c/${input.communitySlug}`);
+  const pricingConfig = parsePricingConfig(challenge?.pricingConfig);
+
+  if (pricingConfig) {
+    const membership = await prisma.membership.findUnique({
+      where: { userId_communityId: { userId: s.user.id, communityId: input.communityId } },
+      select: { aip: true },
+    });
+    const { tierKey } = membership
+      ? await getUserTier({ userId: s.user.id, communityId: input.communityId })
+      : { tierKey: null };
+
+    const price = calculateEffectivePrice(pricingConfig, {
+      isMember: !!membership,
+      tierKey,
+      aipBalance: membership?.aip ?? 0,
+    });
+
+    if (price.vnd > 0) {
+      const { payment } = await startChallengePurchase({
+        userId: s.user.id,
+        challengeId: input.challengeId,
+        communityId: input.communityId,
+        amountVnd: price.vnd,
+      });
+      redirect(`/pay/${payment.paymentCode}?return=${encodeURIComponent(returnUrl)}`);
+    }
+  }
 
   try {
-    await joinChallenge({
-      userId: s.user.id,
-      challengeId: input.challengeId,
-    });
+    await joinChallenge({ userId: s.user.id, challengeId: input.challengeId });
     bumpChallenge(input.communitySlug, input.challengeSlug);
   } catch (err) {
     logError(err, { userId: s.user.id, challengeId: input.challengeId });
   }
+}
+
+export async function payWithAipForChallengeAction(input: {
+  challengeId: string;
+  communityId: string;
+  communitySlug: string;
+  challengeSlug: string;
+  requiresApproval: boolean;
+}): Promise<{ ok: boolean; reason?: string }> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+
+  const [challenge, membership] = await Promise.all([
+    prisma.challenge.findUnique({ where: { id: input.challengeId }, select: { pricingConfig: true } }),
+    prisma.membership.findUnique({
+      where: { userId_communityId: { userId: s.user.id, communityId: input.communityId } },
+      select: { id: true, aip: true },
+    }),
+  ]);
+
+  if (!membership) return { ok: false, reason: "not_a_member" };
+
+  const pricingConfig = parsePricingConfig(challenge?.pricingConfig);
+  if (!pricingConfig?.aipEnabled || !pricingConfig.aipPrice) {
+    return { ok: false, reason: "aip_not_enabled" };
+  }
+  if (membership.aip < pricingConfig.aipPrice) {
+    return { ok: false, reason: "insufficient_aip" };
+  }
+
+  await prisma.$transaction([
+    prisma.membership.update({
+      where: { id: membership.id },
+      data: { aip: { decrement: pricingConfig.aipPrice } },
+    }),
+    prisma.challengeMember.upsert({
+      where: { challengeId_userId: { challengeId: input.challengeId, userId: s.user.id } },
+      update: { status: input.requiresApproval ? "PENDING" : "ACTIVE" },
+      create: { challengeId: input.challengeId, userId: s.user.id, status: input.requiresApproval ? "PENDING" : "ACTIVE" },
+    }),
+  ]);
+
+  bumpChallenge(input.communitySlug, input.challengeSlug);
+  return { ok: true };
 }
