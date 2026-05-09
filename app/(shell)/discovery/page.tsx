@@ -187,7 +187,12 @@ export default async function DiscoveryPage() {
                       : "🛡️ Normal";
                 const statusClass = ch.status === "ACTIVE" ? "active" : "open";
                 return (
-                  <div key={ch.id} className="ch-card">
+                  <Link
+                    key={ch.id}
+                    href={`/c/${ch.community.slug}/challenges/${ch.slug}`}
+                    className="ch-card"
+                    style={{ textDecoration: "none", color: "inherit" }}
+                  >
                     <div className={`ch-card-banner ${diff}`}>
                       <span className="ch-diff-badge">{diffLabel}</span>
                       <span className={`ch-status-badge ${statusClass}`}>
@@ -207,14 +212,9 @@ export default async function DiscoveryPage() {
                         <span className="meta-sep">·</span>
                         <span>{ch._count.members} joined</span>
                       </div>
-                      <Link
-                        href={`/c/${ch.community.slug}`}
-                        className="ch-card-cta"
-                      >
-                        Khám phá
-                      </Link>
+                      <span className="ch-card-cta primary">Khám phá</span>
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>
