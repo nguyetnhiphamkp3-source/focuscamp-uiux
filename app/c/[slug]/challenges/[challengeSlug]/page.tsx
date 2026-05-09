@@ -587,15 +587,18 @@ export default async function ChallengeDetailPage({
                 const isDone = doneDayNumbers.has(t.dayNumber);
                 const isCurrent = !isDone && t.dayNumber === dayNow;
                 const isFuture = t.dayNumber > dayNow && !isDone;
+                const hasBody = !!(t.description || t.sopContent);
                 return (
-                  <div
+                  <details
                     key={t.id}
-                    className={`ch-task${isCurrent ? " current open" : ""}`}
-                    style={{
-                      opacity: isFuture ? 0.5 : 1,
-                    }}
+                    className={`ch-task${isCurrent ? " current" : ""}`}
+                    open={isCurrent}
+                    style={{ opacity: isFuture ? 0.5 : 1 }}
                   >
-                    <div className="ch-task-head">
+                    <summary
+                      className="ch-task-head"
+                      style={{ listStyle: "none", cursor: hasBody ? "pointer" : "default" }}
+                    >
                       <div
                         className="ch-task-day"
                         style={
@@ -662,10 +665,10 @@ export default async function ChallengeDetailPage({
                           }}
                         />
                       )}
-                    </div>
-                    {isCurrent && t.description && (
+                    </summary>
+                    {hasBody && (
                       <div className="ch-task-body">
-                        <div className="ch-task-desc">{t.description}</div>
+                        {t.description && <div className="ch-task-desc">{t.description}</div>}
                         {t.sopContent && (
                           <div className="ch-task-sop">
                             <div className="ch-task-sop-label">
@@ -681,7 +684,7 @@ export default async function ChallengeDetailPage({
                         )}
                       </div>
                     )}
-                  </div>
+                  </details>
                 );
               })}
             </>

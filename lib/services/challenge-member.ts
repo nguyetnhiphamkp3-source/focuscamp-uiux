@@ -587,6 +587,7 @@ export async function joinChallenge(input: {
       userId: input.userId,
       challengeId: input.challengeId,
       status,
+      ...(status === "ACTIVE" ? { personalStartsAt: new Date() } : {}),
     },
   });
   logger.info(

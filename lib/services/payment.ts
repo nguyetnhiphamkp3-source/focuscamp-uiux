@@ -151,6 +151,7 @@ export async function matchSePayTransactionToPayment(params: {
           data: {
             status: challenge?.requiresApproval ? "PENDING" : "ACTIVE",
             approvedAt: challenge?.requiresApproval ? undefined : new Date(),
+            personalStartsAt: challenge?.requiresApproval ? undefined : new Date(),
           },
         });
       }
