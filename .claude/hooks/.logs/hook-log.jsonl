@@ -1,0 +1,12 @@
+{"ts":"2026-04-19T18:59:17.238Z","hook":"descriptive-name","event":"PreToolUse","tool":"Write","target":"","note":"","dur":0,"status":"ok","exit":0,"error":""}
+{"ts":"2026-04-19T18:59:17.341Z","hook":"dev-rules-reminder","event":"UserPromptSubmit","tool":"","target":"","note":"context-injected","dur":48,"status":"ok","exit":0,"error":""}
+{"ts":"2026-04-19T18:59:17.361Z","hook":"plan-format-kanban","event":"PostToolUse","tool":"Read","target":"","note":"non-plan-file","dur":0,"status":"skip","exit":0,"error":""}
+{"ts":"2026-04-19T18:59:17.383Z","hook":"post-edit-simplify-reminder","event":"PostToolUse","tool":"Read","target":"","note":"non-edit-tool","dur":0,"status":"skip","exit":0,"error":""}
+{"ts":"2026-04-19T18:59:17.407Z","hook":"privacy-block","event":"PreToolUse","tool":"Read","target":"","note":"","dur":2,"status":"ok","exit":0,"error":""}
+{"ts":"2026-04-19T18:59:17.432Z","hook":"scout-block","event":"PreToolUse","tool":"Read","target":"","note":"","dur":2,"status":"ok","exit":0,"error":""}
+{"ts":"2026-04-19T18:59:17.500Z","hook":"session-init","event":"SessionStart","tool":"","target":"","note":"unknown","dur":43,"status":"ok","exit":0,"error":""}
+{"ts":"2026-04-19T18:59:17.542Z","hook":"skill-dedup","event":"SessionStart","tool":"","target":"","note":"dedup-complete","dur":1,"status":"ok","exit":0,"error":""}
+{"ts":"2026-04-19T18:59:17.598Z","hook":"subagent-init","event":"SubagentStart","tool":"","target":"unknown","note":"context-injected","dur":34,"status":"ok","exit":0,"error":""}
+{"ts":"2026-04-19T18:59:17.618Z","hook":"task-completed-handler","event":"TaskCompleted","tool":"","target":"","note":"missing-team-name","dur":0,"status":"skip","exit":0,"error":""}
+{"ts":"2026-04-19T18:59:18.788Z","hook":"usage-context-awareness","event":"PostToolUse","tool":"Read","target":"","note":"fetched","dur":1110,"status":"ok","exit":0,"error":""}
+{"ts":"2026-04-19T18:59:18.836Z","hook":"usage-quota-cache-refresh","event":"PostToolUse","tool":"Read","target":"","note":"throttled","dur":0,"status":"skip","exit":0,"error":""}
