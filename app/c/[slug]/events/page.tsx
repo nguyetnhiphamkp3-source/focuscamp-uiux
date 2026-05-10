@@ -76,9 +76,8 @@ export default async function EventsListPage({
                 const startsAt = new Date(e.startsAt);
                 const full = e._count.bookings >= e.capacity;
                 return (
-                  <Link
+                  <div
                     key={e.id}
-                    href={`/c/${slug}/events/${e.id}`}
                     style={{
                       background: "var(--bg-card)",
                       border: "1px solid var(--border-subtle)",
@@ -88,11 +87,20 @@ export default async function EventsListPage({
                       gap: 14,
                       alignItems: "flex-start",
                       flexWrap: "wrap",
-                      textDecoration: "none",
-                      color: "inherit",
+                      position: "relative",
                     }}
                   >
-                    <div style={{ flex: 1, minWidth: 200 }}>
+                    <Link
+                      href={`/c/${slug}/events/${e.id}`}
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        borderRadius: 12,
+                        zIndex: 0,
+                      }}
+                      aria-label={e.title}
+                    />
+                    <div style={{ flex: 1, minWidth: 200, position: "relative", zIndex: 1 }}>
                       <div
                         style={{
                           fontSize: "var(--text-xs)",
@@ -145,7 +153,7 @@ export default async function EventsListPage({
                         </div>
                       )}
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end", position: "relative", zIndex: 1 }}>
                       <div
                         style={{
                           fontWeight: 700,
@@ -177,7 +185,7 @@ export default async function EventsListPage({
                         </button>
                       </form>
                     </div>
-                  </Link>
+                  </div>
                 );
               })}
             </div>
