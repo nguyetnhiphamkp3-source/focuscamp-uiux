@@ -88,7 +88,9 @@ export async function listEvents(input: {
     communityId: input.communityId,
   };
   if (input.scope === "upcoming") {
-    where.startsAt = { gte: now };
+    // Include events started within the last 4h so live/in-progress events still appear
+    const fourHoursAgo = new Date(now.getTime() - 4 * 60 * 60 * 1000);
+    where.startsAt = { gte: fourHoursAgo };
     where.status = "OPEN";
   } else if (input.scope === "past") {
     where.startsAt = { lt: now };
