@@ -18,10 +18,15 @@ import {
 async function assertCommunityOwner(userId: string, communityId: string) {
   const c = await prisma.community.findUnique({
     where: { id: communityId },
-    select: { ownerId: true },
+    select: {
+      ownerId: true,
+      memberships: { where: { userId }, select: { role: true } },
+    },
   });
   if (!c) throw new Error("Cộng đồng không tồn tại");
-  if (c.ownerId !== userId) throw new Error("Chỉ owner mới tạo được event");
+  const role = c.memberships[0]?.role ?? "MEMBER";
+  const canManage = c.ownerId === userId || role === "ADMIN" || role === "MASTER";
+  if (!canManage) throw new Error("Cần quyền ADMIN hoặc MASTER để tạo event");
 }
 
 export async function createEvent(input: {

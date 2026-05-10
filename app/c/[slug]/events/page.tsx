@@ -18,10 +18,19 @@ export default async function EventsListPage({
   const session = await auth();
   const community = await prisma.community.findUnique({
     where: { slug },
-    select: { id: true, name: true, ownerId: true },
+    select: {
+      id: true,
+      name: true,
+      ownerId: true,
+      memberships: session?.user?.id
+        ? { where: { userId: session.user.id }, select: { role: true } }
+        : false,
+    },
   });
   if (!community) notFound();
   const isOwner = session?.user?.id === community.ownerId;
+  const memberRole = Array.isArray(community.memberships) ? (community.memberships[0]?.role ?? "MEMBER") : "MEMBER";
+  const canCreateEvent = isOwner || memberRole === "ADMIN" || memberRole === "MASTER";
 
   const events = await listEvents({ communityId: community.id, scope: "upcoming" });
 
@@ -33,7 +42,7 @@ export default async function EventsListPage({
       </header>
       <div style={{ flex: 1, overflowY: "auto", padding: "var(--space-5) var(--space-6)" }}>
         <div style={{ maxWidth: 880, margin: "0 auto" }}>
-          {isOwner && (
+          {canCreateEvent && (
             <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
               <CreateEventButton communityId={community.id} communitySlug={slug} />
             </div>

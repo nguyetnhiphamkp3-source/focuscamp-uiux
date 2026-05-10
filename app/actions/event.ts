@@ -61,10 +61,20 @@ export async function updateEventMeetingUrlAction(input: {
   try {
     const event = await prisma.event.findUnique({
       where: { id: input.eventId },
-      select: { community: { select: { ownerId: true, slug: true } } },
+      select: {
+        community: {
+          select: {
+            ownerId: true,
+            slug: true,
+            memberships: { where: { userId: s.user.id }, select: { role: true } },
+          },
+        },
+      },
     });
     if (!event) return { ok: false, reason: "Không tìm thấy event" };
-    if (event.community.ownerId !== s.user.id) return { ok: false, reason: "Chỉ owner mới cập nhật được" };
+    const role = event.community.memberships[0]?.role ?? "MEMBER";
+    const canManage = event.community.ownerId === s.user.id || role === "ADMIN" || role === "MASTER";
+    if (!canManage) return { ok: false, reason: "Cần quyền ADMIN hoặc MASTER" };
     await prisma.event.update({
       where: { id: input.eventId },
       data: { meetingUrl: input.meetingUrl.trim() || null },
