@@ -812,11 +812,16 @@ model Event {
   capacity    Int      @default(1)
   priceVnd    Int      @default(0)
   isFree      Boolean  @default(false)
-  meetingUrl  String?
-  bannerUrl   String?
-  status      String   @default("OPEN") // OPEN | CANCELLED | COMPLETED
+  meetingUrl      String?
+  bannerUrl       String?
+  status          String   @default("OPEN") // OPEN | CANCELLED | COMPLETED
   featuredOnGlobal Boolean @default(false)
-  createdAt   DateTime @default(now())
+  createdAt       DateTime @default(now())
+  // Google Meet integration
+  meetSpaceName   String?  // e.g. "spaces/abc123" — for post-meeting API calls
+  meetRecordingUrl  String? // Drive link after meeting ends
+  meetTranscriptUrl String? // Google Docs transcript link
+  meetEndedAt     DateTime? // actual conference end time from Meet API
 
   community Community      @relation(fields: [communityId], references: [id], onDelete: Cascade)
   owner     User           @relation(fields: [ownerId], references: [id])
@@ -832,6 +837,7 @@ model EventBooking {
   userId     String
   status     String   @default("PENDING") // PENDING | CONFIRMED | ATTENDED | NO_SHOW | REFUNDED
   paymentRef String?
+  attendedAt DateTime? // set by Meet participants API after event ends
   createdAt  DateTime @default(now())
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)

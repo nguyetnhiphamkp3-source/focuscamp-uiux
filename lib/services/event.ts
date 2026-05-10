@@ -6,6 +6,14 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { createPayment } from "@/lib/sepay";
 import { assertCommunityCanWrite } from "./community";
+import { getGoogleAccessToken } from "./google-oauth";
+import {
+  createMeetSpace,
+  getConferenceRecord,
+  getRecordingLinks,
+  getTranscriptLinks,
+  getAttendees,
+} from "@/lib/integrations/google-meet";
 
 async function assertCommunityOwner(userId: string, communityId: string) {
   const c = await prisma.community.findUnique({
@@ -48,6 +56,26 @@ export async function createEvent(input: {
     },
   });
   logger.info({ eventId: ev.id, by: input.userId }, "[event] created");
+
+  // Auto-generate Google Meet space if no manual URL provided
+  if (!input.meetingUrl) {
+    const token = await getGoogleAccessToken(input.userId).catch(() => null);
+    if (token) {
+      const space = await createMeetSpace(token, {
+        autoRecording: true,
+        autoTranscription: true,
+      });
+      if (space) {
+        await prisma.event.update({
+          where: { id: ev.id },
+          data: { meetingUrl: space.meetingUri, meetSpaceName: space.spaceName },
+        });
+        logger.info({ eventId: ev.id, space: space.spaceName }, "[event] meet space created");
+        return { ...ev, meetingUrl: space.meetingUri, meetSpaceName: space.spaceName };
+      }
+    }
+  }
+
   return ev;
 }
 
@@ -160,4 +188,79 @@ export async function confirmEventBooking(bookingId: string, paymentRef: string)
     data: { status: "CONFIRMED", paymentRef },
   });
   logger.info({ bookingId }, "[event] booking confirmed");
+}
+
+/**
+ * Fetch post-meeting data (recordings, transcripts, attendance) from Meet API.
+ * Lazy-fetches on event detail page load after event end time.
+ * Idempotent — skips if already fetched (meetRecordingUrl set or no spaceName).
+ */
+export async function fetchPostMeetingData(
+  eventId: string,
+  ownerUserId: string
+): Promise<{
+  recordingUrl: string | null;
+  transcriptUrl: string | null;
+  attendees: { displayName: string; joinedAt?: string; leftAt?: string }[];
+} | null> {
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    select: {
+      meetSpaceName: true,
+      meetRecordingUrl: true,
+      meetTranscriptUrl: true,
+      bookings: { where: { status: "CONFIRMED" }, select: { id: true, userId: true } },
+    },
+  });
+  if (!event?.meetSpaceName) return null;
+  if (event.meetRecordingUrl) {
+    // Already fetched — return cached
+    return {
+      recordingUrl: event.meetRecordingUrl,
+      transcriptUrl: event.meetTranscriptUrl,
+      attendees: [],
+    };
+  }
+
+  const token = await getGoogleAccessToken(ownerUserId).catch(() => null);
+  if (!token) return null;
+
+  const record = await getConferenceRecord(token, event.meetSpaceName);
+  if (!record) return null;
+
+  const [recordings, transcripts, attendees] = await Promise.all([
+    getRecordingLinks(token, record.name),
+    getTranscriptLinks(token, record.name),
+    getAttendees(token, record.name),
+  ]);
+
+  const recordingUrl = recordings[0] ?? null;
+  const transcriptUrl = transcripts[0] ?? null;
+  const endedAt = record.endTime ? new Date(record.endTime) : null;
+
+  // Cache results
+  await prisma.event.update({
+    where: { id: eventId },
+    data: {
+      meetRecordingUrl: recordingUrl,
+      meetTranscriptUrl: transcriptUrl,
+      ...(endedAt ? { meetEndedAt: endedAt } : {}),
+    },
+  });
+
+  // Mark confirmed bookings as ATTENDED if participant was in the call
+  if (attendees.length > 0) {
+    for (const booking of event.bookings) {
+      const joined = attendees.find((a) => a.joinedAt);
+      if (joined) {
+        await prisma.eventBooking.update({
+          where: { id: booking.id },
+          data: { status: "ATTENDED", attendedAt: joined.joinedAt ? new Date(joined.joinedAt) : new Date() },
+        }).catch(() => null);
+      }
+    }
+  }
+
+  logger.info({ eventId, recordingUrl, transcriptUrl }, "[event] post-meeting data fetched");
+  return { recordingUrl, transcriptUrl, attendees };
 }
