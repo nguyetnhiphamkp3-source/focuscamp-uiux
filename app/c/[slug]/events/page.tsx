@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -75,8 +76,9 @@ export default async function EventsListPage({
                 const startsAt = new Date(e.startsAt);
                 const full = e._count.bookings >= e.capacity;
                 return (
-                  <div
+                  <Link
                     key={e.id}
+                    href={`/c/${slug}/events/${e.id}`}
                     style={{
                       background: "var(--bg-card)",
                       border: "1px solid var(--border-subtle)",
@@ -86,6 +88,8 @@ export default async function EventsListPage({
                       gap: 14,
                       alignItems: "flex-start",
                       flexWrap: "wrap",
+                      textDecoration: "none",
+                      color: "inherit",
                     }}
                   >
                     <div style={{ flex: 1, minWidth: 200 }}>
@@ -173,7 +177,7 @@ export default async function EventsListPage({
                         </button>
                       </form>
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>
