@@ -1,8 +1,9 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { fmtVnd } from "@/lib/brand";
-import { bookEvent, fetchPostMeetingData } from "@/lib/services/event";
+import { fetchPostMeetingData } from "@/lib/services/event";
+import { EventRsvpButton } from "@/components/community/event-rsvp-button";
 
 export const dynamic = "force-dynamic";
 
@@ -60,23 +61,6 @@ export default async function EventDetailPage({
       include: { user: { select: { name: true, email: true, image: true } } },
       orderBy: { createdAt: "asc" },
     });
-  }
-
-  async function bookAction(formData: FormData) {
-    "use server";
-    const s = await auth();
-    if (!s?.user?.id) redirect("/login");
-    const eid = String(formData.get("eventId") || "");
-    if (!eid) return;
-    try {
-      const res = await bookEvent({ userId: s.user.id!, eventId: eid });
-      if (res.status === "PENDING_PAYMENT") {
-        redirect(`/pay/${res.paymentCode}?return=/c/${slug}/events/${eid}`);
-      }
-    } catch {
-      // swallow — reload to show current state
-    }
-    redirect(`/c/${slug}/events/${eid}`);
   }
 
   const typeLabel =
@@ -174,15 +158,13 @@ export default async function EventDetailPage({
                     Đã đủ chỗ
                   </div>
                 ) : (
-                  <form action={bookAction}>
-                    <input type="hidden" name="eventId" value={event.id} />
-                    <button
-                      type="submit"
-                      style={{ padding: "10px 24px", borderRadius: 8, border: "none", background: "var(--brand-green)", color: "#fff", fontWeight: 700, fontSize: "var(--text-sm)", cursor: "pointer" }}
-                    >
-                      {event.isFree ? "RSVP ngay" : `Book — ${fmtVnd(event.priceVnd)}đ`}
-                    </button>
-                  </form>
+                  <EventRsvpButton
+                    eventId={event.id}
+                    communitySlug={slug}
+                    isFree={event.isFree}
+                    priceVnd={event.priceVnd ?? 0}
+                    full={full}
+                  />
                 )
               )}
 

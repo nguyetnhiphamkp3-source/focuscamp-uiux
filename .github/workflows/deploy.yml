@@ -72,6 +72,7 @@ jobs:
             cd /opt/focus-camp/app
             git fetch origin main
             git checkout main
+            git clean -fd -- scripts/migrate-challenge.ts scripts/migration-data/
             git pull origin main --ff-only
 
             # Ensure REDIS_URL is in .env

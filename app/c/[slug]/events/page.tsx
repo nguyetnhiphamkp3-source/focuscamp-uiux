@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { listEvents, bookEvent } from "@/lib/services/event";
+import { listEvents } from "@/lib/services/event";
 import { fmtVnd } from "@/lib/brand";
 import { CreateEventButton } from "@/components/community/create-event-button";
+import { EventRsvpButton } from "@/components/community/event-rsvp-button";
 
 export const dynamic = "force-dynamic";
 
@@ -23,22 +24,6 @@ export default async function EventsListPage({
   const isOwner = session?.user?.id === community.ownerId;
 
   const events = await listEvents({ communityId: community.id, scope: "upcoming" });
-
-  async function bookAction(formData: FormData) {
-    "use server";
-    const s = await auth();
-    if (!s?.user?.id) redirect("/login");
-    const eventId = String(formData.get("eventId") || "");
-    if (!eventId) return;
-    try {
-      const res = await bookEvent({ userId: s.user!.id!, eventId });
-      if (res.status === "PENDING_PAYMENT") {
-        redirect(`/pay/${res.paymentCode}`);
-      }
-    } catch {
-      // swallow — UI shows generic error in detail
-    }
-  }
 
   return (
     <>
@@ -85,22 +70,15 @@ export default async function EventsListPage({
                       padding: 16,
                       display: "flex",
                       gap: 14,
-                      alignItems: "flex-start",
+                      alignItems: "center",
                       flexWrap: "wrap",
-                      position: "relative",
                     }}
                   >
+                    {/* Clickable content area — Link wraps only the text block */}
                     <Link
                       href={`/c/${slug}/events/${e.id}`}
-                      style={{
-                        position: "absolute",
-                        inset: 0,
-                        borderRadius: 12,
-                        zIndex: 0,
-                      }}
-                      aria-label={e.title}
-                    />
-                    <div style={{ flex: 1, minWidth: 200, position: "relative", zIndex: 1 }}>
+                      style={{ flex: 1, minWidth: 200, textDecoration: "none", color: "inherit" }}
+                    >
                       <div
                         style={{
                           fontSize: "var(--text-xs)",
@@ -152,8 +130,10 @@ export default async function EventsListPage({
                           {e.description}
                         </div>
                       )}
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end", position: "relative", zIndex: 1 }}>
+                    </Link>
+
+                    {/* Price + RSVP — outside Link, no overlap */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end", flexShrink: 0 }}>
                       <div
                         style={{
                           fontWeight: 700,
@@ -163,27 +143,13 @@ export default async function EventsListPage({
                       >
                         {free ? "Miễn phí" : `${fmtVnd(e.priceVnd)}đ`}
                       </div>
-                      <form action={bookAction}>
-                        <input type="hidden" name="eventId" value={e.id} />
-                        <button
-                          type="submit"
-                          disabled={full}
-                          style={{
-                            padding: "8px 16px",
-                            borderRadius: 8,
-                            border: "none",
-                            background: full
-                              ? "var(--bg-modifier-hover)"
-                              : "var(--brand-green)",
-                            color: "#fff",
-                            fontWeight: 600,
-                            fontSize: "var(--text-sm)",
-                            cursor: full ? "not-allowed" : "pointer",
-                          }}
-                        >
-                          {full ? "Đã đủ chỗ" : free ? "RSVP" : "Book ngay"}
-                        </button>
-                      </form>
+                      <EventRsvpButton
+                        eventId={e.id}
+                        communitySlug={slug}
+                        isFree={free}
+                        priceVnd={e.priceVnd ?? 0}
+                        full={full}
+                      />
                     </div>
                   </div>
                 );
