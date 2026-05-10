@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { createEvent, bookEvent } from "@/lib/services/event";
 import { logError } from "@/lib/logger";
+import { prisma } from "@/lib/prisma";
 
 type ActionResult<T = unknown> =
   | { ok: true; data?: T }
@@ -43,6 +44,33 @@ export async function createEventAction(input: {
     });
     revalidatePath(`/c/${input.communitySlug}/events`);
     return { ok: true, data: { eventId: ev.id } };
+  } catch (err) {
+    logError(err, { userId: s.user.id });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+export async function updateEventMeetingUrlAction(input: {
+  eventId: string;
+  meetingUrl: string;
+  communitySlug: string;
+}): Promise<ActionResult> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+  try {
+    const event = await prisma.event.findUnique({
+      where: { id: input.eventId },
+      select: { community: { select: { ownerId: true, slug: true } } },
+    });
+    if (!event) return { ok: false, reason: "Không tìm thấy event" };
+    if (event.community.ownerId !== s.user.id) return { ok: false, reason: "Chỉ owner mới cập nhật được" };
+    await prisma.event.update({
+      where: { id: input.eventId },
+      data: { meetingUrl: input.meetingUrl.trim() || null },
+    });
+    revalidatePath(`/c/${input.communitySlug}/events/${input.eventId}`);
+    return { ok: true };
   } catch (err) {
     logError(err, { userId: s.user.id });
     if (err instanceof Error) return { ok: false, reason: err.message };

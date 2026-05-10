@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { fmtVnd } from "@/lib/brand";
 import { fetchPostMeetingData } from "@/lib/services/event";
 import { EventRsvpButton } from "@/components/community/event-rsvp-button";
+import { EventMeetingUrlEditor } from "@/components/community/event-meeting-url-editor";
 
 export const dynamic = "force-dynamic";
 
@@ -186,6 +187,15 @@ export default async function EventDetailPage({
               <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", wordBreak: "break-all" }}>
                 🔗 {event.meetingUrl}
               </div>
+            )}
+
+            {/* Owner: set/update meeting URL */}
+            {isOwner && !isEnded && (
+              <EventMeetingUrlEditor
+                eventId={event.id}
+                communitySlug={slug}
+                currentUrl={event.meetingUrl}
+              />
             )}
           </div>
 
