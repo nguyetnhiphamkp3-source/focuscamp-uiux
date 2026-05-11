@@ -65,6 +65,20 @@ export async function approveOrderAction(input: {
     logger.warn({ err, purchaseId: purchase.id }, "[orders] manual approve: notify failed");
   }
 
+  // Sync to gettime.money CRM
+  try {
+    const { notifyGettimePurchase } = await import("@/lib/integrations/gettime-crm");
+    await notifyGettimePurchase({
+      name: purchase.user.name,
+      email: purchase.user.email,
+      productName: purchase.product.title,
+      amountVnd: Number(purchase.amountVnd),
+      orderId: purchase.id,
+    });
+  } catch (err) {
+    logger.warn({ err, purchaseId: purchase.id }, "[orders] manual approve: gettime sync failed");
+  }
+
   logger.info({ purchaseId: purchase.id, adminId: s.user.id, ref: manualRef }, "[orders] manually approved");
   revalidatePath(`/c/${input.communitySlug}/orders`);
   return { ok: true };
