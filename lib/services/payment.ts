@@ -205,6 +205,7 @@ export async function matchSePayTransactionToPayment(params: {
         select: {
           amountVnd: true,
           product: { select: { title: true, communityId: true } },
+          user: { select: { name: true, email: true } },
         },
       });
       if (purchase) {
@@ -217,6 +218,16 @@ export async function matchSePayTransactionToPayment(params: {
             description: `${Number(purchase.amountVnd).toLocaleString("vi-VN")}đ`,
           },
         ).catch(() => {});
+
+        // Sync to gettime.money CRM
+        const { notifyGettimePurchase } = await import("@/lib/integrations/gettime-crm");
+        await notifyGettimePurchase({
+          name: purchase.user.name,
+          email: purchase.user.email,
+          productName: purchase.product.title,
+          amountVnd: Number(purchase.amountVnd),
+          orderId: payment.refId,
+        });
       }
     } catch {
       /* swallow */
