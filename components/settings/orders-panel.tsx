@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useState, useTransition } from "react";
 import { rowCard, SectionHeader } from "./editor-shared";
 import { fmtVnd, avatarColorFor, initials, fmtRelativeTime } from "@/lib/brand";
 import type { OrderRow } from "@/lib/services/community-orders";
+import { approveOrderAction } from "@/app/actions/orders";
 
 interface OrdersPanelProps {
   orders: OrderRow[];
@@ -45,6 +47,40 @@ const TYPE_LABELS: Record<string, string> = {
   LICENSE: "License",
   PROMPT: "Prompt",
 };
+
+function ApproveButton({ purchaseId, communitySlug }: { purchaseId: string; communitySlug: string }) {
+  const [pending, startTransition] = useTransition();
+  const [done, setDone] = useState(false);
+
+  if (done) return <span style={{ fontSize: "var(--text-xs)", color: "var(--success)", fontWeight: 600 }}>Đã duyệt ✓</span>;
+
+  return (
+    <button
+      disabled={pending}
+      onClick={() => {
+        if (!confirm("Duyệt thủ công đơn hàng này?")) return;
+        startTransition(async () => {
+          const res = await approveOrderAction({ purchaseId, communitySlug });
+          if (res.ok) setDone(true);
+          else alert("Lỗi: " + res.reason);
+        });
+      }}
+      style={{
+        fontSize: "var(--text-xs)",
+        fontWeight: 600,
+        padding: "3px 10px",
+        borderRadius: 5,
+        border: "1px solid var(--brand-green)",
+        background: "transparent",
+        color: "var(--brand-green)",
+        cursor: pending ? "not-allowed" : "pointer",
+        opacity: pending ? 0.6 : 1,
+      }}
+    >
+      {pending ? "Đang duyệt…" : "Duyệt"}
+    </button>
+  );
+}
 
 function StatusBadge({ status }: { status: string }) {
   const style = STATUS_COLORS[status] ?? STATUS_COLORS.PENDING;
@@ -182,6 +218,9 @@ export function OrdersPanel({
                     <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
                       {fmtRelativeTime(order.purchaseCreatedAt)}
                     </span>
+                    {order.purchaseStatus === "PENDING" && (
+                      <ApproveButton purchaseId={order.purchaseId} communitySlug={communitySlug} />
+                    )}
                   </div>
                 </div>
 
