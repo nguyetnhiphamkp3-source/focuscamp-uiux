@@ -1,0 +1,40 @@
+name: Set env var on VPS
+
+on:
+  workflow_dispatch:
+    inputs:
+      key:
+        description: 'Tên biến env (VD: GETTIME_CRM_WEBHOOK_URL)'
+        required: true
+      value:
+        description: 'Giá trị'
+        required: true
+
+jobs:
+  set-env:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set env on VPS and restart app
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          port: ${{ secrets.VPS_PORT }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            ENV_FILE=/opt/focus-camp/app/.env
+            KEY="${{ github.event.inputs.key }}"
+            VALUE="${{ github.event.inputs.value }}"
+
+            if grep -q "^${KEY}=" "$ENV_FILE" 2>/dev/null; then
+              sed -i "s|^${KEY}=.*|${KEY}=\"${VALUE}\"|" "$ENV_FILE"
+              echo "Updated ${KEY}"
+            else
+              echo "${KEY}=\"${VALUE}\"" >> "$ENV_FILE"
+              echo "Added ${KEY}"
+            fi
+
+            cd /opt/focus-camp
+            docker compose restart app
+            echo "App restarted"
