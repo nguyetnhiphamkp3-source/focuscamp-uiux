@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -104,6 +105,45 @@ export default async function SettingsPage({
 
           {isOwner && (
             <CommunityPlanPanel communityId={community.id} state={planState} />
+          )}
+
+          {isOwner && (
+            <div
+              className="ui-card"
+              style={{
+                marginBottom: "var(--space-4)",
+                padding: "var(--space-4) var(--space-5)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "var(--space-4)",
+              }}
+            >
+              <div>
+                <div style={{ fontWeight: 700, color: "var(--header-primary)", fontSize: "var(--text-base)" }}>
+                  Đơn hàng
+                </div>
+                <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 2 }}>
+                  Xem và quản lý các đơn hàng từ marketplace
+                </div>
+              </div>
+              <Link
+                href={`/c/${slug}/orders`}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: 8,
+                  border: "none",
+                  background: "var(--brand-green)",
+                  color: "#fff",
+                  fontWeight: 600,
+                  fontSize: "var(--text-sm)",
+                  textDecoration: "none",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Xem đơn hàng →
+              </Link>
+            </div>
           )}
 
           {isOwner && (

@@ -189,6 +189,15 @@ export default async function CommunityLayout({
                   <span className="unread-badge" style={{ background: "var(--premium-gold)" }}>✨</span>
                 </FeatureLink>
               )}
+              {isOwner && (
+                <>
+                  <div className="features-section-title">Quản lý</div>
+                  <FeatureLink href={`/c/${slug}/orders`}>
+                    <span className="feature-icon"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg></span>
+                    <span className="feature-name">Đơn hàng</span>
+                  </FeatureLink>
+                </>
+              )}
             </div>
           </aside>
         </div>{/* end left-section-top */}
