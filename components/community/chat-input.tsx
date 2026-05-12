@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { sendMessageAction } from "@/app/actions/chat";
 
 interface Props {
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export function ChatInput({ channelId, communitySlug, channelSlug, placeholder }: Props) {
+  const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [pending, startTransition] = useTransition();
 
@@ -24,6 +26,7 @@ export function ChatInput({ channelId, communitySlug, channelSlug, placeholder }
     startTransition(async () => {
       await sendMessageAction(formData);
       if (inputRef.current) inputRef.current.value = "";
+      router.refresh();
     });
   }
 

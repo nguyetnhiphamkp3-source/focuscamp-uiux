@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -11,10 +12,14 @@ export const dynamic = "force-dynamic";
 
 export default async function QAPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ filter?: string; sort?: string }>;
 }) {
   const { slug } = await params;
+  const { filter, sort: sortParam } = await searchParams;
+  const sort: "latest" | "popular" = sortParam === "popular" ? "popular" : "latest";
 
   const community = await prisma.community.findUnique({
     where: { slug },
@@ -46,10 +51,13 @@ export default async function QAPage({
     communityId: community.id,
     type: "QUESTION",
     userId,
+    sort,
     limit: PAGE_SIZE,
   });
 
-  const unanswered = questions.filter((q) => q.commentCount === 0).length;
+  const allCount = questions.length;
+  const unanswered = questions.filter((q) => q.commentCount === 0);
+  const displayedQuestions = filter === "unanswered" ? unanswered : questions;
 
   return (
     <>
@@ -91,35 +99,38 @@ export default async function QAPage({
             </div>
           )}
 
-          <div
-            style={{
-              display: "flex",
-              gap: 16,
-              padding: "14px 18px",
-              marginBottom: 18,
-              background: "var(--bg-card)",
-              border: "1px solid var(--border-subtle)",
-              borderRadius: 12,
-              fontSize: "var(--text-sm)",
-              color: "var(--text-muted)",
-            }}
-          >
-            <div>
-              <strong style={{ color: "var(--header-primary)" }}>
-                {questions.length}
-              </strong>{" "}
-              câu hỏi
-            </div>
-            <div>
-              <strong style={{ color: "var(--danger)" }}>{unanswered}</strong> chưa
-              trả lời
-            </div>
+          {/* Tabs */}
+          <div className="feed-tabs" style={{ marginBottom: 12 }}>
+            <Link
+              href={`/c/${slug}/qa`}
+              scroll={false}
+              className={`feed-tab${!filter || filter === "all" ? " active" : ""}`}
+              style={{ textDecoration: "none" }}
+            >
+              Tất cả ({allCount})
+            </Link>
+            <Link
+              href={`/c/${slug}/qa?filter=unanswered`}
+              scroll={false}
+              className={`feed-tab${filter === "unanswered" ? " active" : ""}`}
+              style={{ textDecoration: "none" }}
+            >
+              Chưa trả lời ({unanswered.length})
+            </Link>
+            <Link
+              href={`/c/${slug}/qa?sort=popular${filter ? `&filter=${filter}` : ""}`}
+              scroll={false}
+              className={`feed-tab${sort === "popular" ? " active" : ""}`}
+              style={{ textDecoration: "none" }}
+            >
+              Hot nhất
+            </Link>
           </div>
 
-          {questions.length === 0 ? (
+          {displayedQuestions.length === 0 ? (
             <EmptyState
               icon="❓"
-              title="Chưa có câu hỏi nào"
+              title={filter === "unanswered" ? "Không có câu hỏi chưa trả lời" : "Chưa có câu hỏi nào"}
               description={
                 isMember
                   ? "Hãy là người đầu tiên đặt câu hỏi. Cộng đồng sẽ trả lời giúp bạn!"
@@ -128,7 +139,7 @@ export default async function QAPage({
             />
           ) : (
             <FeedList
-              initialPosts={questions}
+              initialPosts={displayedQuestions}
               communityId={community.id}
               communitySlug={slug}
               type="QUESTION"
