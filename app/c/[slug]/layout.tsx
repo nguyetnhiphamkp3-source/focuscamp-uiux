@@ -115,14 +115,12 @@ export default async function CommunityLayout({
                 <FeatureLink href={`/c/${slug}`} exact>
                   <span className="feature-icon"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg></span>
                   <span className="feature-name">Chat</span>
-                  <span className="unread-badge">12</span>
                 </FeatureLink>
               )}
               {visible("feed") && (
-                <FeatureLink href={`/c/${slug}/feed`} className="feature-item has-unread">
+                <FeatureLink href={`/c/${slug}/feed`}>
                   <span className="feature-icon"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg></span>
                   <span className="feature-name">Bảng tin</span>
-                  <span className="unread-badge new">3</span>
                 </FeatureLink>
               )}
               {visible("cot") && (
@@ -138,10 +136,9 @@ export default async function CommunityLayout({
                 </FeatureLink>
               )}
               {visible("qa") && (
-                <FeatureLink href={`/c/${slug}/qa`} className="feature-item has-unread">
+                <FeatureLink href={`/c/${slug}/qa`}>
                   <span className="feature-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg></span>
                   <span className="feature-name">Hỏi đáp</span>
-                  <span className="unread-badge">1</span>
                 </FeatureLink>
               )}
 
@@ -186,7 +183,6 @@ export default async function CommunityLayout({
                 <FeatureLink href={`/c/${slug}/agent`}>
                   <span className="feature-icon"><svg viewBox="0 0 24 24"><path d="M12 2C9.24 2 7 4.24 7 7c0 2.85 2.92 7.21 4.5 9.5.24.35.76.35 1 0C14.08 14.21 17 9.85 17 7c0-2.76-2.24-5-5-5zm0 7c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm0 9.15L6 15l-1.45 1.45C2.85 17.15 1 18.4 1 20.5 1 21.88 2.12 23 3.5 23h17c1.38 0 2.5-1.12 2.5-2.5 0-2.1-1.85-3.35-3.55-4.05L18 15l-6 3.15z"/></svg></span>
                   <span className="feature-name">AI Agent</span>
-                  <span className="unread-badge" style={{ background: "var(--premium-gold)" }}>✨</span>
                 </FeatureLink>
               )}
               {isOwner && (
