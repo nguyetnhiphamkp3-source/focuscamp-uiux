@@ -62,23 +62,6 @@ export function UserPanel({
         </div>
       )}
       <div className="user-panel-actions">
-        <div className="mute-btn-group">
-          <button className="mute-btn-red" title="Mute">
-            <svg viewBox="0 0 24 24">
-              <path d="M19 11c0 1.19-.34 2.3-.9 3.28l-1.23-1.23c.27-.62.44-1.32.44-2.05H19zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z" />
-            </svg>
-          </button>
-          <button className="mute-dropdown" title="Options">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M7 10l5 5 5-5z" />
-            </svg>
-          </button>
-        </div>
-        <button title="Deafen">
-          <svg viewBox="0 0 24 24">
-            <path d="M12 1c-4.97 0-9 4.03-9 9v7c0 1.66 1.34 3 3 3h3v-8H5v-2c0-3.87 3.13-7 7-7s7 3.13 7 7v2h-4v8h3c1.66 0 3-1.34 3-3v-7c0-4.97-4.03-9-9-9z" />
-          </svg>
-        </button>
         {user ? (
           <form
             action={async () => {
