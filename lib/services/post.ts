@@ -183,6 +183,7 @@ export async function getPostWithComments(postId: string, userId?: string) {
       isPinned: post.isPinned,
       isCot: post.isCot,
       bountyAip: post.bountyAip,
+      imageUrl: post.imageUrl,
       viewCount: post.viewCount,
       createdAt: post.createdAt,
       user: post.user,
