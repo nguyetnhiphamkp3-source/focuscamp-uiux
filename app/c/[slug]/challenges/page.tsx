@@ -87,6 +87,20 @@ export default async function QuestLogPage({
         })
       : null;
 
+  // Owner: load all challenges they haven't joined yet (to show management section)
+  const isOwner = session?.user?.id === community.ownerId;
+  const ownerUnjoined =
+    tab === "active" && isOwner
+      ? await prisma.challenge.findMany({
+          where: {
+            communityId: community.id,
+            id: { notIn: [...myChallengeIds] },
+          },
+          orderBy: { createdAt: "desc" },
+          include: { _count: { select: { members: true } } },
+        })
+      : [];
+
   return (
     <>
       <header className="view-header">
@@ -152,11 +166,25 @@ export default async function QuestLogPage({
 
           {/* Content */}
           {tab === "active" && (
-            <ActiveTab
-              slug={slug}
-              memberships={activeMemberships}
-              featured={featured}
-            />
+            <>
+              <ActiveTab
+                slug={slug}
+                memberships={activeMemberships}
+                featured={featured}
+              />
+              {ownerUnjoined.length > 0 && (
+                <div style={{ marginTop: "var(--space-8)" }}>
+                  <h3 style={{ fontSize: "var(--text-md)", fontWeight: "var(--fw-bold)", color: "var(--text-muted)", marginBottom: "var(--space-3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                    ⚙️ Challenges bạn quản lý
+                  </h3>
+                  <div className="ch-grid">
+                    {ownerUnjoined.map((c) => (
+                      <ChallengeCard key={c.id} slug={slug} challenge={c} cta="Quản lý →" />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
           {tab === "completed" && (
             <CompletedTab slug={slug} memberships={completedMemberships} />
