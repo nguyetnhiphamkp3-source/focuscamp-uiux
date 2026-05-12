@@ -414,7 +414,7 @@ export default async function ChallengeDetailPage({
           {/* Progress (if joined) */}
           {myMembership?.status === "PAYMENT_PENDING" ? (
             <div style={{ marginTop: "var(--space-5)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-              <div style={{ padding: "16px 20px", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.3)", borderRadius: 12, fontSize: "var(--text-sm)", color: "var(--warning)" }}>
+              <div style={{ padding: "16px 20px", background: "rgba(251,191,36,0.12)", border: "1px solid rgba(217,119,6,0.4)", borderRadius: 12, fontSize: "var(--text-sm)", color: "#92400e", fontWeight: 600 }}>
                 ⏳ Bạn chưa hoàn tất thanh toán để tham gia challenge này.
               </div>
               {pendingPaymentCode ? (

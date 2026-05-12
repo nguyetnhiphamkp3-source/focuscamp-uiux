@@ -34,10 +34,10 @@ export function RenewPaymentButton({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {hasLateFee ? (
-        <div style={{ padding: "12px 16px", background: "rgba(240,178,50,0.08)", border: "1px solid rgba(240,178,50,0.3)", borderRadius: 10, fontSize: "var(--text-sm)", color: "var(--warning)", lineHeight: 1.5 }}>
+        <div style={{ padding: "12px 16px", background: "rgba(251,191,36,0.12)", border: "1px solid rgba(217,119,6,0.4)", borderRadius: 10, fontSize: "var(--text-sm)", color: "#92400e", lineHeight: 1.5, fontWeight: 600 }}>
           ⏰ Đã quá 30 phút kể từ khi đăng ký. Giá cập nhật lên{" "}
           <strong>{displayAmount.toLocaleString("vi-VN")}đ</strong>
-          <span style={{ color: "var(--text-muted)", fontWeight: 400 }}> (+500.000đ phí trễ)</span>
+          <span style={{ color: "#a16207", fontWeight: 500 }}> (+500.000đ phí trễ)</span>
         </div>
       ) : (
         <div style={{ padding: "12px 16px", background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 10, fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>
