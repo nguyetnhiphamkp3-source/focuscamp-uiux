@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CreateChallengeButton } from "@/components/community/create-challenge-button";
 
@@ -69,6 +70,7 @@ export default async function QuestLogPage({
             communityId: community.id,
             status: { in: ["OPEN", "ACTIVE"] },
             id: { notIn: [...myChallengeIds] },
+            pricingConfig: { equals: Prisma.DbNull },
           },
           orderBy: { createdAt: "desc" },
           include: { _count: { select: { members: true } } },
@@ -97,7 +99,16 @@ export default async function QuestLogPage({
             id: { notIn: [...myChallengeIds] },
           },
           orderBy: { createdAt: "desc" },
-          include: { _count: { select: { members: true } } },
+          select: {
+            id: true,
+            slug: true,
+            title: true,
+            description: true,
+            difficulty: true,
+            requiredDays: true,
+            bannerUrl: true,
+            _count: { select: { members: true } },
+          },
         })
       : [];
 

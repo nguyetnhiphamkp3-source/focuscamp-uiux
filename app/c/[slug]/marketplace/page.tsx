@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { ProductCard, fmtVnd } from "@/components/marketplace/product-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CreateProductButton } from "@/components/community/create-product-button";
@@ -34,7 +36,7 @@ export default async function MarketplacePage({
     productWhere.type = type;
   }
 
-  const [products, allProducts] = await Promise.all([
+  const [products, allProducts, paidChallenges] = await Promise.all([
     prisma.product.findMany({
       where: productWhere,
       orderBy: { createdAt: "desc" },
@@ -43,7 +45,30 @@ export default async function MarketplacePage({
       where: { communityId: community.id },
       orderBy: { createdAt: "desc" },
     }),
+    prisma.challenge.findMany({
+      where: {
+        communityId: community.id,
+        status: { in: ["OPEN", "ACTIVE"] },
+        NOT: [{ pricingConfig: { equals: Prisma.DbNull } }],
+      },
+      orderBy: { createdAt: "desc" },
+      include: { _count: { select: { members: true } } },
+    }),
   ]);
+
+  // Check which paid challenges the current user already joined
+  const joinedChallengeIds = new Set<string>();
+  if (session?.user?.id && paidChallenges.length > 0) {
+    const joined = await prisma.challengeMember.findMany({
+      where: {
+        userId: session.user.id,
+        challengeId: { in: paidChallenges.map((c) => c.id) },
+        status: { in: ["ACTIVE", "COMPLETED", "PENDING"] },
+      },
+      select: { challengeId: true },
+    });
+    joined.forEach((j) => joinedChallengeIds.add(j.challengeId));
+  }
 
   const featured = allProducts.slice(0, 5);
 
@@ -136,6 +161,115 @@ export default async function MarketplacePage({
                     />
                   ))}
                 </div>
+              </div>
+            </>
+          )}
+
+          {/* Paid Challenges */}
+          {paidChallenges.length > 0 && (
+            <>
+              <div className="mk-section-head">
+                <h2>⚔️ Challenges</h2>
+              </div>
+              <div className="mk-grid" style={{ marginBottom: "var(--space-6)" }}>
+                {paidChallenges.map((c) => {
+                  const cfg = c.pricingConfig as { guestVnd?: number; memberVnd?: number } | null;
+                  const price = cfg?.guestVnd ?? 0;
+                  const isJoined = joinedChallengeIds.has(c.id);
+                  const diffColor = c.difficulty === "HARD" ? "#c97a3f" : c.difficulty === "CHAOS" ? "#b8455a" : "#3a8a70";
+                  const diffLabel = c.difficulty === "HARD" ? "⚔️ Hard" : c.difficulty === "CHAOS" ? "🔥 Chaos" : "🛡️ Normal";
+                  return (
+                    <Link
+                      key={c.id}
+                      href={`/c/${slug}/challenges/${c.slug}`}
+                      className="mk-card"
+                      style={{ textDecoration: "none", color: "inherit" }}
+                    >
+                      <div
+                        className="mk-card-thumb"
+                        style={{
+                          background: c.bannerUrl
+                            ? `url("${c.bannerUrl}") center/cover no-repeat`
+                            : `linear-gradient(135deg, ${diffColor} 0%, ${diffColor}aa 100%)`,
+                          display: "flex",
+                          alignItems: "flex-end",
+                          padding: "8px 10px",
+                          gap: 6,
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            padding: "2px 8px",
+                            borderRadius: 999,
+                            background: `${diffColor}cc`,
+                            color: "#fff",
+                            border: `1px solid ${diffColor}`,
+                          }}
+                        >
+                          {diffLabel}
+                        </span>
+                        <span
+                          style={{
+                            marginLeft: "auto",
+                            fontSize: 11,
+                            fontWeight: 700,
+                            padding: "2px 8px",
+                            borderRadius: 999,
+                            background: "rgba(0,0,0,0.55)",
+                            color: "#fff",
+                          }}
+                        >
+                          Challenge
+                        </span>
+                      </div>
+                      <div className="mk-card-body" style={{ padding: "10px 12px" }}>
+                        <div
+                          style={{
+                            fontSize: "var(--text-sm)",
+                            fontWeight: 700,
+                            color: "var(--text-heading)",
+                            marginBottom: 4,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                          }}
+                        >
+                          {c.title}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: "var(--text-xs)",
+                            color: "var(--text-muted)",
+                            marginBottom: 8,
+                          }}
+                        >
+                          {c.requiredDays} ngày · {c._count.members} tham gia
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                          <span style={{ fontWeight: 800, color: "var(--success)", fontSize: "var(--text-sm)" }}>
+                            {price > 0 ? `${fmtVnd(price)}đ` : "Miễn phí"}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: "var(--text-xs)",
+                              fontWeight: 700,
+                              padding: "3px 10px",
+                              borderRadius: 5,
+                              background: isJoined ? "var(--bg-elevated)" : "var(--brand-green)",
+                              color: isJoined ? "var(--text-muted)" : "#fff",
+                            }}
+                          >
+                            {isJoined ? "Đã mua ✓" : "Xem ngay →"}
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             </>
           )}
