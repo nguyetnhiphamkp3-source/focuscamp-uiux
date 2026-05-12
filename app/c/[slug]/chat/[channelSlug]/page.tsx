@@ -217,51 +217,64 @@ export default async function ChannelPage({
                 }
                 const displayName = m.user.name || m.user.email || "User";
                 const color = nameColor(m.userId);
+                const profileHref = `/c/${slug}/profile/${m.user.id}`;
                 blocks.push(
                   <div key={m.id} className="message-group">
-                    {m.user.image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={m.user.image}
-                        alt={displayName}
-                        referrerPolicy="no-referrer"
+                    <Link
+                      href={profileHref}
+                      aria-label={`Xem profile của ${displayName}`}
+                    >
+                      {m.user.image ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={m.user.image}
+                          alt={displayName}
+                          referrerPolicy="no-referrer"
+                          style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: "50%",
+                            position: "absolute",
+                            left: 16,
+                            top: 2,
+                            cursor: "pointer",
+                            objectFit: "cover",
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: "50%",
+                            background: colorFor(m.userId),
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "var(--text-md)",
+                            color: "#fff",
+                            fontWeight: 600,
+                            position: "absolute",
+                            left: 16,
+                            top: 2,
+                            cursor: "pointer",
+                          }}
+                        >
+                          {displayName[0].toUpperCase()}
+                        </div>
+                      )}
+                    </Link>
+                    <div className="message-header">
+                      <Link
+                        href={profileHref}
+                        className="message-username"
                         style={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: "50%",
-                          position: "absolute",
-                          left: 16,
-                          top: 2,
-                          cursor: "pointer",
-                          objectFit: "cover",
-                        }}
-                      />
-                    ) : (
-                      <div
-                        style={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: "50%",
-                          background: colorFor(m.userId),
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: "var(--text-md)",
-                          color: "#fff",
-                          fontWeight: 600,
-                          position: "absolute",
-                          left: 16,
-                          top: 2,
-                          cursor: "pointer",
+                          color,
+                          textDecoration: "none",
                         }}
                       >
-                        {displayName[0].toUpperCase()}
-                      </div>
-                    )}
-                    <div className="message-header">
-                      <span className="message-username" style={{ color }}>
                         {displayName}
-                      </span>
+                      </Link>
                       <span className="message-timestamp">
                         {formatTimeShort(m.createdAt)}
                       </span>
