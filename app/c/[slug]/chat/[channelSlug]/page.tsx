@@ -2,8 +2,8 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { sendMessageAction } from "@/app/actions/chat";
 import { avatarColorFor as colorFor, nameColorFor as nameColor } from "@/lib/brand";
+import { ChatInput } from "@/components/community/chat-input";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +39,11 @@ function dateKey(d: Date): string {
 }
 
 function formatTimeShort(d: Date) {
-  return d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleTimeString("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Ho_Chi_Minh",
+  });
 }
 
 export default async function ChannelPage({
@@ -271,39 +275,12 @@ export default async function ChannelPage({
           )}
         </div>
 
-        <div className="chat-input-wrapper" data-view-part="chat">
-          <form action={sendMessageAction}>
-            <input type="hidden" name="channelId" value={channel.id} />
-            <input type="hidden" name="communitySlug" value={slug} />
-            <input type="hidden" name="channelSlug" value={channelSlug} />
-            <div className="chat-input">
-              <div className="plus-btn">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z" />
-                </svg>
-              </div>
-              <input
-                type="text"
-                name="content"
-                placeholder={`Message #${stripLeadingEmoji(channel.name)}`}
-                required
-                autoComplete="off"
-                style={{
-                  flex: 1,
-                  background: "transparent",
-                  outline: "none",
-                  border: "none",
-                  fontSize: "var(--text-base)",
-                  color: "var(--text-normal)",
-                  fontFamily: "inherit",
-                }}
-              />
-              <button type="submit" className="ui-btn ui-btn-primary ui-btn-sm">
-                Gửi
-              </button>
-            </div>
-          </form>
-        </div>
+        <ChatInput
+          channelId={channel.id}
+          communitySlug={slug}
+          channelSlug={channelSlug}
+          placeholder={`Message #${stripLeadingEmoji(channel.name)}`}
+        />
       </div>
     </div>
   );
