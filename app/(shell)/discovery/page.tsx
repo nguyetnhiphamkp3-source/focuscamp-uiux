@@ -1,26 +1,47 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { DiscoveryFilters } from "@/components/discovery/discovery-filters";
 
-export const revalidate = 60;
-
-const CATEGORIES = [
-  "Tất cả",
-  "Business & Founder",
-  "Marketing & Traffic",
-  "Ecommerce",
-  "Developer",
-  "Content Creator",
-  "Investing",
-  "AI & Tech",
-  "Fitness & Health",
-];
+export const dynamic = "force-dynamic";
 
 import { BRAND_GRADIENTS as BANNER_GRADIENTS, initials } from "@/lib/brand";
 
-export default async function DiscoveryPage() {
+export default async function DiscoveryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; category?: string }>;
+}) {
+  const { q, category } = await searchParams;
+
+  const communityWhere = {
+    ...(q
+      ? {
+          OR: [
+            { name: { contains: q, mode: "insensitive" as const } },
+            { tagline: { contains: q, mode: "insensitive" as const } },
+            { description: { contains: q, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+    ...(category && category !== "Tất cả" ? { category } : {}),
+  };
+
+  const challengeWhere = {
+    status: { in: ["OPEN", "ACTIVE"] as string[] },
+    ...(q
+      ? {
+          OR: [
+            { title: { contains: q, mode: "insensitive" as const } },
+            { description: { contains: q, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+  };
+
   const [communities, challenges, totals] = await Promise.all([
     prisma.community.findMany({
       take: 24,
+      where: communityWhere,
       orderBy: { createdAt: "desc" },
       include: {
         _count: { select: { memberships: true, challenges: true, courses: true } },
@@ -28,7 +49,7 @@ export default async function DiscoveryPage() {
     }),
     prisma.challenge.findMany({
       take: 6,
-      where: { status: { in: ["OPEN", "ACTIVE"] } },
+      where: challengeWhere,
       orderBy: { createdAt: "desc" },
       include: {
         community: { select: { name: true, slug: true } },
@@ -77,22 +98,7 @@ export default async function DiscoveryPage() {
           </div>
         </section>
 
-        {/* Search */}
-        <div className="dc-search">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ color: "var(--text-muted)" }}>
-            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
-          </svg>
-          <input type="text" placeholder="Tìm communities, challenges, products…" />
-        </div>
-
-        {/* Categories */}
-        <div className="dc-categories">
-          {CATEGORIES.map((c, i) => (
-            <div key={c} className={`dc-cat ${i === 0 ? "active" : ""}`}>
-              {c}
-            </div>
-          ))}
-        </div>
+        <DiscoveryFilters />
 
         {/* Featured communities */}
         <div className="dc-section-head">

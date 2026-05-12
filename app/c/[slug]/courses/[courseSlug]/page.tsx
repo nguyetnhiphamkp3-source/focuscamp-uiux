@@ -11,10 +11,13 @@ export const dynamic = "force-dynamic";
 
 export default async function CourseDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string; courseSlug: string }>;
+  searchParams: Promise<{ lessonId?: string }>;
 }) {
   const { courseSlug, slug } = await params;
+  const { lessonId } = await searchParams;
 
   const session = await auth();
   const course = await prisma.course.findFirst({
@@ -70,7 +73,7 @@ export default async function CourseDetailPage({
     );
   }
 
-  const activeLesson = course.lessons[0];
+  const activeLesson = (lessonId && course.lessons.find((l) => l.id === lessonId)) || course.lessons[0];
   const totalDuration = course.lessons.reduce(
     (s, l) => s + (l.duration ?? 0),
     0

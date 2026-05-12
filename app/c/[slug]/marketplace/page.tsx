@@ -5,31 +5,50 @@ import { ProductCard, fmtVnd } from "@/components/marketplace/product-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CreateProductButton } from "@/components/community/create-product-button";
 import { FeaturedGlobalToggle } from "@/components/marketplace/featured-global-toggle";
+import { MarketplaceFilters } from "@/components/community/marketplace-filters";
 
 export const dynamic = "force-dynamic";
 
 export default async function MarketplacePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ type?: string }>;
 }) {
   const { slug } = await params;
+  const { type } = await searchParams;
   const session = await auth();
+
   const community = await prisma.community.findUnique({
     where: { slug },
-    include: {
-      products: { orderBy: { createdAt: "desc" } },
-      _count: { select: { products: true } },
-    },
+    select: { id: true, ownerId: true, _count: { select: { products: true } } },
   });
   if (!community) notFound();
   const isOwner = session?.user?.id === community.ownerId;
 
-  const products = community.products;
-  const featured = products.slice(0, 5);
+  const productWhere: Record<string, unknown> = { communityId: community.id };
+  if (type === "FREE") {
+    productWhere.isFree = true;
+  } else if (type) {
+    productWhere.type = type;
+  }
 
-  const totalSales = products.reduce((s, p) => s + p.soldCount, 0);
-  const totalVolume = products.reduce(
+  const [products, allProducts] = await Promise.all([
+    prisma.product.findMany({
+      where: productWhere,
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.product.findMany({
+      where: { communityId: community.id },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
+
+  const featured = allProducts.slice(0, 5);
+
+  const totalSales = allProducts.reduce((s, p) => s + p.soldCount, 0);
+  const totalVolume = allProducts.reduce(
     (s, p) => s + Number(p.priceVnd) * p.soldCount,
     0
   );
@@ -126,16 +145,7 @@ export default async function MarketplacePage({
             <h2>Tất cả items</h2>
           </div>
           <div className="mk-toolbar">
-            <div className="mk-filters">
-              <div className="mk-filter active">Tất cả</div>
-              <div className="mk-filter">Templates</div>
-              <div className="mk-filter">SOP</div>
-              <div className="mk-filter">Tools</div>
-              <div className="mk-filter">Prompts</div>
-              <div className="mk-filter">Bundles</div>
-              <div className="mk-filter">Miễn phí</div>
-              <div className="mk-filter">Đã mua</div>
-            </div>
+            <MarketplaceFilters />
             <div className="mk-sort">
               <span className="sort-label">Sắp xếp:</span>
               <span>Trending</span>

@@ -188,8 +188,11 @@ export default async function ChallengeDetailPage({
     requiresApproval: challenge.requiresApproval,
   });
 
-  // Effective price for current user
-  const pricingConfig = parsePricingConfig(challenge.pricingConfig);
+  // Effective price for current user — fall back to priceVnd if no pricingConfig
+  const pricingConfig = parsePricingConfig(challenge.pricingConfig) ??
+    (challenge.priceVnd
+      ? { guestVnd: Number(challenge.priceVnd), memberVnd: Number(challenge.priceVnd) }
+      : null);
   let effectivePrice: { vnd: number; canPayAip: boolean; aipPrice: number; aipBalance: number } | null = null;
   if (pricingConfig && session?.user?.id) {
     const communityMembership = await prisma.membership.findUnique({
@@ -593,7 +596,10 @@ export default async function ChallengeDetailPage({
                     key={t.id}
                     className={`ch-task${isCurrent ? " current" : ""}`}
                     open={isCurrent}
-                    style={{ opacity: isFuture ? 0.5 : 1 }}
+                    style={{
+                      opacity: isFuture ? 0.5 : 1,
+                      pointerEvents: isFuture ? "none" : "auto",
+                    }}
                   >
                     <summary
                       className="ch-task-head"

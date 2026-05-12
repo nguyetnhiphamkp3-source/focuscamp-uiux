@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { fmtDuration, ytThumb } from "@/lib/brand";
@@ -6,10 +7,13 @@ export const dynamic = "force-dynamic";
 
 export default async function Default({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string; courseSlug: string }>;
+  searchParams: Promise<{ lessonId?: string }>;
 }) {
   const { slug, courseSlug } = await params;
+  const { lessonId } = await searchParams;
   const course = await prisma.course.findFirst({
     where: { community: { slug }, slug: courseSlug },
     include: { lessons: { orderBy: { position: "asc" } } },
@@ -63,12 +67,13 @@ export default async function Default({
         }}
       >
         {course.lessons.map((l, i) => {
-          const isActive = i === 0;
+          const isActive = lessonId ? l.id === lessonId : i === 0;
           const thumb = ytThumb(l.videoUrl);
           const dur = fmtDuration(l.duration);
           return (
-            <div
+            <Link
               key={l.id}
+              href={`/c/${slug}/courses/${courseSlug}?lessonId=${l.id}`}
               style={{
                 display: "flex",
                 gap: "var(--space-3)",
@@ -78,7 +83,8 @@ export default async function Default({
                   ? "var(--bg-modifier-active)"
                   : "transparent",
                 marginBottom: "var(--space-1)",
-                cursor: "pointer",
+                textDecoration: "none",
+                color: "inherit",
               }}
             >
               {/* Thumbnail */}
@@ -230,7 +236,7 @@ export default async function Default({
                   </div>
                 )}
               </div>
-            </div>
+            </Link>
           );
         })}
       </div>

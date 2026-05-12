@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { PostCard } from "./post-card";
 import { loadMoreFeedAction } from "@/app/actions/feed-pagination";
 import type { FeedPost, PostType } from "@/lib/services/post";
@@ -46,8 +46,14 @@ export function FeedList({
   };
 }) {
   const [posts, setPosts] = useState<FeedPost[]>(initialPosts);
-  // If the initial page wasn't full, there's nothing more to fetch.
   const [hasMore, setHasMore] = useState(initialPosts.length >= pageSize);
+
+  // Sync when server refreshes (router.refresh() after post creation)
+  useEffect(() => {
+    setPosts(initialPosts);
+    setHasMore(initialPosts.length >= pageSize);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialPosts]);
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const initialPostIds = initialPosts.map((p) => p.id).join("|");
