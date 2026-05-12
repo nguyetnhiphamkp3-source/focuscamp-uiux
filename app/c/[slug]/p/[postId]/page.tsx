@@ -17,6 +17,7 @@ import {
 import { ReactionButton } from "@/components/feed/reaction-button";
 import { CotToggleButton } from "@/components/feed/cot-toggle-button";
 import { PostMenu } from "@/components/feed/post-menu";
+import { PostImageLightbox } from "@/components/feed/post-image-lightbox";
 import { CommentComposer } from "@/components/feed/comment-composer";
 import { CommentItem } from "@/components/feed/comment-item";
 import type { CommentItemData } from "@/components/feed/comment-item";
@@ -220,23 +221,7 @@ export default async function PostDetailPage({
             >
               {post.body}
             </div>
-            {post.imageUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={post.imageUrl}
-                alt=""
-                referrerPolicy="no-referrer"
-                style={{
-                  marginTop: 10,
-                  maxWidth: "100%",
-                  maxHeight: 480,
-                  borderRadius: 8,
-                  border: "1px solid var(--border-subtle)",
-                  objectFit: "cover",
-                  display: "block",
-                }}
-              />
-            )}
+            {post.imageUrl && <PostImageLightbox src={post.imageUrl} />}
 
             <div className="feed-post-actions">
               <ReactionButton
