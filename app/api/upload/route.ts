@@ -1,15 +1,16 @@
 /**
- * Upload API — returns a presigned URL for direct client-to-S3 upload.
+ * Upload API — receives file as multipart FormData, uploads to R2 server-side.
+ * Server-side upload avoids browser CORS restrictions with direct R2 access.
  *
  * POST /api/upload
- * Body: { fileName: string, contentType: string, context: "avatar" | "community" | "post" | "checkin" }
+ * Body: FormData { file: File, context: string }
  *
- * Returns: { uploadUrl, publicUrl } or 503 if storage not configured.
+ * Returns: { publicUrl, key } or error response.
  */
 import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { getPresignedUploadUrl, isStorageConfigured } from "@/lib/storage";
+import { uploadFile, isStorageConfigured } from "@/lib/storage";
 import { rateLimit } from "@/lib/rate-limit";
 
 const IMAGE_TYPES = new Set([
@@ -19,8 +20,6 @@ const IMAGE_TYPES = new Set([
   "image/gif",
   "image/avif",
 ]);
-// Whitelist of concrete MIME types — `application/octet-stream` deliberately
-// excluded because it lets clients smuggle arbitrary binaries.
 const FILE_TYPES = new Set([
   "application/pdf",
   "application/zip",
@@ -38,11 +37,11 @@ const FILE_TYPES = new Set([
 ]);
 
 const MAX_FILE_SIZES: Record<string, number> = {
-  avatar: 2 * 1024 * 1024, // 2MB
-  community: 5 * 1024 * 1024, // 5MB
-  post: 10 * 1024 * 1024, // 10MB
-  checkin: 10 * 1024 * 1024, // 10MB
-  "product-file": 200 * 1024 * 1024, // 200MB for digital products
+  avatar: 2 * 1024 * 1024,
+  community: 5 * 1024 * 1024,
+  post: 10 * 1024 * 1024,
+  checkin: 10 * 1024 * 1024,
+  "product-file": 200 * 1024 * 1024,
 };
 
 type UploadContext =
@@ -58,7 +57,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  // Rate limit: 10 uploads per minute per user
   const rl = await rateLimit({
     key: `upload:${session.user.id}`,
     limit: 10,
@@ -75,57 +73,59 @@ export async function POST(req: Request) {
     );
   }
 
-  let body: { fileName?: string; contentType?: string; context?: string };
+  let formData: FormData;
   try {
-    body = await req.json();
+    formData = await req.formData();
   } catch {
-    return NextResponse.json({ error: "invalid_json" }, { status: 400 });
+    return NextResponse.json({ error: "invalid_form" }, { status: 400 });
   }
 
-  const { fileName, contentType, context } = body;
-  if (!fileName || !contentType || !context) {
-    return NextResponse.json(
-      { error: "missing_fields" },
-      { status: 400 },
-    );
-  }
+  const file = formData.get("file");
+  const context = formData.get("context");
 
-  // Image-only contexts vs file-allowed contexts
-  const fileAllowed = context === "product-file";
-  const allowedSet = fileAllowed
-    ? new Set([...IMAGE_TYPES, ...FILE_TYPES])
-    : IMAGE_TYPES;
-  if (!allowedSet.has(contentType)) {
-    return NextResponse.json(
-      { error: "unsupported_type", allowed: [...allowedSet] },
-      { status: 400 },
-    );
+  if (
+    !file ||
+    !(file instanceof File) ||
+    !context ||
+    typeof context !== "string"
+  ) {
+    return NextResponse.json({ error: "missing_fields" }, { status: 400 });
   }
 
   if (!(context in MAX_FILE_SIZES)) {
     return NextResponse.json({ error: "invalid_context" }, { status: 400 });
   }
 
-  // Generate unique key: context/userId/timestamp-random.ext
-  const ext = fileName.split(".").pop()?.toLowerCase() || "bin";
+  const fileAllowed = context === "product-file";
+  const allowedSet = fileAllowed
+    ? new Set([...IMAGE_TYPES, ...FILE_TYPES])
+    : IMAGE_TYPES;
+  if (!allowedSet.has(file.type)) {
+    return NextResponse.json(
+      { error: "unsupported_type", allowed: [...allowedSet] },
+      { status: 400 },
+    );
+  }
+
+  const maxSize = MAX_FILE_SIZES[context as UploadContext];
+  if (file.size > maxSize) {
+    return NextResponse.json(
+      { error: `File quá lớn (tối đa ${Math.round(maxSize / 1024 / 1024)}MB)` },
+      { status: 413 },
+    );
+  }
+
+  const ext = file.name.split(".").pop()?.toLowerCase() || "bin";
   const ts = Date.now();
   const rand = randomBytes(3).toString("hex");
   const key = `${context}/${session.user.id}/${ts}-${rand}.${ext}`;
 
-  const maxSize = MAX_FILE_SIZES[context as UploadContext];
-  const result = await getPresignedUploadUrl({ key, contentType, maxSize });
-  if (!result) {
-    return NextResponse.json(
-      { error: "presign_failed" },
-      { status: 500 },
-    );
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const publicUrl = await uploadFile({ key, body: buffer, contentType: file.type });
+
+  if (!publicUrl) {
+    return NextResponse.json({ error: "upload_failed" }, { status: 500 });
   }
 
-  return NextResponse.json({
-    uploadUrl: result.uploadUrl,
-    fields: result.fields,
-    publicUrl: result.publicUrl,
-    key,
-    maxSize,
-  });
+  return NextResponse.json({ publicUrl, key });
 }
