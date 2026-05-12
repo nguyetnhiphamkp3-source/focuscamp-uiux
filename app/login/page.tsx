@@ -29,27 +29,57 @@ export default async function LoginPage({
 
   return (
     <main
-      className="min-h-screen flex items-center justify-center p-6"
-      style={{ background: "var(--bg-body)" }}
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "var(--space-6)",
+        background: "var(--bg-body)",
+      }}
     >
       <div
-        className="max-w-md w-full rounded-2xl p-8"
         style={{
+          width: "min(100%, 420px)",
+          borderRadius: "var(--r-lg)",
+          padding: "var(--space-8)",
           background: "var(--bg-card)",
           border: "1px solid var(--border-subtle)",
           boxShadow: "0 1px 3px rgba(60, 45, 20, 0.08)",
         }}
       >
-        <Link href="/" className="text-3xl inline-block mb-4">
+        <Link
+          href="/"
+          style={{
+            display: "inline-block",
+            marginBottom: "var(--space-4)",
+            fontSize: "var(--text-3xl)",
+            lineHeight: 1,
+            textDecoration: "none",
+          }}
+        >
           🔥🏕️
         </Link>
         <h1
-          className="text-2xl font-extrabold mb-2"
-          style={{ color: "var(--text-heading)" }}
+          style={{
+            margin: "0 0 var(--space-2)",
+            color: "var(--text-heading)",
+            fontFamily: "var(--font-heading)",
+            fontSize: "var(--text-2xl)",
+            fontWeight: 800,
+            lineHeight: 1.15,
+          }}
         >
           Đăng nhập focus.camp
         </h1>
-        <p className="text-sm mb-8" style={{ color: "var(--text-muted)" }}>
+        <p
+          style={{
+            margin: "0 0 var(--space-8)",
+            color: "var(--text-muted)",
+            fontSize: "var(--text-sm)",
+            lineHeight: 1.5,
+          }}
+        >
           Dùng tài khoản Google để đăng ký hoặc đăng nhập trong 1 click.
         </p>
 
@@ -57,12 +87,21 @@ export default async function LoginPage({
           <input type="hidden" name="redirectTo" value={redirectTo} />
           <button
             type="submit"
-            className="w-full px-6 py-3 rounded-lg font-bold flex items-center justify-center gap-3"
             style={{
+              width: "100%",
+              minHeight: 44,
+              padding: "0 var(--space-6)",
+              borderRadius: "var(--r-md)",
               background: "var(--bg-elevated)",
               color: "var(--text-heading)",
               border: "1px solid var(--border-subtle)",
-              fontFamily: "var(--font-roboto)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "var(--space-3)",
+              fontFamily: "var(--font-heading)",
+              fontSize: "var(--text-md)",
+              fontWeight: 700,
             }}
           >
             <svg width="20" height="20" viewBox="0 0 48 48">
@@ -88,8 +127,13 @@ export default async function LoginPage({
         </form>
 
         <p
-          className="text-xs mt-6 text-center"
-          style={{ color: "var(--text-muted)" }}
+          style={{
+            margin: "var(--space-6) 0 0",
+            color: "var(--text-muted)",
+            fontSize: "var(--text-xs)",
+            lineHeight: 1.45,
+            textAlign: "center",
+          }}
         >
           Bằng cách đăng nhập, bạn đồng ý với Điều khoản & Chính sách của focus.camp.
         </p>
