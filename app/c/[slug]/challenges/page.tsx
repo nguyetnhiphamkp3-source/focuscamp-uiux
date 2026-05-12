@@ -57,7 +57,9 @@ export default async function QuestLogPage({
       })
     : [];
 
-  const activeMemberships = myMemberships.filter((m) => m.status === "ACTIVE");
+  const activeMemberships = myMemberships.filter(
+    (m) => m.status === "ACTIVE" || m.status === "PAYMENT_PENDING"
+  );
   const completedMemberships = myMemberships.filter(
     (m) => m.status === "COMPLETED"
   );
@@ -265,6 +267,7 @@ function ActiveTab({
     id: string;
     status: string;
     personalStartsAt: Date | null;
+    joinedAt: Date;
     challenge: {
       id: string;
       slug: string;
@@ -320,6 +323,7 @@ function ActiveTab({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
       {memberships.map((m) => {
+        const isPending = m.status === "PAYMENT_PENDING";
         const day = m.personalStartsAt
           ? Math.min(
               m.challenge.requiredDays,
@@ -333,7 +337,7 @@ function ActiveTab({
             )
           : 1;
         const pct = Math.round((day / m.challenge.requiredDays) * 100);
-        const accent = diffColor(m.challenge.difficulty);
+        const accent = isPending ? "#d97706" : diffColor(m.challenge.difficulty);
         return (
           <Link
             key={m.id}
@@ -345,15 +349,15 @@ function ActiveTab({
               gap: 16,
               padding: 14,
               paddingLeft: 18,
-              background: "var(--bg-card)",
-              border: "1px solid var(--border-subtle)",
+              background: isPending ? "rgba(251,191,36,0.04)" : "var(--bg-card)",
+              border: isPending ? "1px solid rgba(251,191,36,0.35)" : "1px solid var(--border-subtle)",
               borderRadius: 14,
               textDecoration: "none",
               color: "inherit",
               overflow: "hidden",
             }}
           >
-            {/* Left accent stripe — color per difficulty */}
+            {/* Left accent stripe */}
             <span
               aria-hidden
               style={{
@@ -366,7 +370,7 @@ function ActiveTab({
               }}
             />
 
-            {/* Thumbnail — 16:9 to match detail-page banner */}
+            {/* Thumbnail — 16:9 */}
             <div
               style={{
                 position: "relative",
@@ -379,6 +383,7 @@ function ActiveTab({
                 background: m.challenge.bannerUrl
                   ? `url("${m.challenge.bannerUrl}") center/cover no-repeat`
                   : `linear-gradient(135deg, ${accent} 0%, ${accent}aa 100%)`,
+                opacity: isPending ? 0.75 : 1,
               }}
               aria-hidden
             >
@@ -395,34 +400,35 @@ function ActiveTab({
                     textShadow: "0 1px 2px rgba(0,0,0,0.2)",
                   }}
                 >
-                  {m.challenge.difficulty === "CHAOS"
+                  {isPending ? "💳" : m.challenge.difficulty === "CHAOS"
                     ? "🔥"
                     : m.challenge.difficulty === "HARD"
                       ? "⚔️"
                       : "🛡️"}
                 </span>
               )}
-              {/* Day badge corner — quick scan reference */}
-              <span
-                style={{
-                  position: "absolute",
-                  top: 6,
-                  right: 6,
-                  background: "rgba(0,0,0,0.55)",
-                  color: "#fff",
-                  fontSize: 10,
-                  fontWeight: 700,
-                  padding: "2px 6px",
-                  borderRadius: 999,
-                  fontVariantNumeric: "tabular-nums",
-                  backdropFilter: "blur(4px)",
-                }}
-              >
-                {day}/{m.challenge.requiredDays}
-              </span>
+              {!isPending && (
+                <span
+                  style={{
+                    position: "absolute",
+                    top: 6,
+                    right: 6,
+                    background: "rgba(0,0,0,0.55)",
+                    color: "#fff",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    padding: "2px 6px",
+                    borderRadius: 999,
+                    fontVariantNumeric: "tabular-nums",
+                    backdropFilter: "blur(4px)",
+                  }}
+                >
+                  {day}/{m.challenge.requiredDays}
+                </span>
+              )}
             </div>
 
-            {/* Right column — info */}
+            {/* Right column */}
             <div
               style={{
                 minWidth: 0,
@@ -431,7 +437,7 @@ function ActiveTab({
                 justifyContent: "center",
               }}
             >
-              {/* Top row: difficulty pill · CTA */}
+              {/* Top row */}
               <div
                 style={{
                   display: "flex",
@@ -441,33 +447,52 @@ function ActiveTab({
                   flexWrap: "wrap",
                 }}
               >
-                <span
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 4,
-                    padding: "3px 9px",
-                    background: `${accent}1a`,
-                    color: accent,
-                    border: `1px solid ${accent}40`,
-                    borderRadius: 999,
-                    fontSize: 11,
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.04em",
-                  }}
-                >
-                  {diffLabel(m.challenge.difficulty)}
-                </span>
+                {isPending ? (
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                      padding: "3px 9px",
+                      background: "rgba(251,191,36,0.15)",
+                      color: "#d97706",
+                      border: "1px solid rgba(251,191,36,0.5)",
+                      borderRadius: 999,
+                      fontSize: 11,
+                      fontWeight: 700,
+                    }}
+                  >
+                    💳 Cần thanh toán
+                  </span>
+                ) : (
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                      padding: "3px 9px",
+                      background: `${accent}1a`,
+                      color: accent,
+                      border: `1px solid ${accent}40`,
+                      borderRadius: 999,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.04em",
+                    }}
+                  >
+                    {diffLabel(m.challenge.difficulty)}
+                  </span>
+                )}
                 <span
                   style={{
                     marginLeft: "auto",
                     fontSize: 13,
                     fontWeight: 700,
-                    color: "var(--brand-green)",
+                    color: isPending ? "#d97706" : "var(--brand-green)",
                   }}
                 >
-                  Tiếp tục →
+                  {isPending ? "Hoàn tất →" : "Tiếp tục →"}
                 </span>
               </div>
 
@@ -489,46 +514,50 @@ function ActiveTab({
                 {m.challenge.title}
               </div>
 
-              {/* Progress bar */}
-              <div
-                style={{
-                  position: "relative",
-                  height: 8,
-                  background: "var(--bg-elevated)",
-                  borderRadius: 999,
-                  overflow: "hidden",
-                  marginBottom: 6,
-                }}
-              >
-                <div
-                  style={{
-                    width: `${pct}%`,
-                    height: "100%",
-                    background: `linear-gradient(90deg, ${accent} 0%, var(--brand-green) 100%)`,
-                    borderRadius: 999,
-                    transition: "width 0.3s ease",
-                  }}
-                />
-              </div>
-
-              {/* Bottom meta row */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  fontSize: 12,
-                  color: "var(--text-muted)",
-                }}
-              >
-                <span
-                  style={{ fontWeight: 700, color: "var(--text-normal)" }}
-                >
-                  {pct}%
-                </span>
-                <span>·</span>
-                <span>👥 {m.challenge._count.members} thành viên</span>
-              </div>
+              {/* Progress bar or payment notice */}
+              {isPending ? (
+                <div style={{ fontSize: 12, color: "#b45309", lineHeight: 1.5 }}>
+                  Đăng ký chờ thanh toán · nhấn để hoàn tất và bắt đầu hành trình
+                </div>
+              ) : (
+                <>
+                  <div
+                    style={{
+                      position: "relative",
+                      height: 8,
+                      background: "var(--bg-elevated)",
+                      borderRadius: 999,
+                      overflow: "hidden",
+                      marginBottom: 6,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${pct}%`,
+                        height: "100%",
+                        background: `linear-gradient(90deg, ${accent} 0%, var(--brand-green) 100%)`,
+                        borderRadius: 999,
+                        transition: "width 0.3s ease",
+                      }}
+                    />
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      fontSize: 12,
+                      color: "var(--text-muted)",
+                    }}
+                  >
+                    <span style={{ fontWeight: 700, color: "var(--text-normal)" }}>
+                      {pct}%
+                    </span>
+                    <span>·</span>
+                    <span>👥 {m.challenge._count.members} thành viên</span>
+                  </div>
+                </>
+              )}
             </div>
           </Link>
         );
