@@ -619,8 +619,8 @@ export default async function ChallengeDetailPage({
                     className={`ch-task${isCurrent ? " current" : ""}`}
                     open={isCurrent}
                     style={{
-                      opacity: isFuture ? 0.5 : 1,
-                      pointerEvents: isFuture ? "none" : "auto",
+                      opacity: isFuture && !isOwner ? 0.5 : 1,
+                      pointerEvents: isFuture && !isOwner ? "none" : "auto",
                     }}
                   >
                     <summary

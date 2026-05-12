@@ -544,11 +544,13 @@ export async function startChallengeAction(
   _formData: FormData
 ): Promise<void> {
   const s = await auth();
-  if (!s?.user?.id) return;
+  if (!s?.user?.id) {
+    redirect(`/c/${input.communitySlug}/challenges/${input.challengeSlug}`);
+  }
   try {
     await startChallengeForMember({ userId: s.user.id, challengeId: input.challengeId });
-    revalidatePath(`/c/${input.communitySlug}/challenges/${input.challengeSlug}`);
   } catch {
-    // invalid_state means already started or not ACTIVE — silently ignore
+    // invalid_state — already started or not ACTIVE, redirect anyway to refresh state
   }
+  redirect(`/c/${input.communitySlug}/challenges/${input.challengeSlug}`);
 }
