@@ -23,6 +23,7 @@ import {
   listPendingMembers,
 } from "@/lib/services/challenge";
 import { ChallengeSalesIntro } from "@/components/community/challenge-sales-intro";
+import { RenewPaymentButton } from "@/components/community/renew-payment-button";
 
 export const dynamic = "force-dynamic";
 
@@ -166,9 +167,10 @@ export default async function ChallengeDetailPage({
   const leaderboard = await getChallengeLeaderboard(challenge.id, 10);
 
   let myMembership:
-    | { id: string; status: string; personalStartsAt: Date | null; completedAt: Date | null }
+    | { id: string; status: string; personalStartsAt: Date | null; completedAt: Date | null; joinedAt: Date }
     | null = null;
   let pendingPaymentCode: string | null = null;
+  let renewalInfo: { originalAmountVnd: number; hasLateFee: boolean } | null = null;
   if (session?.user?.id) {
     const m = await prisma.challengeMember.findFirst({
       where: { challengeId: challenge.id, userId: session.user.id },
@@ -177,16 +179,33 @@ export default async function ChallengeDetailPage({
         status: true,
         personalStartsAt: true,
         completedAt: true,
+        joinedAt: true,
       },
     });
     myMembership = m;
     if (m?.status === "PAYMENT_PENDING") {
-      const pending = await prisma.payment.findFirst({
-        where: { refType: "challenge", refId: m.id, status: "PENDING" },
+      const now = new Date();
+      // Find a still-valid PENDING payment (not expired)
+      const validPayment = await prisma.payment.findFirst({
+        where: { refType: "challenge", refId: m.id, status: "PENDING", expiresAt: { gt: now } },
         select: { paymentCode: true },
         orderBy: { createdAt: "desc" },
       });
-      pendingPaymentCode = pending?.paymentCode ?? null;
+      pendingPaymentCode = validPayment?.paymentCode ?? null;
+
+      if (!pendingPaymentCode) {
+        // Payment expired — fetch original amount for renewal UI
+        const originalPayment = await prisma.payment.findFirst({
+          where: { refType: "challenge", refId: m.id },
+          orderBy: { createdAt: "asc" },
+          select: { amountVnd: true },
+        });
+        const minutesSinceJoin = (Date.now() - m.joinedAt.getTime()) / 60000;
+        renewalInfo = {
+          originalAmountVnd: Number(originalPayment?.amountVnd ?? 0),
+          hasLateFee: minutesSinceJoin > 30,
+        };
+      }
     }
   }
 
@@ -406,11 +425,15 @@ export default async function ChallengeDetailPage({
                 >
                   💳 Hoàn tất thanh toán
                 </a>
-              ) : (
-                <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", textAlign: "center" }}>
-                  Lệnh thanh toán đã hết hạn — vui lòng liên hệ admin để được hỗ trợ.
-                </div>
-              )}
+              ) : renewalInfo ? (
+                <RenewPaymentButton
+                  challengeId={challenge.id}
+                  communitySlug={slug}
+                  challengeSlug={challengeSlug}
+                  originalAmountVnd={renewalInfo.originalAmountVnd}
+                  hasLateFee={renewalInfo.hasLateFee}
+                />
+              ) : null}
             </div>
           ) : myMembership?.status === "PENDING" ? (
             <div style={{ marginTop: "var(--space-5)", padding: "16px 20px", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.3)", borderRadius: 12, fontSize: "var(--text-sm)", color: "var(--warning)" }}>

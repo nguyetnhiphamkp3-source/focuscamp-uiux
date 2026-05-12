@@ -18,6 +18,7 @@ import {
   startChallengeForMember,
 } from "@/lib/services/challenge";
 import { startChallengePurchase } from "@/lib/services/payment";
+import { createPayment } from "@/lib/sepay";
 import { parsePricingConfig, calculateEffectivePrice } from "@/lib/services/pricing";
 import { getUserTier } from "@/lib/services/subscription";
 import { prisma } from "@/lib/prisma";
@@ -559,4 +560,43 @@ export async function startChallengeAction(
     // invalid_state — already started or not ACTIVE, redirect anyway to refresh state
   }
   redirect(`/c/${input.communitySlug}/challenges/${input.challengeSlug}`);
+}
+
+export async function renewChallengePaymentAction(input: {
+  challengeId: string;
+  communitySlug: string;
+  challengeSlug: string;
+}): Promise<{ ok: true; paymentCode: string; amountVnd: number } | { ok: false; reason: string }> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+
+  const member = await prisma.challengeMember.findFirst({
+    where: { challengeId: input.challengeId, userId: s.user.id, status: "PAYMENT_PENDING" },
+    include: { challenge: { select: { community: { select: { id: true } } } } },
+  });
+  if (!member) return { ok: false, reason: "not_found" };
+
+  // Get original price from the first payment attempt
+  const originalPayment = await prisma.payment.findFirst({
+    where: { refType: "challenge", refId: member.id },
+    orderBy: { createdAt: "asc" },
+    select: { amountVnd: true },
+  });
+  if (!originalPayment) return { ok: false, reason: "no_original_payment" };
+
+  // +500k late fee if registration was > 30 minutes ago
+  const minutesSinceJoin = (Date.now() - member.joinedAt.getTime()) / 60000;
+  const basePriceVnd = Number(originalPayment.amountVnd);
+  const newAmount = minutesSinceJoin > 30 ? basePriceVnd + 500000 : basePriceVnd;
+
+  const payment = await createPayment({
+    userId: s.user.id,
+    communityId: member.challenge.community.id,
+    purpose: "challenge_entry",
+    refType: "challenge",
+    refId: member.id,
+    amountVnd: newAmount,
+  });
+
+  return { ok: true, paymentCode: payment.paymentCode, amountVnd: newAmount };
 }
