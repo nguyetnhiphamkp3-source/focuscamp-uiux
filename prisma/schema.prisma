@@ -47,6 +47,7 @@ model User {
   bookmarks        Bookmark[]
   follows          Follow[]           @relation("FollowFollower")
   followers        Follow[]           @relation("FollowFollowee")
+  featureReadStates FeatureReadState[]
   purchases        Purchase[]
   xpLedger         XPLedger[]
   badgeAwards      BadgeAward[]
@@ -153,6 +154,7 @@ model Community {
   agentConversations AgentConversation[]
   apiKeys       ApiKey[]
   events        Event[]
+  featureReadStates FeatureReadState[]
 }
 
 model Membership {
@@ -175,6 +177,21 @@ model Membership {
 
   @@unique([userId, communityId])
   @@index([communityId, xp])
+}
+
+model FeatureReadState {
+  id           String   @id @default(cuid())
+  userId       String
+  communityId  String
+  featureKey   String
+  lastViewedAt DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, communityId, featureKey])
+  @@index([communityId, featureKey, lastViewedAt])
 }
 
 // ============= CHAT =============

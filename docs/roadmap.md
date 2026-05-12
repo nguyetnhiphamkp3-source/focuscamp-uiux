@@ -47,6 +47,7 @@ Key: ✅ done · 🟡 partial · ❌ not started · 🚫 deferred (Phase 2+)
 | Settings: challenge-level toggles (requiresApproval, freeze) | ✅ | ChallengeSettingsPanel |
 | Notifications inbox + bell badge + 6 emitters | ✅ | Global inbox |
 | Bell badge live polling (30s, pause on hidden tab) | ✅ | `/api/notifications/unread-count` |
+| Feature unread badges (Feed/Q&A/Signals/CỐT) | ✅ | Last-viewed per feature; Chat unread deferred |
 | Real-time push (SSE / WebSocket) | 🚫 | Phase 2 — polling works for now |
 
 ### Feed / Bảng tin
