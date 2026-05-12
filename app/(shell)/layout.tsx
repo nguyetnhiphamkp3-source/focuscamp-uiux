@@ -19,7 +19,7 @@ export default async function ShellLayout({
 
   let myCommunities: { id: string; slug: string; name: string; iconUrl: string | null }[] = [];
   let notifUnread = 0;
-  let freshUser: { id: string; name: string | null; email: string | null; image: string | null } | null = null;
+  let freshUser: { id: string; name: string | null; email: string | null; image: string | null; handle: string | null } | null = null;
   if (session?.user?.id) {
     const [mems, n, u] = await Promise.all([
       prisma.membership.findMany({
@@ -30,7 +30,7 @@ export default async function ShellLayout({
       unreadCount(session.user.id),
       prisma.user.findUnique({
         where: { id: session.user.id },
-        select: { id: true, name: true, email: true, image: true },
+        select: { id: true, name: true, email: true, image: true, handle: true },
       }),
     ]);
     myCommunities = mems.map((m) => m.community);
@@ -38,19 +38,24 @@ export default async function ShellLayout({
     freshUser = u;
   }
 
+  const profileHref =
+    freshUser
+      ? `/u/${encodeURIComponent(freshUser.handle ?? freshUser.id)}`
+      : session?.user?.id
+        ? `/u/${encodeURIComponent(session.user.id)}`
+        : undefined;
+
   return (
     <div className="community-shell">
       <MobileMenuToggle />
       <div className="left-section">
         <div className="left-section-top">
           <ServerList communities={myCommunities} />
-          <HomeSidebar notifUnread={notifUnread} />
+          <HomeSidebar notifUnread={notifUnread} profileHref={profileHref} />
         </div>
         <UserPanel
           user={freshUser ?? session?.user}
-          profileHref={
-            session?.user?.id ? `/u/${session.user.id}` : undefined
-          }
+          profileHref={profileHref}
         />
       </div>
       <main className="main-content">{children}</main>
