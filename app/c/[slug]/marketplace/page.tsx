@@ -1,9 +1,10 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { ProductCard, fmtVnd } from "@/components/marketplace/product-card";
+import { ChallengeMarketCard } from "@/components/marketplace/challenge-market-card";
+import { CarouselNavBtns } from "@/components/marketplace/carousel-nav-btns";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CreateProductButton } from "@/components/community/create-product-button";
 import { FeaturedGlobalToggle } from "@/components/marketplace/featured-global-toggle";
@@ -16,10 +17,10 @@ export default async function MarketplacePage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ type?: string }>;
+  searchParams: Promise<{ type?: string; q?: string }>;
 }) {
   const { slug } = await params;
-  const { type } = await searchParams;
+  const { type, q } = await searchParams;
   const session = await auth();
 
   const community = await prisma.community.findUnique({
@@ -30,21 +31,13 @@ export default async function MarketplacePage({
   const isOwner = session?.user?.id === community.ownerId;
 
   const productWhere: Record<string, unknown> = { communityId: community.id };
-  if (type === "FREE") {
-    productWhere.isFree = true;
-  } else if (type) {
-    productWhere.type = type;
-  }
+  if (type === "FREE") productWhere.isFree = true;
+  else if (type) productWhere.type = type;
+  if (q) productWhere.title = { contains: q, mode: "insensitive" };
 
   const [products, allProducts, paidChallenges] = await Promise.all([
-    prisma.product.findMany({
-      where: productWhere,
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.product.findMany({
-      where: { communityId: community.id },
-      orderBy: { createdAt: "desc" },
-    }),
+    prisma.product.findMany({ where: productWhere, orderBy: { createdAt: "desc" } }),
+    prisma.product.findMany({ where: { communityId: community.id }, orderBy: { createdAt: "desc" } }),
     prisma.challenge.findMany({
       where: {
         communityId: community.id,
@@ -56,7 +49,6 @@ export default async function MarketplacePage({
     }),
   ]);
 
-  // Check which paid challenges the current user already joined
   const joinedChallengeIds = new Set<string>();
   if (session?.user?.id && paidChallenges.length > 0) {
     const joined = await prisma.challengeMember.findMany({
@@ -71,244 +63,110 @@ export default async function MarketplacePage({
   }
 
   const featured = allProducts.slice(0, 5);
-
   const totalSales = allProducts.reduce((s, p) => s + p.soldCount, 0);
-  const totalVolume = allProducts.reduce(
-    (s, p) => s + Number(p.priceVnd) * p.soldCount,
-    0
-  );
+  const totalVolume = allProducts.reduce((s, p) => s + Number(p.priceVnd) * p.soldCount, 0);
 
   return (
     <>
       <header className="view-header">
         <span className="view-title">Marketplace</span>
-        <span className="view-subtitle">
-          Item shop — power-ups cho challenge của bạn
-        </span>
+        <span className="view-subtitle">Challenges &amp; power-ups cho hành trình của bạn</span>
       </header>
 
       <div className="mk-view">
         <div className="mk-inner">
           {isOwner && (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                marginBottom: "var(--space-4)",
-              }}
-            >
-              <CreateProductButton
-                communityId={community.id}
-                communitySlug={slug}
-              />
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "var(--space-4)" }}>
+              <CreateProductButton communityId={community.id} communitySlug={slug} />
             </div>
           )}
+
           {/* Hero */}
           <div className="mk-hero">
-            <div className="mk-hero-emoji">🛒</div>
+            <div className="mk-hero-emoji">🏕️</div>
             <div className="mk-hero-text">
-              <div className="mk-hero-title">Item Shop</div>
+              <div className="mk-hero-title">Marketplace</div>
               <div className="mk-hero-desc">
-                Mua templates, SOP packs, tools, prompt — những power-up cần
-                thiết để hoàn thành các challenge &amp; lên level nhanh hơn.
+                Đăng ký challenges để bắt đầu hành trình — hoặc mua thêm templates, SOP, tools để lên level nhanh hơn.
               </div>
             </div>
           </div>
 
           {/* Stats */}
           <div className="mk-stats">
-            <StatCard
-              icon="📦"
-              label="Items"
-              value={String(community._count.products)}
-              sub="trong shop"
-            />
-            <StatCard
-              icon="🛍️"
-              label="Purchases"
-              value={fmtVnd(totalSales)}
-              sub="đơn"
-            />
-            <StatCard
-              icon="💰"
-              label="Volume"
-              value={`${fmtVnd(totalVolume)}đ`}
-              sub="doanh thu"
-            />
-            <StatCard
-              icon="✨"
-              label="Featured"
-              value={String(featured.length)}
-              sub="trending"
-            />
+            <StatCard icon="⚔️" label="Challenges" value={String(paidChallenges.length)} sub="đang mở" />
+            <StatCard icon="📦" label="Items" value={String(community._count.products)} sub="trong shop" />
+            <StatCard icon="🛍️" label="Purchases" value={fmtVnd(totalSales)} sub="đơn" />
+            <StatCard icon="💰" label="Volume" value={`${fmtVnd(totalVolume)}đ`} sub="doanh thu" />
           </div>
 
-          {/* Featured carousel */}
+          {/* ===== CHALLENGES — flagship section ===== */}
+          {paidChallenges.length > 0 && (
+            <>
+              <div className="mk-section-head" style={{ marginTop: "var(--space-4)" }}>
+                <h2>⚔️ Flagship Challenges</h2>
+                <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", fontWeight: 600 }}>
+                  Lõi tư tưởng của focus.camp
+                </span>
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+                  gap: 16,
+                  marginBottom: "var(--space-8)",
+                }}
+              >
+                {paidChallenges.map((c) => (
+                  <ChallengeMarketCard
+                    key={c.id}
+                    communitySlug={slug}
+                    challenge={c}
+                    isJoined={joinedChallengeIds.has(c.id)}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* ===== FEATURED CAROUSEL ===== */}
           {featured.length > 0 && (
             <>
               <div className="mk-section-head">
                 <h2>🔥 Featured — Trending tuần này</h2>
+                <CarouselNavBtns carouselId="featured-carousel" />
               </div>
               <div className="mk-carousel-wrap">
-                <div className="mk-carousel">
+                <div id="featured-carousel" className="mk-carousel">
                   {featured.map((p, idx) => (
-                    <ProductCard
-                      key={p.id}
-                      product={p}
-                      communitySlug={slug}
-                      idx={idx}
-                      featured
-                    />
+                    <ProductCard key={p.id} product={p} communitySlug={slug} idx={idx} featured />
                   ))}
                 </div>
               </div>
             </>
           )}
 
-          {/* Paid Challenges */}
-          {paidChallenges.length > 0 && (
-            <>
-              <div className="mk-section-head">
-                <h2>⚔️ Challenges</h2>
-              </div>
-              <div className="mk-grid" style={{ marginBottom: "var(--space-6)" }}>
-                {paidChallenges.map((c) => {
-                  const cfg = c.pricingConfig as { guestVnd?: number; memberVnd?: number } | null;
-                  const price = cfg?.guestVnd ?? 0;
-                  const isJoined = joinedChallengeIds.has(c.id);
-                  const diffColor = c.difficulty === "HARD" ? "#c97a3f" : c.difficulty === "CHAOS" ? "#b8455a" : "#3a8a70";
-                  const diffLabel = c.difficulty === "HARD" ? "⚔️ Hard" : c.difficulty === "CHAOS" ? "🔥 Chaos" : "🛡️ Normal";
-                  return (
-                    <Link
-                      key={c.id}
-                      href={`/c/${slug}/challenges/${c.slug}`}
-                      className="mk-card"
-                      style={{ textDecoration: "none", color: "inherit" }}
-                    >
-                      <div
-                        className="mk-card-thumb"
-                        style={{
-                          background: c.bannerUrl
-                            ? `url("${c.bannerUrl}") center/cover no-repeat`
-                            : `linear-gradient(135deg, ${diffColor} 0%, ${diffColor}aa 100%)`,
-                          display: "flex",
-                          alignItems: "flex-end",
-                          padding: "8px 10px",
-                          gap: 6,
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: 11,
-                            fontWeight: 700,
-                            padding: "2px 8px",
-                            borderRadius: 999,
-                            background: `${diffColor}cc`,
-                            color: "#fff",
-                            border: `1px solid ${diffColor}`,
-                          }}
-                        >
-                          {diffLabel}
-                        </span>
-                        <span
-                          style={{
-                            marginLeft: "auto",
-                            fontSize: 11,
-                            fontWeight: 700,
-                            padding: "2px 8px",
-                            borderRadius: 999,
-                            background: "rgba(0,0,0,0.55)",
-                            color: "#fff",
-                          }}
-                        >
-                          Challenge
-                        </span>
-                      </div>
-                      <div className="mk-card-body" style={{ padding: "10px 12px" }}>
-                        <div
-                          style={{
-                            fontSize: "var(--text-sm)",
-                            fontWeight: 700,
-                            color: "var(--text-heading)",
-                            marginBottom: 4,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            display: "-webkit-box",
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: "vertical",
-                          }}
-                        >
-                          {c.title}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: "var(--text-xs)",
-                            color: "var(--text-muted)",
-                            marginBottom: 8,
-                          }}
-                        >
-                          {c.requiredDays} ngày · {c._count.members} tham gia
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                          <span style={{ fontWeight: 800, color: "var(--success)", fontSize: "var(--text-sm)" }}>
-                            {price > 0 ? `${fmtVnd(price)}đ` : "Miễn phí"}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: "var(--text-xs)",
-                              fontWeight: 700,
-                              padding: "3px 10px",
-                              borderRadius: 5,
-                              background: isJoined ? "var(--bg-elevated)" : "var(--brand-green)",
-                              color: isJoined ? "var(--text-muted)" : "#fff",
-                            }}
-                          >
-                            {isJoined ? "Đã mua ✓" : "Xem ngay →"}
-                          </span>
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            </>
-          )}
-
-          {/* Toolbar */}
+          {/* ===== ALL PRODUCTS ===== */}
           <div className="mk-section-head">
             <h2>Tất cả items</h2>
           </div>
-          <div className="mk-toolbar">
+          <div style={{ marginBottom: "var(--space-4)" }}>
             <MarketplaceFilters />
-            <div className="mk-sort">
-              <span className="sort-label">Sắp xếp:</span>
-              <span>Trending</span>
-              <span style={{ fontSize: 9 }}>▾</span>
-            </div>
           </div>
 
           {products.length === 0 ? (
             <EmptyState
               icon="🏪"
-              title="Chưa có sản phẩm nào trong shop"
-              description="Chủ community có thể thêm product đầu tiên để bắt đầu bán."
+              title={q ? `Không tìm thấy "${q}"` : "Chưa có sản phẩm nào"}
+              description={q ? "Thử từ khóa khác." : "Chủ community có thể thêm product đầu tiên."}
             />
           ) : (
             <div className="mk-grid">
               {products.map((p, idx) => (
                 <div key={p.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <ProductCard
-                    product={p}
-                    communitySlug={slug}
-                    idx={idx}
-                  />
+                  <ProductCard product={p} communitySlug={slug} idx={idx} />
                   {isOwner && (
-                    <FeaturedGlobalToggle
-                      kind="product"
-                      resourceId={p.id}
-                      communitySlug={slug}
-                      initial={p.featuredOnGlobal}
-                    />
+                    <FeaturedGlobalToggle kind="product" resourceId={p.id} communitySlug={slug} initial={p.featuredOnGlobal} />
                   )}
                 </div>
               ))}
@@ -320,23 +178,11 @@ export default async function MarketplacePage({
   );
 }
 
-function StatCard({
-  icon,
-  label,
-  value,
-  sub,
-}: {
-  icon: string;
-  label: string;
-  value: string;
-  sub: string;
-}) {
+function StatCard({ icon, label, value, sub }: { icon: string; label: string; value: string; sub: string }) {
   return (
     <div className="mk-stat">
       <span className="mk-stat-period">All-time</span>
-      <div className="mk-stat-label">
-        {icon} {label}
-      </div>
+      <div className="mk-stat-label">{icon} {label}</div>
       <div className="mk-stat-value">{value}</div>
       <div className="mk-stat-delta neutral">{sub}</div>
     </div>

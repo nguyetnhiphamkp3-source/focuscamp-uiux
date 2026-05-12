@@ -2345,6 +2345,15 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(60, 45, 20, 0.08);
 }
+.ch-market-card {
+  cursor: pointer;
+  transition: transform 150ms, box-shadow 150ms;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.ch-market-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+}
 
 .ch-card-banner {
   aspect-ratio: 16 / 9;
