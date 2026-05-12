@@ -11,7 +11,7 @@ export const metadata = {
 
 export default async function IntegrationsPage() {
   const s = await auth();
-  if (!s?.user?.id) redirect("/login");
+  if (!s?.user?.id) redirect("/login?redirectTo=/settings/integrations");
 
   const user = await prisma.user.findUnique({
     where: { id: s.user.id },
