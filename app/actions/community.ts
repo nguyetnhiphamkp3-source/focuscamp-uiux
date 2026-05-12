@@ -8,6 +8,7 @@ import {
   updateCommunityInfo,
   renewCommunityPlan,
 } from "@/lib/services/community";
+import { startTierSubscription } from "@/lib/services/subscription";
 import {
   JoinCommunitySchema,
   CreateCommunitySchema,
@@ -123,6 +124,33 @@ export async function renewCommunityPlanAction(input: {
       communityId: parsed.data.communityId,
     });
     return { ok: true, paymentCode: res.paymentCode, slug: res.slug };
+  } catch (err) {
+    logError(err, { userId: s.user.id, communityId: input.communityId });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+export async function subscribeCommunityTierAction(input: {
+  communityId: string;
+  communitySlug: string;
+  tierKey: string;
+  priceVnd: number;
+  durationDays: number;
+}): Promise<{ ok: true; paymentCode: string } | { ok: false; reason: string }> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+
+  try {
+    const { paymentCode } = await startTierSubscription({
+      userId: s.user.id,
+      communityId: input.communityId,
+      tierKey: input.tierKey,
+      priceVnd: input.priceVnd,
+      durationDays: input.durationDays,
+    });
+    revalidatePath(`/c/${input.communitySlug}`);
+    return { ok: true, paymentCode };
   } catch (err) {
     logError(err, { userId: s.user.id, communityId: input.communityId });
     if (err instanceof Error) return { ok: false, reason: err.message };

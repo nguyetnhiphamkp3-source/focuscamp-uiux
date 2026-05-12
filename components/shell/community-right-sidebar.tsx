@@ -3,6 +3,7 @@ import { CommunitySearchBar } from "./community-header";
 import { InviteCopyButton } from "./invite-copy-button";
 import { classByKey } from "@/lib/community-config";
 import type { ClassConfig } from "@/lib/community-config";
+import type { TierConfigItem } from "@/lib/services/subscription";
 
 type Community = {
   id: string;
@@ -27,23 +28,21 @@ export async function CommunityRightSidebar({
   community,
   membership,
   classes,
+  tiers = [],
 }: {
   community: Community;
   membership: Membership;
   isLoggedIn: boolean;
   classes: ClassConfig[];
+  tiers?: TierConfigItem[];
   boss?: unknown;
 }) {
   return (
     <aside className="right-sidebar" id="rightSidebar">
       {membership ? (
-        <MemberView
-          community={community}
-          membership={membership}
-          classes={classes}
-        />
+        <MemberView community={community} membership={membership} classes={classes} />
       ) : (
-        <GuestView community={community} classes={classes} />
+        <GuestView community={community} classes={classes} tiers={tiers} />
       )}
     </aside>
   );
@@ -52,9 +51,11 @@ export async function CommunityRightSidebar({
 function GuestView({
   community,
   classes,
+  tiers,
 }: {
   community: Community;
   classes: ClassConfig[];
+  tiers: TierConfigItem[];
 }) {
   return (
     <div className="rs-view active">
@@ -131,6 +132,7 @@ function GuestView({
           communityId={community.id}
           communitySlug={community.slug}
           classes={classes}
+          tiers={tiers}
         />
 
         <div className="rs-card">

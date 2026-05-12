@@ -13,6 +13,7 @@
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
+import { createPayment } from "@/lib/sepay";
 
 /* ===== Config types ===== */
 
@@ -208,6 +209,52 @@ export async function checkGate(input: {
       };
     }
   }
+}
+
+/**
+ * Create a PENDING subscription + payment order for a paid tier.
+ * Joins the community as a member (upsert) then creates the payment.
+ */
+export async function startTierSubscription(input: {
+  userId: string;
+  communityId: string;
+  tierKey: string;
+  priceVnd: number;
+  durationDays: number;
+}): Promise<{ paymentCode: string }> {
+  // Ensure community membership exists first
+  await prisma.membership.upsert({
+    where: { userId_communityId: { userId: input.userId, communityId: input.communityId } },
+    create: { userId: input.userId, communityId: input.communityId, role: "MEMBER" },
+    update: {},
+  });
+
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + input.durationDays);
+
+  const sub = await prisma.subscription.create({
+    data: {
+      userId: input.userId,
+      communityId: input.communityId,
+      tier: input.tierKey,
+      status: "PENDING",
+      amountVnd: input.priceVnd,
+      expiresAt,
+    },
+  });
+
+  const payment = await createPayment({
+    userId: input.userId,
+    communityId: input.communityId,
+    purpose: "subscription",
+    refType: "subscription",
+    refId: sub.id,
+    amountVnd: input.priceVnd,
+    ttlMinutes: 1440,
+  });
+
+  logger.info({ userId: input.userId, communityId: input.communityId, tier: input.tierKey }, "[subscription] payment started");
+  return { paymentCode: payment.paymentCode };
 }
 
 /**
