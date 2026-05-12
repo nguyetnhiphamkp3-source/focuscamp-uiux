@@ -394,8 +394,8 @@ export default async function ChallengeDetailPage({
             </div>
           </div>
 
-          {/* Description shown only to members (non-members see full sales intro) */}
-          {challenge.description && myMembership && (
+          {/* Description shown only to active/started members (non-members + payment_pending see full sales intro) */}
+          {challenge.description && myMembership && myMembership.status !== "PAYMENT_PENDING" && (
             <p
               style={{
                 background: "var(--bg-card)",
@@ -413,28 +413,44 @@ export default async function ChallengeDetailPage({
 
           {/* Progress (if joined) */}
           {myMembership?.status === "PAYMENT_PENDING" ? (
-            <div style={{ marginTop: "var(--space-5)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-              <div style={{ padding: "16px 20px", background: "rgba(251,191,36,0.12)", border: "1px solid rgba(217,119,6,0.4)", borderRadius: 12, fontSize: "var(--text-sm)", color: "#92400e", fontWeight: 600 }}>
-                ⏳ Bạn chưa hoàn tất thanh toán để tham gia challenge này.
-              </div>
-              {pendingPaymentCode ? (
-                <a
-                  href={`/pay/${pendingPaymentCode}?return=${encodeURIComponent(`/c/${slug}/challenges/${challengeSlug}`)}`}
-                  className="ui-btn ui-btn-primary ui-btn-lg"
-                  style={{ textAlign: "center", textDecoration: "none" }}
-                >
-                  💳 Hoàn tất thanh toán
-                </a>
-              ) : renewalInfo ? (
-                <RenewPaymentButton
-                  challengeId={challenge.id}
-                  communitySlug={slug}
-                  challengeSlug={challengeSlug}
-                  originalAmountVnd={renewalInfo.originalAmountVnd}
-                  hasLateFee={renewalInfo.hasLateFee}
-                />
-              ) : null}
-            </div>
+            <ChallengeSalesIntro
+              challenge={{
+                ...challenge,
+                pitch: challenge.pitch ?? null,
+                tasks: challenge.tasks as { id: string; dayNumber: number; title: string }[],
+                products: challenge.products.map((l) => ({
+                  id: l.product.id,
+                  relevance: l.relevance,
+                  product: l.product,
+                })),
+              }}
+              effectivePrice={effectivePrice}
+              communitySlug={slug}
+              joinButton={
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                  <div style={{ padding: "16px 20px", background: "rgba(251,191,36,0.12)", border: "1px solid rgba(217,119,6,0.4)", borderRadius: 12, fontSize: "var(--text-sm)", color: "#92400e", fontWeight: 600 }}>
+                    ⏳ Bạn chưa hoàn tất thanh toán để tham gia challenge này.
+                  </div>
+                  {pendingPaymentCode ? (
+                    <a
+                      href={`/pay/${pendingPaymentCode}?return=${encodeURIComponent(`/c/${slug}/challenges/${challengeSlug}`)}`}
+                      className="ui-btn ui-btn-primary ui-btn-lg"
+                      style={{ textAlign: "center", textDecoration: "none" }}
+                    >
+                      💳 Hoàn tất thanh toán
+                    </a>
+                  ) : renewalInfo ? (
+                    <RenewPaymentButton
+                      challengeId={challenge.id}
+                      communitySlug={slug}
+                      challengeSlug={challengeSlug}
+                      originalAmountVnd={renewalInfo.originalAmountVnd}
+                      hasLateFee={renewalInfo.hasLateFee}
+                    />
+                  ) : null}
+                </div>
+              }
+            />
           ) : myMembership?.status === "PENDING" ? (
             <div style={{ marginTop: "var(--space-5)", padding: "16px 20px", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.3)", borderRadius: 12, fontSize: "var(--text-sm)", color: "var(--warning)" }}>
               ⏳ Yêu cầu tham gia của bạn đang chờ admin duyệt. Bạn sẽ nhận thông báo khi được chấp thuận.

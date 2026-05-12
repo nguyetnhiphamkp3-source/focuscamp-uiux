@@ -255,7 +255,7 @@ function MemberView({
           </div>
         </div>
 
-        <InviteCopyButton communitySlug={community.slug} />
+        <InviteCopyButton communityId={community.id} communitySlug={community.slug} />
 
         <div className="rs-card">
           <div
