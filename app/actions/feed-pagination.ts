@@ -17,6 +17,7 @@ export async function loadMoreFeedAction(input: {
   pillar?: string;
   sort?: "latest" | "popular";
   isCot?: boolean;
+  unansweredOnly?: boolean;
   scope?: "all" | "following" | "bookmarked";
   followedUserIds?: string[];
   bookmarkedPostIds?: string[];
@@ -28,6 +29,7 @@ export async function loadMoreFeedAction(input: {
       communityId: input.communityId,
       type: input.type,
       isCot: input.isCot,
+      unansweredOnly: input.unansweredOnly,
       pillar: input.pillar,
       sort: input.sort,
       scope: input.scope,

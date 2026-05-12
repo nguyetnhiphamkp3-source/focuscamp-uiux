@@ -40,6 +40,7 @@ export function FeedList({
     pillar?: string;
     sort?: "latest" | "popular";
     isCot?: boolean;
+    unansweredOnly?: boolean;
     scope?: "all" | "following" | "bookmarked";
     followedUserIds?: string[];
     bookmarkedPostIds?: string[];
@@ -76,6 +77,7 @@ export function FeedList({
         pillar: filter?.pillar,
         sort: filter?.sort,
         isCot: filter?.isCot,
+        unansweredOnly: filter?.unansweredOnly,
         scope: filter?.scope,
         followedUserIds: filter?.followedUserIds,
         bookmarkedPostIds: filter?.bookmarkedPostIds,

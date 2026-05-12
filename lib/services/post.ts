@@ -27,6 +27,7 @@ export async function listFeed(params: {
   communityId: string;
   type?: PostType;
   isCot?: boolean;
+  unansweredOnly?: boolean;
   pillar?: string;
   userId?: string;
   limit?: number;
@@ -44,6 +45,7 @@ export async function listFeed(params: {
     communityId,
     type = "POST",
     isCot,
+    unansweredOnly,
     pillar,
     userId,
     limit = 20,
@@ -58,6 +60,7 @@ export async function listFeed(params: {
     communityId,
     type,
     ...(isCot !== undefined ? { isCot } : {}),
+    ...(unansweredOnly ? { comments: { none: {} } } : {}),
     ...(pillar ? { pillar } : {}),
   };
   if (scope === "following" && followedIds) {

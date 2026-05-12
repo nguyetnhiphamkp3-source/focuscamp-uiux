@@ -19,6 +19,7 @@ export default async function QAPage({
 }) {
   const { slug } = await params;
   const { filter, sort: sortParam } = await searchParams;
+  const unansweredOnly = filter === "unanswered";
   const sort: "latest" | "popular" = sortParam === "popular" ? "popular" : "latest";
 
   const community = await prisma.community.findUnique({
@@ -47,17 +48,22 @@ export default async function QAPage({
     : false;
 
   const PAGE_SIZE = 20;
-  const questions = await listFeed({
-    communityId: community.id,
-    type: "QUESTION",
-    userId,
-    sort,
-    limit: PAGE_SIZE,
-  });
-
-  const allCount = questions.length;
-  const unanswered = questions.filter((q) => q.commentCount === 0);
-  const displayedQuestions = filter === "unanswered" ? unanswered : questions;
+  const [questions, allCount, unansweredCount] = await Promise.all([
+    listFeed({
+      communityId: community.id,
+      type: "QUESTION",
+      userId,
+      sort,
+      unansweredOnly,
+      limit: PAGE_SIZE,
+    }),
+    prisma.post.count({
+      where: { communityId: community.id, type: "QUESTION" },
+    }),
+    prisma.post.count({
+      where: { communityId: community.id, type: "QUESTION", comments: { none: {} } },
+    }),
+  ]);
 
   return (
     <>
@@ -115,7 +121,7 @@ export default async function QAPage({
               className={`feed-tab${filter === "unanswered" ? " active" : ""}`}
               style={{ textDecoration: "none" }}
             >
-              Chưa trả lời ({unanswered.length})
+              Chưa trả lời ({unansweredCount})
             </Link>
             <Link
               href={`/c/${slug}/qa?sort=popular${filter ? `&filter=${filter}` : ""}`}
@@ -127,10 +133,10 @@ export default async function QAPage({
             </Link>
           </div>
 
-          {displayedQuestions.length === 0 ? (
+          {questions.length === 0 ? (
             <EmptyState
               icon="❓"
-              title={filter === "unanswered" ? "Không có câu hỏi chưa trả lời" : "Chưa có câu hỏi nào"}
+              title={unansweredOnly ? "Không có câu hỏi chưa trả lời" : "Chưa có câu hỏi nào"}
               description={
                 isMember
                   ? "Hãy là người đầu tiên đặt câu hỏi. Cộng đồng sẽ trả lời giúp bạn!"
@@ -139,7 +145,7 @@ export default async function QAPage({
             />
           ) : (
             <FeedList
-              initialPosts={displayedQuestions}
+              initialPosts={questions}
               communityId={community.id}
               communitySlug={slug}
               type="QUESTION"
@@ -148,6 +154,7 @@ export default async function QAPage({
               isOwner={isOwner}
               currentUserId={userId ?? null}
               pageSize={PAGE_SIZE}
+              filter={{ sort, unansweredOnly }}
             />
           )}
         </div>
