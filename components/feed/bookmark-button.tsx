@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { toggleBookmarkAction } from "@/app/actions/social";
 
 export function BookmarkButton({
@@ -12,6 +13,7 @@ export function BookmarkButton({
   communitySlug: string;
   initialBookmarked: boolean;
 }) {
+  const router = useRouter();
   const [bookmarked, setBookmarked] = useState(initialBookmarked);
   const [pending, start] = useTransition();
 
@@ -22,6 +24,7 @@ export function BookmarkButton({
       const res = await toggleBookmarkAction({ postId, communitySlug });
       if (res.ok && res.data) {
         setBookmarked(res.data.bookmarked);
+        router.refresh();
       } else {
         setBookmarked(prev);
       }

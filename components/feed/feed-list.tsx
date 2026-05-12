@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { PostCard } from "./post-card";
 import { loadMoreFeedAction } from "@/app/actions/feed-pagination";
 import type { FeedPost, PostType } from "@/lib/services/post";
@@ -50,6 +50,12 @@ export function FeedList({
   const [hasMore, setHasMore] = useState(initialPosts.length >= pageSize);
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
+  const initialPostIds = initialPosts.map((p) => p.id).join("|");
+
+  useEffect(() => {
+    setPosts(initialPosts);
+    setHasMore(initialPosts.length >= pageSize);
+  }, [initialPostIds, initialPosts, pageSize]);
 
   function loadMore() {
     if (!hasMore || pending) return;
