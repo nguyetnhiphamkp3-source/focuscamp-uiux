@@ -22,6 +22,7 @@ import {
   listChallengeSubmissions,
   listPendingMembers,
 } from "@/lib/services/challenge";
+import { ChallengeSalesIntro } from "@/components/community/challenge-sales-intro";
 
 export const dynamic = "force-dynamic";
 
@@ -255,34 +256,24 @@ export default async function ChallengeDetailPage({
         }}
       >
         <div className="ch-inner ch-detail">
-          {/* Freeze banner — visible to everyone when active */}
-          {challenge.freezeStartsAt &&
-            challenge.freezeEndsAt &&
-            new Date() >= challenge.freezeStartsAt &&
-            new Date() <= challenge.freezeEndsAt && (
-              <div
-                style={{
-                  padding: "12px 16px",
-                  marginBottom: "var(--space-4)",
-                  background:
-                    "linear-gradient(135deg, rgba(88,101,242,0.12), rgba(0,168,252,0.08))",
-                  border: "1px solid rgba(88,101,242,0.3)",
-                  borderRadius: 12,
-                  fontSize: "var(--text-sm)",
-                  color: "var(--info)",
-                  fontWeight: 600,
-                }}
-              >
-                ⏸ Challenge đang <strong>freeze</strong> đến{" "}
-                {challenge.freezeEndsAt.toLocaleString("vi-VN", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+          {/* Freeze banners — check all windows */}
+          {(() => {
+            const now = new Date();
+            const windows = challenge.freezeWindows as Array<{ label?: string; startsAt: string; endsAt: string }> | null ?? [];
+            // Also check legacy single window
+            if (challenge.freezeStartsAt && challenge.freezeEndsAt) {
+              windows.push({ startsAt: challenge.freezeStartsAt.toISOString(), endsAt: challenge.freezeEndsAt.toISOString() });
+            }
+            const active = windows.find(w => now >= new Date(w.startsAt) && now <= new Date(w.endsAt));
+            if (!active) return null;
+            return (
+              <div style={{ padding: "12px 16px", marginBottom: "var(--space-4)", background: "linear-gradient(135deg, rgba(88,101,242,0.12), rgba(0,168,252,0.08))", border: "1px solid rgba(88,101,242,0.3)", borderRadius: 12, fontSize: "var(--text-sm)", color: "var(--info)", fontWeight: 600 }}>
+                ⏸ Challenge đang <strong>freeze</strong>{active.label ? ` — ${active.label}` : ""} đến{" "}
+                {new Date(active.endsAt).toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
                 . Trong lúc này bạn không cần lo miss — tiếp tục khi hết freeze.
               </div>
-            )}
+            );
+          })()}
 
           {/* Admin-only settings panel */}
           {isOwner && (
@@ -293,10 +284,9 @@ export default async function ChallengeDetailPage({
               initial={{
                 title: challenge.title,
                 description: challenge.description,
+                pitch: challenge.pitch ?? null,
                 requiresApproval: challenge.requiresApproval,
-                freezeFromDay: challenge.freezeFromDay,
-                freezeStartsAt: challenge.freezeStartsAt,
-                freezeEndsAt: challenge.freezeEndsAt,
+                freezeWindows: (challenge.freezeWindows as Array<{ label?: string; startsAt: string; endsAt: string }> | null) ?? null,
                 bannerUrl: challenge.bannerUrl,
                 featuredOnGlobal: challenge.featuredOnGlobal,
                 pricingConfig: parsePricingConfig(challenge.pricingConfig),
@@ -385,7 +375,8 @@ export default async function ChallengeDetailPage({
             </div>
           </div>
 
-          {challenge.description && (
+          {/* Description shown only to members (non-members see full sales intro) */}
+          {challenge.description && myMembership && (
             <p
               style={{
                 background: "var(--bg-card)",
@@ -517,26 +508,42 @@ export default async function ChallengeDetailPage({
               communitySlug={slug}
             />
           ) : (
-            <div style={{ marginTop: "var(--space-5)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-              <form action={joinAction}>
-                <button type="submit" className="ui-btn ui-btn-primary ui-btn-lg" style={{ width: "100%" }}>
-                  {effectivePrice && effectivePrice.vnd > 0
-                    ? `Tham gia — ${Number(effectivePrice.vnd).toLocaleString("vi-VN")}đ`
-                    : "Tham gia challenge"}
-                </button>
-              </form>
-              {effectivePrice?.canPayAip && (
-                <PayWithAipButton
-                  challengeId={challenge.id}
-                  communityId={challenge.community.id}
-                  communitySlug={slug}
-                  challengeSlug={challengeSlug}
-                  requiresApproval={challenge.requiresApproval}
-                  aipPrice={effectivePrice.aipPrice}
-                  aipBalance={effectivePrice.aipBalance}
-                />
-              )}
-            </div>
+            <ChallengeSalesIntro
+              challenge={{
+                ...challenge,
+                pitch: challenge.pitch ?? null,
+                tasks: challenge.tasks as { id: string; dayNumber: number; title: string }[],
+                products: challenge.products.map((l) => ({
+                  id: l.product.id,
+                  relevance: l.relevance,
+                  product: l.product,
+                })),
+              }}
+              effectivePrice={effectivePrice}
+              communitySlug={slug}
+              joinButton={
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                  <form action={joinAction}>
+                    <button type="submit" className="ui-btn ui-btn-primary ui-btn-lg" style={{ width: "100%" }}>
+                      {effectivePrice && effectivePrice.vnd > 0
+                        ? `🚀 Đăng ký ngay — ${Number(effectivePrice.vnd).toLocaleString("vi-VN")}đ`
+                        : "🚀 Tham gia challenge — Miễn phí"}
+                    </button>
+                  </form>
+                  {effectivePrice?.canPayAip && (
+                    <PayWithAipButton
+                      challengeId={challenge.id}
+                      communityId={challenge.community.id}
+                      communitySlug={slug}
+                      challengeSlug={challengeSlug}
+                      requiresApproval={challenge.requiresApproval}
+                      aipPrice={effectivePrice.aipPrice}
+                      aipBalance={effectivePrice.aipBalance}
+                    />
+                  )}
+                </div>
+              }
+            />
           )}
 
           {/* Equipment — related marketplace items */}
@@ -633,9 +640,21 @@ export default async function ChallengeDetailPage({
                 const isCurrent = !isDone && t.dayNumber === dayNow;
                 const isFuture = t.dayNumber > dayNow && !isDone;
                 const hasBody = !!(t.description || t.sopContent);
-                // When hideFutureTasks is on, only show to non-owner if task is reachable
+                // When hideFutureTasks is on, show locked placeholder for future days
                 if (challenge.hideFutureTasks && isFuture && !isOwner && myMembership) {
-                  return null;
+                  return (
+                    <div key={t.id} className="ch-task" style={{ opacity: 0.5, userSelect: "none" }}>
+                      <div className="ch-task-head" style={{ cursor: "default" }}>
+                        <div className="ch-task-day">{t.dayNumber}</div>
+                        <div className="ch-task-info">
+                          <div className="ch-task-label">Day {t.dayNumber}</div>
+                          <div className="ch-task-title" style={{ color: "var(--text-muted)", fontStyle: "italic" }}>
+                            🔒 Chưa mở khóa — hoàn thành ngày trước để tiếp tục
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
                 }
                 return (
                   <details

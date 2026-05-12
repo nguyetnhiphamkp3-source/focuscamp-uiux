@@ -75,6 +75,17 @@ export const UpdateChallengeSettingsSchema = z.object({
   requiredTier: z.string().trim().max(40).optional().nullable().or(z.literal("")),
   pricingConfig: PricingConfigSchema,
   hideFutureTasks: z.boolean().optional(),
+  freezeWindows: z
+    .array(
+      z.object({
+        label: z.string().optional(),
+        startsAt: z.string().datetime(),
+        endsAt: z.string().datetime(),
+      })
+    )
+    .optional()
+    .nullable(),
+  pitch: z.string().trim().max(20000).optional().nullable(),
 });
 
 export const CreateChallengeSchema = z.object({

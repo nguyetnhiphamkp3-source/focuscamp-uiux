@@ -7,6 +7,8 @@ import { ImageUploadField } from "@/components/shared/image-upload-field";
 import { ChallengePricingEditor } from "@/components/community/challenge-pricing-editor";
 import type { PricingConfig } from "@/lib/services/pricing";
 
+type FreezeWindow = { label: string; startsAt: string; endsAt: string };
+
 export function ChallengeSettingsPanel({
   challengeId,
   communitySlug,
@@ -19,10 +21,9 @@ export function ChallengeSettingsPanel({
   initial: {
     title: string;
     description: string | null;
+    pitch?: string | null;
     requiresApproval: boolean;
-    freezeFromDay: number | null;
-    freezeStartsAt: Date | null;
-    freezeEndsAt: Date | null;
+    freezeWindows?: Array<{ label?: string; startsAt: string; endsAt: string }> | null;
     bannerUrl: string | null;
     featuredOnGlobal: boolean;
     pricingConfig: PricingConfig | null;
@@ -34,19 +35,20 @@ export function ChallengeSettingsPanel({
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(initial.title);
   const [description, setDescription] = useState(initial.description ?? "");
+  const [pitch, setPitch] = useState(initial.pitch ?? "");
   const [requiresApproval, setRequiresApproval] = useState(initial.requiresApproval);
   const [hideFutureTasks, setHideFutureTasks] = useState(initial.hideFutureTasks);
   const [bannerUrl, setBannerUrl] = useState<string | null>(initial.bannerUrl);
   const [featuredOnGlobal, setFeaturedOnGlobal] = useState(initial.featuredOnGlobal);
   const [pricingConfig, setPricingConfig] = useState<PricingConfig | null>(initial.pricingConfig);
-  const [freezeFromDay, setFreezeFromDay] = useState<string>(
-    initial.freezeFromDay?.toString() ?? ""
-  );
-  const [freezeStartsAt, setFreezeStartsAt] = useState<string>(
-    initial.freezeStartsAt ? toLocalInput(initial.freezeStartsAt) : ""
-  );
-  const [freezeEndsAt, setFreezeEndsAt] = useState<string>(
-    initial.freezeEndsAt ? toLocalInput(initial.freezeEndsAt) : ""
+  const [freezeWindows, setFreezeWindows] = useState<FreezeWindow[]>(
+    initial.freezeWindows
+      ? initial.freezeWindows.map((w) => ({
+          label: w.label ?? "",
+          startsAt: w.startsAt,
+          endsAt: w.endsAt,
+        }))
+      : []
   );
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
@@ -60,18 +62,13 @@ export function ChallengeSettingsPanel({
         challengeId,
         title: title.trim(),
         description: description.trim(),
+        pitch: pitch || null,
         requiresApproval,
         hideFutureTasks,
         bannerUrl: bannerUrl ?? "",
         featuredOnGlobal,
         pricingConfig: pricingConfig as Record<string, unknown> | null,
-        freezeFromDay: freezeFromDay ? parseInt(freezeFromDay, 10) : null,
-        freezeStartsAt: freezeStartsAt
-          ? new Date(freezeStartsAt).toISOString()
-          : null,
-        freezeEndsAt: freezeEndsAt
-          ? new Date(freezeEndsAt).toISOString()
-          : null,
+        freezeWindows: freezeWindows.length > 0 ? freezeWindows : null,
         communitySlug,
         challengeSlug,
       });
@@ -157,6 +154,23 @@ export function ChallengeSettingsPanel({
               style={{ ...inputStyle, resize: "vertical", fontFamily: "inherit" }}
             />
           </label>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+              📝 Pitch (Sales page)
+            </label>
+            <textarea
+              value={pitch}
+              onChange={(e) => setPitch(e.target.value)}
+              rows={6}
+              disabled={pending}
+              placeholder="Mô tả chi tiết cho trang giới thiệu challenge — ai nên tham gia, họ sẽ đạt được gì, tại sao thách thức này đáng giá…"
+              style={{ ...inputStyle, resize: "vertical", lineHeight: 1.5, fontFamily: "inherit" }}
+            />
+            <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 3 }}>
+              Hiển thị cho người chưa tham gia. Hỗ trợ xuống dòng.
+            </div>
+          </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
@@ -286,85 +300,125 @@ export function ChallengeSettingsPanel({
             </div>
           </label>
 
-          <div
-            style={{
-              padding: "10px 12px",
-              background: "var(--bg-card)",
-              border: "1px solid var(--border-subtle)",
-              borderRadius: 8,
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  fontSize: "var(--text-sm)",
-                  fontWeight: 600,
-                  color: "var(--header-primary)",
-                }}
-              >
-                ⏸ Freeze window
-              </div>
-              <div
+          {/* Freeze Windows */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <label style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>⏸ Freeze Windows</label>
+              <button
+                type="button"
+                onClick={() => setFreezeWindows((prev) => [...prev, { label: "", startsAt: "", endsAt: "" }])}
                 style={{
                   fontSize: "var(--text-xs)",
-                  color: "var(--text-muted)",
-                  marginTop: 2,
+                  padding: "3px 10px",
+                  borderRadius: 5,
+                  border: "1px solid var(--border-subtle)",
+                  background: "var(--bg-elevated)",
+                  cursor: "pointer",
+                  color: "var(--text-normal)",
                 }}
               >
-                Tạm dừng challenge trong khoảng thời gian (vd: Tết, nghỉ lễ).
-                Trong lúc freeze, người tham gia vẫn xem được nhưng banner
-                hiện trạng thái đóng băng.
-              </div>
+                + Thêm window
+              </button>
             </div>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr 80px",
-                gap: 8,
-              }}
-            >
-              <label style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
-                  Từ lúc
-                </span>
-                <input
-                  type="datetime-local"
-                  value={freezeStartsAt}
-                  onChange={(e) => setFreezeStartsAt(e.target.value)}
-                  disabled={pending}
-                  style={inputStyle}
-                />
-              </label>
-              <label style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
-                  Đến lúc
-                </span>
-                <input
-                  type="datetime-local"
-                  value={freezeEndsAt}
-                  onChange={(e) => setFreezeEndsAt(e.target.value)}
-                  disabled={pending}
-                  style={inputStyle}
-                />
-              </label>
-              <label style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
-                  Từ day
-                </span>
-                <input
-                  type="number"
-                  min={1}
-                  value={freezeFromDay}
-                  onChange={(e) => setFreezeFromDay(e.target.value)}
-                  disabled={pending}
-                  placeholder="N"
-                  style={inputStyle}
-                />
-              </label>
+            {freezeWindows.length === 0 && (
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", padding: "8px 0" }}>
+                Chưa có freeze window nào. Nhấn "+ Thêm" để tạo.
+              </div>
+            )}
+            {freezeWindows.map((w, i) => (
+              <div
+                key={i}
+                style={{
+                  background: "var(--bg-elevated)",
+                  borderRadius: 8,
+                  padding: 12,
+                  marginBottom: 8,
+                  border: "1px solid var(--border-subtle)",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <input
+                    value={w.label}
+                    onChange={(e) => {
+                      const next = [...freezeWindows];
+                      next[i] = { ...next[i], label: e.target.value };
+                      setFreezeWindows(next);
+                    }}
+                    placeholder="Tên (vd: Nghỉ lễ 30/4)"
+                    style={{
+                      flex: 1,
+                      padding: "5px 8px",
+                      borderRadius: 5,
+                      border: "1px solid var(--border-subtle)",
+                      background: "var(--bg-input)",
+                      color: "var(--text-normal)",
+                      fontSize: "var(--text-xs)",
+                      marginRight: 8,
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setFreezeWindows((prev) => prev.filter((_, j) => j !== i))}
+                    style={{
+                      fontSize: 12,
+                      color: "var(--danger)",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: "2px 6px",
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  <div>
+                    <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: 3 }}>Bắt đầu</div>
+                    <input
+                      type="datetime-local"
+                      value={w.startsAt}
+                      onChange={(e) => {
+                        const next = [...freezeWindows];
+                        next[i] = { ...next[i], startsAt: e.target.value };
+                        setFreezeWindows(next);
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "5px 8px",
+                        borderRadius: 5,
+                        border: "1px solid var(--border-subtle)",
+                        background: "var(--bg-input)",
+                        color: "var(--text-normal)",
+                        fontSize: "var(--text-xs)",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: 3 }}>Kết thúc</div>
+                    <input
+                      type="datetime-local"
+                      value={w.endsAt}
+                      onChange={(e) => {
+                        const next = [...freezeWindows];
+                        next[i] = { ...next[i], endsAt: e.target.value };
+                        setFreezeWindows(next);
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "5px 8px",
+                        borderRadius: 5,
+                        border: "1px solid var(--border-subtle)",
+                        background: "var(--bg-input)",
+                        color: "var(--text-normal)",
+                        fontSize: "var(--text-xs)",
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+            <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 4 }}>
+              Trong lúc freeze, không ai bị tính là miss ngày. Bạn có thể thêm nhiều window cho các kỳ nghỉ khác nhau.
             </div>
           </div>
 

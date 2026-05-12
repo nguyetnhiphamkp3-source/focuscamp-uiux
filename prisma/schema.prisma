@@ -315,6 +315,10 @@ model Challenge {
   pricingConfig  Json?
   /** When true, members only see tasks up to their current day — future tasks are hidden. */
   hideFutureTasks Boolean @default(false)
+  /** Multiple freeze windows. Array of {label?: string, startsAt: string, endsAt: string} */
+  freezeWindows  Json?
+  /** Long-form sales pitch shown on challenge page to non-members. Markdown supported. */
+  pitch          String?   @db.Text
   createdAt      DateTime  @default(now())
 
   community Community         @relation(fields: [communityId], references: [id], onDelete: Cascade)
