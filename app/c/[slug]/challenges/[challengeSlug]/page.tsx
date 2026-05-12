@@ -167,6 +167,7 @@ export default async function ChallengeDetailPage({
   let myMembership:
     | { id: string; status: string; personalStartsAt: Date | null; completedAt: Date | null }
     | null = null;
+  let pendingPaymentCode: string | null = null;
   if (session?.user?.id) {
     const m = await prisma.challengeMember.findFirst({
       where: { challengeId: challenge.id, userId: session.user.id },
@@ -178,6 +179,14 @@ export default async function ChallengeDetailPage({
       },
     });
     myMembership = m;
+    if (m?.status === "PAYMENT_PENDING") {
+      const pending = await prisma.payment.findFirst({
+        where: { refType: "challenge", refId: m.id, status: "PENDING" },
+        select: { paymentCode: true },
+        orderBy: { createdAt: "desc" },
+      });
+      pendingPaymentCode = pending?.paymentCode ?? null;
+    }
   }
 
   const joinAction = joinChallengeAction.bind(null, {
@@ -394,8 +403,23 @@ export default async function ChallengeDetailPage({
 
           {/* Progress (if joined) */}
           {myMembership?.status === "PAYMENT_PENDING" ? (
-            <div style={{ marginTop: "var(--space-5)", padding: "16px 20px", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.3)", borderRadius: 12, fontSize: "var(--text-sm)", color: "var(--warning)" }}>
-              ⏳ Đang chờ xác nhận thanh toán…
+            <div style={{ marginTop: "var(--space-5)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+              <div style={{ padding: "16px 20px", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.3)", borderRadius: 12, fontSize: "var(--text-sm)", color: "var(--warning)" }}>
+                ⏳ Bạn chưa hoàn tất thanh toán để tham gia challenge này.
+              </div>
+              {pendingPaymentCode ? (
+                <a
+                  href={`/pay/${pendingPaymentCode}?return=${encodeURIComponent(`/c/${slug}/challenges/${challengeSlug}`)}`}
+                  className="ui-btn ui-btn-primary ui-btn-lg"
+                  style={{ textAlign: "center", textDecoration: "none" }}
+                >
+                  💳 Hoàn tất thanh toán
+                </a>
+              ) : (
+                <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", textAlign: "center" }}>
+                  Lệnh thanh toán đã hết hạn — vui lòng liên hệ admin để được hỗ trợ.
+                </div>
+              )}
             </div>
           ) : myMembership?.status === "PENDING" ? (
             <div style={{ marginTop: "var(--space-5)", padding: "16px 20px", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.3)", borderRadius: 12, fontSize: "var(--text-sm)", color: "var(--warning)" }}>
