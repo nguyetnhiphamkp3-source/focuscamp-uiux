@@ -433,6 +433,7 @@ export async function updateChallengeSettings(input: {
   featuredOnGlobal?: boolean;
   requiredTier?: string | null;
   pricingConfig?: Record<string, unknown> | null;
+  hideFutureTasks?: boolean;
 }) {
   const ch = await assertChallengeAdmin(input.userId, input.challengeId);
   await prisma.challenge.update({
@@ -454,6 +455,7 @@ export async function updateChallengeSettings(input: {
       ...("pricingConfig" in input
         ? { pricingConfig: input.pricingConfig === null ? Prisma.DbNull : (input.pricingConfig as Prisma.InputJsonValue) }
         : {}),
+      ...(input.hideFutureTasks !== undefined ? { hideFutureTasks: input.hideFutureTasks } : {}),
     },
   });
   logger.info(
@@ -461,6 +463,23 @@ export async function updateChallengeSettings(input: {
     "[challenge] settings updated"
   );
   return ch;
+}
+
+export async function startChallengeForMember(input: {
+  userId: string;
+  challengeId: string;
+}) {
+  const member = await prisma.challengeMember.findUnique({
+    where: { challengeId_userId: { challengeId: input.challengeId, userId: input.userId } },
+    select: { status: true, personalStartsAt: true },
+  });
+  if (!member || member.status !== "ACTIVE" || member.personalStartsAt) {
+    throw new Error("invalid_state");
+  }
+  await prisma.challengeMember.update({
+    where: { challengeId_userId: { challengeId: input.challengeId, userId: input.userId } },
+    data: { personalStartsAt: new Date() },
+  });
 }
 
 export async function updateChallengeTask(input: {

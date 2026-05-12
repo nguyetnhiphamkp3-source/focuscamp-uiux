@@ -15,6 +15,7 @@ import {
   createChallengeTask,
   deleteChallengeTask,
   joinChallenge,
+  startChallengeForMember,
 } from "@/lib/services/challenge";
 import { startChallengePurchase } from "@/lib/services/payment";
 import { parsePricingConfig, calculateEffectivePrice } from "@/lib/services/pricing";
@@ -194,6 +195,7 @@ export async function updateChallengeSettingsAction(input: {
   featuredOnGlobal?: boolean;
   requiredTier?: string | null;
   pricingConfig?: Record<string, unknown> | null;
+  hideFutureTasks?: boolean;
   communitySlug: string;
   challengeSlug: string;
 }): Promise<ActionResult> {
@@ -211,6 +213,7 @@ export async function updateChallengeSettingsAction(input: {
     featuredOnGlobal: input.featuredOnGlobal,
     requiredTier: input.requiredTier,
     pricingConfig: input.pricingConfig,
+    hideFutureTasks: input.hideFutureTasks,
   });
   if (!parsed.success) {
     return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
@@ -229,6 +232,7 @@ export async function updateChallengeSettingsAction(input: {
       featuredOnGlobal: parsed.data.featuredOnGlobal,
       requiredTier: parsed.data.requiredTier === undefined ? undefined : parsed.data.requiredTier || null,
       pricingConfig: "pricingConfig" in parsed.data ? (parsed.data.pricingConfig as Record<string, unknown> | null) : undefined,
+      hideFutureTasks: parsed.data.hideFutureTasks,
     });
     bumpChallenge(input.communitySlug, input.challengeSlug);
     revalidatePath(`/marketplace`);
@@ -533,4 +537,18 @@ export async function payWithAipForChallengeAction(input: {
 
   bumpChallenge(input.communitySlug, input.challengeSlug);
   return { ok: true };
+}
+
+export async function startChallengeAction(
+  input: { challengeId: string; communitySlug: string; challengeSlug: string },
+  _formData: FormData
+): Promise<void> {
+  const s = await auth();
+  if (!s?.user?.id) return;
+  try {
+    await startChallengeForMember({ userId: s.user.id, challengeId: input.challengeId });
+    revalidatePath(`/c/${input.communitySlug}/challenges/${input.challengeSlug}`);
+  } catch {
+    // invalid_state means already started or not ACTIVE — silently ignore
+  }
 }

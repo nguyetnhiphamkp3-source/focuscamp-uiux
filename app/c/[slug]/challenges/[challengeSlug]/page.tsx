@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { joinChallengeAction } from "@/app/actions/challenge-review";
+import { joinChallengeAction, startChallengeAction } from "@/app/actions/challenge-review";
 import { CheckinForm } from "@/components/community/checkin-form";
 import { SubmissionReviewPanel } from "@/components/community/submission-review-panel";
 import type { SubmissionRow } from "@/components/community/submission-review-panel";
@@ -292,6 +292,7 @@ export default async function ChallengeDetailPage({
                 featuredOnGlobal: challenge.featuredOnGlobal,
                 pricingConfig: parsePricingConfig(challenge.pricingConfig),
                 tiers: getTiersConfig(challenge.community.tiersConfig).map((t) => ({ key: t.key, label: t.label })),
+                hideFutureTasks: challenge.hideFutureTasks,
               }}
             />
           )}
@@ -395,6 +396,21 @@ export default async function ChallengeDetailPage({
           {myMembership?.status === "PAYMENT_PENDING" ? (
             <div style={{ marginTop: "var(--space-5)", padding: "16px 20px", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.3)", borderRadius: 12, fontSize: "var(--text-sm)", color: "var(--warning)" }}>
               ⏳ Đang chờ xác nhận thanh toán…
+            </div>
+          ) : myMembership?.status === "PENDING" ? (
+            <div style={{ marginTop: "var(--space-5)", padding: "16px 20px", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.3)", borderRadius: 12, fontSize: "var(--text-sm)", color: "var(--warning)" }}>
+              ⏳ Yêu cầu tham gia của bạn đang chờ admin duyệt. Bạn sẽ nhận thông báo khi được chấp thuận.
+            </div>
+          ) : myMembership?.status === "ACTIVE" && !myMembership.personalStartsAt ? (
+            <div style={{ marginTop: "var(--space-5)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+              <div style={{ padding: "14px 18px", background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 12, fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>
+                Bạn đã tham gia challenge. Nhấn <strong>Bắt đầu</strong> khi sẵn sàng — đồng hồ đếm ngày sẽ chạy từ lúc này.
+              </div>
+              <form action={startChallengeAction.bind(null, { challengeId: challenge.id, communitySlug: slug, challengeSlug })}>
+                <button type="submit" className="ui-btn ui-btn-primary ui-btn-lg" style={{ width: "100%" }}>
+                  🚀 Bắt đầu ngay
+                </button>
+              </form>
             </div>
           ) : myMembership ? (
             <>
@@ -583,7 +599,9 @@ export default async function ChallengeDetailPage({
               <div className="ch-section-title" style={{ marginTop: 24 }}>
                 <span>Daily Tasks</span>
                 <span className="count">
-                  {challenge.tasks.length} tasks
+                  {challenge.hideFutureTasks && myMembership && !isOwner
+                    ? `Ngày ${dayNow} / ${challenge.tasks.length}`
+                    : `${challenge.tasks.length} tasks`}
                 </span>
               </div>
               {challenge.tasks.map((t) => {
@@ -591,6 +609,10 @@ export default async function ChallengeDetailPage({
                 const isCurrent = !isDone && t.dayNumber === dayNow;
                 const isFuture = t.dayNumber > dayNow && !isDone;
                 const hasBody = !!(t.description || t.sopContent);
+                // When hideFutureTasks is on, only show to non-owner if task is reachable
+                if (challenge.hideFutureTasks && isFuture && !isOwner && myMembership) {
+                  return null;
+                }
                 return (
                   <details
                     key={t.id}

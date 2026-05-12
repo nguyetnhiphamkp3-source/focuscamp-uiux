@@ -27,6 +27,7 @@ export function ChallengeSettingsPanel({
     featuredOnGlobal: boolean;
     pricingConfig: PricingConfig | null;
     tiers: { key: string; label: string }[];
+    hideFutureTasks: boolean;
   };
 }) {
   const router = useRouter();
@@ -34,6 +35,7 @@ export function ChallengeSettingsPanel({
   const [title, setTitle] = useState(initial.title);
   const [description, setDescription] = useState(initial.description ?? "");
   const [requiresApproval, setRequiresApproval] = useState(initial.requiresApproval);
+  const [hideFutureTasks, setHideFutureTasks] = useState(initial.hideFutureTasks);
   const [bannerUrl, setBannerUrl] = useState<string | null>(initial.bannerUrl);
   const [featuredOnGlobal, setFeaturedOnGlobal] = useState(initial.featuredOnGlobal);
   const [pricingConfig, setPricingConfig] = useState<PricingConfig | null>(initial.pricingConfig);
@@ -59,6 +61,7 @@ export function ChallengeSettingsPanel({
         title: title.trim(),
         description: description.trim(),
         requiresApproval,
+        hideFutureTasks,
         bannerUrl: bannerUrl ?? "",
         featuredOnGlobal,
         pricingConfig: pricingConfig as Record<string, unknown> | null,
@@ -208,6 +211,35 @@ export function ChallengeSettingsPanel({
               >
                 Khi bật: người tham gia phải chờ admin duyệt mới bắt đầu timer.
                 Khi tắt (mặc định): auto ACTIVE + bắt đầu ngay.
+              </div>
+            </div>
+          </label>
+
+          <label
+            style={{
+              display: "flex",
+              gap: 10,
+              alignItems: "flex-start",
+              cursor: "pointer",
+              padding: "8px 12px",
+              background: "var(--bg-card)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: 8,
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={hideFutureTasks}
+              onChange={(e) => setHideFutureTasks(e.target.checked)}
+              disabled={pending}
+              style={{ marginTop: 3 }}
+            />
+            <div>
+              <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--header-primary)" }}>
+                Ẩn nhiệm vụ tương lai
+              </div>
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 2 }}>
+                Khi bật: thành viên chỉ thấy task đến ngày hiện tại của họ — task tiếp theo ẩn đi đến khi đến ngày.
               </div>
             </div>
           </label>

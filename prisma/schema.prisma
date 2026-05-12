@@ -313,6 +313,8 @@ model Challenge {
   requiredTier   String?
   /** Tiered pricing config. Null = free join. Shape: PricingConfig in lib/services/pricing.ts */
   pricingConfig  Json?
+  /** When true, members only see tasks up to their current day — future tasks are hidden. */
+  hideFutureTasks Boolean @default(false)
   createdAt      DateTime  @default(now())
 
   community Community         @relation(fields: [communityId], references: [id], onDelete: Cascade)

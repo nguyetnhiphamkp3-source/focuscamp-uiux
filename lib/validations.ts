@@ -74,6 +74,7 @@ export const UpdateChallengeSettingsSchema = z.object({
   featuredOnGlobal: z.boolean().optional(),
   requiredTier: z.string().trim().max(40).optional().nullable().or(z.literal("")),
   pricingConfig: PricingConfigSchema,
+  hideFutureTasks: z.boolean().optional(),
 });
 
 export const CreateChallengeSchema = z.object({

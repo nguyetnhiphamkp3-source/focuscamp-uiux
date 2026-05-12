@@ -23,6 +23,7 @@ import {
   UpdateChannelConfigSchema,
 } from "@/lib/validations";
 import { logError } from "@/lib/logger";
+import { prisma } from "@/lib/prisma";
 import type {
   PillarConfig,
   ClassConfig,
@@ -323,6 +324,34 @@ export async function updateLevelsAction(input: {
       })),
     });
     bump(input.communitySlug);
+    return { ok: true };
+  } catch (err) {
+    logError(err, { userId: s.user.id, communityId: input.communityId });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+export async function deleteCommunityAction(input: {
+  communityId: string;
+  communitySlug: string;
+  confirmSlug: string;
+}): Promise<ActionResult> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+  if (input.confirmSlug !== input.communitySlug)
+    return { ok: false, reason: "Slug không khớp" };
+
+  try {
+    const community = await prisma.community.findUnique({
+      where: { id: input.communityId },
+      select: { ownerId: true },
+    });
+    if (!community) return { ok: false, reason: "Cộng đồng không tồn tại" };
+    if (community.ownerId !== s.user.id)
+      return { ok: false, reason: "Chỉ chủ cộng đồng mới xoá được" };
+
+    await prisma.community.delete({ where: { id: input.communityId } });
     return { ok: true };
   } catch (err) {
     logError(err, { userId: s.user.id, communityId: input.communityId });
