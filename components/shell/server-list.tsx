@@ -31,7 +31,7 @@ export function ServerList({
         </Link>
       </div>
 
-      <div className="server-separator"></div>
+      {communities.length > 0 && <div className="server-separator"></div>}
 
       {communities.map((c, i) => {
         const active = c.slug === activeSlug;
@@ -69,7 +69,7 @@ export function ServerList({
         );
       })}
 
-      <div className="server-separator"></div>
+      {communities.length > 0 && <div className="server-separator"></div>}
 
       <div className="server-icon-wrapper">
         <CreateCommunityButton />

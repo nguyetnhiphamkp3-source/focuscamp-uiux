@@ -646,9 +646,8 @@ export default async function ChallengeDetailPage({
             </div>
           )}
 
-          {/* Tasks list — header always shows for owner so empty challenge
-              gets the '+ Thêm Task' CTA. */}
-          {(challenge.tasks.length > 0 || isOwner) && (
+          {/* Tasks list — only for members/owners; non-members see the preview in ChallengeSalesIntro */}
+          {(challenge.tasks.length > 0 || isOwner) && (myMembership || isOwner) && (
             <>
               <div className="ch-section-title" style={{ marginTop: 24 }}>
                 <span>Daily Tasks</span>

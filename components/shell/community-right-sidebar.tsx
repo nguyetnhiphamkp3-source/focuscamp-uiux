@@ -1,5 +1,6 @@
 import { JoinButton } from "./join-button";
 import { CommunitySearchBar } from "./community-header";
+import { InviteCopyButton } from "./invite-copy-button";
 import { classByKey } from "@/lib/community-config";
 import type { ClassConfig } from "@/lib/community-config";
 
@@ -252,9 +253,7 @@ function MemberView({
           </div>
         </div>
 
-        <button className="rs-join-btn secondary" style={{ margin: "4px 0" }}>
-          Invite People
-        </button>
+        <InviteCopyButton communitySlug={community.slug} />
 
         <div className="rs-card">
           <div
