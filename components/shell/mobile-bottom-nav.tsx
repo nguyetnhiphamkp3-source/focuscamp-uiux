@@ -14,7 +14,7 @@ export function MobileBottomNav({
 }) {
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const swipeStartX = useRef(0);
+  const swipeStart = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -32,9 +32,14 @@ export function MobileBottomNav({
   // Swipe-left anywhere on screen closes the drawer
   useEffect(() => {
     if (!drawerOpen) return;
-    const onStart = (e: TouchEvent) => { swipeStartX.current = e.touches[0].clientX; };
+    const onStart = (e: TouchEvent) => {
+      swipeStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    };
     const onEnd = (e: TouchEvent) => {
-      if (swipeStartX.current - e.changedTouches[0].clientX > 48) setDrawerOpen(false);
+      const dx = swipeStart.current.x - e.changedTouches[0].clientX;
+      const dy = Math.abs(swipeStart.current.y - e.changedTouches[0].clientY);
+      // Close only on clear horizontal left-swipe, not vertical scrolling
+      if (dx > 48 && dx > dy) setDrawerOpen(false);
     };
     document.addEventListener("touchstart", onStart, { passive: true });
     document.addEventListener("touchend", onEnd, { passive: true });
