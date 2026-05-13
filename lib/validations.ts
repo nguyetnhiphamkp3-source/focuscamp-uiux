@@ -86,6 +86,7 @@ export const UpdateChallengeSettingsSchema = z.object({
     .optional()
     .nullable(),
   pitch: z.string().trim().max(20000).optional().nullable(),
+  bumpProductId: z.string().cuid().optional().nullable(),
 });
 
 export const CreateChallengeSchema = z.object({

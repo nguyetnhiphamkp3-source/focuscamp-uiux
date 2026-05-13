@@ -14,6 +14,7 @@ export function ChallengeSettingsPanel({
   communitySlug,
   challengeSlug,
   initial,
+  communityProducts = [],
 }: {
   challengeId: string;
   communitySlug: string;
@@ -29,7 +30,9 @@ export function ChallengeSettingsPanel({
     pricingConfig: PricingConfig | null;
     tiers: { key: string; label: string }[];
     hideFutureTasks: boolean;
+    bumpProductId?: string | null;
   };
+  communityProducts?: { id: string; title: string }[];
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -50,6 +53,7 @@ export function ChallengeSettingsPanel({
         }))
       : []
   );
+  const [bumpProductId, setBumpProductId] = useState<string>(initial.bumpProductId ?? "");
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -69,6 +73,7 @@ export function ChallengeSettingsPanel({
         featuredOnGlobal,
         pricingConfig: pricingConfig as Record<string, unknown> | null,
         freezeWindows: freezeWindows.length > 0 ? freezeWindows : null,
+        bumpProductId: bumpProductId || null,
         communitySlug,
         challengeSlug,
       });
@@ -171,6 +176,25 @@ export function ChallengeSettingsPanel({
               Hiển thị cho người chưa tham gia. Hỗ trợ xuống dòng.
             </div>
           </div>
+
+          {communityProducts.length > 0 && (
+            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+                ⚡ Bump offer (hiện trên trang thanh toán)
+              </span>
+              <select
+                value={bumpProductId}
+                onChange={(e) => setBumpProductId(e.target.value)}
+                disabled={pending}
+                style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid var(--border-subtle)", background: "var(--bg-input)", color: "var(--text-normal)", fontSize: "var(--text-sm)" }}
+              >
+                <option value="">— Không có —</option>
+                {communityProducts.map((p) => (
+                  <option key={p.id} value={p.id}>{p.title}</option>
+                ))}
+              </select>
+            </label>
+          )}
 
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>

@@ -102,6 +102,13 @@ export default async function ChallengeDetailPage({
     pendingCount: number;
   } | null = null;
   const pendingMembers = isOwner ? await listPendingMembers(challenge.id) : [];
+  const communityProducts = isOwner
+    ? await prisma.product.findMany({
+        where: { communityId: challenge.community.id },
+        select: { id: true, title: true },
+        orderBy: { createdAt: "desc" },
+      })
+    : [];
   if (isOwner) {
     const res = await listChallengeSubmissions({
       challengeId: challenge.id,
@@ -311,7 +318,9 @@ export default async function ChallengeDetailPage({
                 pricingConfig: parsePricingConfig(challenge.pricingConfig),
                 tiers: getTiersConfig(challenge.community.tiersConfig).map((t) => ({ key: t.key, label: t.label })),
                 hideFutureTasks: challenge.hideFutureTasks,
+                bumpProductId: (challenge as { bumpProductId?: string | null }).bumpProductId ?? null,
               }}
+              communityProducts={communityProducts}
             />
           )}
 

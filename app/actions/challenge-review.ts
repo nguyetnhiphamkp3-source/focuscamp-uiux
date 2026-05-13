@@ -199,6 +199,7 @@ export async function updateChallengeSettingsAction(input: {
   hideFutureTasks?: boolean;
   freezeWindows?: Array<{ label?: string; startsAt: string; endsAt: string }> | null;
   pitch?: string | null;
+  bumpProductId?: string | null;
   communitySlug: string;
   challengeSlug: string;
 }): Promise<ActionResult> {
@@ -219,6 +220,7 @@ export async function updateChallengeSettingsAction(input: {
     hideFutureTasks: input.hideFutureTasks,
     freezeWindows: input.freezeWindows,
     pitch: input.pitch,
+    bumpProductId: input.bumpProductId,
   });
   if (!parsed.success) {
     return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
@@ -240,6 +242,7 @@ export async function updateChallengeSettingsAction(input: {
       hideFutureTasks: parsed.data.hideFutureTasks,
       freezeWindows: parsed.data.freezeWindows === null ? null : (parsed.data.freezeWindows ?? undefined),
       pitch: parsed.data.pitch ?? undefined,
+      bumpProductId: parsed.data.bumpProductId !== undefined ? (parsed.data.bumpProductId ?? null) : undefined,
     });
     bumpChallenge(input.communitySlug, input.challengeSlug);
     revalidatePath(`/marketplace`);

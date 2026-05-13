@@ -43,6 +43,25 @@ export default async function PaymentPage({
         description: purchase.product.bumpProduct.description,
       };
     }
+  } else if (payment.refType === "challenge" && payment.status === "PENDING" && !meta.bumpProductId) {
+    const member = await prisma.challengeMember.findUnique({
+      where: { id: payment.refId },
+      select: { challengeId: true },
+    });
+    if (member?.challengeId) {
+      const ch = await prisma.challenge.findUnique({
+        where: { id: member.challengeId },
+        include: { bumpProduct: { select: { id: true, title: true, priceVnd: true, description: true } } },
+      });
+      if (ch?.bumpProduct) {
+        bumpProduct = {
+          id: ch.bumpProduct.id,
+          title: ch.bumpProduct.title,
+          priceVnd: Number(ch.bumpProduct.priceVnd),
+          description: ch.bumpProduct.description,
+        };
+      }
+    }
   }
 
   const bankCode = process.env.SEPAY_BANK_CODE || "MB";

@@ -436,6 +436,7 @@ export async function updateChallengeSettings(input: {
   hideFutureTasks?: boolean;
   freezeWindows?: Array<{ label?: string; startsAt: string; endsAt: string }> | null;
   pitch?: string | null;
+  bumpProductId?: string | null;
 }) {
   const ch = await assertChallengeAdmin(input.userId, input.challengeId);
   await prisma.challenge.update({
@@ -462,6 +463,7 @@ export async function updateChallengeSettings(input: {
         ? { freezeWindows: input.freezeWindows === null ? Prisma.DbNull : (input.freezeWindows as Prisma.InputJsonValue) }
         : {}),
       ...(input.pitch !== undefined ? { pitch: input.pitch } : {}),
+      ...(input.bumpProductId !== undefined ? { bumpProductId: input.bumpProductId } : {}),
     },
   });
   logger.info(

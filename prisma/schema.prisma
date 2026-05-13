@@ -319,13 +319,15 @@ model Challenge {
   freezeWindows  Json?
   /** Long-form sales pitch shown on challenge page to non-members. Markdown supported. */
   pitch          String?   @db.Text
+  bumpProductId  String?
   createdAt      DateTime  @default(now())
 
-  community Community         @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  tasks     ChallengeTask[]
-  members   ChallengeMember[]
-  checkins  Checkin[]
-  products  ChallengeProduct[]
+  community   Community         @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  tasks       ChallengeTask[]
+  members     ChallengeMember[]
+  checkins    Checkin[]
+  products    ChallengeProduct[]
+  bumpProduct Product?          @relation("ChallengeBump", fields: [bumpProductId], references: [id])
 
   @@unique([communityId, slug])
   @@index([featuredOnGlobal, createdAt])
@@ -600,8 +602,9 @@ model Product {
   challenges    ChallengeProduct[]
   bumpProduct   Product?           @relation("ProductBump", fields: [bumpProductId], references: [id])
   upsellProduct Product?           @relation("ProductUpsell", fields: [upsellProductId], references: [id])
-  bumpedBy      Product[]          @relation("ProductBump")
-  upsellFor     Product[]          @relation("ProductUpsell")
+  bumpedBy       Product[]          @relation("ProductBump")
+  upsellFor      Product[]          @relation("ProductUpsell")
+  challengeBumps Challenge[]        @relation("ChallengeBump")
 
   @@unique([communityId, slug])
   @@index([featuredOnGlobal, createdAt])
