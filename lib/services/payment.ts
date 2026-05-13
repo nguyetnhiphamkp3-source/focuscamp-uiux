@@ -171,6 +171,22 @@ export async function matchSePayTransactionToPayment(params: {
           },
         });
       }
+      const meta = (payment.metadata ?? {}) as Record<string, unknown>;
+      if (meta.bumpProductId && !meta.bumpFulfilled) {
+        await tx.purchase.create({
+          data: {
+            userId: payment.userId!,
+            productId: String(meta.bumpProductId),
+            amountVnd: Number(meta.bumpPriceVnd ?? 0),
+            status: "COMPLETED",
+            paymentRef: transactionId,
+          },
+        });
+        await tx.payment.update({
+          where: { id: payment.id },
+          data: { metadata: { ...meta, bumpFulfilled: true } },
+        });
+      }
     } else if (payment.refType === "subscription") {
       const subscription = await tx.subscription.findUnique({
         where: { id: payment.refId },

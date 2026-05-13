@@ -93,7 +93,7 @@ export function BumpOfferBox({
               color: "var(--brand-green)",
             }}
           >
-            +{fmtVnd(bumpProduct.priceVnd)}đ
+            {bumpProduct.priceVnd > 0 ? `+${fmtVnd(bumpProduct.priceVnd)}đ` : "Miễn phí"}
           </span>
           {bumpProduct.description && (
             <p

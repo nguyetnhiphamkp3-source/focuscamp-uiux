@@ -140,7 +140,7 @@ export async function addBumpToPaymentAction(input: {
       where: { id: input.bumpProductId },
       select: { id: true, priceVnd: true, communityId: true },
     });
-    if (!bump || Number(bump.priceVnd) <= 0) return { ok: false, reason: "invalid_bump" };
+    if (!bump) return { ok: false, reason: "invalid_bump" };
     await prisma.payment.update({
       where: { paymentCode: input.currentPaymentCode },
       data: { status: "EXPIRED" },
@@ -161,4 +161,79 @@ export async function addBumpToPaymentAction(input: {
     if (err instanceof Error) return { ok: false, reason: err.message };
     return { ok: false, reason: "unknown" };
   }
+}
+
+export async function simulatePaymentCompletedAction(
+  paymentCode: string
+): Promise<{ ok: true } | { ok: false; reason: string }> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+
+  const payment = await prisma.payment.findUnique({ where: { paymentCode } });
+  if (!payment || payment.status !== "PENDING") return { ok: false, reason: "payment_invalid" };
+
+  if (payment.communityId) {
+    const community = await prisma.community.findUnique({
+      where: { id: payment.communityId },
+      select: { ownerId: true },
+    });
+    if (community?.ownerId !== s.user.id) return { ok: false, reason: "unauthorized" };
+  } else {
+    return { ok: false, reason: "unauthorized" };
+  }
+
+  const fakeTransactionId = `SIM_${Date.now()}`;
+  const meta = (payment.metadata ?? {}) as Record<string, unknown>;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.payment.update({
+      where: { id: payment.id },
+      data: { status: "COMPLETED", receivedAt: new Date(), transactionId: fakeTransactionId },
+    });
+
+    if (payment.refType === "product") {
+      await tx.purchase.updateMany({
+        where: { id: payment.refId },
+        data: { status: "COMPLETED", paymentRef: fakeTransactionId },
+      });
+    } else if (payment.refType === "challenge") {
+      const member = await tx.challengeMember.findUnique({
+        where: { id: payment.refId },
+        select: { challengeId: true },
+      });
+      if (member) {
+        const challenge = await tx.challenge.findUnique({
+          where: { id: member.challengeId },
+          select: { requiresApproval: true },
+        });
+        await tx.challengeMember.update({
+          where: { id: payment.refId },
+          data: {
+            status: challenge?.requiresApproval ? "PENDING" : "ACTIVE",
+            approvedAt: challenge?.requiresApproval ? undefined : new Date(),
+            personalStartsAt: challenge?.requiresApproval ? undefined : new Date(),
+          },
+        });
+      }
+    }
+
+    if (meta.bumpProductId && !meta.bumpFulfilled) {
+      await tx.purchase.create({
+        data: {
+          userId: payment.userId!,
+          productId: String(meta.bumpProductId),
+          amountVnd: Number(meta.bumpPriceVnd ?? 0),
+          status: "COMPLETED",
+          paymentRef: fakeTransactionId,
+        },
+      });
+      await tx.payment.update({
+        where: { id: payment.id },
+        data: { metadata: { ...meta, bumpFulfilled: true } },
+      });
+    }
+  });
+
+  revalidatePath(`/pay/${paymentCode}`);
+  return { ok: true };
 }

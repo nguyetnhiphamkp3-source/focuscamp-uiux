@@ -2,8 +2,10 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { buildVietQRUrl } from "@/lib/sepay";
+import { auth } from "@/auth";
 import { PaymentStatusPoller } from "./poller";
 import { BumpOfferBox } from "@/components/marketplace/bump-offer-box";
+import { SimulatePaymentButton } from "@/components/marketplace/simulate-payment-button";
 
 export default async function PaymentPage({
   params,
@@ -16,11 +18,21 @@ export default async function PaymentPage({
   const sp = await searchParams;
   const returnUrl = sp.return && sp.return.startsWith("/") ? sp.return : null;
 
-  const payment = await prisma.payment.findUnique({
-    where: { paymentCode },
-  });
+  const [payment, session] = await Promise.all([
+    prisma.payment.findUnique({ where: { paymentCode } }),
+    auth(),
+  ]);
 
   if (!payment) notFound();
+
+  let isOwner = false;
+  if (session?.user?.id && payment.communityId) {
+    const community = await prisma.community.findUnique({
+      where: { id: payment.communityId },
+      select: { ownerId: true },
+    });
+    isOwner = community?.ownerId === session.user.id;
+  }
 
   let bumpProduct: { id: string; title: string; priceVnd: number; description: string | null } | null = null;
   const meta = (payment.metadata ?? {}) as Record<string, unknown>;
@@ -310,6 +322,9 @@ export default async function PaymentPage({
             </div>
 
             <PaymentStatusPoller paymentCode={payment.paymentCode} />
+            {isOwner && (
+              <SimulatePaymentButton paymentCode={payment.paymentCode} />
+            )}
           </>
         )}
       </div>
