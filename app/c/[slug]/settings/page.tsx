@@ -16,7 +16,7 @@ import { LevelsEditor } from "@/components/settings/levels-editor";
 import { MembersEditor } from "@/components/settings/members-editor";
 import { CommunityInfoEditor } from "@/components/settings/community-info-editor";
 import { CommunityStatsCard } from "@/components/settings/community-stats-card";
-import { TiersViewer } from "@/components/settings/tiers-editor";
+import { TiersEditor } from "@/components/settings/tiers-editor";
 import { UiConfigEditor } from "@/components/settings/ui-config-editor";
 import { CommunityPlanPanel } from "@/components/settings/community-plan-panel";
 import { AgentConfigEditor } from "@/components/settings/agent-config-editor";
@@ -294,7 +294,12 @@ export default async function SettingsPage({
           >
             Subscription Tiers
           </div>
-          <TiersViewer tiers={subscriptionTiers} />
+          <TiersEditor
+            tiers={subscriptionTiers}
+            communityId={community.id}
+            communitySlug={slug}
+            disabled={!isOwner}
+          />
 
           <div
             style={{
