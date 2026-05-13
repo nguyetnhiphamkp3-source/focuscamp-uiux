@@ -29,6 +29,7 @@ import { ChannelConfigEditor } from "@/components/settings/channel-config-editor
 import { getPlanStatus } from "@/lib/platform-plans";
 import { getTiersConfig } from "@/lib/services/subscription";
 import { listMembers } from "@/lib/services/community-settings";
+import { DangerZone } from "@/components/settings/danger-zone";
 
 export const dynamic = "force-dynamic";
 
@@ -327,6 +328,28 @@ export default async function SettingsPage({
             classes={classes}
             levelTiers={tiers}
           />
+
+          {isOwner && (
+            <>
+              <div
+                style={{
+                  fontSize: "var(--text-xl)",
+                  fontWeight: 700,
+                  color: "var(--danger)",
+                  padding: "var(--space-6) 0 var(--space-3)",
+                  borderTop: "1px solid var(--danger)",
+                  marginTop: "var(--space-4)",
+                }}
+              >
+                Danger Zone
+              </div>
+              <DangerZone
+                communityId={community.id}
+                communitySlug={slug}
+                communityName={community.name}
+              />
+            </>
+          )}
         </div>
       </div>
     </>
