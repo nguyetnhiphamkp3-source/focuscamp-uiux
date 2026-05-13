@@ -40,7 +40,6 @@ export default async function CartPage() {
           communityId,
           showInCartBump: true,
           id: { notIn: productIds },
-          isFree: false,
         },
         select: { id: true, title: true, priceVnd: true, description: true },
       })
