@@ -7,6 +7,7 @@ import { PaymentStatusPoller } from "./poller";
 import { BumpOfferBox } from "@/components/marketplace/bump-offer-box";
 import { UpsellOfferBox } from "@/components/marketplace/upsell-offer-box";
 import { SimulatePaymentButton } from "@/components/marketplace/simulate-payment-button";
+import { RemovableBumpRow } from "@/components/marketplace/removable-bump-row";
 
 export default async function PaymentPage({
   params,
@@ -222,6 +223,10 @@ export default async function PaymentPage({
                 totalVnd={Number(payment.amountVnd)}
                 bumpTitle={bumpItemTitle}
                 bumpPriceVnd={bumpItemPriceVnd}
+                removableBump={meta.bumpProductId ? {
+                  currentPaymentCode: payment.paymentCode,
+                  returnUrl,
+                } : null}
               />
             )}
 
@@ -351,11 +356,13 @@ function OrderRecap({
   totalVnd,
   bumpTitle,
   bumpPriceVnd,
+  removableBump,
 }: {
   mainTitle: string;
   totalVnd: number;
   bumpTitle: string | null;
   bumpPriceVnd: number | null;
+  removableBump: { currentPaymentCode: string; returnUrl: string | null } | null;
 }) {
   const baseVnd = bumpTitle && bumpPriceVnd ? totalVnd - bumpPriceVnd : totalVnd;
   return (
@@ -390,12 +397,21 @@ function OrderRecap({
         </div>
         {bumpTitle && bumpPriceVnd && (
           <>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-              <span style={{ fontSize: 13, color: "var(--text-body)", flex: 1 }}>+ {bumpTitle}</span>
-              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-heading)", whiteSpace: "nowrap" }}>
-                {bumpPriceVnd.toLocaleString("vi-VN")}đ
-              </span>
-            </div>
+            {removableBump ? (
+              <RemovableBumpRow
+                title={bumpTitle}
+                priceVnd={bumpPriceVnd}
+                currentPaymentCode={removableBump.currentPaymentCode}
+                returnUrl={removableBump.returnUrl}
+              />
+            ) : (
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                <span style={{ fontSize: 13, color: "var(--text-body)", flex: 1 }}>+ {bumpTitle}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-heading)", whiteSpace: "nowrap" }}>
+                  {bumpPriceVnd.toLocaleString("vi-VN")}đ
+                </span>
+              </div>
+            )}
             <div
               style={{
                 display: "flex",

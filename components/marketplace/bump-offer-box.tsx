@@ -60,22 +60,22 @@ export function BumpOfferBox({
         ⚡ Nâng cấp đơn hàng
       </div>
 
-      <label
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          gap: 10,
-          cursor: pending ? "not-allowed" : "pointer",
-        }}
-      >
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={handleChange}
-          disabled={pending}
-          style={{ marginTop: 2, flexShrink: 0 }}
-        />
-        <div>
+      <div>
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            cursor: pending ? "not-allowed" : "pointer",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={handleChange}
+            disabled={pending}
+            style={{ flexShrink: 0, width: 16, height: 16 }}
+          />
           <span
             style={{
               fontSize: "var(--text-sm)",
@@ -85,30 +85,31 @@ export function BumpOfferBox({
           >
             {bumpProduct.title}
           </span>
-          {" — "}
           <span
             style={{
               fontSize: "var(--text-sm)",
               fontWeight: 700,
               color: "var(--brand-green)",
+              marginLeft: 2,
             }}
           >
             {bumpProduct.priceVnd > 0 ? `+${fmtVnd(bumpProduct.priceVnd)}đ` : "Miễn phí"}
           </span>
-          {bumpProduct.description && (
-            <p
-              style={{
-                marginTop: 4,
-                fontSize: "var(--text-xs)",
-                color: "var(--text-muted)",
-                lineHeight: 1.5,
-              }}
-            >
-              {bumpProduct.description}
-            </p>
-          )}
-        </div>
-      </label>
+        </label>
+        {bumpProduct.description && (
+          <p
+            style={{
+              marginTop: 6,
+              marginLeft: 26,
+              fontSize: "var(--text-xs)",
+              color: "var(--text-muted)",
+              lineHeight: 1.5,
+            }}
+          >
+            {bumpProduct.description}
+          </p>
+        )}
+      </div>
 
       {pending && (
         <p style={{ marginTop: 8, fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>

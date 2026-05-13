@@ -164,6 +164,43 @@ export async function addBumpToPaymentAction(input: {
   }
 }
 
+export async function removeBumpFromPaymentAction(input: {
+  currentPaymentCode: string;
+}): Promise<{ ok: true; newPaymentCode: string } | { ok: false; reason: string }> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+  try {
+    const payment = await prisma.payment.findUnique({ where: { paymentCode: input.currentPaymentCode } });
+    if (!payment || payment.status !== "PENDING") return { ok: false, reason: "payment_invalid" };
+    if (payment.userId && payment.userId !== s.user.id) return { ok: false, reason: "unauthorized" };
+    const meta = (payment.metadata ?? {}) as Record<string, unknown>;
+    if (!meta.bumpProductId) return { ok: false, reason: "no_bump" };
+    const bumpPriceVnd = Number(meta.bumpPriceVnd ?? 0);
+    const originalAmount = Number(payment.amountVnd) - bumpPriceVnd;
+    await prisma.payment.update({
+      where: { paymentCode: input.currentPaymentCode },
+      data: { status: "EXPIRED" },
+    });
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { bumpProductId: _bId, bumpPriceVnd: _bPrice, ...restMeta } = meta;
+    const newPayment = await createPayment({
+      userId: payment.userId,
+      communityId: payment.communityId ?? undefined,
+      purpose: payment.purpose as "subscription" | "product" | "challenge_deposit" | "challenge_entry" | "community_plan" | "event",
+      refType: payment.refType as "subscription" | "product" | "challenge" | "community" | "event",
+      refId: payment.refId,
+      amountVnd: originalAmount,
+      ttlMinutes: 1440,
+      metadata: restMeta,
+    });
+    return { ok: true, newPaymentCode: newPayment.paymentCode };
+  } catch (err) {
+    logError(err, { code: input.currentPaymentCode });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
 export async function simulatePaymentCompletedAction(
   paymentCode: string
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
