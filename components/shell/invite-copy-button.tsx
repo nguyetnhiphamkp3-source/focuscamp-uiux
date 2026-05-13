@@ -19,8 +19,7 @@ export function InviteCopyButton({
         onClick={() => setOpen((v) => !v)}
         style={{
           width: "100%",
-          padding: "10px 0",
-          margin: "4px 0",
+          padding: "8px 12px",
           borderRadius: 8,
           border: "none",
           background: "var(--brand-green)",
