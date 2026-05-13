@@ -187,7 +187,26 @@ export function licenseKeyEmail(input: { key: string; productName: string }) {
   return { subject, html, text };
 }
 
-/* ─── 6. Refund processed ─────────────────────────────────────── */
+/* ─── 6. Magic Link login ─────────────────────────────────────── */
+export function magicLinkEmail(input: { url: string; email: string }) {
+  const { url, email } = input;
+  const subject = "Đăng nhập focus.camp";
+  const html = shell(
+    subject,
+    `<h2 style="margin:0 0 12px;font-size:20px;">Đăng nhập vào focus.camp</h2>
+     <p>Bạn yêu cầu đăng nhập bằng email <strong>${escape(email)}</strong>.<br>Bấm vào nút dưới để tiếp tục:</p>
+     <p style="margin:24px 0;">
+       <a href="${url}" style="display:inline-block;padding:12px 24px;background:${BRAND_GREEN};color:#ffffff;font-weight:700;font-size:15px;border-radius:8px;text-decoration:none;">
+         Đăng nhập ngay →
+       </a>
+     </p>
+     <p style="font-size:12px;color:#7c7568;">Link chỉ có hiệu lực trong <strong>24 giờ</strong> và chỉ dùng được 1 lần.<br>Nếu bạn không yêu cầu, hãy bỏ qua email này.</p>`
+  );
+  const text = `Đăng nhập focus.camp — Truy cập link sau: ${url}\nLink hết hạn sau 24 giờ.`;
+  return { subject, html, text };
+}
+
+/* ─── 7. Refund processed ─────────────────────────────────────── */
 export function refundProcessedEmail(input: {
   amountVnd: number;
   reason: string;

@@ -1,9 +1,10 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
+import Resend from "next-auth/providers/resend";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
-import { welcomeEmail } from "@/lib/email-templates";
+import { welcomeEmail, magicLinkEmail } from "@/lib/email-templates";
 import { logger } from "@/lib/logger";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -17,6 +18,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         params: {
           scope: "openid email profile",
         },
+      },
+    }),
+    Resend({
+      apiKey: process.env.RESEND_API_KEY,
+      from: process.env.RESEND_FROM || "focus.camp <noreply@focus.camp>",
+      sendVerificationRequest: async ({ identifier: email, url }) => {
+        try {
+          await sendEmail({ to: email, ...magicLinkEmail({ url, email }) });
+        } catch (err) {
+          logger.error({ err, email }, "[auth] magic link email failed");
+          throw new Error("magic_link_email_failed");
+        }
       },
     }),
   ],

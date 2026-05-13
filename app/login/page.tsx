@@ -27,6 +27,14 @@ export default async function LoginPage({
     await signIn("google", { redirectTo: target });
   }
 
+  async function handleEmailSignIn(formData: FormData) {
+    "use server";
+    const email = (formData.get("email") as string | null)?.trim() ?? "";
+    if (!email || !email.includes("@")) return;
+    const target = safeRedirect(formData.get("redirectTo") as string | undefined);
+    await signIn("resend", { email, redirectTo: target });
+  }
+
   return (
     <main
       style={{
@@ -123,6 +131,58 @@ export default async function LoginPage({
               />
             </svg>
             Tiếp tục với Google
+          </button>
+        </form>
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "var(--space-3)",
+            margin: "var(--space-5) 0",
+          }}
+        >
+          <div style={{ flex: 1, height: 1, background: "var(--border-subtle)" }} />
+          <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>hoặc</span>
+          <div style={{ flex: 1, height: 1, background: "var(--border-subtle)" }} />
+        </div>
+
+        <form action={handleEmailSignIn} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+          <input type="hidden" name="redirectTo" value={redirectTo} />
+          <input
+            type="email"
+            name="email"
+            placeholder="Email của bạn"
+            required
+            style={{
+              width: "100%",
+              minHeight: 44,
+              padding: "0 var(--space-4)",
+              borderRadius: "var(--r-md)",
+              border: "1px solid var(--border-subtle)",
+              background: "var(--bg-body)",
+              color: "var(--text-heading)",
+              fontSize: "var(--text-base)",
+              boxSizing: "border-box",
+            }}
+          />
+          <button
+            type="submit"
+            style={{
+              width: "100%",
+              minHeight: 44,
+              padding: "0 var(--space-6)",
+              borderRadius: "var(--r-md)",
+              background: "var(--brand-green)",
+              color: "#fff",
+              border: "none",
+              fontFamily: "var(--font-heading)",
+              fontSize: "var(--text-md)",
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            Gửi link đăng nhập
           </button>
         </form>
 
