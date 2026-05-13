@@ -30,18 +30,21 @@ export function CartIcon() {
       style={{
         display: "flex",
         alignItems: "center",
+        justifyContent: "center",
         gap: 6,
-        padding: "6px 12px",
-        background: "var(--brand-green)",
-        color: "#fff",
-        borderRadius: 20,
+        width: "100%",
+        padding: "8px 12px",
+        background: "var(--bg-secondary)",
+        color: "var(--brand-green)",
+        border: "1px solid var(--brand-green)",
+        borderRadius: 8,
         fontSize: "var(--text-sm)",
-        fontWeight: 700,
+        fontWeight: 600,
+        fontFamily: "var(--font-heading)",
         textDecoration: "none",
-        whiteSpace: "nowrap",
       }}
     >
-      🛒 {count}
+      🛒 View Cart · {count} {count === 1 ? "item" : "items"}
     </Link>
   );
 }

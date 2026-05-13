@@ -256,10 +256,8 @@ function MemberView({
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <div style={{ flex: 1 }}>
-            <InviteCopyButton communityId={community.id} communitySlug={community.slug} />
-          </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <InviteCopyButton communityId={community.id} communitySlug={community.slug} />
           <CartIcon />
         </div>
 

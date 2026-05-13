@@ -388,28 +388,29 @@ export default async function ProductDetailPage({
                   </div>
                 ) : (
                   <>
-                    <form action={buy}>
-                      <button
-                        type="submit"
-                        className="ui-btn ui-btn-primary ui-btn-lg"
-                      >
-                        {product.isSubscription ? "Subscribe ngay" : "Mua ngay"}
-                      </button>
-                      <div
-                        style={{
-                          fontSize: "var(--text-xs)",
-                          color: "var(--text-muted)",
-                          marginTop: "var(--space-3)",
-                        }}
-                      >
-                        Thanh toán qua VietQR · Tự nhận khi SePay xác nhận
-                      </div>
-                    </form>
-                    {!product.isSubscription && (
-                      <div style={{ marginTop: "var(--space-3)" }}>
+                    <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "stretch" }}>
+                      <form action={buy} style={{ flex: 1 }}>
+                        <button
+                          type="submit"
+                          className="ui-btn ui-btn-primary ui-btn-lg"
+                          style={{ width: "100%" }}
+                        >
+                          {product.isSubscription ? "Subscribe ngay" : "Mua ngay"}
+                        </button>
+                      </form>
+                      {!product.isSubscription && (
                         <AddToCartButton productId={product.id} />
-                      </div>
-                    )}
+                      )}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "var(--text-xs)",
+                        color: "var(--text-muted)",
+                        marginTop: "var(--space-3)",
+                      }}
+                    >
+                      Thanh toán qua VietQR · Tự nhận khi SePay xác nhận
+                    </div>
                   </>
                 )}
               </>
