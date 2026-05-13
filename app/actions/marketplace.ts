@@ -7,6 +7,7 @@ import { CreateProductSchema, UpdateProductSettingsSchema } from "@/lib/validati
 import { logError } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { createPayment } from "@/lib/sepay";
+import { startProductPurchase } from "@/lib/services/payment";
 
 type ActionResult<T = unknown> =
   | { ok: true; data?: T }
@@ -236,4 +237,21 @@ export async function simulatePaymentCompletedAction(
 
   revalidatePath(`/pay/${paymentCode}`);
   return { ok: true };
+}
+
+export async function startUpsellPaymentAction(
+  upsellProductId: string
+): Promise<{ ok: true; paymentCode: string } | { ok: false; reason: string }> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+  try {
+    const { payment } = await startProductPurchase({
+      userId: s.user.id,
+      productId: upsellProductId,
+    });
+    return { ok: true, paymentCode: payment.paymentCode };
+  } catch (err) {
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
 }

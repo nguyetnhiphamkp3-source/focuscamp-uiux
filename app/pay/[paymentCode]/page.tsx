@@ -5,6 +5,7 @@ import { buildVietQRUrl } from "@/lib/sepay";
 import { auth } from "@/auth";
 import { PaymentStatusPoller } from "./poller";
 import { BumpOfferBox } from "@/components/marketplace/bump-offer-box";
+import { UpsellOfferBox } from "@/components/marketplace/upsell-offer-box";
 import { SimulatePaymentButton } from "@/components/marketplace/simulate-payment-button";
 
 export default async function PaymentPage({
@@ -35,9 +36,10 @@ export default async function PaymentPage({
   }
 
   let bumpProduct: { id: string; title: string; priceVnd: number; description: string | null } | null = null;
+  let upsellProduct: { id: string; title: string; priceVnd: number; description: string | null } | null = null;
   const meta = (payment.metadata ?? {}) as Record<string, unknown>;
 
-  // Load main item title and (conditionally) bump offer product
+  // Load main item title, bump offer (PENDING), and upsell offer (COMPLETED)
   let mainItemTitle: string | null = null;
   if (payment.refType === "product") {
     const purchase = await prisma.purchase.findUnique({
@@ -46,6 +48,7 @@ export default async function PaymentPage({
         product: {
           include: {
             bumpProduct: { select: { id: true, title: true, priceVnd: true, description: true } },
+            upsellProduct: { select: { id: true, title: true, priceVnd: true, description: true } },
           },
         },
       },
@@ -57,6 +60,14 @@ export default async function PaymentPage({
         title: purchase.product.bumpProduct.title,
         priceVnd: Number(purchase.product.bumpProduct.priceVnd),
         description: purchase.product.bumpProduct.description,
+      };
+    }
+    if (payment.status === "COMPLETED" && purchase?.product.upsellProduct) {
+      upsellProduct = {
+        id: purchase.product.upsellProduct.id,
+        title: purchase.product.upsellProduct.title,
+        priceVnd: Number(purchase.product.upsellProduct.priceVnd),
+        description: purchase.product.upsellProduct.description,
       };
     }
   } else if (payment.refType === "challenge") {
@@ -161,7 +172,10 @@ export default async function PaymentPage({
               subtitle="Giao dịch hoàn tất."
               tone="success"
             />
-            {returnUrl && (
+            {upsellProduct && (
+              <UpsellOfferBox upsellProduct={upsellProduct} returnUrl={returnUrl} />
+            )}
+            {!upsellProduct && returnUrl && (
               <Link
                 href={returnUrl}
                 style={{
