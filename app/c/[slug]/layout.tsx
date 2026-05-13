@@ -10,7 +10,8 @@ import { ShortcutSheet } from "@/components/shell/shortcut-sheet";
 import { CommunityHeader } from "@/components/shell/community-header";
 import { BossChallengeCard } from "@/components/community/boss-challenge-card";
 import { FeatureUnreadBadge } from "@/components/community/feature-unread-badge";
-import { MobileMenuToggle } from "@/components/shell/mobile-menu-toggle";
+import { MobileBottomNav } from "@/components/shell/mobile-bottom-nav";
+import { unreadCount } from "@/lib/services/notification";
 import {
   getUiConfig,
   isFeatureVisible,
@@ -43,8 +44,9 @@ export default async function CommunityLayout({
   let membership = null;
   let myCommunities: { id: string; slug: string; name: string; iconUrl: string | null }[] = [];
   let freshUser: { id: string; name: string | null; email: string | null; image: string | null } | null = null;
+  let notifUnread = 0;
   if (session?.user?.id) {
-    [membership, , freshUser] = await Promise.all([
+    [membership, , freshUser, notifUnread] = await Promise.all([
       prisma.membership.findUnique({
         where: {
           userId_communityId: { userId: session.user.id, communityId: community.id },
@@ -63,6 +65,7 @@ export default async function CommunityLayout({
         where: { id: session.user.id },
         select: { id: true, name: true, email: true, image: true },
       }),
+      unreadCount(session.user.id),
     ]);
   }
 
@@ -82,8 +85,6 @@ export default async function CommunityLayout({
 
   return (
     <div className="community-shell">
-      <MobileMenuToggle />
-
       {/* LEFT SECTION */}
       <div className="left-section">
         <div className="left-section-top">
@@ -250,6 +251,10 @@ export default async function CommunityLayout({
       {rightSidebar}
       <KeyboardShortcuts />
       <ShortcutSheet />
+      <MobileBottomNav
+        notifUnread={notifUnread}
+        profileHref={`/c/${slug}/profile`}
+      />
     </div>
   );
 }

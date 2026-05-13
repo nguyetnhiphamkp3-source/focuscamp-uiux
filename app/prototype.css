@@ -5508,31 +5508,102 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
    RESPONSIVE / MOBILE
    ========================================== */
 
-/* Hamburger button — only shown on mobile via media query below */
-.mobile-menu-btn {
-  display: none;
-  position: fixed;
-  top: 12px;
-  left: 12px;
-  z-index: 200;
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  color: var(--header-primary);
-  font-size: 20px;
-  cursor: pointer;
-  align-items: center;
-  justify-content: center;
-}
-.mobile-menu-btn:hover { background: var(--bg-elevated); }
+/* Hamburger button — legacy, kept for safety but never shown */
+.mobile-menu-btn { display: none !important; }
+
 .mobile-drawer-backdrop {
   display: none;
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
   z-index: 100;
+}
+
+/* ==========================================
+   MOBILE BOTTOM NAVIGATION
+   ========================================== */
+.mobile-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 767.98px) {
+  .mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    background: var(--bg-sidebar);
+    border-top: 1px solid var(--border-subtle);
+    z-index: 200;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    align-items: stretch;
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.12);
+  }
+
+  .mobile-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 10px;
+    font-family: var(--font-heading);
+    font-weight: 500;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px 2px;
+    min-height: 44px;
+    transition: color 150ms ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-nav-item.active {
+    color: var(--brand-green);
+  }
+
+  .mobile-nav-item:active {
+    opacity: 0.7;
+  }
+
+  .mobile-nav-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+  }
+
+  /* Badge positioned on icon corner */
+  .mobile-nav-icon .unread-badge {
+    position: absolute;
+    top: -5px;
+    right: -8px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: var(--dnd-red);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  .mobile-nav-label {
+    font-size: 10px;
+    line-height: 1;
+    letter-spacing: 0.01em;
+  }
 }
 
 /* Hide right sidebar on tablet/mobile (<1024px) */
@@ -5546,39 +5617,46 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
   }
 }
 
-/* Mobile (<768px): left section becomes off-canvas drawer */
+/* Mobile (<768px): left section becomes off-canvas drawer, bottom nav replaces hamburger */
 @media (max-width: 767.98px) {
+  /* Shrink shell height so content never hides behind bottom nav */
   .community-shell {
     flex-direction: row;
+    height: calc(100dvh - 56px - env(safe-area-inset-bottom, 0px));
   }
+
+  /* Drawer slides in from left, stops above bottom nav */
   .left-section {
     position: fixed;
-    inset: 0 auto 0 0;
+    inset: 0 auto calc(56px + env(safe-area-inset-bottom, 0px)) 0;
     width: 86%;
     max-width: 340px;
     transform: translateX(-100%);
     transition: transform 220ms ease;
     z-index: 150;
     box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25);
+    height: auto; /* inset controls height */
   }
+
   html.mobile-drawer-open .left-section {
     transform: translateX(0);
   }
   html.mobile-drawer-open .mobile-drawer-backdrop {
     display: block;
   }
+
   .channel-sidebar,
   .server-list {
     width: auto;
     min-width: 0;
   }
+
   .main-content {
     width: 100%;
     flex: 1 1 auto;
-    padding-top: 56px; /* space for hamburger */
-  }
-  .mobile-menu-btn {
-    display: flex;
+    padding-top: 0;
+    margin: 4px;
+    border-radius: 8px;
   }
 
   /* In-page padding shrinks */
