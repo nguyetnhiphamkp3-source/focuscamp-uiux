@@ -1,5 +1,3 @@
-import { cookies } from "next/headers";
-
 const CART_COOKIE = "fc_cart";
 const MAX_ITEMS = 20;
 
@@ -30,6 +28,7 @@ export function serializeCart(items: CartItem[]): string {
 }
 
 export async function readCart(): Promise<CartItem[]> {
+  const { cookies } = await import("next/headers");
   const c = await cookies();
   return parseCart(c.get(CART_COOKIE)?.value);
 }
