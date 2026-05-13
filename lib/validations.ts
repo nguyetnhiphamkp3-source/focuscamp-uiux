@@ -464,6 +464,18 @@ export const CreateProductSchema = z.object({
   licenseKeyTemplate: z.string().trim().max(80).optional().or(z.literal("")),
 });
 
+/* ========== Product settings ========== */
+export const UpdateProductSettingsSchema = z.object({
+  productId: z.string().cuid(),
+  title: z.string().min(1).max(120).optional(),
+  description: z.string().max(2000).optional().nullable(),
+  priceVnd: z.number().nonnegative().optional(),
+  priceOldVnd: z.number().nonnegative().optional().nullable(),
+  isVisible: z.boolean().optional(),
+  bumpProductId: z.string().cuid().optional().nullable(),
+  upsellProductId: z.string().cuid().optional().nullable(),
+});
+
 /* ========== Helper ========== */
 /** Parse FormData against a schema; throws with readable error if invalid. */
 export function parseFormData<T extends z.ZodTypeAny>(

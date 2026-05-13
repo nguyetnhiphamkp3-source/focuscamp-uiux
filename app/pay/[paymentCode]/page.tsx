@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { buildVietQRUrl } from "@/lib/sepay";
 import { PaymentStatusPoller } from "./poller";
+import { BumpOfferBox } from "@/components/marketplace/bump-offer-box";
 
 export default async function PaymentPage({
   params,
@@ -20,6 +21,29 @@ export default async function PaymentPage({
   });
 
   if (!payment) notFound();
+
+  let bumpProduct: { id: string; title: string; priceVnd: number; description: string | null } | null = null;
+  const meta = (payment.metadata ?? {}) as Record<string, unknown>;
+  if (payment.refType === "product" && payment.status === "PENDING" && !meta.bumpProductId) {
+    const purchase = await prisma.purchase.findUnique({
+      where: { id: payment.refId },
+      include: {
+        product: {
+          include: {
+            bumpProduct: { select: { id: true, title: true, priceVnd: true, description: true } },
+          },
+        },
+      },
+    });
+    if (purchase?.product.bumpProduct) {
+      bumpProduct = {
+        id: purchase.product.bumpProduct.id,
+        title: purchase.product.bumpProduct.title,
+        priceVnd: Number(purchase.product.bumpProduct.priceVnd),
+        description: purchase.product.bumpProduct.description,
+      };
+    }
+  }
 
   const bankCode = process.env.SEPAY_BANK_CODE || "MB";
   const bankAccount = process.env.SEPAY_BANK_ACCOUNT || "";
@@ -130,6 +154,14 @@ export default async function PaymentPage({
               Quét QR bằng app ngân hàng. Giao dịch tự động ghi nhận trong vài
               giây.
             </p>
+
+            {bumpProduct && (
+              <BumpOfferBox
+                currentPaymentCode={payment.paymentCode}
+                bumpProduct={bumpProduct}
+                returnUrl={returnUrl}
+              />
+            )}
 
             <div
               style={{

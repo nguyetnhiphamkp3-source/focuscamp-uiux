@@ -65,6 +65,7 @@ export async function createPayment(params: {
   refId: string;
   amountVnd: number;
   ttlMinutes?: number;
+  metadata?: Record<string, unknown>;
 }) {
   const ttl = params.ttlMinutes ?? 30;
   let paymentCode = generatePaymentCode();
@@ -87,6 +88,8 @@ export async function createPayment(params: {
       bankName: process.env.SEPAY_BANK_NAME,
       bankAccount: process.env.SEPAY_BANK_ACCOUNT,
       expiresAt: new Date(Date.now() + ttl * 60 * 1000),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ...(params.metadata !== undefined && { metadata: params.metadata as any }),
     },
   });
 }
@@ -122,10 +125,30 @@ export async function activatePayment(paymentId: string, transactionId: string) 
       data: { status: "COMPLETED", paymentRef: transactionId },
     });
   } else if (payment.refType === "subscription") {
+    const subscription = await prisma.subscription.findUnique({
+      where: { id: payment.refId },
+      select: { userId: true, communityId: true },
+    });
     await prisma.subscription.updateMany({
       where: { id: payment.refId },
       data: { status: "ACTIVE", paymentRef: transactionId, startedAt: new Date() },
     });
+    if (subscription) {
+      await prisma.membership.upsert({
+        where: {
+          userId_communityId: {
+            userId: subscription.userId,
+            communityId: subscription.communityId,
+          },
+        },
+        create: {
+          userId: subscription.userId,
+          communityId: subscription.communityId,
+          role: "MEMBER",
+        },
+        update: {},
+      });
+    }
   }
   // challenge_deposit: just mark payment completed, challenge join logic handles rest
 

@@ -2,6 +2,8 @@
 
 import { auth, signIn } from "@/auth";
 import { revalidatePath } from "next/cache";
+import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import {
   joinCommunity,
   createCommunity,
@@ -151,6 +153,38 @@ export async function subscribeCommunityTierAction(input: {
     });
     revalidatePath(`/c/${input.communitySlug}`);
     return { ok: true, paymentCode };
+  } catch (err) {
+    logError(err, { userId: s.user.id, communityId: input.communityId });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+export async function updateTiersConfigAction(input: {
+  communityId: string;
+  communitySlug: string;
+  tiersConfig: unknown;
+}): Promise<{ ok: true } | { ok: false; reason: string }> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+
+  const community = await prisma.community.findUnique({
+    where: { id: input.communityId },
+  });
+  if (!community || community.ownerId !== s.user.id)
+    return { ok: false, reason: "forbidden" };
+
+  const { getTiersConfig } = await import("@/lib/services/subscription");
+  const parsed = getTiersConfig(input.tiersConfig);
+  if (parsed.length === 0) return { ok: false, reason: "invalid_tiers" };
+
+  try {
+    await prisma.community.update({
+      where: { id: input.communityId },
+      data: { tiersConfig: input.tiersConfig as Prisma.InputJsonValue },
+    });
+    revalidatePath(`/c/${input.communitySlug}/settings`);
+    return { ok: true };
   } catch (err) {
     logError(err, { userId: s.user.id, communityId: input.communityId });
     if (err instanceof Error) return { ok: false, reason: err.message };

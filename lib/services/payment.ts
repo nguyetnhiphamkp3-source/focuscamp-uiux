@@ -135,6 +135,22 @@ export async function matchSePayTransactionToPayment(params: {
         where: { id: payment.refId },
         data: { status: "COMPLETED", paymentRef: transactionId } as unknown as Prisma.PurchaseUpdateManyMutationInput,
       });
+      const meta = (payment.metadata ?? {}) as Record<string, unknown>;
+      if (meta.bumpProductId && !meta.bumpFulfilled) {
+        await tx.purchase.create({
+          data: {
+            userId: payment.userId,
+            productId: String(meta.bumpProductId),
+            amountVnd: Number(meta.bumpPriceVnd ?? 0),
+            status: "COMPLETED",
+            paymentRef: transactionId,
+          },
+        });
+        await tx.payment.update({
+          where: { id: payment.id },
+          data: { metadata: { ...meta, bumpFulfilled: true } },
+        });
+      }
     } else if (payment.refType === "challenge") {
       // refId = ChallengeMember.id — activate after payment
       const member = await tx.challengeMember.findUnique({
@@ -156,6 +172,10 @@ export async function matchSePayTransactionToPayment(params: {
         });
       }
     } else if (payment.refType === "subscription") {
+      const subscription = await tx.subscription.findUnique({
+        where: { id: payment.refId },
+        select: { userId: true, communityId: true },
+      });
       await tx.subscription.updateMany({
         where: { id: payment.refId },
         data: {
@@ -164,6 +184,22 @@ export async function matchSePayTransactionToPayment(params: {
           startedAt: new Date(),
         },
       });
+      if (subscription) {
+        await tx.membership.upsert({
+          where: {
+            userId_communityId: {
+              userId: subscription.userId,
+              communityId: subscription.communityId,
+            },
+          },
+          create: {
+            userId: subscription.userId,
+            communityId: subscription.communityId,
+            role: "MEMBER",
+          },
+          update: {},
+        });
+      }
     }
   });
 
@@ -191,6 +227,25 @@ export async function matchSePayTransactionToPayment(params: {
       await assignLicenseKey(payment.refId);
     } catch (err) {
       logger.warn({ err, purchaseId: payment.refId }, "[payment] license assign failed");
+    }
+    // Assign license key for bump product if present
+    const metaPost = (payment.metadata ?? {}) as Record<string, unknown>;
+    if (metaPost.bumpProductId && !metaPost.bumpFulfilled) {
+      try {
+        const bumpPurchase = await prisma.purchase.findFirst({
+          where: {
+            userId: payment.userId,
+            productId: String(metaPost.bumpProductId),
+            status: "COMPLETED",
+          },
+          orderBy: { createdAt: "desc" },
+          select: { id: true },
+        });
+        if (bumpPurchase) {
+          const { assignLicenseKey } = await import("./license");
+          await assignLicenseKey(bumpPurchase.id);
+        }
+      } catch { /* non-critical */ }
     }
     try {
       const { convertReferralFromPurchase } = await import("./affiliate");

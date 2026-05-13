@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { startProductPurchase } from "@/lib/services/payment";
 import { fmtVnd, TYPE_THUMB } from "@/components/marketplace/product-card";
+import { ProductSettingsPanel } from "@/components/marketplace/product-settings-panel";
 import { logError } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +19,7 @@ export default async function ProductDetailPage({
   const product = await prisma.product.findFirst({
     where: { community: { slug: communitySlug }, slug: productSlug },
     include: {
-      community: { select: { id: true, name: true, slug: true } },
+      community: { select: { id: true, name: true, slug: true, ownerId: true } },
       challenges: {
         include: {
           challenge: {
@@ -31,6 +32,15 @@ export default async function ProductDetailPage({
   if (!product) notFound();
 
   const session = await auth();
+  const isOwner = session?.user?.id === product.community.ownerId;
+
+  const communityProducts = isOwner
+    ? await prisma.product.findMany({
+        where: { communityId: product.communityId },
+        select: { id: true, title: true, isVisible: true },
+      })
+    : [];
+
   let isMember = false;
   let hasPurchased = false;
   let licenseKey: string | null = null;
@@ -106,6 +116,32 @@ export default async function ProductDetailPage({
         }}
       >
         <div style={{ maxWidth: 760 }}>
+          {/* Owner settings panel */}
+          {isOwner && (
+            <div style={{ marginBottom: "var(--space-4)" }}>
+              <ProductSettingsPanel
+                productId={product.id}
+                communitySlug={communitySlug}
+                productSlug={productSlug}
+                standalone
+                initial={{
+                  title: product.title,
+                  description: product.description ?? null,
+                  priceVnd: Number(product.priceVnd),
+                  priceOldVnd: product.priceOldVnd ? Number(product.priceOldVnd) : null,
+                  isVisible: (product as Record<string, unknown>).isVisible as boolean ?? true,
+                  bumpProductId: (product as Record<string, unknown>).bumpProductId as string | null ?? null,
+                  upsellProductId: (product as Record<string, unknown>).upsellProductId as string | null ?? null,
+                }}
+                communityProducts={communityProducts.map((cp) => ({
+                  id: cp.id,
+                  title: cp.title,
+                  isVisible: cp.isVisible ?? true,
+                }))}
+              />
+            </div>
+          )}
+
           {/* Header card */}
           <div
             className="ui-card ui-card-lg"

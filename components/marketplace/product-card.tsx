@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ProductSettingsPanel } from "@/components/marketplace/product-settings-panel";
 
 export const TYPE_THUMB: Record<
   string,
@@ -28,16 +29,34 @@ export type ProductLike = {
   subscriptionPeriod: string | null;
 };
 
+export type ProductSettingsData = {
+  productId: string;
+  communitySlug: string;
+  productSlug: string;
+  initial: {
+    title: string;
+    description: string | null;
+    priceVnd: number;
+    priceOldVnd: number | null;
+    isVisible: boolean;
+    bumpProductId: string | null;
+    upsellProductId: string | null;
+  };
+  communityProducts: { id: string; title: string; isVisible: boolean }[];
+};
+
 export function ProductCard({
   product,
   communitySlug,
   idx,
   featured = false,
+  settingsData,
 }: {
   product: ProductLike;
   communitySlug: string;
   idx: number;
   featured?: boolean;
+  settingsData?: ProductSettingsData;
 }) {
   const t = TYPE_THUMB[product.type] || TYPE_THUMB.TEMPLATE;
   const price = Number(product.priceVnd);
@@ -47,7 +66,7 @@ export function ProductCard({
       ? Math.round(((oldPrice - price) / oldPrice) * 100)
       : null;
 
-  return (
+  const cardContent = (
     <Link
       href={`/c/${communitySlug}/marketplace/${product.slug}`}
       className="mk-card"
@@ -96,5 +115,17 @@ export function ProductCard({
         </div>
       </div>
     </Link>
+  );
+
+  if (!settingsData) return cardContent;
+
+  return (
+    <div
+      className="mk-card-settings-wrap"
+      style={{ position: "relative" }}
+    >
+      <ProductSettingsPanel {...settingsData} />
+      {cardContent}
+    </div>
   );
 }

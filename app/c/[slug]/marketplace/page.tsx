@@ -31,6 +31,7 @@ export default async function MarketplacePage({
   const isOwner = session?.user?.id === community.ownerId;
 
   const productWhere: Record<string, unknown> = { communityId: community.id };
+  if (!isOwner) productWhere.isVisible = true;
   if (type === "FREE") productWhere.isFree = true;
   else if (type) productWhere.type = type;
   if (q) productWhere.title = { contains: q, mode: "insensitive" };
@@ -164,7 +165,32 @@ export default async function MarketplacePage({
             <div className="mk-grid">
               {products.map((p, idx) => (
                 <div key={p.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <ProductCard product={p} communitySlug={slug} idx={idx} />
+                  <ProductCard
+                    product={p}
+                    communitySlug={slug}
+                    idx={idx}
+                    settingsData={isOwner ? {
+                      productId: p.id,
+                      communitySlug: slug,
+                      productSlug: p.slug,
+                      initial: {
+                        title: p.title,
+                        description: p.description ?? null,
+                        priceVnd: Number(p.priceVnd),
+                        priceOldVnd: p.priceOldVnd ? Number(p.priceOldVnd) : null,
+                        isVisible: (p as Record<string, unknown>).isVisible as boolean ?? true,
+                        bumpProductId: (p as Record<string, unknown>).bumpProductId as string | null ?? null,
+                        upsellProductId: (p as Record<string, unknown>).upsellProductId as string | null ?? null,
+                      },
+                      communityProducts: allProducts
+                        .filter((ap) => ap.id !== p.id)
+                        .map((ap) => ({
+                          id: ap.id,
+                          title: ap.title,
+                          isVisible: (ap as Record<string, unknown>).isVisible as boolean ?? true,
+                        })),
+                    } : undefined}
+                  />
                   {isOwner && (
                     <FeaturedGlobalToggle kind="product" resourceId={p.id} communitySlug={slug} initial={p.featuredOnGlobal} />
                   )}

@@ -3427,6 +3427,9 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
 .mk-card-cta.secondary { background: var(--bg-elevated); color: var(--header-primary); border: 1px solid var(--border-subtle); }
 .mk-card-cta.owned { background: transparent; color: var(--online-green); border: 1px solid var(--online-green); cursor: default; }
 
+/* Product settings gear button — visible on parent hover */
+.mk-card-settings-wrap:hover .product-settings-btn { opacity: 1 !important; }
+
 /* Marketplace detail */
 .mk-detail-header {
   background: var(--bg-card);

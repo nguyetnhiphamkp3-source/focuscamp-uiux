@@ -2,9 +2,11 @@
 
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
-import { createProduct, setProductFeaturedGlobal } from "@/lib/services/marketplace";
-import { CreateProductSchema } from "@/lib/validations";
+import { createProduct, setProductFeaturedGlobal, updateProductSettings } from "@/lib/services/marketplace";
+import { CreateProductSchema, UpdateProductSettingsSchema } from "@/lib/validations";
 import { logError } from "@/lib/logger";
+import { prisma } from "@/lib/prisma";
+import { createPayment } from "@/lib/sepay";
 
 type ActionResult<T = unknown> =
   | { ok: true; data?: T }
@@ -89,6 +91,73 @@ export async function setProductFeaturedGlobalAction(input: {
     return { ok: true };
   } catch (err) {
     logError(err, { userId: s.user.id, productId: input.productId });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+export async function updateProductSettingsAction(input: {
+  productId: string;
+  communitySlug: string;
+  productSlug: string;
+  title?: string;
+  description?: string | null;
+  priceVnd?: number;
+  priceOldVnd?: number | null;
+  isVisible?: boolean;
+  bumpProductId?: string | null;
+  upsellProductId?: string | null;
+}): Promise<ActionResult> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+  const parsed = UpdateProductSettingsSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
+  try {
+    await updateProductSettings({ userId: s.user.id, ...parsed.data });
+    revalidatePath(`/c/${input.communitySlug}/marketplace`);
+    revalidatePath(`/c/${input.communitySlug}/marketplace/${input.productSlug}`);
+    return { ok: true };
+  } catch (err) {
+    logError(err, { userId: s.user.id, productId: input.productId });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+export async function addBumpToPaymentAction(input: {
+  currentPaymentCode: string;
+  bumpProductId: string;
+}): Promise<{ ok: true; newPaymentCode: string } | { ok: false; reason: string }> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+  try {
+    const payment = await prisma.payment.findUnique({ where: { paymentCode: input.currentPaymentCode } });
+    if (!payment || payment.status !== "PENDING") return { ok: false, reason: "payment_invalid" };
+    if (payment.userId && payment.userId !== s.user.id) return { ok: false, reason: "unauthorized" };
+    const meta = (payment.metadata ?? {}) as Record<string, unknown>;
+    if (meta.bumpProductId) return { ok: false, reason: "bump_already_added" };
+    const bump = await prisma.product.findUnique({
+      where: { id: input.bumpProductId },
+      select: { id: true, priceVnd: true, communityId: true },
+    });
+    if (!bump || Number(bump.priceVnd) <= 0) return { ok: false, reason: "invalid_bump" };
+    await prisma.payment.update({
+      where: { paymentCode: input.currentPaymentCode },
+      data: { status: "EXPIRED" },
+    });
+    const newPayment = await createPayment({
+      userId: payment.userId,
+      communityId: payment.communityId ?? undefined,
+      purpose: (payment.purpose as "subscription" | "product" | "challenge_deposit" | "challenge_entry" | "community_plan" | "event"),
+      refType: payment.refType as "subscription" | "product" | "challenge" | "community" | "event",
+      refId: payment.refId,
+      amountVnd: Number(payment.amountVnd) + Number(bump.priceVnd),
+      ttlMinutes: 1440,
+      metadata: { ...meta, bumpProductId: bump.id, bumpPriceVnd: Number(bump.priceVnd) },
+    });
+    return { ok: true, newPaymentCode: newPayment.paymentCode };
+  } catch (err) {
+    logError(err, { code: input.currentPaymentCode });
     if (err instanceof Error) return { ok: false, reason: err.message };
     return { ok: false, reason: "unknown" };
   }

@@ -590,11 +590,18 @@ model Product {
   licenseKeyTemplate String?
   /** Tiered pricing config. Null = use priceVnd as flat price. Shape: PricingConfig in lib/services/pricing.ts */
   pricingConfig      Json?
+  isVisible          Boolean  @default(true)
+  bumpProductId      String?
+  upsellProductId    String?
   createdAt          DateTime @default(now())
 
-  community  Community          @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  purchases  Purchase[]
-  challenges ChallengeProduct[]
+  community     Community          @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  purchases     Purchase[]
+  challenges    ChallengeProduct[]
+  bumpProduct   Product?           @relation("ProductBump", fields: [bumpProductId], references: [id])
+  upsellProduct Product?           @relation("ProductUpsell", fields: [upsellProductId], references: [id])
+  bumpedBy      Product[]          @relation("ProductBump")
+  upsellFor     Product[]          @relation("ProductUpsell")
 
   @@unique([communityId, slug])
   @@index([featuredOnGlobal, createdAt])

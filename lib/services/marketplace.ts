@@ -62,6 +62,56 @@ export async function createProduct(input: {
 }
 
 /**
+ * Update general product settings (title, price, visibility, bump/upsell refs).
+ * Community owner only.
+ */
+export async function updateProductSettings(input: {
+  userId: string;
+  productId: string;
+  title?: string;
+  description?: string | null;
+  priceVnd?: number;
+  priceOldVnd?: number | null;
+  isVisible?: boolean;
+  bumpProductId?: string | null;
+  upsellProductId?: string | null;
+}): Promise<void> {
+  // 1. Load product + community to check ownership
+  const product = await prisma.product.findUnique({
+    where: { id: input.productId },
+    include: { community: { select: { ownerId: true, id: true } } },
+  });
+  if (!product) throw new Error("product_not_found");
+  if (product.community.ownerId !== input.userId) throw new Error("unauthorized");
+
+  // 2. Validate bump/upsell products belong to same community and not self-reference
+  for (const refId of [input.bumpProductId, input.upsellProductId]) {
+    if (!refId) continue;
+    if (refId === input.productId) throw new Error("cannot_self_reference");
+    const ref = await prisma.product.findUnique({
+      where: { id: refId },
+      select: { communityId: true },
+    });
+    if (!ref || ref.communityId !== product.communityId) throw new Error("invalid_bump_product");
+  }
+
+  // 3. Update
+  await prisma.product.update({
+    where: { id: input.productId },
+    data: {
+      ...(input.title !== undefined && { title: input.title }),
+      ...(input.description !== undefined && { description: input.description }),
+      ...(input.priceVnd !== undefined && { priceVnd: input.priceVnd }),
+      ...(input.priceOldVnd !== undefined && { priceOldVnd: input.priceOldVnd }),
+      ...(input.isVisible !== undefined && { isVisible: input.isVisible }),
+      ...(input.bumpProductId !== undefined && { bumpProductId: input.bumpProductId }),
+      ...(input.upsellProductId !== undefined && { upsellProductId: input.upsellProductId }),
+    },
+  });
+  logger.info({ productId: input.productId, by: input.userId }, "[product] settings updated");
+}
+
+/**
  * Owner toggles whether this product appears on the global marketplace.
  */
 export async function setProductFeaturedGlobal(input: {

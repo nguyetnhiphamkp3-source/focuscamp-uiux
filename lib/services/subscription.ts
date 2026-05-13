@@ -213,7 +213,6 @@ export async function checkGate(input: {
 
 /**
  * Create a PENDING subscription + payment order for a paid tier.
- * Joins the community as a member (upsert) then creates the payment.
  */
 export async function startTierSubscription(input: {
   userId: string;
@@ -222,13 +221,6 @@ export async function startTierSubscription(input: {
   priceVnd: number;
   durationDays: number;
 }): Promise<{ paymentCode: string }> {
-  // Ensure community membership exists first
-  await prisma.membership.upsert({
-    where: { userId_communityId: { userId: input.userId, communityId: input.communityId } },
-    create: { userId: input.userId, communityId: input.communityId, role: "MEMBER" },
-    update: {},
-  });
-
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + input.durationDays);
 
@@ -301,5 +293,19 @@ export async function activateSubscription(input: {
     },
     "[subscription] activated"
   );
+  await prisma.membership.upsert({
+    where: {
+      userId_communityId: {
+        userId: input.userId,
+        communityId: input.communityId,
+      },
+    },
+    create: {
+      userId: input.userId,
+      communityId: input.communityId,
+      role: "MEMBER",
+    },
+    update: {},
+  });
   return sub;
 }
