@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { updateProductSettingsAction } from "@/app/actions/marketplace";
@@ -60,6 +60,14 @@ export function ProductSettingsPanel({
   const [upsellProductId, setUpsellProductId] = useState(initial.upsellProductId ?? "");
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (saved) {
+      router.refresh();
+      setSaved(false);
+    }
+  }, [saved]);
 
   function save() {
     setErr(null);
@@ -78,7 +86,7 @@ export function ProductSettingsPanel({
       });
       if (res.ok) {
         setOpen(false);
-        router.refresh();
+        setSaved(true);
       } else {
         setErr(res.reason);
       }

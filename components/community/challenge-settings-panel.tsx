@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { updateChallengeSettingsAction } from "@/app/actions/challenge-review";
 import { ImageUploadField } from "@/components/shared/image-upload-field";
@@ -79,12 +79,15 @@ export function ChallengeSettingsPanel({
       });
       if (res.ok) {
         setSaved(true);
-        router.refresh();
       } else {
         setErr(res.reason);
       }
     });
   }
+
+  useEffect(() => {
+    if (saved) router.refresh();
+  }, [saved]);
 
   return (
     <section
