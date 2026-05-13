@@ -24,7 +24,10 @@ export default async function PaymentPage({
 
   let bumpProduct: { id: string; title: string; priceVnd: number; description: string | null } | null = null;
   const meta = (payment.metadata ?? {}) as Record<string, unknown>;
-  if (payment.refType === "product" && payment.status === "PENDING" && !meta.bumpProductId) {
+
+  // Load main item title and (conditionally) bump offer product
+  let mainItemTitle: string | null = null;
+  if (payment.refType === "product") {
     const purchase = await prisma.purchase.findUnique({
       where: { id: payment.refId },
       include: {
@@ -35,7 +38,8 @@ export default async function PaymentPage({
         },
       },
     });
-    if (purchase?.product.bumpProduct) {
+    mainItemTitle = purchase?.product.title ?? null;
+    if (payment.status === "PENDING" && !meta.bumpProductId && purchase?.product.bumpProduct) {
       bumpProduct = {
         id: purchase.product.bumpProduct.id,
         title: purchase.product.bumpProduct.title,
@@ -43,7 +47,7 @@ export default async function PaymentPage({
         description: purchase.product.bumpProduct.description,
       };
     }
-  } else if (payment.refType === "challenge" && payment.status === "PENDING" && !meta.bumpProductId) {
+  } else if (payment.refType === "challenge") {
     const member = await prisma.challengeMember.findUnique({
       where: { id: payment.refId },
       select: { challengeId: true },
@@ -53,7 +57,8 @@ export default async function PaymentPage({
         where: { id: member.challengeId },
         include: { bumpProduct: { select: { id: true, title: true, priceVnd: true, description: true } } },
       });
-      if (ch?.bumpProduct) {
+      mainItemTitle = ch?.title ?? null;
+      if (payment.status === "PENDING" && !meta.bumpProductId && ch?.bumpProduct) {
         bumpProduct = {
           id: ch.bumpProduct.id,
           title: ch.bumpProduct.title,
@@ -62,6 +67,17 @@ export default async function PaymentPage({
         };
       }
     }
+  }
+
+  // Load bump item info for recap when bump already applied
+  let bumpItemTitle: string | null = null;
+  const bumpItemPriceVnd = meta.bumpPriceVnd ? Number(meta.bumpPriceVnd) : null;
+  if (meta.bumpProductId && typeof meta.bumpProductId === "string") {
+    const bumpProd = await prisma.product.findUnique({
+      where: { id: meta.bumpProductId },
+      select: { title: true },
+    });
+    bumpItemTitle = bumpProd?.title ?? null;
   }
 
   const bankCode = process.env.SEPAY_BANK_CODE || "MB";
@@ -173,6 +189,15 @@ export default async function PaymentPage({
               Quét QR bằng app ngân hàng. Giao dịch tự động ghi nhận trong vài
               giây.
             </p>
+
+            {mainItemTitle && (
+              <OrderRecap
+                mainTitle={mainItemTitle}
+                totalVnd={Number(payment.amountVnd)}
+                bumpTitle={bumpItemTitle}
+                bumpPriceVnd={bumpItemPriceVnd}
+              />
+            )}
 
             {bumpProduct && (
               <BumpOfferBox
@@ -289,6 +314,78 @@ export default async function PaymentPage({
         )}
       </div>
     </main>
+  );
+}
+
+function OrderRecap({
+  mainTitle,
+  totalVnd,
+  bumpTitle,
+  bumpPriceVnd,
+}: {
+  mainTitle: string;
+  totalVnd: number;
+  bumpTitle: string | null;
+  bumpPriceVnd: number | null;
+}) {
+  const baseVnd = bumpTitle && bumpPriceVnd ? totalVnd - bumpPriceVnd : totalVnd;
+  return (
+    <div
+      style={{
+        width: "100%",
+        background: "var(--bg-elevated)",
+        border: "1px solid var(--border-subtle)",
+        borderRadius: 10,
+        padding: "12px 14px",
+        marginBottom: 12,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 11,
+          fontWeight: 700,
+          color: "var(--text-muted)",
+          marginBottom: 10,
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+        }}
+      >
+        Đơn hàng
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+          <span style={{ fontSize: 13, color: "var(--text-body)", flex: 1 }}>{mainTitle}</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-heading)", whiteSpace: "nowrap" }}>
+            {baseVnd.toLocaleString("vi-VN")}đ
+          </span>
+        </div>
+        {bumpTitle && bumpPriceVnd && (
+          <>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+              <span style={{ fontSize: 13, color: "var(--text-body)", flex: 1 }}>+ {bumpTitle}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-heading)", whiteSpace: "nowrap" }}>
+                {bumpPriceVnd.toLocaleString("vi-VN")}đ
+              </span>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 12,
+                borderTop: "1px solid var(--border-subtle)",
+                paddingTop: 8,
+                marginTop: 2,
+              }}
+            >
+              <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-heading)" }}>Tổng</span>
+              <span style={{ fontSize: 14, fontWeight: 800, color: "var(--brand-green)", whiteSpace: "nowrap" }}>
+                {totalVnd.toLocaleString("vi-VN")}đ
+              </span>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
   );
 }
 
