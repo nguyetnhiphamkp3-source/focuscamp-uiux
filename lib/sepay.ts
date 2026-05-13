@@ -61,7 +61,7 @@ export async function createPayment(params: {
     | "challenge_entry"
     | "community_plan"
     | "event";
-  refType: "subscription" | "product" | "challenge" | "community" | "event";
+  refType: "subscription" | "product" | "challenge" | "community" | "event" | "cart";
   refId: string;
   amountVnd: number;
   ttlMinutes?: number;

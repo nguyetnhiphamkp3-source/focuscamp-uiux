@@ -1,6 +1,7 @@
 import { JoinButton } from "./join-button";
 import { CommunitySearchBar } from "./community-header";
 import { InviteCopyButton } from "./invite-copy-button";
+import { CartIcon } from "@/components/marketplace/cart-icon";
 import { classByKey } from "@/lib/community-config";
 import type { ClassConfig } from "@/lib/community-config";
 import type { TierConfigItem } from "@/lib/services/subscription";
@@ -255,7 +256,10 @@ function MemberView({
           </div>
         </div>
 
-        <InviteCopyButton communityId={community.id} communitySlug={community.slug} />
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <InviteCopyButton communityId={community.id} communitySlug={community.slug} />
+          <CartIcon />
+        </div>
 
         <div className="rs-card">
           <div

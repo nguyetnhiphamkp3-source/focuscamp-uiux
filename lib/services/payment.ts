@@ -216,6 +216,22 @@ export async function matchSePayTransactionToPayment(params: {
           update: {},
         });
       }
+    } else if (payment.refType === "cart") {
+      type CartBreakdownItem = { productId: string; amountVnd: number };
+      const meta = (payment.metadata ?? {}) as { breakdown?: CartBreakdownItem[] };
+      if (Array.isArray(meta.breakdown)) {
+        for (const item of meta.breakdown) {
+          await tx.purchase.create({
+            data: {
+              userId: payment.userId!,
+              productId: item.productId,
+              amountVnd: item.amountVnd,
+              status: "COMPLETED",
+              paymentRef: transactionId,
+            },
+          });
+        }
+      }
     }
   });
 

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { startProductPurchase } from "@/lib/services/payment";
 import { fmtVnd, TYPE_THUMB } from "@/components/marketplace/product-card";
 import { ProductSettingsPanel } from "@/components/marketplace/product-settings-panel";
+import { AddToCartButton } from "@/components/marketplace/add-to-cart-button";
 import { logError } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
@@ -386,23 +387,30 @@ export default async function ProductDetailPage({
                     </Link>
                   </div>
                 ) : (
-                  <form action={buy}>
-                    <button
-                      type="submit"
-                      className="ui-btn ui-btn-primary ui-btn-lg"
-                    >
-                      {product.isSubscription ? "Subscribe ngay" : "Mua ngay"}
-                    </button>
-                    <div
-                      style={{
-                        fontSize: "var(--text-xs)",
-                        color: "var(--text-muted)",
-                        marginTop: "var(--space-3)",
-                      }}
-                    >
-                      Thanh toán qua VietQR · Tự nhận khi SePay xác nhận
-                    </div>
-                  </form>
+                  <>
+                    <form action={buy}>
+                      <button
+                        type="submit"
+                        className="ui-btn ui-btn-primary ui-btn-lg"
+                      >
+                        {product.isSubscription ? "Subscribe ngay" : "Mua ngay"}
+                      </button>
+                      <div
+                        style={{
+                          fontSize: "var(--text-xs)",
+                          color: "var(--text-muted)",
+                          marginTop: "var(--space-3)",
+                        }}
+                      >
+                        Thanh toán qua VietQR · Tự nhận khi SePay xác nhận
+                      </div>
+                    </form>
+                    {!product.isSubscription && (
+                      <div style={{ marginTop: "var(--space-3)" }}>
+                        <AddToCartButton productId={product.id} />
+                      </div>
+                    )}
+                  </>
                 )}
               </>
             ) : (
