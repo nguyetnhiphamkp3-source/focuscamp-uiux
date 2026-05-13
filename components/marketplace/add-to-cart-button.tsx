@@ -1,47 +1,80 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { addToCartAction } from "@/app/actions/cart";
+import { parseCart } from "@/lib/cart";
+
+function readFromCookie(productId: string): boolean {
+  const raw = document.cookie
+    .split(";")
+    .map((c) => c.trim())
+    .find((c) => c.startsWith("fc_cart="))
+    ?.replace("fc_cart=", "");
+  return parseCart(raw ? decodeURIComponent(raw) : undefined).some(
+    (i) => i.productId === productId
+  );
+}
 
 export function AddToCartButton({ productId }: { productId: string }) {
-  const [state, setState] = useState<"idle" | "loading" | "added" | "error">("idle");
+  const [inCart, setInCart] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setInCart(readFromCookie(productId));
+  }, [productId]);
 
   async function handleClick() {
-    setState("loading");
+    setLoading(true);
     const res = await addToCartAction(productId);
+    setLoading(false);
     if (res.ok) {
-      setState("added");
-      setTimeout(() => setState("idle"), 2000);
-    } else {
-      setState("error");
-      setTimeout(() => setState("idle"), 2000);
+      setInCart(true);
+      window.dispatchEvent(new Event("cartUpdated"));
     }
   }
 
-  const label =
-    state === "loading" ? "..." :
-    state === "added" ? "✓ Đã thêm" :
-    state === "error" ? "Lỗi" :
-    "🛒 Thêm vào giỏ";
+  if (inCart) {
+    return (
+      <Link
+        href="/cart"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 6,
+          padding: "8px 16px",
+          background: "var(--brand-green)",
+          color: "#fff",
+          borderRadius: 8,
+          fontWeight: 600,
+          fontSize: "var(--text-sm)",
+          textDecoration: "none",
+          whiteSpace: "nowrap",
+        }}
+      >
+        ✓ Đã thêm · Xem giỏ →
+      </Link>
+    );
+  }
 
   return (
     <button
       onClick={handleClick}
-      disabled={state === "loading"}
+      disabled={loading}
       style={{
         padding: "8px 16px",
-        background: state === "added" ? "var(--brand-green)" : "var(--bg-elevated)",
-        color: state === "added" ? "#fff" : "var(--text-heading)",
+        background: "var(--bg-elevated)",
+        color: "var(--text-heading)",
         border: "1px solid var(--border-subtle)",
         borderRadius: 8,
         fontWeight: 600,
         fontSize: "var(--text-sm)",
-        cursor: state === "loading" ? "not-allowed" : "pointer",
-        transition: "background 0.15s, color 0.15s",
+        cursor: loading ? "not-allowed" : "pointer",
         whiteSpace: "nowrap",
       }}
     >
-      {label}
+      {loading ? "..." : "🛒 Thêm vào giỏ"}
     </button>
   );
 }

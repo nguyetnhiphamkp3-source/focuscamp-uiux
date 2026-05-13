@@ -17,9 +17,12 @@ export function CartIcon() {
       setCount(parseCart(raw ? decodeURIComponent(raw) : undefined).length);
     }
     readCart();
-    // Re-read on focus (catches changes from other tabs)
     window.addEventListener("focus", readCart);
-    return () => window.removeEventListener("focus", readCart);
+    window.addEventListener("cartUpdated", readCart);
+    return () => {
+      window.removeEventListener("focus", readCart);
+      window.removeEventListener("cartUpdated", readCart);
+    };
   }, []);
 
   if (count === 0) return null;

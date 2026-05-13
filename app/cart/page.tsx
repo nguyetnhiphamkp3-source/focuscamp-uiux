@@ -38,9 +38,17 @@ export default async function CartPage() {
     <main style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: "var(--bg-body)" }}>
       <div style={{ width: "100%", maxWidth: 520, background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 20, boxShadow: "0 1px 3px rgba(60,45,20,0.08)", padding: 28 }}>
         <Link href="/" style={{ display: "inline-block", fontSize: 28, marginBottom: 8, textDecoration: "none" }}>🔥🏕️</Link>
-        <h1 style={{ fontSize: "var(--text-xl)", fontWeight: 800, color: "var(--text-heading)", margin: "4px 0 20px" }}>
+        <h1 style={{ fontSize: "var(--text-xl)", fontWeight: 800, color: "var(--text-heading)", margin: "4px 0 12px" }}>
           Giỏ hàng ({products.length} sản phẩm)
         </h1>
+        {products[0]?.community?.slug && (
+          <Link
+            href={`/c/${products[0].community.slug}/marketplace`}
+            style={{ display: "inline-block", fontSize: "var(--text-sm)", color: "var(--text-muted)", textDecoration: "none", marginBottom: 16 }}
+          >
+            ← Tiếp tục mua sắm
+          </Link>
+        )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
           {products.map((product) => (
