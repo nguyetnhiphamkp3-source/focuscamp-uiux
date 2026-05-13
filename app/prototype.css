@@ -422,6 +422,8 @@ body[data-theme="luxury"] .settings-panel-title {
 .features-menu {
   flex: 1;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   padding: 4px 10px 76px;
 }
 .features-plan {
@@ -5514,9 +5516,15 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
 .mobile-drawer-backdrop {
   display: none;
   position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  /* Start below status bar, stop above bottom nav */
+  top: env(safe-area-inset-top, 0px);
+  left: 0;
+  right: 0;
+  bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  background: rgba(0, 0, 0, 0.45);
   z-index: 100;
+  /* Allow vertical scroll to pass through backdrop */
+  touch-action: pan-y;
 }
 
 /* ==========================================

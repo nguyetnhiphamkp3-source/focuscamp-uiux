@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NotifBadge } from "./notif-badge";
 
 export function MobileBottomNav({
@@ -14,6 +14,7 @@ export function MobileBottomNav({
 }) {
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const swipeStartX = useRef(0);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -27,6 +28,21 @@ export function MobileBottomNav({
   useEffect(() => {
     setDrawerOpen(false);
   }, [pathname]);
+
+  // Swipe-left anywhere on screen closes the drawer
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const onStart = (e: TouchEvent) => { swipeStartX.current = e.touches[0].clientX; };
+    const onEnd = (e: TouchEvent) => {
+      if (swipeStartX.current - e.changedTouches[0].clientX > 48) setDrawerOpen(false);
+    };
+    document.addEventListener("touchstart", onStart, { passive: true });
+    document.addEventListener("touchend", onEnd, { passive: true });
+    return () => {
+      document.removeEventListener("touchstart", onStart);
+      document.removeEventListener("touchend", onEnd);
+    };
+  }, [drawerOpen]);
 
   return (
     <>

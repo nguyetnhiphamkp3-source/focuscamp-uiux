@@ -112,6 +112,15 @@
             "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-state.cjs\""
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/mdm/Desktop/Project-Vibe/focus-camp/app && { git diff --quiet && git diff --cached --quiet; } 2>/dev/null || echo '{\"systemMessage\":\"🚀 DEPLOY REMINDER: còn thay đổi chưa commit/push! Chạy git commit + push để deploy lên VPS.\"}'",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "PostToolUse": [
