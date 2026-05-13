@@ -403,22 +403,6 @@ export default async function ChallengeDetailPage({
             </div>
           </div>
 
-          {/* Description shown only to active/started members (non-members + payment_pending see full sales intro) */}
-          {challenge.description && myMembership && myMembership.status !== "PAYMENT_PENDING" && (
-            <p
-              style={{
-                background: "var(--bg-card)",
-                border: "1px solid var(--border-subtle)",
-                borderRadius: 12,
-                padding: 20,
-                color: "var(--text-normal)",
-                lineHeight: 1.7,
-                marginTop: 16,
-              }}
-            >
-              {challenge.description}
-            </p>
-          )}
 
           {/* Progress (if joined) */}
           {myMembership?.status === "PAYMENT_PENDING" ? (
