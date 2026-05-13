@@ -117,16 +117,12 @@ export async function approvePaymentAction(input: {
           select: { challengeId: true },
         });
         if (member) {
-          const challenge = await tx.challenge.findUnique({
-            where: { id: member.challengeId },
-            select: { requiresApproval: true },
-          });
           await tx.challengeMember.update({
             where: { id: payment.refId },
             data: {
-              status: challenge?.requiresApproval ? "PENDING" : "ACTIVE",
-              approvedAt: challenge?.requiresApproval ? undefined : new Date(),
-              personalStartsAt: challenge?.requiresApproval ? undefined : new Date(),
+              status: "ACTIVE",
+              approvedAt: new Date(),
+              personalStartsAt: new Date(),
             },
           });
         }

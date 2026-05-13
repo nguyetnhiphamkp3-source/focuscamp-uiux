@@ -1245,6 +1245,7 @@ async function CheckinGate({
       label: true,
       description: true,
       sopContent: true,
+      videoUrl: true,
       evidenceType: true,
       evidenceLabel: true,
     },

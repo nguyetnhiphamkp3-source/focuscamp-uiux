@@ -12,8 +12,16 @@ interface TodayTask {
   label: string | null;
   description: string | null;
   sopContent: string | null;
+  videoUrl: string | null;
   evidenceType: string; // TEXT | LINK | IMAGE | FILE
   evidenceLabel: string | null;
+}
+
+function toYoutubeEmbed(url: string): string | null {
+  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  if (m) return `https://www.youtube.com/embed/${m[1]}`;
+  if (url.includes("youtube.com/embed/")) return url;
+  return null;
 }
 
 export function CheckinForm({
@@ -204,29 +212,83 @@ export function CheckinForm({
                   )}
                 </>
               )}
+              {task.videoUrl && (() => {
+                const embedUrl = toYoutubeEmbed(task.videoUrl);
+                if (!embedUrl) return null;
+                return (
+                  <div style={{ marginTop: "var(--space-3)" }}>
+                    <div
+                      style={{
+                        fontSize: "var(--text-xs)",
+                        fontWeight: "var(--fw-semibold)",
+                        color: "var(--text-muted)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                        marginBottom: "var(--space-2)",
+                      }}
+                    >
+                      🎬 Video hướng dẫn
+                    </div>
+                    <div
+                      style={{
+                        position: "relative",
+                        paddingBottom: "56.25%",
+                        height: 0,
+                        borderRadius: "var(--r-md)",
+                        overflow: "hidden",
+                        background: "#000",
+                      }}
+                    >
+                      <iframe
+                        src={embedUrl}
+                        title="Video hướng dẫn"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          width: "100%",
+                          height: "100%",
+                          border: "none",
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}
 
-        {/* Text content */}
+        {/* Submission section */}
         <div>
-          <label
-            style={{
-              fontSize: "var(--text-xs)",
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              color: "var(--text-muted)",
-              fontWeight: "var(--fw-semibold)",
-              display: "block",
-              marginBottom: "var(--space-2)",
-            }}
-          >
-            Bạn đã làm gì hôm nay?
-          </label>
+          <div style={{ marginBottom: "var(--space-2)" }}>
+            <label
+              style={{
+                fontSize: "var(--text-xs)",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "var(--text-muted)",
+                fontWeight: "var(--fw-semibold)",
+                display: "block",
+                marginBottom: "var(--space-1)",
+              }}
+            >
+              ✍️ Nộp bài — Bạn đã làm gì hôm nay?
+            </label>
+            <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", lineHeight: "var(--lh-normal)" }}>
+              {evType === "IMAGE"
+                ? "Chụp ảnh màn hình hoặc ảnh bằng chứng, upload bên dưới và mô tả ngắn kết quả."
+                : evType === "LINK"
+                  ? "Dán link bài nộp (Notion, Google Doc, v.v.) và mô tả ngắn những gì bạn đã làm."
+                  : "Mô tả ngắn kết quả bạn đạt được hôm nay — bài học, insight, hoặc việc đã hoàn thành."}
+            </div>
+          </div>
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Mô tả ngắn gọn kết quả / bài học (5-1000 ký tự)"
+            placeholder="Ví dụ: Hôm nay tôi đã cài xong VS Code + Claude Desktop và thử chat với Claude lần đầu. Cảm giác…"
             rows={3}
             style={{
               width: "100%",
