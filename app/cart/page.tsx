@@ -35,8 +35,7 @@ export default async function CartPage() {
 
   const communityId = products[0]?.community?.id;
   const bumpCandidate = communityId
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ? await (prisma.product as any).findFirst({
+    ? await prisma.product.findFirst({
         where: {
           communityId,
           showInCartBump: true,

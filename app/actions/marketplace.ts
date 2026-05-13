@@ -118,6 +118,7 @@ export async function updateProductSettingsAction(input: {
     await updateProductSettings({ userId: s.user.id, ...parsed.data });
     revalidatePath(`/c/${input.communitySlug}/marketplace`);
     revalidatePath(`/c/${input.communitySlug}/marketplace/${input.productSlug}`);
+    revalidatePath("/cart");
     return { ok: true };
   } catch (err) {
     logError(err, { userId: s.user.id, productId: input.productId });
