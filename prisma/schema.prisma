@@ -593,6 +593,7 @@ model Product {
   /** Tiered pricing config. Null = use priceVnd as flat price. Shape: PricingConfig in lib/services/pricing.ts */
   pricingConfig      Json?
   isVisible          Boolean  @default(true)
+  showInCartBump     Boolean  @default(false)
   bumpProductId      String?
   upsellProductId    String?
   createdAt          DateTime @default(now())

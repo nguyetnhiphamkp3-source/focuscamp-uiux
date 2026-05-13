@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { parseCart } from "@/lib/cart";
 import { CartCheckoutButton } from "./checkout-button";
+import { CartBumpOffer } from "@/components/marketplace/cart-bump-offer";
 
 export default async function CartPage() {
   const c = await cookies();
@@ -29,8 +30,22 @@ export default async function CartPage() {
   const productIds = cartItems.map((i) => i.productId);
   const products = await prisma.product.findMany({
     where: { id: { in: productIds } },
-    select: { id: true, title: true, priceVnd: true, slug: true, community: { select: { slug: true } } },
+    select: { id: true, title: true, priceVnd: true, slug: true, community: { select: { id: true, slug: true } } },
   });
+
+  const communityId = products[0]?.community?.id;
+  const bumpCandidate = communityId
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ? await (prisma.product as any).findFirst({
+        where: {
+          communityId,
+          showInCartBump: true,
+          id: { notIn: productIds },
+          isFree: false,
+        },
+        select: { id: true, title: true, priceVnd: true, description: true },
+      })
+    : null;
 
   const totalVnd = products.reduce((sum, p) => sum + Number(p.priceVnd), 0);
 
@@ -61,6 +76,10 @@ export default async function CartPage() {
             />
           ))}
         </div>
+
+        {bumpCandidate && (
+          <CartBumpOffer product={{ ...bumpCandidate, priceVnd: Number(bumpCandidate.priceVnd) }} />
+        )}
 
         <div style={{ borderTop: "1px solid var(--border-subtle)", paddingTop: 16, display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
           <span style={{ fontWeight: 700, fontSize: "var(--text-base)" }}>Tổng</span>

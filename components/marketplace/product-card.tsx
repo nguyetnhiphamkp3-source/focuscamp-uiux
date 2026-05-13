@@ -39,6 +39,7 @@ export type ProductSettingsData = {
     priceVnd: number;
     priceOldVnd: number | null;
     isVisible: boolean;
+    showInCartBump: boolean;
     bumpProductId: string | null;
     upsellProductId: string | null;
   };

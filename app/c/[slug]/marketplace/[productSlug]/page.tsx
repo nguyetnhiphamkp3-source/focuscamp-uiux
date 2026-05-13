@@ -131,6 +131,7 @@ export default async function ProductDetailPage({
                   priceVnd: Number(product.priceVnd),
                   priceOldVnd: product.priceOldVnd ? Number(product.priceOldVnd) : null,
                   isVisible: (product as Record<string, unknown>).isVisible as boolean ?? true,
+                  showInCartBump: (product as Record<string, unknown>).showInCartBump as boolean ?? false,
                   bumpProductId: (product as Record<string, unknown>).bumpProductId as string | null ?? null,
                   upsellProductId: (product as Record<string, unknown>).upsellProductId as string | null ?? null,
                 }}

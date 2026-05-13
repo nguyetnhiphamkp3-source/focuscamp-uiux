@@ -75,6 +75,7 @@ export async function updateProductSettings(input: {
   isVisible?: boolean;
   bumpProductId?: string | null;
   upsellProductId?: string | null;
+  showInCartBump?: boolean;
 }): Promise<void> {
   // 1. Load product + community to check ownership
   const product = await prisma.product.findUnique({
@@ -106,6 +107,7 @@ export async function updateProductSettings(input: {
       ...(input.isVisible !== undefined && { isVisible: input.isVisible }),
       ...(input.bumpProductId !== undefined && { bumpProductId: input.bumpProductId }),
       ...(input.upsellProductId !== undefined && { upsellProductId: input.upsellProductId }),
+      ...(input.showInCartBump !== undefined && { showInCartBump: input.showInCartBump }),
     },
   });
   logger.info({ productId: input.productId, by: input.userId }, "[product] settings updated");

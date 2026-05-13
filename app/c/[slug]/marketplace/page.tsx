@@ -179,6 +179,7 @@ export default async function MarketplacePage({
                         priceVnd: Number(p.priceVnd),
                         priceOldVnd: p.priceOldVnd ? Number(p.priceOldVnd) : null,
                         isVisible: (p as Record<string, unknown>).isVisible as boolean ?? true,
+                        showInCartBump: (p as Record<string, unknown>).showInCartBump as boolean ?? false,
                         bumpProductId: (p as Record<string, unknown>).bumpProductId as string | null ?? null,
                         upsellProductId: (p as Record<string, unknown>).upsellProductId as string | null ?? null,
                       },

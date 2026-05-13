@@ -108,6 +108,7 @@ export async function updateProductSettingsAction(input: {
   isVisible?: boolean;
   bumpProductId?: string | null;
   upsellProductId?: string | null;
+  showInCartBump?: boolean;
 }): Promise<ActionResult> {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };

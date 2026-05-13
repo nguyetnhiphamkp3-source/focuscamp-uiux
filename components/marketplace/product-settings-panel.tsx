@@ -42,6 +42,7 @@ export function ProductSettingsPanel({
     priceVnd: number;
     priceOldVnd: number | null;
     isVisible: boolean;
+    showInCartBump: boolean;
     bumpProductId: string | null;
     upsellProductId: string | null;
   };
@@ -56,6 +57,7 @@ export function ProductSettingsPanel({
   const [priceVnd, setPriceVnd] = useState(initial.priceVnd);
   const [priceOldVnd, setPriceOldVnd] = useState<number | "">(initial.priceOldVnd ?? "");
   const [isVisible, setIsVisible] = useState(initial.isVisible);
+  const [showInCartBump, setShowInCartBump] = useState(initial.showInCartBump);
   const [bumpProductId, setBumpProductId] = useState(initial.bumpProductId ?? "");
   const [upsellProductId, setUpsellProductId] = useState(initial.upsellProductId ?? "");
   const [pending, start] = useTransition();
@@ -81,6 +83,7 @@ export function ProductSettingsPanel({
         priceVnd,
         priceOldVnd: priceOldVnd !== "" ? Number(priceOldVnd) : null,
         isVisible,
+        showInCartBump,
         bumpProductId: bumpProductId || null,
         upsellProductId: upsellProductId || null,
       });
@@ -180,6 +183,11 @@ export function ProductSettingsPanel({
               <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
                 <input type="checkbox" checked={isVisible} onChange={(e) => setIsVisible(e.target.checked)} disabled={pending} />
                 <span style={{ fontSize: "var(--text-sm)", color: "var(--text-normal)" }}>Hiển thị trên marketplace</span>
+              </label>
+
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                <input type="checkbox" checked={showInCartBump} onChange={(e) => setShowInCartBump(e.target.checked)} disabled={pending} />
+                <span style={{ fontSize: "var(--text-sm)", color: "var(--text-normal)" }}>⚡ Hiện làm bump offer trong giỏ hàng</span>
               </label>
 
               <Field label="Bump offer (thêm vào checkout)">

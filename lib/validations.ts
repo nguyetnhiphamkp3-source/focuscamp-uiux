@@ -475,6 +475,7 @@ export const UpdateProductSettingsSchema = z.object({
   isVisible: z.boolean().optional(),
   bumpProductId: z.string().cuid().optional().nullable(),
   upsellProductId: z.string().cuid().optional().nullable(),
+  showInCartBump: z.boolean().optional(),
 });
 
 /* ========== Helper ========== */
