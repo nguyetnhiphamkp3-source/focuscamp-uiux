@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { parseCart } from "@/lib/cart";
 import { CartCheckoutButton } from "./checkout-button";
+import { RemoveCartItemButton } from "./remove-cart-item-button";
 import { CartBumpOffer } from "@/components/marketplace/cart-bump-offer";
 
 export default async function CartPage() {
@@ -33,7 +34,12 @@ export default async function CartPage() {
     select: { id: true, title: true, priceVnd: true, slug: true, community: { select: { id: true, slug: true } } },
   });
 
-  const communityId = products[0]?.community?.id;
+  const productsById = new Map(products.map((p) => [p.id, p]));
+  const orderedProducts = productIds
+    .map((id) => productsById.get(id))
+    .filter((p): p is NonNullable<typeof p> => Boolean(p));
+
+  const communityId = orderedProducts[0]?.community?.id;
   const bumpCandidate = communityId
     ? await prisma.product.findFirst({
         where: {
@@ -45,18 +51,18 @@ export default async function CartPage() {
       })
     : null;
 
-  const totalVnd = products.reduce((sum, p) => sum + Number(p.priceVnd), 0);
+  const totalVnd = orderedProducts.reduce((sum, p) => sum + Number(p.priceVnd), 0);
 
   return (
     <main style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: "var(--bg-body)" }}>
       <div style={{ width: "100%", maxWidth: 520, background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 20, boxShadow: "0 1px 3px rgba(60,45,20,0.08)", padding: 28 }}>
         <Link href="/" style={{ display: "inline-block", fontSize: 28, marginBottom: 8, textDecoration: "none" }}>🔥🏕️</Link>
         <h1 style={{ fontSize: "var(--text-xl)", fontWeight: 800, color: "var(--text-heading)", margin: "4px 0 12px" }}>
-          Giỏ hàng ({products.length} sản phẩm)
+          Giỏ hàng ({orderedProducts.length} sản phẩm)
         </h1>
-        {products[0]?.community?.slug && (
+        {orderedProducts[0]?.community?.slug && (
           <Link
-            href={`/c/${products[0].community.slug}/marketplace`}
+            href={`/c/${orderedProducts[0].community.slug}/marketplace`}
             style={{ display: "inline-block", fontSize: "var(--text-sm)", color: "var(--text-muted)", textDecoration: "none", marginBottom: 16 }}
           >
             ← Tiếp tục mua sắm
@@ -64,7 +70,7 @@ export default async function CartPage() {
         )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
-          {products.map((product) => (
+          {orderedProducts.map((product) => (
             <CartLineItem
               key={product.id}
               productId={product.id}
@@ -86,7 +92,7 @@ export default async function CartPage() {
           </span>
         </div>
 
-        <CartCheckoutButton productIds={productIds} />
+        <CartCheckoutButton />
       </div>
     </main>
   );
@@ -101,6 +107,7 @@ function CartLineItem({ productId, title, priceVnd, href }: { productId: string;
       <span style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-heading)", whiteSpace: "nowrap" }}>
         {priceVnd.toLocaleString("vi-VN")}đ
       </span>
+      <RemoveCartItemButton productId={productId} title={title} />
     </div>
   );
 }

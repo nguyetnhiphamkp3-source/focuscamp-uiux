@@ -4,13 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { checkoutCartAction } from "@/app/actions/cart";
 
-export function CartCheckoutButton({ productIds }: { productIds: string[] }) {
+export function CartCheckoutButton() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   async function handleCheckout() {
     setLoading(true);
-    const res = await checkoutCartAction(productIds);
+    const res = await checkoutCartAction();
     if (res.ok) {
       router.push(`/pay/${res.paymentCode}`);
     } else {

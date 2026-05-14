@@ -15,11 +15,9 @@ export async function addToCartAction(
   try {
     const product = await prisma.product.findUnique({
       where: { id: productId },
-      select: { id: true, isFree: true, priceVnd: true },
+      select: { id: true },
     });
     if (!product) return { ok: false, reason: "not_found" };
-    if (product.isFree || Number(product.priceVnd) <= 0)
-      return { ok: false, reason: "product_is_free" };
 
     const c = await cookies();
     const current = parseCart(c.get(CART_COOKIE)?.value);

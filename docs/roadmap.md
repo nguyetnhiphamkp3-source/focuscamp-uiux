@@ -1,6 +1,6 @@
 # focus.camp — Roadmap & Module Spec
 
-_Updated: 2026-04-17. Source of truth for "what's shipped / what's next"._
+_Updated: 2026-05-14. Source of truth for "what's shipped / what's next"._
 
 ## Positioning
 
@@ -109,6 +109,7 @@ Key: ✅ done · 🟡 partial · ❌ not started · 🚫 deferred (Phase 2+)
 | Admin create product | ✅ | CreateProductButton |
 | Admin edit/delete course/lesson/product | 🟡 | Services ready, UI Phase 2 |
 | Free vs paid gating | ✅ | via `Product.isFree` |
+| Cart item removal + cart bump add-on | ✅ | Cookie cart; free bump add-on supported |
 
 ### Chat
 | Item | Status | Notes |

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { addToCartAction } from "@/app/actions/cart";
 import { fmtVnd } from "@/components/marketplace/product-card";
 
@@ -9,16 +10,23 @@ export function CartBumpOffer({
 }: {
   product: { id: string; title: string; priceVnd: number; description: string | null };
 }) {
+  const router = useRouter();
   const [added, setAdded] = useState(false);
   const [pending, start] = useTransition();
+  const [err, setErr] = useState<string | null>(null);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (!e.target.checked || pending || added) return;
+    setAdded(true);
+    setErr(null);
     start(async () => {
       const res = await addToCartAction(product.id);
       if (res.ok) {
-        setAdded(true);
         window.dispatchEvent(new Event("cartUpdated"));
+        router.refresh();
+      } else {
+        setAdded(false);
+        setErr("Không thể thêm vào giỏ: " + res.reason);
       }
     });
   }
@@ -83,6 +91,12 @@ export function CartBumpOffer({
       {pending && (
         <p style={{ marginTop: 8, fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
           Đang thêm…
+        </p>
+      )}
+
+      {err && (
+        <p style={{ marginTop: 8, marginLeft: 26, fontSize: "var(--text-xs)", color: "var(--danger)" }}>
+          {err}
         </p>
       )}
     </div>
