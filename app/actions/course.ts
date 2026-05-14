@@ -9,6 +9,7 @@ import {
   updateLesson,
   deleteLesson,
   setCourseFeaturedGlobal,
+  markLessonComplete,
 } from "@/lib/services/course";
 import {
   CreateCourseSchema,
@@ -16,6 +17,7 @@ import {
   CreateLessonSchema,
   UpdateLessonSchema,
   DeleteLessonSchema,
+  MarkLessonCompleteSchema,
 } from "@/lib/validations";
 import { logError } from "@/lib/logger";
 
@@ -247,6 +249,39 @@ export async function setCourseFeaturedGlobalAction(input: {
     return { ok: true };
   } catch (err) {
     logError(err, { userId: s.user.id, courseId: input.courseId });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+export async function markLessonCompleteAction(input: {
+  lessonId: string;
+  communitySlug: string;
+  courseSlug: string;
+  completed: boolean;
+}): Promise<ActionResult> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+
+  const parsed = MarkLessonCompleteSchema.safeParse({
+    lessonId: input.lessonId,
+    completed: input.completed,
+  });
+  if (!parsed.success) {
+    return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
+  }
+
+  try {
+    await markLessonComplete({
+      userId: s.user.id,
+      lessonId: parsed.data.lessonId,
+      completed: parsed.data.completed,
+    });
+    revalidatePath(`/c/${input.communitySlug}/courses/${input.courseSlug}`);
+    revalidatePath(`/c/${input.communitySlug}/courses`);
+    return { ok: true };
+  } catch (err) {
+    logError(err, { userId: s.user.id, lessonId: input.lessonId });
     if (err instanceof Error) return { ok: false, reason: err.message };
     return { ok: false, reason: "unknown" };
   }

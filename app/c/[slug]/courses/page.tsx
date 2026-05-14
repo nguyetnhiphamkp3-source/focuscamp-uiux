@@ -171,11 +171,15 @@ export default async function CoursesPage({
             </div>
           )}
           <div className="cl-filters">
-            <div className="cl-filter active">Tất cả</div>
-            <div className="cl-filter">Đang học</div>
-            <div className="cl-filter">Miễn phí</div>
-            <div className="cl-filter">PRO</div>
-            <div className="cl-filter">Đã hoàn thành</div>
+            {COURSE_FILTERS.map((f) => (
+              <Link
+                key={f.key}
+                href={filterHref(slug, f.key)}
+                className={`cl-filter ${activeFilter === f.key ? "active" : ""}`}
+              >
+                {f.label}
+              </Link>
+            ))}
           </div>
 
           {visibleCourses.length === 0 ? (
@@ -184,12 +188,18 @@ export default async function CoursesPage({
               title="Chưa có khóa học nào"
               description="Community sẽ publish khóa học đầu tiên sớm."
             />
+          ) : filteredCourses.length === 0 ? (
+            <EmptyState
+              icon="🔍"
+              title="Không có kết quả"
+              description="Thử chọn bộ lọc khác."
+            />
           ) : (
             <div className="cl-grid">
-              {visibleCourses.map((c) => {
+              {filteredCourses.map((c) => {
                 const t = thumbFor(c.pillar);
-                const isPro =
-                  c.requiredTier === "PRO" || c.level === "ADVANCED";
+                const isPro = isProCourse(c);
+                const progress = progressByCourse.get(c.id) ?? { completed: 0, touched: 0, total: c._count.lessons };
                 return (
                   <div key={c.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <Link
@@ -227,9 +237,9 @@ export default async function CoursesPage({
                       </div>
                       <div className="course-card-progress">
                         <div className="bar">
-                          <div className="fill" style={{ width: "0%" }} />
+                          <div className="fill" style={{ width: `${progressPercent(progress)}%` }} />
                         </div>
-                        <span className="pct">Chưa bắt đầu</span>
+                        <span className="pct">{progressText(progress)}</span>
                       </div>
                       <span
                         className={`course-card-cta ${isPro ? "locked" : "primary"}`}

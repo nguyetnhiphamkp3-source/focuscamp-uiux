@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { fmtDuration } from "@/lib/brand";
 import { CreateLessonButton } from "@/components/community/create-lesson-button";
 import { CourseSettingsPanel } from "@/components/community/course-settings-panel";
 import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
+import { MarkLessonCompleteButton } from "@/components/community/mark-lesson-complete-button";
 import { checkGate, getTiersConfig } from "@/lib/services/subscription";
 
 export const dynamic = "force-dynamic";
@@ -81,6 +81,18 @@ export default async function CourseDetailPage({
   const totalText = totalDuration
     ? `${Math.floor(totalDuration / 60)} phút`
     : null;
+
+  // Query progress for active lesson
+  let activeLessonCompleted = false;
+  if (session?.user?.id && activeLesson) {
+    const progress = await prisma.courseProgress.findUnique({
+      where: {
+        userId_lessonId: { userId: session.user.id, lessonId: activeLesson.id },
+      },
+      select: { completed: true },
+    });
+    activeLessonCompleted = progress?.completed ?? false;
+  }
 
   return (
     <>
@@ -223,6 +235,18 @@ export default async function CourseDetailPage({
             </div>
           )}
 
+          {/* Mark lesson complete */}
+          {session?.user?.id && activeLesson && !isOwner && (
+            <div style={{ marginTop: "var(--space-5)" }}>
+              <MarkLessonCompleteButton
+                lessonId={activeLesson.id}
+                communitySlug={slug}
+                courseSlug={courseSlug}
+                initialCompleted={activeLessonCompleted}
+              />
+            </div>
+          )}
+
           {/* Fallback for no lessons */}
           {course.lessons.length === 0 && !isOwner && (
             <div className="ui-empty">
@@ -272,6 +296,3 @@ function Tag({
     </span>
   );
 }
-
-// Silence unused imports in case Next marks unused fmtDuration
-void fmtDuration;

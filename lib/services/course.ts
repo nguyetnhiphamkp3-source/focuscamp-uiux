@@ -200,3 +200,102 @@ export async function deleteLesson(input: { userId: string; lessonId: string }) 
   await assertCourseAdmin(input.userId, lesson.courseId);
   await prisma.lesson.delete({ where: { id: input.lessonId } });
 }
+
+/**
+ * Mark a lesson as completed (or uncompleted) for a user.
+ * Awards course XP/AIP once when all lessons are first completed (idempotent via XPLedger).
+ */
+export async function markLessonComplete(input: {
+  userId: string;
+  lessonId: string;
+  completed: boolean;
+}) {
+  const lesson = await prisma.lesson.findUnique({
+    where: { id: input.lessonId },
+    include: {
+      course: {
+        select: {
+          id: true,
+          communityId: true,
+          isPublished: true,
+          xpReward: true,
+          aipReward: true,
+          lessons: { select: { id: true } },
+        },
+      },
+    },
+  });
+  if (!lesson) throw new Error("Lesson không tồn tại");
+  if (!lesson.course.isPublished) throw new Error("Khoá học chưa được publish");
+
+  const membership = await prisma.membership.findFirst({
+    where: { userId: input.userId, communityId: lesson.course.communityId },
+  });
+  if (!membership) throw new Error("Bạn chưa tham gia cộng đồng này");
+
+  await prisma.courseProgress.upsert({
+    where: {
+      userId_lessonId: { userId: input.userId, lessonId: input.lessonId },
+    },
+    create: {
+      userId: input.userId,
+      lessonId: input.lessonId,
+      completed: input.completed,
+      completedAt: input.completed ? new Date() : null,
+    },
+    update: {
+      completed: input.completed,
+      completedAt: input.completed ? new Date() : null,
+    },
+  });
+
+  // Award XP/AIP once when all lessons first completed (idempotent via XPLedger)
+  if (input.completed && (lesson.course.xpReward > 0 || lesson.course.aipReward > 0)) {
+    const allLessonIds = lesson.course.lessons.map((l) => l.id);
+    const completedCount = await prisma.courseProgress.count({
+      where: {
+        userId: input.userId,
+        lessonId: { in: allLessonIds },
+        completed: true,
+      },
+    });
+    if (completedCount >= allLessonIds.length) {
+      const alreadyRewarded = await prisma.xPLedger.findFirst({
+        where: {
+          userId: input.userId,
+          reason: "course_complete",
+          reasonId: lesson.course.id,
+        },
+      });
+      if (!alreadyRewarded) {
+        await prisma.$transaction([
+          prisma.xPLedger.create({
+            data: {
+              userId: input.userId,
+              communityId: lesson.course.communityId,
+              amount: lesson.course.xpReward,
+              reason: "course_complete",
+              reasonId: lesson.course.id,
+            },
+          }),
+          prisma.membership.update({
+            where: { id: membership.id },
+            data: {
+              xp: { increment: lesson.course.xpReward },
+              aip: { increment: lesson.course.aipReward },
+            },
+          }),
+        ]);
+        logger.info(
+          { userId: input.userId, courseId: lesson.course.id, xp: lesson.course.xpReward, aip: lesson.course.aipReward },
+          "[course] completion reward awarded"
+        );
+      }
+    }
+  }
+
+  logger.info(
+    { userId: input.userId, lessonId: input.lessonId, completed: input.completed },
+    "[course] lesson progress updated"
+  );
+}

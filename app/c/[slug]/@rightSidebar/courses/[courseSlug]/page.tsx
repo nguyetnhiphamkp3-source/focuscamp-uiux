@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { fmtDuration, ytThumb } from "@/lib/brand";
 
@@ -14,11 +15,27 @@ export default async function CoursePlaylistSidebar({
 }) {
   const { slug, courseSlug } = await params;
   const { lessonId } = await searchParams;
+  const session = await auth();
   const course = await prisma.course.findFirst({
     where: { community: { slug }, slug: courseSlug },
     include: { lessons: { orderBy: { position: "asc" } } },
   });
   if (!course) notFound();
+
+  // Query completion status for all lessons
+  const completedSet = new Set<string>();
+  if (session?.user?.id && course.lessons.length > 0) {
+    const rows = await prisma.courseProgress.findMany({
+      where: {
+        userId: session.user.id,
+        lessonId: { in: course.lessons.map((l) => l.id) },
+        completed: true,
+      },
+      select: { lessonId: true },
+    });
+    for (const r of rows) completedSet.add(r.lessonId);
+  }
+  const completedCount = completedSet.size;
 
   return (
     <aside className="right-sidebar">
@@ -54,6 +71,7 @@ export default async function CoursePlaylistSidebar({
         </div>
         <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
           {course.lessons.length} bài
+          {completedCount > 0 && ` · ${completedCount}/${course.lessons.length} hoàn thành`}
           {course.xpReward ? ` · +${course.xpReward} XP` : ""}
         </div>
       </div>
@@ -68,6 +86,7 @@ export default async function CoursePlaylistSidebar({
       >
         {course.lessons.map((l, i) => {
           const isActive = lessonId ? l.id === lessonId : i === 0;
+          const isCompleted = completedSet.has(l.id);
           const thumb = ytThumb(l.videoUrl);
           const dur = fmtDuration(l.duration);
           return (
@@ -132,7 +151,7 @@ export default async function CoursePlaylistSidebar({
                     position: "absolute",
                     top: 4,
                     left: 4,
-                    background: "rgba(0,0,0,0.75)",
+                    background: isCompleted ? "var(--brand-green)" : "rgba(0,0,0,0.75)",
                     color: "#fff",
                     fontSize: "var(--text-xs)",
                     fontWeight: "var(--fw-bold)",
@@ -143,7 +162,7 @@ export default async function CoursePlaylistSidebar({
                     textAlign: "center",
                   }}
                 >
-                  {i + 1}
+                  {isCompleted ? "✓" : i + 1}
                 </div>
                 {/* Duration badge (bottom-right) */}
                 {dur && (

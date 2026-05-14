@@ -455,6 +455,11 @@ export const DeleteLessonSchema = z.object({
   lessonId: z.string().cuid(),
 });
 
+export const MarkLessonCompleteSchema = z.object({
+  lessonId: z.string().cuid(),
+  completed: z.boolean(),
+});
+
 export const CreateProductSchema = z.object({
   communityId: z.string().cuid(),
   slug: SlugSchema,
