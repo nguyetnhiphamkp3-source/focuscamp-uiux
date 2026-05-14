@@ -248,8 +248,9 @@ export default async function ChallengeDetailPage({
     effectivePrice = calculateEffectivePrice(pricingConfig, { isMember: false, tierKey: null, aipBalance: 0 });
   }
 
-  const dayNow =
-    myMembership?.personalStartsAt
+  const dayNow = myMembership?.completedAt
+    ? challenge.requiredDays
+    : myMembership?.personalStartsAt
       ? Math.min(
           challenge.requiredDays,
           Math.max(
@@ -671,8 +672,8 @@ export default async function ChallengeDetailPage({
                 const isCurrent = !isDone && t.dayNumber === dayNow;
                 const isFuture = t.dayNumber > dayNow && !isDone;
                 const hasBody = !!(t.description || t.sopContent);
-                // When hideFutureTasks is on, show locked placeholder for future days
-                if (challenge.hideFutureTasks && isFuture && !isOwner && myMembership) {
+                // When hideFutureTasks is on, show locked placeholder for future days (skip if member completed)
+                if (challenge.hideFutureTasks && isFuture && !isOwner && myMembership && !myMembership.completedAt) {
                   return (
                     <div key={t.id} className="ch-task" style={{ opacity: 0.5, userSelect: "none" }}>
                       <div className="ch-task-head" style={{ cursor: "default" }}>
@@ -693,8 +694,8 @@ export default async function ChallengeDetailPage({
                     className={`ch-task${isCurrent ? " current" : ""}`}
                     open={isCurrent}
                     style={{
-                      opacity: isFuture && !isOwner ? 0.5 : 1,
-                      pointerEvents: isFuture && !isOwner ? "none" : "auto",
+                      opacity: isFuture && !isOwner && !myMembership?.completedAt ? 0.5 : 1,
+                      pointerEvents: isFuture && !isOwner && !myMembership?.completedAt ? "none" : "auto",
                     }}
                   >
                     <summary
