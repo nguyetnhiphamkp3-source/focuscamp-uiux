@@ -100,7 +100,7 @@ export async function updateCommentAction(input: {
   body: string;
   postId: string;
   communitySlug: string;
-}): Promise<ActionResult> {
+}): Promise<ActionResult<{ body: string }>> {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
 
@@ -113,13 +113,13 @@ export async function updateCommentAction(input: {
   }
 
   try {
-    await updateComment({
+    const res = await updateComment({
       userId: s.user.id,
       commentId: parsed.data.commentId,
       body: parsed.data.body,
     });
     bumpPostPaths(input.communitySlug, input.postId);
-    return { ok: true };
+    return { ok: true, data: { body: res.updated.body } };
   } catch (err) {
     logError(err, { userId: s.user.id, commentId: input.commentId });
     if (err instanceof Error) return { ok: false, reason: err.message };

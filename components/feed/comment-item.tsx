@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition, useState } from "react";
+import { useEffect, useTransition, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -53,6 +53,7 @@ export function CommentItem({
   const [replying, setReplying] = useState(false);
   const [replyBody, setReplyBody] = useState("");
   const [editing, setEditing] = useState(false);
+  const [displayBody, setDisplayBody] = useState(comment.body);
   const [editBody, setEditBody] = useState(comment.body);
 
   const authorName = comment.user.name || "Ẩn danh";
@@ -63,6 +64,11 @@ export function CommentItem({
   const canDelete =
     !!currentUser && (currentUser.id === comment.user.id || isOwner);
   const canReply = !!currentUser && depth < 3; // cap nesting depth
+
+  useEffect(() => {
+    setDisplayBody(comment.body);
+    setEditBody(comment.body);
+  }, [comment.body]);
 
   function toggleBest() {
     setErr(null);
@@ -93,15 +99,19 @@ export function CommentItem({
 
   function saveEdit() {
     setErr(null);
-    if (!editBody.trim()) return;
+    const nextBody = editBody.trim();
+    if (!nextBody) return;
     start(async () => {
       const res = await updateCommentAction({
         commentId: comment.id,
-        body: editBody.trim(),
+        body: nextBody,
         postId,
         communitySlug,
       });
       if (res.ok) {
+        const savedBody = res.data?.body ?? nextBody;
+        setDisplayBody(savedBody);
+        setEditBody(savedBody);
         setEditing(false);
         router.refresh();
       } else {
@@ -258,7 +268,7 @@ export function CommentItem({
                   type="button"
                   onClick={() => {
                     setEditing(false);
-                    setEditBody(comment.body);
+                    setEditBody(displayBody);
                   }}
                   disabled={pending}
                   style={{
@@ -304,7 +314,7 @@ export function CommentItem({
                 wordBreak: "break-word",
               }}
             >
-              {comment.body}
+              {displayBody}
             </div>
           )}
 
@@ -329,7 +339,10 @@ export function CommentItem({
               {canEdit && (
                 <button
                   type="button"
-                  onClick={() => setEditing(true)}
+                  onClick={() => {
+                    setEditBody(displayBody);
+                    setEditing(true);
+                  }}
                   style={actionBtnStyle("var(--interactive-normal)")}
                 >
                   ✎ Sửa
