@@ -6,6 +6,7 @@ import {
 } from "@/lib/brand";
 import { EditProfileButton } from "./edit-profile-modal";
 import { FollowButton } from "./follow-button";
+import { ProfileShareButton } from "./profile-share-button";
 import { classByKey, tierForLevel } from "@/lib/community-config";
 import type { ClassConfig, LevelTier } from "@/lib/community-config";
 
@@ -187,9 +188,10 @@ export function ProfileHeader({
       </div>
       {isSelf ? (
         <div className="pf-actions">
-          <button className="ui-btn ui-btn-secondary ui-btn-sm">
-            Chia sẻ
-          </button>
+          <ProfileShareButton
+            profilePath={`/c/${community.slug}/profile/${user.id}`}
+            profileTitle={name}
+          />
           <EditProfileButton
             initial={{
               name: user.name,
