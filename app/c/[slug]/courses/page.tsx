@@ -208,7 +208,22 @@ export default async function CoursesPage({
                     style={{ textDecoration: "none", color: "inherit" }}
                   >
                     <div className={`course-card-thumb ${t.cls}`}>
-                      <span className="thumb-icon">{t.icon}</span>
+                      {c.thumbnailUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={c.thumbnailUrl}
+                          alt={c.title}
+                          style={{
+                            position: "absolute",
+                            inset: 0,
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
+                      ) : (
+                        <span className="thumb-icon">{t.icon}</span>
+                      )}
                       <span className="course-card-level">
                         {c.level === "BASIC"
                           ? "Basic"
