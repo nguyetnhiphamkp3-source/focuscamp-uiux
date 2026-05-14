@@ -59,8 +59,8 @@ export function EditLessonButton({
         description: description.trim() || undefined,
         content: content.trim() || undefined,
         videoUrl: videoUrl.trim() || undefined,
-        duration: duration ? parseInt(duration, 10) : undefined,
-        position: position ? parseInt(position, 10) : undefined,
+        duration: duration !== "" ? parseInt(duration, 10) : undefined,
+        position: position !== "" ? parseInt(position, 10) : undefined,
       });
       if (res.ok) {
         setOpen(false);

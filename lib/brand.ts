@@ -68,7 +68,7 @@ export function toEmbedUrl(url: string | null | undefined, source?: VideoSource)
   if (!url) return null;
   const trimmed = url.trim();
 
-  if (source === "bunny" || trimmed.includes("mediadelivery.net")) {
+  if (source === "bunny" || trimmed.includes("mediadelivery.net") || trimmed.includes("bunnycdn.com")) {
     if (trimmed.includes("/embed/")) return trimmed;
     const m = trimmed.match(/(?:video\.bunnycdn\.com|mediadelivery\.net)\/(?:play|library)\/([^/]+)\/([^/?]+)/);
     if (m) return `https://iframe.mediadelivery.net/embed/${m[1]}/${m[2]}`;

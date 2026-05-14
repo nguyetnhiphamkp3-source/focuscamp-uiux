@@ -233,6 +233,22 @@ export async function markLessonComplete(input: {
   });
   if (!membership) throw new Error("Bạn chưa tham gia cộng đồng này");
 
+  // Enforce sequential order: previous lesson must be completed first
+  if (input.completed) {
+    const allLessons = await prisma.lesson.findMany({
+      where: { courseId: lesson.course.id },
+      orderBy: { position: "asc" },
+      select: { id: true },
+    });
+    const idx = allLessons.findIndex((l) => l.id === input.lessonId);
+    if (idx > 0) {
+      const prevCompleted = await prisma.courseProgress.findFirst({
+        where: { userId: input.userId, lessonId: allLessons[idx - 1].id, completed: true },
+      });
+      if (!prevCompleted) throw new Error("Bạn cần hoàn thành bài học trước");
+    }
+  }
+
   await prisma.courseProgress.upsert({
     where: {
       userId_lessonId: { userId: input.userId, lessonId: input.lessonId },

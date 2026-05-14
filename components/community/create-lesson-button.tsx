@@ -42,7 +42,7 @@ export function CreateLessonButton({
         description: description.trim() || undefined,
         content: content.trim() || undefined,
         videoUrl: videoUrl.trim() || undefined,
-        duration: duration ? parseInt(duration, 10) : undefined,
+        duration: duration !== "" ? parseInt(duration, 10) : undefined,
       });
       if (res.ok) {
         setOpen(false);

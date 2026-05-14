@@ -103,7 +103,7 @@ export default async function CourseDetailPage({
   // Sequential locking: lesson is locked if the previous lesson is not completed
   // First lesson is always unlocked; owners bypass locking
   let isLocked = false;
-  if (activeLesson && !isOwner && session?.user?.id) {
+  if (activeLesson && !isOwner) {
     const idx = course.lessons.findIndex((l) => l.id === activeLesson.id);
     if (idx > 0) {
       const prevLesson = course.lessons[idx - 1];
@@ -150,6 +150,9 @@ export default async function CourseDetailPage({
             padding: "var(--space-6) var(--space-8) var(--space-10)",
           }}
         >
+          {/* Locked notice */}
+          {isLocked && <LockedLessonNotice />}
+
           {/* VIDEO */}
           {activeLesson && !isLocked ? (
             <div
@@ -185,8 +188,6 @@ export default async function CourseDetailPage({
                 </div>
               )}
             </div>
-          ) : activeLesson && isLocked ? (
-            <LockedLessonNotice communitySlug={slug} courseSlug={courseSlug} />
           ) : null}
 
           {/* TITLE */}
