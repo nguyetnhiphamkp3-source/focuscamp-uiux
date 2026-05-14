@@ -164,8 +164,8 @@ export default async function CoursePlaylistSidebar({
                 >
                   {isCompleted ? "✓" : i + 1}
                 </div>
-                {/* Duration badge (bottom-right) */}
-                {dur && (
+                {/* Duration badge (bottom-right) — hide when no real duration */}
+                {dur && dur !== "—" && (
                   <div
                     style={{
                       position: "absolute",
@@ -209,16 +209,9 @@ export default async function CoursePlaylistSidebar({
                         justifyContent: "center",
                       }}
                     >
-                      <div
-                        style={{
-                          width: 0,
-                          height: 0,
-                          borderLeft: "10px solid var(--text-heading)",
-                          borderTop: "6px solid transparent",
-                          borderBottom: "6px solid transparent",
-                          marginLeft: 2,
-                        }}
-                      />
+                      <svg width="12" height="14" viewBox="0 0 12 14" fill="var(--text-heading)" style={{ marginLeft: 1 }}>
+                        <path d="M0 0v14l12-7z" />
+                      </svg>
                     </div>
                   </div>
                 )}

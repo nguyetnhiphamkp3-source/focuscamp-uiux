@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateCourseAction } from "@/app/actions/course";
+import { ImageUploadField } from "@/components/shared/image-upload-field";
 
 /**
  * Inline settings panel for course detail — owner can edit title,
@@ -159,19 +160,19 @@ export function CourseSettingsPanel({
                 <option value="EXPERT">🔴 Expert</option>
               </select>
             </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
-                Thumbnail URL
+                Thumbnail
               </span>
-              <input
-                type="url"
-                value={thumbnailUrl}
-                onChange={(e) => setThumbnailUrl(e.target.value)}
+              <ImageUploadField
+                value={thumbnailUrl || null}
+                onChange={(url) => setThumbnailUrl(url ?? "")}
+                context="community"
+                shape="banner"
                 disabled={pending}
-                placeholder="https://..."
-                style={inputStyle}
+                placeholder="Ảnh bìa khoá học"
               />
-            </label>
+            </div>
           </div>
           <label
             style={{
