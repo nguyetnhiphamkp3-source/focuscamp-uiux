@@ -128,28 +128,31 @@ export function CreateCommunityButton({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            padding: 20,
+            padding: "var(--space-4)",
           }}
         >
           <div
             style={{
               background: "var(--bg-floating)",
-              borderRadius: 14,
+              borderRadius: "var(--r-xl)",
               border: "1px solid var(--border-subtle)",
               maxWidth: 540,
+              maxHeight: "calc(100dvh - var(--space-8))",
               width: "100%",
               display: "flex",
               flexDirection: "column",
+              overflow: "hidden",
               boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
             }}
           >
             <div
               style={{
-                padding: "20px 24px",
+                padding: "var(--space-4) var(--space-6)",
                 borderBottom: "1px solid var(--border-subtle)",
                 fontSize: "var(--text-xl)",
                 fontWeight: 700,
                 color: "var(--header-primary)",
+                flexShrink: 0,
               }}
             >
               Tạo cộng đồng mới
@@ -157,10 +160,13 @@ export function CreateCommunityButton({
 
             <div
               style={{
-                padding: "20px 24px",
+                padding: "var(--space-4) var(--space-6)",
                 display: "flex",
                 flexDirection: "column",
-                gap: 16,
+                gap: "var(--space-3)",
+                flex: 1,
+                minHeight: 0,
+                overflowY: "auto",
               }}
             >
               <Field
@@ -310,9 +316,10 @@ export function CreateCommunityButton({
             {err && (
               <div
                 style={{
-                  padding: "0 24px 8px",
+                  padding: "0 var(--space-6) var(--space-2)",
                   fontSize: "var(--text-sm)",
                   color: "var(--danger)",
+                  flexShrink: 0,
                 }}
               >
                 {err}
@@ -321,11 +328,13 @@ export function CreateCommunityButton({
 
             <div
               style={{
-                padding: "16px 24px",
+                padding: "var(--space-3) var(--space-6)",
                 borderTop: "1px solid var(--border-subtle)",
                 display: "flex",
                 flexDirection: "column",
-                gap: 12,
+                gap: "var(--space-3)",
+                flexShrink: 0,
+                background: "var(--bg-floating)",
               }}
             >
               <div
