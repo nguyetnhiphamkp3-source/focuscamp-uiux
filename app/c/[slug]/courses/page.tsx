@@ -8,6 +8,16 @@ import { FeaturedGlobalToggle } from "@/components/marketplace/featured-global-t
 
 export const dynamic = "force-dynamic";
 
+type CourseFilter = "all" | "in-progress" | "free" | "pro" | "completed";
+
+const COURSE_FILTERS: { key: CourseFilter; label: string }[] = [
+  { key: "all", label: "Tất cả" },
+  { key: "in-progress", label: "Đang học" },
+  { key: "free", label: "Miễn phí" },
+  { key: "pro", label: "PRO" },
+  { key: "completed", label: "Đã hoàn thành" },
+];
+
 const PILLAR_THUMB: Record<string, { cls: string; icon: string }> = {
   Offer: { cls: "p-offer", icon: "🎯" },
   Traffic: { cls: "p-traffic", icon: "📣" },
@@ -24,19 +34,59 @@ function thumbFor(pillar: string | null) {
   return { cls: "p-offer", icon: "📚" };
 }
 
+function firstParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function normalizeFilter(value: string | string[] | undefined): CourseFilter {
+  const raw = firstParam(value);
+  return COURSE_FILTERS.some((f) => f.key === raw) ? (raw as CourseFilter) : "all";
+}
+
+function isProCourse(course: { level: string; requiredTier: string | null }) {
+  return (
+    course.requiredTier === "PRO" ||
+    course.level === "ADVANCED" ||
+    course.level === "EXPERT"
+  );
+}
+
+function progressText(progress: { completed: number; touched: number; total: number }) {
+  if (progress.total === 0 || progress.touched === 0) return "Chưa bắt đầu";
+  if (progress.completed >= progress.total) return "Đã hoàn thành";
+  return `${progress.completed}/${progress.total} bài`;
+}
+
+function progressPercent(progress: { completed: number; total: number }) {
+  if (progress.total === 0) return 0;
+  return Math.round((progress.completed / progress.total) * 100);
+}
+
+function filterHref(slug: string, filter: CourseFilter) {
+  return filter === "all"
+    ? `/c/${slug}/courses`
+    : `/c/${slug}/courses?filter=${filter}`;
+}
+
 export default async function CoursesPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ filter?: string | string[] }>;
 }) {
-  const { slug } = await params;
+  const [{ slug }, query] = await Promise.all([params, searchParams]);
+  const activeFilter = normalizeFilter(query.filter);
   const session = await auth();
   const community = await prisma.community.findUnique({
     where: { slug },
     include: {
       courses: {
         // Owners see unpublished drafts too; members/guests see only published
-        include: { _count: { select: { lessons: true } } },
+        include: {
+          lessons: { select: { id: true } },
+          _count: { select: { lessons: true } },
+        },
         orderBy: { createdAt: "desc" },
       },
     },
@@ -46,6 +96,56 @@ export default async function CoursesPage({
   const visibleCourses = isOwner
     ? community.courses
     : community.courses.filter((c) => c.isPublished);
+  const progressByCourse = new Map<
+    string,
+    { completed: number; touched: number; total: number }
+  >();
+  const lessonToCourse = new Map<string, string>();
+
+  for (const c of visibleCourses) {
+    progressByCourse.set(c.id, {
+      completed: 0,
+      touched: 0,
+      total: c._count.lessons,
+    });
+    for (const lesson of c.lessons) lessonToCourse.set(lesson.id, c.id);
+  }
+
+  if (session?.user?.id && lessonToCourse.size > 0) {
+    const rows = await prisma.courseProgress.findMany({
+      where: {
+        userId: session.user.id,
+        lessonId: { in: Array.from(lessonToCourse.keys()) },
+      },
+      select: { lessonId: true, completed: true },
+    });
+
+    for (const row of rows) {
+      const courseId = lessonToCourse.get(row.lessonId);
+      const progress = courseId ? progressByCourse.get(courseId) : null;
+      if (!progress) continue;
+      progress.touched += 1;
+      if (row.completed) progress.completed += 1;
+    }
+  }
+
+  const filteredCourses = visibleCourses.filter((c) => {
+    const progress = progressByCourse.get(c.id) ?? {
+      completed: 0,
+      touched: 0,
+      total: c._count.lessons,
+    };
+    const pro = isProCourse(c);
+    if (activeFilter === "free") return !pro;
+    if (activeFilter === "pro") return pro;
+    if (activeFilter === "in-progress") {
+      return progress.touched > 0 && progress.completed < progress.total;
+    }
+    if (activeFilter === "completed") {
+      return progress.total > 0 && progress.completed >= progress.total;
+    }
+    return true;
+  });
 
   return (
     <>
