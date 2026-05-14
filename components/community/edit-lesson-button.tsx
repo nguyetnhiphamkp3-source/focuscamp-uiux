@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { updateLessonAction, deleteLessonAction } from "@/app/actions/course";
 import type { VideoSource } from "@/lib/brand";
 
-const VIDEO_SOURCES: { value: VideoSource; label: string; placeholder: string }[] = [
-  { value: "youtube", label: "YouTube", placeholder: "https://www.youtube.com/watch?v=..." },
-  { value: "vimeo", label: "Vimeo", placeholder: "https://vimeo.com/123456789" },
-  { value: "bunny", label: "Bunny Stream", placeholder: "https://video.bunnycdn.com/play/library_id/video_id" },
+const VIDEO_SOURCES: { value: VideoSource; label: string; placeholder: string; hint: string }[] = [
+  { value: "youtube", label: "YouTube", placeholder: "https://www.youtube.com/watch?v=...", hint: "Hỗ trợ: youtube.com/watch?v=, youtu.be/, youtube.com/embed/" },
+  { value: "vimeo", label: "Vimeo", placeholder: "https://vimeo.com/123456789", hint: "Hỗ trợ: vimeo.com/VIDEO_ID, player.vimeo.com/video/VIDEO_ID" },
+  { value: "bunny", label: "Bunny Stream", placeholder: "https://video.bunnycdn.com/play/library_id/video_id", hint: "Hỗ trợ: video.bunnycdn.com/play/LIB/VID hoặc iframe.mediadelivery.net/embed/LIB/VID" },
 ];
 
 function detectSource(url: string | null): VideoSource {
@@ -42,7 +42,8 @@ export function EditLessonButton({
   const [content, setContent] = useState(lesson.content ?? "");
   const [videoSource, setVideoSource] = useState<VideoSource>(detectSource(lesson.videoUrl));
   const [videoUrl, setVideoUrl] = useState(lesson.videoUrl ?? "");
-  const [duration, setDuration] = useState(lesson.duration?.toString() ?? "");
+  const [durationMin, setDurationMin] = useState(lesson.duration ? Math.floor(lesson.duration / 60).toString() : "");
+  const [durationSec, setDurationSec] = useState(lesson.duration ? (lesson.duration % 60).toString() : "");
   const [position, setPosition] = useState(lesson.position.toString());
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
@@ -59,7 +60,7 @@ export function EditLessonButton({
         description: description.trim() || undefined,
         content: content.trim() || undefined,
         videoUrl: videoUrl.trim() || undefined,
-        duration: duration !== "" ? parseInt(duration, 10) : undefined,
+        duration: (durationMin || durationSec) ? (parseInt(durationMin || "0", 10) * 60 + parseInt(durationSec || "0", 10)) : undefined,
         position: position !== "" ? parseInt(position, 10) : undefined,
       });
       if (res.ok) {
@@ -202,17 +203,35 @@ export function EditLessonButton({
                     style={inputStyle}
                   />
                 </div>
+                <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>
+                  {VIDEO_SOURCES.find((s) => s.value === videoSource)?.hint}
+                </div>
               </Field>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <Field label="Thời lượng (giây)">
-                  <input
-                    type="number"
-                    min={0}
-                    value={duration}
-                    onChange={(e) => setDuration(e.target.value)}
-                    disabled={pending}
-                    style={inputStyle}
-                  />
+                <Field label="Thời lượng">
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    <input
+                      type="number"
+                      min={0}
+                      value={durationMin}
+                      onChange={(e) => setDurationMin(e.target.value)}
+                      disabled={pending}
+                      placeholder="0"
+                      style={{ ...inputStyle, width: 60 }}
+                    />
+                    <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>phút</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={59}
+                      value={durationSec}
+                      onChange={(e) => setDurationSec(e.target.value)}
+                      disabled={pending}
+                      placeholder="0"
+                      style={{ ...inputStyle, width: 60 }}
+                    />
+                    <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>giây</span>
+                  </div>
                 </Field>
                 <Field label="Vị trí (thứ tự)">
                   <input

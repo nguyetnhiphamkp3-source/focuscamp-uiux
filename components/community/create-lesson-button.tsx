@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { createLessonAction } from "@/app/actions/course";
 import type { VideoSource } from "@/lib/brand";
 
-const VIDEO_SOURCES: { value: VideoSource; label: string; placeholder: string }[] = [
-  { value: "youtube", label: "YouTube", placeholder: "https://www.youtube.com/watch?v=..." },
-  { value: "vimeo", label: "Vimeo", placeholder: "https://vimeo.com/123456789" },
-  { value: "bunny", label: "Bunny Stream", placeholder: "https://video.bunnycdn.com/play/library_id/video_id" },
+const VIDEO_SOURCES: { value: VideoSource; label: string; placeholder: string; hint: string }[] = [
+  { value: "youtube", label: "YouTube", placeholder: "https://www.youtube.com/watch?v=...", hint: "Hỗ trợ: youtube.com/watch?v=, youtu.be/, youtube.com/embed/" },
+  { value: "vimeo", label: "Vimeo", placeholder: "https://vimeo.com/123456789", hint: "Hỗ trợ: vimeo.com/VIDEO_ID, player.vimeo.com/video/VIDEO_ID" },
+  { value: "bunny", label: "Bunny Stream", placeholder: "https://video.bunnycdn.com/play/library_id/video_id", hint: "Hỗ trợ: video.bunnycdn.com/play/LIB/VID hoặc iframe.mediadelivery.net/embed/LIB/VID" },
 ];
 
 export function CreateLessonButton({
@@ -27,7 +27,8 @@ export function CreateLessonButton({
   const [content, setContent] = useState("");
   const [videoSource, setVideoSource] = useState<VideoSource>("youtube");
   const [videoUrl, setVideoUrl] = useState("");
-  const [duration, setDuration] = useState("");
+  const [durationMin, setDurationMin] = useState("");
+  const [durationSec, setDurationSec] = useState("");
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
 
@@ -42,7 +43,7 @@ export function CreateLessonButton({
         description: description.trim() || undefined,
         content: content.trim() || undefined,
         videoUrl: videoUrl.trim() || undefined,
-        duration: duration !== "" ? parseInt(duration, 10) : undefined,
+        duration: (durationMin || durationSec) ? (parseInt(durationMin || "0", 10) * 60 + parseInt(durationSec || "0", 10)) : undefined,
       });
       if (res.ok) {
         setOpen(false);
@@ -60,7 +61,8 @@ export function CreateLessonButton({
     setContent("");
     setVideoSource("youtube");
     setVideoUrl("");
-    setDuration("");
+    setDurationMin("");
+    setDurationSec("");
   }
 
   return (
@@ -179,16 +181,34 @@ export function CreateLessonButton({
                     style={inputStyle}
                   />
                 </div>
+                <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>
+                  {VIDEO_SOURCES.find((s) => s.value === videoSource)?.hint}
+                </div>
               </Field>
-              <Field label="Thời lượng (giây, tuỳ chọn)">
-                <input
-                  type="number"
-                  min={0}
-                  value={duration}
-                  onChange={(e) => setDuration(e.target.value)}
-                  disabled={pending}
-                  style={inputStyle}
-                />
+              <Field label="Thời lượng">
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <input
+                    type="number"
+                    min={0}
+                    value={durationMin}
+                    onChange={(e) => setDurationMin(e.target.value)}
+                    disabled={pending}
+                    placeholder="0"
+                    style={{ ...inputStyle, width: 80 }}
+                  />
+                  <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>phút</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={59}
+                    value={durationSec}
+                    onChange={(e) => setDurationSec(e.target.value)}
+                    disabled={pending}
+                    placeholder="0"
+                    style={{ ...inputStyle, width: 80 }}
+                  />
+                  <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>giây</span>
+                </div>
               </Field>
               <Field label="Nội dung bài học (markdown / text)">
                 <textarea
