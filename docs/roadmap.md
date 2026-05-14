@@ -135,8 +135,8 @@ Key: ✅ done · 🟡 partial · ❌ not started · 🚫 deferred (Phase 2+)
 | Global search (posts + users + communities) | ✅ | `/search` — Postgres `contains` MVP. tsvector = Phase 2 |
 | Cmd+K shortcut | ✅ | Also `g h / g i / g d` for home / inbox / discovery |
 | `/u/<handle>` global profile landing | ✅ | Chips only, no cross-community stats (Skool pattern) |
-| Discovery featured communities/challenges | ✅ | Community `category` + `featuredOnGlobal`; challenges reuse `featuredOnGlobal`; latest fallback when no featured match; 9-per-page pagination |
-| Discovery search/filter URL UX | ✅ | Search commits on Enter; category dropdown; `q/category/section` preserved by links |
+| Discovery featured communities/challenges | ✅ | Communities list all matches with verified pinned first, ordered by member count; challenges reuse `featuredOnGlobal`; 9-per-page pagination |
+| Discovery search/filter URL UX | ✅ | Search commits on Enter; category dropdown temporarily hidden; `q/section` preserved by links |
 
 ### Shared infra
 | Item | Status |

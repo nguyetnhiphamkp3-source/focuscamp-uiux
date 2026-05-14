@@ -2,7 +2,6 @@ import Link from "next/link";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { DiscoveryFilters } from "@/components/discovery/discovery-filters";
-import { isCommunityCategory } from "@/lib/community-categories";
 import { BRAND_GRADIENTS as BANNER_GRADIENTS, initials } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
@@ -10,13 +9,16 @@ export const dynamic = "force-dynamic";
 const DISCOVERY_PAGE_SIZE = 9;
 const VERIFIED_COMMUNITY_SLUGS = ["the-all-in-plan"] as const;
 const VERIFIED_COMMUNITY_SLUG_SET = new Set<string>(VERIFIED_COMMUNITY_SLUGS);
+const COMMUNITY_LIST_ORDER = [
+  { memberships: { _count: "desc" } },
+  { createdAt: "desc" },
+] satisfies Prisma.CommunityOrderByWithRelationInput[];
 
 export default async function DiscoveryPage({
   searchParams,
 }: {
   searchParams: Promise<{
     q?: string;
-    category?: string;
     section?: string;
     communityPage?: string;
     challengePage?: string;
@@ -24,13 +26,11 @@ export default async function DiscoveryPage({
 }) {
   const {
     q: rawQ,
-    category: rawCategory,
     section: sectionParam,
     communityPage: rawCommunityPage,
     challengePage: rawChallengePage,
   } = await searchParams;
   const q = rawQ?.trim() ?? "";
-  const category = isCommunityCategory(rawCategory) ? rawCategory : null;
   const section =
     sectionParam === "communities" || sectionParam === "challenges"
       ? sectionParam
@@ -51,7 +51,6 @@ export default async function DiscoveryPage({
   }) {
     const sp = new URLSearchParams();
     if (q) sp.set("q", q);
-    if (category) sp.set("category", category);
     if (communityPage > 1) sp.set("communityPage", String(communityPage));
     if (challengePage > 1) sp.set("challengePage", String(challengePage));
     if (nextSection) sp.set("section", nextSection);
@@ -69,15 +68,22 @@ export default async function DiscoveryPage({
           ],
         }
       : {}),
-    ...(category ? { category } : {}),
   };
-  const pinnedCommunityWhere: Prisma.CommunityWhereInput = {
-    AND: [communityWhere, { slug: { in: [...VERIFIED_COMMUNITY_SLUGS] } }],
-  };
-  const featuredCommunityWhere: Prisma.CommunityWhereInput = {
+  const verifiedCommunityWhere: Prisma.CommunityWhereInput = {
     AND: [
       communityWhere,
-      { featuredOnGlobal: true },
+      {
+        OR: [
+          { featuredOnGlobal: true },
+          { slug: { in: [...VERIFIED_COMMUNITY_SLUGS] } },
+        ],
+      },
+    ],
+  };
+  const unverifiedCommunityWhere: Prisma.CommunityWhereInput = {
+    AND: [
+      communityWhere,
+      { featuredOnGlobal: false },
       { NOT: { slug: { in: [...VERIFIED_COMMUNITY_SLUGS] } } },
     ],
   };
@@ -99,15 +105,13 @@ export default async function DiscoveryPage({
   };
 
   const [
-    pinnedCommunityCount,
-    featuredCommunityCount,
-    latestCommunityCount,
+    verifiedCommunityCount,
+    communityListingCount,
     featuredChallengeCount,
     latestChallengeCount,
     totals,
   ] = await Promise.all([
-    prisma.community.count({ where: pinnedCommunityWhere }),
-    prisma.community.count({ where: featuredCommunityWhere }),
+    prisma.community.count({ where: verifiedCommunityWhere }),
     prisma.community.count({ where: communityWhere }),
     prisma.challenge.count({ where: featuredChallengeWhere }),
     prisma.challenge.count({ where: challengeWhere }),
@@ -119,17 +123,11 @@ export default async function DiscoveryPage({
     ]),
   ]);
 
-  const verifiedCommunityCount = pinnedCommunityCount + featuredCommunityCount;
-  const showingLatestCommunities =
-    verifiedCommunityCount === 0 && latestCommunityCount > 0;
   const showingLatestChallenges =
     featuredChallengeCount === 0 && latestChallengeCount > 0;
   const effectiveChallengeWhere = showingLatestChallenges
     ? challengeWhere
     : featuredChallengeWhere;
-  const communityListingCount = showingLatestCommunities
-    ? latestCommunityCount
-    : verifiedCommunityCount;
   const challengeListingCount = showingLatestChallenges
     ? latestChallengeCount
     : featuredChallengeCount;
@@ -141,10 +139,9 @@ export default async function DiscoveryPage({
   const [communities, challenges] = await Promise.all([
     getCommunityPage({
       page: communityPage,
-      showingLatest: showingLatestCommunities,
-      communityWhere,
-      pinnedCommunityWhere,
-      featuredCommunityWhere,
+      verifiedCount: verifiedCommunityCount,
+      verifiedCommunityWhere,
+      unverifiedCommunityWhere,
     }),
     prisma.challenge.findMany({
       take: DISCOVERY_PAGE_SIZE,
@@ -194,26 +191,13 @@ export default async function DiscoveryPage({
 
         <DiscoveryFilters />
 
-        {/* Featured communities */}
+        {/* Communities */}
         <div className="dc-section-head" id="featured-communities">
-          <h2>🌟 Featured Communities</h2>
+          <h2>🌟 Communities</h2>
           <span className="dc-section-count">
             {communityListingCount.toLocaleString("vi-VN")} communities
           </span>
         </div>
-
-        {showingLatestCommunities && (
-          <div
-            style={{
-              marginTop: "-8px",
-              marginBottom: 12,
-              fontSize: "var(--text-sm)",
-              color: "var(--text-muted)",
-            }}
-          >
-            Đang hiển thị cộng đồng mới nhất vì chưa có Featured Communities phù hợp.
-          </div>
-        )}
 
         {communities.length === 0 ? (
           <div
@@ -387,48 +371,36 @@ export default async function DiscoveryPage({
 
 async function getCommunityPage({
   page,
-  showingLatest,
-  communityWhere,
-  pinnedCommunityWhere,
-  featuredCommunityWhere,
+  verifiedCount,
+  verifiedCommunityWhere,
+  unverifiedCommunityWhere,
 }: {
   page: number;
-  showingLatest: boolean;
-  communityWhere: Prisma.CommunityWhereInput;
-  pinnedCommunityWhere: Prisma.CommunityWhereInput;
-  featuredCommunityWhere: Prisma.CommunityWhereInput;
+  verifiedCount: number;
+  verifiedCommunityWhere: Prisma.CommunityWhereInput;
+  unverifiedCommunityWhere: Prisma.CommunityWhereInput;
 }) {
   const start = (page - 1) * DISCOVERY_PAGE_SIZE;
 
-  if (showingLatest) {
-    return prisma.community.findMany({
-      take: DISCOVERY_PAGE_SIZE,
-      skip: start,
-      where: communityWhere,
-      orderBy: { createdAt: "desc" },
-      include: communityCardInclude,
-    });
-  }
-
-  const pinnedCommunities = await prisma.community.findMany({
-    take: VERIFIED_COMMUNITY_SLUGS.length,
-    where: pinnedCommunityWhere,
-    orderBy: { createdAt: "desc" },
+  const verifiedCommunities = await prisma.community.findMany({
+    take: DISCOVERY_PAGE_SIZE,
+    skip: Math.min(start, verifiedCount),
+    where: verifiedCommunityWhere,
+    orderBy: COMMUNITY_LIST_ORDER,
     include: communityCardInclude,
   });
-  const pinnedForPage = pinnedCommunities.slice(start, start + DISCOVERY_PAGE_SIZE);
-  const remaining = DISCOVERY_PAGE_SIZE - pinnedForPage.length;
-  if (remaining <= 0) return pinnedForPage;
+  const remaining = DISCOVERY_PAGE_SIZE - verifiedCommunities.length;
+  if (remaining <= 0) return verifiedCommunities;
 
-  const featuredCommunities = await prisma.community.findMany({
+  const unverifiedCommunities = await prisma.community.findMany({
     take: remaining,
-    skip: Math.max(0, start - pinnedCommunities.length),
-    where: featuredCommunityWhere,
-    orderBy: { createdAt: "desc" },
+    skip: Math.max(0, start - verifiedCount),
+    where: unverifiedCommunityWhere,
+    orderBy: COMMUNITY_LIST_ORDER,
     include: communityCardInclude,
   });
 
-  return [...pinnedForPage, ...featuredCommunities];
+  return [...verifiedCommunities, ...unverifiedCommunities];
 }
 
 const communityCardInclude = {
