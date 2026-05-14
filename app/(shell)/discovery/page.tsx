@@ -9,9 +9,24 @@ import { BRAND_GRADIENTS as BANNER_GRADIENTS, initials } from "@/lib/brand";
 export default async function DiscoveryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; category?: string }>;
+  searchParams: Promise<{ q?: string; category?: string; section?: string }>;
 }) {
-  const { q, category } = await searchParams;
+  const { q, category, section: sectionParam } = await searchParams;
+  const section =
+    sectionParam === "communities" || sectionParam === "challenges"
+      ? sectionParam
+      : null;
+  const showAllCommunities = section === "communities";
+  const showAllChallenges = section === "challenges";
+
+  function discoveryHref(nextSection: typeof section, hash?: string) {
+    const sp = new URLSearchParams();
+    if (q) sp.set("q", q);
+    if (category && category !== "Tất cả") sp.set("category", category);
+    if (nextSection) sp.set("section", nextSection);
+    const qs = sp.toString();
+    return `/discovery${qs ? `?${qs}` : ""}${hash ? `#${hash}` : ""}`;
+  }
 
   const communityWhere = {
     ...(q
@@ -40,7 +55,7 @@ export default async function DiscoveryPage({
 
   const [communities, challenges, totals] = await Promise.all([
     prisma.community.findMany({
-      take: 24,
+      take: showAllCommunities ? 60 : 24,
       where: communityWhere,
       orderBy: { createdAt: "desc" },
       include: {
@@ -48,7 +63,7 @@ export default async function DiscoveryPage({
       },
     }),
     prisma.challenge.findMany({
-      take: 6,
+      take: showAllChallenges ? 24 : 6,
       where: challengeWhere,
       orderBy: { createdAt: "desc" },
       include: {
@@ -103,7 +118,12 @@ export default async function DiscoveryPage({
         {/* Featured communities */}
         <div className="dc-section-head">
           <h2>🌟 Featured Communities</h2>
-          <span className="see-all">Xem tất cả →</span>
+          <Link
+            href={discoveryHref(showAllCommunities ? null : "communities")}
+            className="see-all"
+          >
+            {showAllCommunities ? "Thu gọn ↑" : "Xem tất cả →"}
+          </Link>
         </div>
 
         {communities.length === 0 ? (
@@ -173,9 +193,17 @@ export default async function DiscoveryPage({
         {/* Trending Challenges */}
         {challenges.length > 0 && (
           <>
-            <div className="dc-section-head">
+            <div className="dc-section-head" id="trending-challenges">
               <h2>⚔️ Trending Challenges</h2>
-              <span className="see-all">Xem tất cả →</span>
+              <Link
+                href={discoveryHref(
+                  showAllChallenges ? null : "challenges",
+                  "trending-challenges"
+                )}
+                className="see-all"
+              >
+                {showAllChallenges ? "Thu gọn ↑" : "Xem tất cả →"}
+              </Link>
             </div>
             <div className="ch-grid">
               {challenges.map((ch) => {
