@@ -66,6 +66,7 @@ export async function createCommunityAction(input: {
   slug: string;
   tagline?: string;
   description?: string;
+  category?: string | null;
   planTier: PlanTier;
 }): Promise<
   | { ok: true; slug: string; paymentCode: string }
@@ -79,6 +80,7 @@ export async function createCommunityAction(input: {
     slug: input.slug,
     tagline: input.tagline,
     description: input.description,
+    category: input.category,
     planTier: input.planTier,
   });
   if (!parsed.success) {
@@ -92,6 +94,7 @@ export async function createCommunityAction(input: {
       slug: parsed.data.slug,
       tagline: parsed.data.tagline || undefined,
       description: parsed.data.description || undefined,
+      category: parsed.data.category || undefined,
       planTier: parsed.data.planTier,
     });
     revalidatePath("/discovery");
@@ -198,6 +201,8 @@ export async function updateCommunityInfoAction(input: {
   name?: string;
   tagline?: string;
   description?: string;
+  category?: string | null;
+  featuredOnGlobal?: boolean;
   bannerUrl?: string;
   iconUrl?: string;
 }): Promise<{ ok: true } | { ok: false; reason: string }> {
@@ -209,6 +214,8 @@ export async function updateCommunityInfoAction(input: {
     name: input.name,
     tagline: input.tagline,
     description: input.description,
+    category: input.category,
+    featuredOnGlobal: input.featuredOnGlobal,
     bannerUrl: input.bannerUrl,
     iconUrl: input.iconUrl,
   });
@@ -223,6 +230,8 @@ export async function updateCommunityInfoAction(input: {
       name: parsed.data.name,
       tagline: parsed.data.tagline ?? undefined,
       description: parsed.data.description ?? undefined,
+      category: parsed.data.category ?? undefined,
+      featuredOnGlobal: parsed.data.featuredOnGlobal,
       bannerUrl: parsed.data.bannerUrl ?? undefined,
       iconUrl: parsed.data.iconUrl ?? undefined,
     });

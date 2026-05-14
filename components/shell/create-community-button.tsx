@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { createCommunityAction } from "@/app/actions/community";
 import { toSlug, fmtVnd } from "@/lib/brand";
+import { COMMUNITY_CATEGORIES } from "@/lib/community-categories";
 import { PLATFORM_PLANS } from "@/lib/platform-plans";
 
 type PaidTier = "SOLO" | "PRO" | "AGENCY";
@@ -25,6 +26,7 @@ export function CreateCommunityButton({
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
   const [tagline, setTagline] = useState("");
+  const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
   const [planTier, setPlanTier] = useState<PaidTier>("SOLO");
   const [pending, start] = useTransition();
@@ -45,6 +47,7 @@ export function CreateCommunityButton({
         name: name.trim(),
         slug: slug.trim(),
         tagline: tagline.trim() || undefined,
+        category: category || undefined,
         description: description.trim() || undefined,
         planTier,
       });
@@ -62,6 +65,7 @@ export function CreateCommunityButton({
     setSlug("");
     setSlugTouched(false);
     setTagline("");
+    setCategory("");
     setDescription("");
     setPlanTier("SOLO");
     setErr(null);
@@ -215,6 +219,22 @@ export function CreateCommunityButton({
                   placeholder="Dòng mô tả ngắn hiện trên banner"
                   style={inputStyle}
                 />
+              </Field>
+
+              <Field label="Category (tuỳ chọn)" hint="Dùng cho Discovery filter">
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  disabled={pending}
+                  style={inputStyle}
+                >
+                  <option value="">Chưa chọn</option>
+                  {COMMUNITY_CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
               </Field>
 
               <Field label="Mô tả (tuỳ chọn)">

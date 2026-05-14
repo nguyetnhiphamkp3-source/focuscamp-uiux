@@ -98,6 +98,8 @@ export default async function SettingsPage({
               name: community.name,
               tagline: community.tagline,
               description: community.description,
+              category: community.category,
+              featuredOnGlobal: community.featuredOnGlobal,
               bannerUrl: community.bannerUrl,
               iconUrl: community.iconUrl,
             }}

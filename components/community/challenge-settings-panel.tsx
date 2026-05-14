@@ -312,7 +312,7 @@ export function ChallengeSettingsPanel({
                   color: "var(--header-primary)",
                 }}
               >
-                🌐 Hiện trên Marketplace chung
+                🌐 Hiện trên Marketplace/Discovery chung
               </div>
               <div
                 style={{
@@ -321,7 +321,7 @@ export function ChallengeSettingsPanel({
                   marginTop: 2,
                 }}
               >
-                Cho phép challenge này xuất hiện ở /marketplace public — user
+                Cho phép challenge này xuất hiện ở /marketplace và /discovery public — user
                 ngoài cộng đồng có thể khám phá và join.
               </div>
             </div>

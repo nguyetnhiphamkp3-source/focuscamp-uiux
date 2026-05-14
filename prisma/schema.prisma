@@ -135,6 +135,9 @@ model Community {
   /** AI Agent system prompt configured by owner. Empty = generic helper. */
   agentSystemPrompt String? @db.Text
 
+  category         String?
+  featuredOnGlobal Boolean @default(false)
+
   memberCount Int @default(0)
   onlineCount Int @default(0)
 
@@ -155,6 +158,8 @@ model Community {
   apiKeys       ApiKey[]
   events        Event[]
   featureReadStates FeatureReadState[]
+
+  @@index([featuredOnGlobal, createdAt])
 }
 
 model Membership {

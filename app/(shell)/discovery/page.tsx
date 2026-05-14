@@ -1,17 +1,20 @@
 import Link from "next/link";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { DiscoveryFilters } from "@/components/discovery/discovery-filters";
+import { isCommunityCategory } from "@/lib/community-categories";
+import { BRAND_GRADIENTS as BANNER_GRADIENTS, initials } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
-
-import { BRAND_GRADIENTS as BANNER_GRADIENTS, initials } from "@/lib/brand";
 
 export default async function DiscoveryPage({
   searchParams,
 }: {
   searchParams: Promise<{ q?: string; category?: string; section?: string }>;
 }) {
-  const { q, category, section: sectionParam } = await searchParams;
+  const { q: rawQ, category: rawCategory, section: sectionParam } = await searchParams;
+  const q = rawQ?.trim() ?? "";
+  const category = isCommunityCategory(rawCategory) ? rawCategory : null;
   const section =
     sectionParam === "communities" || sectionParam === "challenges"
       ? sectionParam
@@ -22,49 +25,60 @@ export default async function DiscoveryPage({
   function discoveryHref(nextSection: typeof section, hash?: string) {
     const sp = new URLSearchParams();
     if (q) sp.set("q", q);
-    if (category && category !== "Tất cả") sp.set("category", category);
+    if (category) sp.set("category", category);
     if (nextSection) sp.set("section", nextSection);
     const qs = sp.toString();
     return `/discovery${qs ? `?${qs}` : ""}${hash ? `#${hash}` : ""}`;
   }
 
-  const communityWhere = {
+  const communityTake = showAllCommunities ? 60 : 24;
+  const challengeTake = showAllChallenges ? 24 : 6;
+
+  const communityWhere: Prisma.CommunityWhereInput = {
     ...(q
       ? {
           OR: [
-            { name: { contains: q, mode: "insensitive" as const } },
-            { tagline: { contains: q, mode: "insensitive" as const } },
-            { description: { contains: q, mode: "insensitive" as const } },
+            { name: { contains: q, mode: "insensitive" } },
+            { tagline: { contains: q, mode: "insensitive" } },
+            { description: { contains: q, mode: "insensitive" } },
           ],
         }
       : {}),
-    ...(category && category !== "Tất cả" ? { category } : {}),
+    ...(category ? { category } : {}),
+  };
+  const featuredCommunityWhere: Prisma.CommunityWhereInput = {
+    ...communityWhere,
+    featuredOnGlobal: true,
   };
 
-  const challengeWhere = {
+  const challengeWhere: Prisma.ChallengeWhereInput = {
     status: { in: ["OPEN", "ACTIVE"] as string[] },
     ...(q
       ? {
           OR: [
-            { title: { contains: q, mode: "insensitive" as const } },
-            { description: { contains: q, mode: "insensitive" as const } },
+            { title: { contains: q, mode: "insensitive" } },
+            { description: { contains: q, mode: "insensitive" } },
           ],
         }
       : {}),
   };
+  const featuredChallengeWhere: Prisma.ChallengeWhereInput = {
+    ...challengeWhere,
+    featuredOnGlobal: true,
+  };
 
-  const [communities, challenges, totals] = await Promise.all([
+  const [featuredCommunities, featuredChallenges, totals] = await Promise.all([
     prisma.community.findMany({
-      take: showAllCommunities ? 60 : 24,
-      where: communityWhere,
+      take: communityTake,
+      where: featuredCommunityWhere,
       orderBy: { createdAt: "desc" },
       include: {
         _count: { select: { memberships: true, challenges: true, courses: true } },
       },
     }),
     prisma.challenge.findMany({
-      take: showAllChallenges ? 24 : 6,
-      where: challengeWhere,
+      take: challengeTake,
+      where: featuredChallengeWhere,
       orderBy: { createdAt: "desc" },
       include: {
         community: { select: { name: true, slug: true } },
@@ -78,6 +92,35 @@ export default async function DiscoveryPage({
       prisma.product.count(),
     ]),
   ]);
+
+  let communities = featuredCommunities;
+  let showingLatestCommunities = false;
+  if (communities.length === 0) {
+    communities = await prisma.community.findMany({
+      take: communityTake,
+      where: communityWhere,
+      orderBy: { createdAt: "desc" },
+      include: {
+        _count: { select: { memberships: true, challenges: true, courses: true } },
+      },
+    });
+    showingLatestCommunities = communities.length > 0;
+  }
+
+  let challenges = featuredChallenges;
+  let showingLatestChallenges = false;
+  if (challenges.length === 0) {
+    challenges = await prisma.challenge.findMany({
+      take: challengeTake,
+      where: challengeWhere,
+      orderBy: { createdAt: "desc" },
+      include: {
+        community: { select: { name: true, slug: true } },
+        _count: { select: { members: true } },
+      },
+    });
+    showingLatestChallenges = challenges.length > 0;
+  }
 
   const [communityCount, challengeCount, memberCount, productCount] = totals;
 
@@ -122,9 +165,22 @@ export default async function DiscoveryPage({
             href={discoveryHref(showAllCommunities ? null : "communities")}
             className="see-all"
           >
-            {showAllCommunities ? "Thu gọn ↑" : "Xem tất cả →"}
+            {showAllCommunities ? "Thu gọn communities ↑" : "Xem tất cả communities →"}
           </Link>
         </div>
+
+        {showingLatestCommunities && (
+          <div
+            style={{
+              marginTop: "-8px",
+              marginBottom: 12,
+              fontSize: "var(--text-sm)",
+              color: "var(--text-muted)",
+            }}
+          >
+            Đang hiển thị cộng đồng mới nhất vì chưa có Featured Communities phù hợp.
+          </div>
+        )}
 
         {communities.length === 0 ? (
           <div
@@ -190,21 +246,33 @@ export default async function DiscoveryPage({
           </div>
         )}
 
-        {/* Trending Challenges */}
+        {/* Featured challenges */}
         {challenges.length > 0 && (
           <>
-            <div className="dc-section-head" id="trending-challenges">
-              <h2>⚔️ Trending Challenges</h2>
+            <div className="dc-section-head" id="featured-challenges">
+              <h2>⚔️ Featured Challenges</h2>
               <Link
                 href={discoveryHref(
                   showAllChallenges ? null : "challenges",
-                  "trending-challenges"
+                  "featured-challenges"
                 )}
                 className="see-all"
               >
-                {showAllChallenges ? "Thu gọn ↑" : "Xem tất cả →"}
+                {showAllChallenges ? "Thu gọn challenges ↑" : "Xem tất cả challenges →"}
               </Link>
             </div>
+            {showingLatestChallenges && (
+              <div
+                style={{
+                  marginTop: "-8px",
+                  marginBottom: 12,
+                  fontSize: "var(--text-sm)",
+                  color: "var(--text-muted)",
+                }}
+              >
+                Đang hiển thị challenge mới nhất vì chưa có Featured Challenges phù hợp.
+              </div>
+            )}
             <div className="ch-grid">
               {challenges.map((ch) => {
                 const diff =

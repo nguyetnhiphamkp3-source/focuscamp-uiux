@@ -2,24 +2,23 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-
-const CATEGORIES = [
-  "Tất cả",
-  "Business & Founder",
-  "Marketing & Traffic",
-  "Ecommerce",
-  "Developer",
-  "Content Creator",
-  "Investing",
-  "AI & Tech",
-  "Fitness & Health",
-];
+import {
+  DISCOVERY_CATEGORIES,
+  DISCOVERY_CATEGORY_ALL,
+  isCommunityCategory,
+} from "@/lib/community-categories";
 
 export function DiscoveryFilters() {
   const router = useRouter();
   const params = useSearchParams();
   const q = params.get("q") ?? "";
-  const category = params.get("category") ?? "";
+  const categoryParam = params.get("category");
+  const category = isCommunityCategory(categoryParam) ? categoryParam : "";
+  const sectionParam = params.get("section");
+  const section =
+    sectionParam === "communities" || sectionParam === "challenges"
+      ? sectionParam
+      : "";
   const [draftQ, setDraftQ] = useState(q);
   const [, startTransition] = useTransition();
 
@@ -31,7 +30,8 @@ export function DiscoveryFilters() {
     const sp = new URLSearchParams();
     const trimmedQ = nextQ.trim();
     if (trimmedQ) sp.set("q", trimmedQ);
-    if (nextCat && nextCat !== "Tất cả") sp.set("category", nextCat);
+    if (isCommunityCategory(nextCat)) sp.set("category", nextCat);
+    if (section) sp.set("section", section);
     startTransition(() => {
       const qs = sp.toString();
       router.push(qs ? `/discovery?${qs}` : "/discovery");
@@ -61,8 +61,9 @@ export function DiscoveryFilters() {
         />
       </form>
       <div className="dc-categories">
-        {CATEGORIES.map((c) => {
-          const isActive = c === "Tất cả" ? !category || category === "Tất cả" : category === c;
+        {DISCOVERY_CATEGORIES.map((c) => {
+          const isActive =
+            c === DISCOVERY_CATEGORY_ALL ? !category : category === c;
           return (
             <button
               key={c}

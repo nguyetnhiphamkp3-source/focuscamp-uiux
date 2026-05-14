@@ -3,6 +3,7 @@
  * Every external input should be parsed through one of these.
  */
 import { z } from "zod";
+import { COMMUNITY_CATEGORIES } from "@/lib/community-categories";
 
 /* ========== Shared primitives (used by multiple schemas below) ========== */
 export const SlugSchema = z
@@ -373,12 +374,14 @@ export const RemoveMemberSchema = z.object({
 });
 
 export const PlanTierSchema = z.enum(["SOLO", "PRO", "AGENCY"]);
+const CommunityCategorySchema = z.enum(COMMUNITY_CATEGORIES);
 
 export const CreateCommunitySchema = z.object({
   name: z.string().trim().min(2).max(80),
   slug: SlugSchema,
   tagline: z.string().trim().max(160).optional().or(z.literal("")),
   description: z.string().trim().max(5000).optional().or(z.literal("")),
+  category: CommunityCategorySchema.optional().nullable().or(z.literal("")),
   planTier: PlanTierSchema,
 });
 
@@ -402,6 +405,8 @@ export const UpdateCommunityInfoSchema = z.object({
   name: z.string().trim().min(2).max(80).optional(),
   tagline: z.string().trim().max(160).optional().or(z.literal("")),
   description: z.string().trim().max(5000).optional().or(z.literal("")),
+  category: CommunityCategorySchema.optional().nullable().or(z.literal("")),
+  featuredOnGlobal: z.boolean().optional(),
   bannerUrl: z.string().url().optional().or(z.literal("")),
   iconUrl: z.string().url().optional().or(z.literal("")),
 });

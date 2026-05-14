@@ -145,6 +145,7 @@ export async function createCommunity(input: {
   slug: string;
   tagline?: string;
   description?: string;
+  category?: string | null;
   planTier: PlanTier;
 }) {
   // Slug format already validated upstream by Zod. Here we check uniqueness.
@@ -169,6 +170,7 @@ export async function createCommunity(input: {
         slug: input.slug,
         tagline: input.tagline?.trim() || null,
         description: input.description?.trim() || null,
+        category: input.category?.trim() || null,
         ownerId: input.userId,
         memberCount: 1,
         planTier: tier,
@@ -308,6 +310,8 @@ export async function updateCommunityInfo(input: {
   name?: string;
   tagline?: string;
   description?: string;
+  category?: string | null;
+  featuredOnGlobal?: boolean;
   bannerUrl?: string;
   iconUrl?: string;
 }) {
@@ -328,6 +332,12 @@ export async function updateCommunityInfo(input: {
         : {}),
       ...(input.description !== undefined
         ? { description: input.description.trim() || null }
+        : {}),
+      ...(input.category !== undefined
+        ? { category: input.category?.trim() || null }
+        : {}),
+      ...(input.featuredOnGlobal !== undefined
+        ? { featuredOnGlobal: input.featuredOnGlobal }
         : {}),
       ...(input.bannerUrl !== undefined
         ? { bannerUrl: input.bannerUrl.trim() || null }

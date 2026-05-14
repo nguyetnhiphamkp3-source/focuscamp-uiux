@@ -246,6 +246,7 @@ export async function updateChallengeSettingsAction(input: {
     });
     bumpChallenge(input.communitySlug, input.challengeSlug);
     revalidatePath(`/marketplace`);
+    revalidatePath("/discovery");
     return { ok: true };
   } catch (err) {
     logError(err, { userId: s.user.id, challengeId: input.challengeId });

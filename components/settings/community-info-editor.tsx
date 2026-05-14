@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateCommunityInfoAction } from "@/app/actions/community";
 import { ImageUploadField } from "@/components/shared/image-upload-field";
+import { COMMUNITY_CATEGORIES } from "@/lib/community-categories";
 import {
   inputStyle,
   btnPrimary,
@@ -24,6 +25,8 @@ export function CommunityInfoEditor({
     name: string;
     tagline: string | null;
     description: string | null;
+    category: string | null;
+    featuredOnGlobal: boolean;
     bannerUrl: string | null;
     iconUrl: string | null;
   };
@@ -33,6 +36,10 @@ export function CommunityInfoEditor({
   const [name, setName] = useState(initial.name);
   const [tagline, setTagline] = useState(initial.tagline ?? "");
   const [description, setDescription] = useState(initial.description ?? "");
+  const [category, setCategory] = useState(initial.category ?? "");
+  const [featuredOnGlobal, setFeaturedOnGlobal] = useState(
+    initial.featuredOnGlobal
+  );
   const [bannerUrl, setBannerUrl] = useState(initial.bannerUrl ?? "");
   const [iconUrl, setIconUrl] = useState(initial.iconUrl ?? "");
   const [pending, start] = useTransition();
@@ -49,6 +56,8 @@ export function CommunityInfoEditor({
         name: name.trim(),
         tagline: tagline.trim(),
         description: description.trim(),
+        category: category || null,
+        featuredOnGlobal,
         bannerUrl: bannerUrl.trim(),
         iconUrl: iconUrl.trim(),
       });
@@ -112,6 +121,66 @@ export function CommunityInfoEditor({
             disabled={disabled || pending}
             style={{ ...inputStyle, resize: "vertical", fontFamily: "inherit" }}
           />
+        </label>
+
+        <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+            Category Discovery
+          </span>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            disabled={disabled || pending}
+            style={inputStyle}
+          >
+            <option value="">Chưa chọn</option>
+            {COMMUNITY_CATEGORIES.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label
+          style={{
+            display: "flex",
+            gap: 10,
+            alignItems: "flex-start",
+            padding: "8px 12px",
+            border: "1px solid var(--border-subtle)",
+            borderRadius: 8,
+            background: "var(--bg-card)",
+            cursor: disabled || pending ? "default" : "pointer",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={featuredOnGlobal}
+            onChange={(e) => setFeaturedOnGlobal(e.target.checked)}
+            disabled={disabled || pending}
+            style={{ marginTop: 3 }}
+          />
+          <div>
+            <div
+              style={{
+                fontSize: "var(--text-sm)",
+                fontWeight: 600,
+                color: "var(--header-primary)",
+              }}
+            >
+              Hiện trên Discovery
+            </div>
+            <div
+              style={{
+                fontSize: "var(--text-xs)",
+                color: "var(--text-muted)",
+                marginTop: 2,
+              }}
+            >
+              Khi bật, cộng đồng này được ưu tiên trong Featured Communities.
+            </div>
+          </div>
         </label>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
