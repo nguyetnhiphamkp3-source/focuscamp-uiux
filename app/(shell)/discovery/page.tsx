@@ -7,32 +7,55 @@ import { BRAND_GRADIENTS as BANNER_GRADIENTS, initials } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
 
+const DISCOVERY_PAGE_SIZE = 9;
+
 export default async function DiscoveryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; category?: string; section?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    category?: string;
+    section?: string;
+    communityPage?: string;
+    challengePage?: string;
+  }>;
 }) {
-  const { q: rawQ, category: rawCategory, section: sectionParam } = await searchParams;
+  const {
+    q: rawQ,
+    category: rawCategory,
+    section: sectionParam,
+    communityPage: rawCommunityPage,
+    challengePage: rawChallengePage,
+  } = await searchParams;
   const q = rawQ?.trim() ?? "";
   const category = isCommunityCategory(rawCategory) ? rawCategory : null;
   const section =
     sectionParam === "communities" || sectionParam === "challenges"
       ? sectionParam
       : null;
-  const showAllCommunities = section === "communities";
-  const showAllChallenges = section === "challenges";
+  const requestedCommunityPage = parsePage(rawCommunityPage);
+  const requestedChallengePage = parsePage(rawChallengePage);
 
-  function discoveryHref(nextSection: typeof section, hash?: string) {
+  function discoveryHref({
+    communityPage = requestedCommunityPage,
+    challengePage = requestedChallengePage,
+    nextSection = section,
+    hash,
+  }: {
+    communityPage?: number;
+    challengePage?: number;
+    nextSection?: typeof section;
+    hash?: string;
+  }) {
     const sp = new URLSearchParams();
     if (q) sp.set("q", q);
     if (category) sp.set("category", category);
+    if (communityPage > 1) sp.set("communityPage", String(communityPage));
+    if (challengePage > 1) sp.set("challengePage", String(challengePage));
     if (nextSection) sp.set("section", nextSection);
     const qs = sp.toString();
     return `/discovery${qs ? `?${qs}` : ""}${hash ? `#${hash}` : ""}`;
   }
-
-  const communityTake = showAllCommunities ? 60 : 24;
-  const challengeTake = showAllChallenges ? 24 : 6;
 
   const communityWhere: Prisma.CommunityWhereInput = {
     ...(q
@@ -67,24 +90,17 @@ export default async function DiscoveryPage({
     featuredOnGlobal: true,
   };
 
-  const [featuredCommunities, featuredChallenges, totals] = await Promise.all([
-    prisma.community.findMany({
-      take: communityTake,
-      where: featuredCommunityWhere,
-      orderBy: { createdAt: "desc" },
-      include: {
-        _count: { select: { memberships: true, challenges: true, courses: true } },
-      },
-    }),
-    prisma.challenge.findMany({
-      take: challengeTake,
-      where: featuredChallengeWhere,
-      orderBy: { createdAt: "desc" },
-      include: {
-        community: { select: { name: true, slug: true } },
-        _count: { select: { members: true } },
-      },
-    }),
+  const [
+    featuredCommunityCount,
+    latestCommunityCount,
+    featuredChallengeCount,
+    latestChallengeCount,
+    totals,
+  ] = await Promise.all([
+    prisma.community.count({ where: featuredCommunityWhere }),
+    prisma.community.count({ where: communityWhere }),
+    prisma.challenge.count({ where: featuredChallengeWhere }),
+    prisma.challenge.count({ where: challengeWhere }),
     prisma.$transaction([
       prisma.community.count(),
       prisma.challenge.count({ where: { status: { in: ["OPEN", "ACTIVE"] } } }),
@@ -93,34 +109,48 @@ export default async function DiscoveryPage({
     ]),
   ]);
 
-  let communities = featuredCommunities;
-  let showingLatestCommunities = false;
-  if (communities.length === 0) {
-    communities = await prisma.community.findMany({
-      take: communityTake,
-      where: communityWhere,
+  const showingLatestCommunities =
+    featuredCommunityCount === 0 && latestCommunityCount > 0;
+  const showingLatestChallenges =
+    featuredChallengeCount === 0 && latestChallengeCount > 0;
+  const effectiveCommunityWhere = showingLatestCommunities
+    ? communityWhere
+    : featuredCommunityWhere;
+  const effectiveChallengeWhere = showingLatestChallenges
+    ? challengeWhere
+    : featuredChallengeWhere;
+  const communityListingCount = showingLatestCommunities
+    ? latestCommunityCount
+    : featuredCommunityCount;
+  const challengeListingCount = showingLatestChallenges
+    ? latestChallengeCount
+    : featuredChallengeCount;
+  const communityTotalPages = getTotalPages(communityListingCount);
+  const challengeTotalPages = getTotalPages(challengeListingCount);
+  const communityPage = clampPage(requestedCommunityPage, communityTotalPages);
+  const challengePage = clampPage(requestedChallengePage, challengeTotalPages);
+
+  const [communities, challenges] = await Promise.all([
+    prisma.community.findMany({
+      take: DISCOVERY_PAGE_SIZE,
+      skip: (communityPage - 1) * DISCOVERY_PAGE_SIZE,
+      where: effectiveCommunityWhere,
       orderBy: { createdAt: "desc" },
       include: {
         _count: { select: { memberships: true, challenges: true, courses: true } },
       },
-    });
-    showingLatestCommunities = communities.length > 0;
-  }
-
-  let challenges = featuredChallenges;
-  let showingLatestChallenges = false;
-  if (challenges.length === 0) {
-    challenges = await prisma.challenge.findMany({
-      take: challengeTake,
-      where: challengeWhere,
+    }),
+    prisma.challenge.findMany({
+      take: DISCOVERY_PAGE_SIZE,
+      skip: (challengePage - 1) * DISCOVERY_PAGE_SIZE,
+      where: effectiveChallengeWhere,
       orderBy: { createdAt: "desc" },
       include: {
         community: { select: { name: true, slug: true } },
         _count: { select: { members: true } },
       },
-    });
-    showingLatestChallenges = challenges.length > 0;
-  }
+    }),
+  ]);
 
   const [communityCount, challengeCount, memberCount, productCount] = totals;
 
@@ -159,14 +189,11 @@ export default async function DiscoveryPage({
         <DiscoveryFilters />
 
         {/* Featured communities */}
-        <div className="dc-section-head">
+        <div className="dc-section-head" id="featured-communities">
           <h2>🌟 Featured Communities</h2>
-          <Link
-            href={discoveryHref(showAllCommunities ? null : "communities")}
-            className="see-all"
-          >
-            {showAllCommunities ? "Thu gọn communities ↑" : "Xem tất cả communities →"}
-          </Link>
+          <span className="dc-section-count">
+            {communityListingCount.toLocaleString("vi-VN")} communities
+          </span>
         </div>
 
         {showingLatestCommunities && (
@@ -197,53 +224,70 @@ export default async function DiscoveryPage({
             Chưa có community nào.
           </div>
         ) : (
-          <div className="dc-communities-grid">
-            {communities.map((c, idx) => {
-              const badge =
-                c._count.memberships >= 100
-                  ? "hot"
-                  : idx < 2
-                    ? "verified"
+          <>
+            <div className="dc-communities-grid">
+              {communities.map((c, idx) => {
+                const badge = c.featuredOnGlobal
+                  ? "verified"
+                  : c._count.memberships >= 100
+                    ? "hot"
                     : "new";
-              const badgeLabel =
-                badge === "hot" ? "🔥 Hot" : badge === "verified" ? "✓ Verified" : "NEW";
-              return (
-                <Link
-                  key={c.id}
-                  href={`/c/${c.slug}`}
-                  className="dc-community"
-                >
-                  <div
-                    className="dc-community-banner"
-                    style={{ background: BANNER_GRADIENTS[idx % BANNER_GRADIENTS.length] }}
+                const badgeLabel = c.featuredOnGlobal
+                  ? "✓ Verified"
+                  : c._count.memberships >= 100
+                    ? "🔥 Hot"
+                    : "NEW";
+                return (
+                  <Link
+                    key={c.id}
+                    href={`/c/${c.slug}`}
+                    className="dc-community"
                   >
-                    {initials(c.name)}
-                    <span className={`dc-community-badge ${badge}`}>{badgeLabel}</span>
-                  </div>
-                  <div className="dc-community-body">
-                    <div className="dc-community-name">{c.name}</div>
-                    <div className="dc-community-desc">
-                      {c.tagline || c.description || "Community trên focus.camp."}
+                    <div
+                      className="dc-community-banner"
+                      style={{ background: BANNER_GRADIENTS[idx % BANNER_GRADIENTS.length] }}
+                    >
+                      {initials(c.name)}
+                      <span className={`dc-community-badge ${badge}`}>{badgeLabel}</span>
                     </div>
-                    <div className="dc-community-stats">
-                      <span className="dot" />
-                      <span>
-                        <strong>{c.onlineCount}</strong> online
-                      </span>
-                      <span className="sep">·</span>
-                      <span>
-                        <strong>{c._count.memberships}</strong> members
-                      </span>
-                      <span className="sep">·</span>
-                      <span>
-                        <strong>{c._count.challenges}</strong> challenges
-                      </span>
+                    <div className="dc-community-body">
+                      <div className="dc-community-name">{c.name}</div>
+                      <div className="dc-community-desc">
+                        {c.tagline || c.description || "Community trên focus.camp."}
+                      </div>
+                      <div className="dc-community-stats">
+                        <span className="dot" />
+                        <span>
+                          <strong>{c.onlineCount}</strong> online
+                        </span>
+                        <span className="sep">·</span>
+                        <span>
+                          <strong>{c._count.memberships}</strong> members
+                        </span>
+                        <span className="sep">·</span>
+                        <span>
+                          <strong>{c._count.challenges}</strong> challenges
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+                  </Link>
+                );
+              })}
+            </div>
+            <Pagination
+              ariaLabel="Featured Communities pagination"
+              page={communityPage}
+              totalPages={communityTotalPages}
+              hrefForPage={(page) =>
+                discoveryHref({
+                  communityPage: page,
+                  challengePage,
+                  nextSection: "communities",
+                  hash: "featured-communities",
+                })
+              }
+            />
+          </>
         )}
 
         {/* Featured challenges */}
@@ -251,15 +295,9 @@ export default async function DiscoveryPage({
           <>
             <div className="dc-section-head" id="featured-challenges">
               <h2>⚔️ Featured Challenges</h2>
-              <Link
-                href={discoveryHref(
-                  showAllChallenges ? null : "challenges",
-                  "featured-challenges"
-                )}
-                className="see-all"
-              >
-                {showAllChallenges ? "Thu gọn challenges ↑" : "Xem tất cả challenges →"}
-              </Link>
+              <span className="dc-section-count">
+                {challengeListingCount.toLocaleString("vi-VN")} challenges
+              </span>
             </div>
             {showingLatestChallenges && (
               <div
@@ -320,9 +358,86 @@ export default async function DiscoveryPage({
                 );
               })}
             </div>
+            <Pagination
+              ariaLabel="Featured Challenges pagination"
+              page={challengePage}
+              totalPages={challengeTotalPages}
+              hrefForPage={(page) =>
+                discoveryHref({
+                  communityPage,
+                  challengePage: page,
+                  nextSection: "challenges",
+                  hash: "featured-challenges",
+                })
+              }
+            />
           </>
         )}
       </div>
     </div>
   );
+}
+
+function parsePage(value: string | undefined) {
+  const page = Number(value);
+  return Number.isInteger(page) && page > 0 ? page : 1;
+}
+
+function getTotalPages(count: number) {
+  return Math.max(1, Math.ceil(count / DISCOVERY_PAGE_SIZE));
+}
+
+function clampPage(page: number, totalPages: number) {
+  return Math.min(Math.max(page, 1), totalPages);
+}
+
+function Pagination({
+  ariaLabel,
+  page,
+  totalPages,
+  hrefForPage,
+}: {
+  ariaLabel: string;
+  page: number;
+  totalPages: number;
+  hrefForPage: (page: number) => string;
+}) {
+  if (totalPages <= 1) return null;
+
+  const pages = pageWindow(page, totalPages);
+
+  return (
+    <nav className="dc-pagination" aria-label={ariaLabel}>
+      {page > 1 ? (
+        <Link className="dc-page-link" href={hrefForPage(page - 1)}>
+          ←
+        </Link>
+      ) : (
+        <span className="dc-page-link disabled">←</span>
+      )}
+      {pages.map((p) => (
+        <Link
+          key={p}
+          className={`dc-page-link${p === page ? " active" : ""}`}
+          href={hrefForPage(p)}
+          aria-current={p === page ? "page" : undefined}
+        >
+          {p}
+        </Link>
+      ))}
+      {page < totalPages ? (
+        <Link className="dc-page-link" href={hrefForPage(page + 1)}>
+          →
+        </Link>
+      ) : (
+        <span className="dc-page-link disabled">→</span>
+      )}
+    </nav>
+  );
+}
+
+function pageWindow(page: number, totalPages: number) {
+  const size = Math.min(5, totalPages);
+  const start = Math.min(Math.max(page - 2, 1), totalPages - size + 1);
+  return Array.from({ length: size }, (_, idx) => start + idx);
 }
