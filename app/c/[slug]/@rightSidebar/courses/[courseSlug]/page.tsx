@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { fmtDuration, ytThumb } from "@/lib/brand";
+import { EditLessonButton } from "@/components/community/edit-lesson-button";
 
 export const dynamic = "force-dynamic";
 
@@ -18,9 +19,13 @@ export default async function CoursePlaylistSidebar({
   const session = await auth();
   const course = await prisma.course.findFirst({
     where: { community: { slug }, slug: courseSlug },
-    include: { lessons: { orderBy: { position: "asc" } } },
+    include: {
+      lessons: { orderBy: { position: "asc" } },
+      community: { select: { ownerId: true } },
+    },
   });
   if (!course) notFound();
+  const isOwner = session?.user?.id === course.community.ownerId;
 
   // Query completion status for all lessons
   const completedSet = new Set<string>();
@@ -87,6 +92,7 @@ export default async function CoursePlaylistSidebar({
         {course.lessons.map((l, i) => {
           const isActive = lessonId ? l.id === lessonId : i === 0;
           const isCompleted = completedSet.has(l.id);
+          const isLessonLocked = !isOwner && i > 0 && !completedSet.has(course.lessons[i - 1].id);
           const thumb = ytThumb(l.videoUrl);
           const dur = fmtDuration(l.duration);
           return (
@@ -104,6 +110,7 @@ export default async function CoursePlaylistSidebar({
                 marginBottom: "var(--space-1)",
                 textDecoration: "none",
                 color: "inherit",
+                opacity: isLessonLocked ? 0.5 : 1,
               }}
             >
               {/* Thumbnail */}
@@ -151,7 +158,7 @@ export default async function CoursePlaylistSidebar({
                     position: "absolute",
                     top: 4,
                     left: 4,
-                    background: isCompleted ? "var(--brand-green)" : "rgba(0,0,0,0.75)",
+                    background: isCompleted ? "var(--brand-green)" : isLessonLocked ? "rgba(0,0,0,0.75)" : "rgba(0,0,0,0.75)",
                     color: "#fff",
                     fontSize: "var(--text-xs)",
                     fontWeight: "var(--fw-bold)",
@@ -162,7 +169,7 @@ export default async function CoursePlaylistSidebar({
                     textAlign: "center",
                   }}
                 >
-                  {isCompleted ? "✓" : i + 1}
+                  {isCompleted ? "✓" : isLessonLocked ? "🔒" : i + 1}
                 </div>
                 {/* Duration badge (bottom-right) — hide when no real duration */}
                 {dur && dur !== "—" && (
@@ -221,20 +228,36 @@ export default async function CoursePlaylistSidebar({
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div
                   style={{
-                    fontSize: "var(--text-sm)",
-                    fontWeight: isActive
-                      ? "var(--fw-bold)"
-                      : "var(--fw-medium)",
-                    color: "var(--text-heading)",
-                    lineHeight: "var(--lh-snug)",
-                    overflow: "hidden",
-                    display: "-webkit-box",
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: "vertical",
-                    marginBottom: "var(--space-1)",
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "var(--space-1)",
                   }}
                 >
-                  {l.title}
+                  <div
+                    style={{
+                      flex: 1,
+                      fontSize: "var(--text-sm)",
+                      fontWeight: isActive
+                        ? "var(--fw-bold)"
+                        : "var(--fw-medium)",
+                      color: "var(--text-heading)",
+                      lineHeight: "var(--lh-snug)",
+                      overflow: "hidden",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      marginBottom: "var(--space-1)",
+                    }}
+                  >
+                    {l.title}
+                  </div>
+                  {isOwner && (
+                    <EditLessonButton
+                      lesson={l}
+                      communitySlug={slug}
+                      courseSlug={courseSlug}
+                    />
+                  )}
                 </div>
                 {l.xpReward > 0 && (
                   <div

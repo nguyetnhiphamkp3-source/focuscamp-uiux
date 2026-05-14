@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createLessonAction } from "@/app/actions/course";
+import { updateLessonAction, deleteLessonAction } from "@/app/actions/course";
 import type { VideoSource } from "@/lib/brand";
 
 const VIDEO_SOURCES: { value: VideoSource; label: string; placeholder: string }[] = [
@@ -11,31 +11,48 @@ const VIDEO_SOURCES: { value: VideoSource; label: string; placeholder: string }[
   { value: "bunny", label: "Bunny Stream", placeholder: "https://video.bunnycdn.com/play/library_id/video_id" },
 ];
 
-export function CreateLessonButton({
-  courseId,
+function detectSource(url: string | null): VideoSource {
+  if (!url) return "youtube";
+  if (url.includes("vimeo.com")) return "vimeo";
+  if (url.includes("mediadelivery.net") || url.includes("bunnycdn.com")) return "bunny";
+  return "youtube";
+}
+
+export function EditLessonButton({
+  lesson,
   communitySlug,
   courseSlug,
 }: {
-  courseId: string;
+  lesson: {
+    id: string;
+    title: string;
+    description: string | null;
+    content: string | null;
+    videoUrl: string | null;
+    duration: number | null;
+    position: number;
+  };
   communitySlug: string;
   courseSlug: string;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [content, setContent] = useState("");
-  const [videoSource, setVideoSource] = useState<VideoSource>("youtube");
-  const [videoUrl, setVideoUrl] = useState("");
-  const [duration, setDuration] = useState("");
+  const [title, setTitle] = useState(lesson.title);
+  const [description, setDescription] = useState(lesson.description ?? "");
+  const [content, setContent] = useState(lesson.content ?? "");
+  const [videoSource, setVideoSource] = useState<VideoSource>(detectSource(lesson.videoUrl));
+  const [videoUrl, setVideoUrl] = useState(lesson.videoUrl ?? "");
+  const [duration, setDuration] = useState(lesson.duration?.toString() ?? "");
+  const [position, setPosition] = useState(lesson.position.toString());
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
-  function submit() {
+  function save() {
     setErr(null);
     start(async () => {
-      const res = await createLessonAction({
-        courseId,
+      const res = await updateLessonAction({
+        lessonId: lesson.id,
         communitySlug,
         courseSlug,
         title: title.trim(),
@@ -43,10 +60,10 @@ export function CreateLessonButton({
         content: content.trim() || undefined,
         videoUrl: videoUrl.trim() || undefined,
         duration: duration ? parseInt(duration, 10) : undefined,
+        position: position ? parseInt(position, 10) : undefined,
       });
       if (res.ok) {
         setOpen(false);
-        reset();
         router.refresh();
       } else {
         setErr(res.reason);
@@ -54,13 +71,21 @@ export function CreateLessonButton({
     });
   }
 
-  function reset() {
-    setTitle("");
-    setDescription("");
-    setContent("");
-    setVideoSource("youtube");
-    setVideoUrl("");
-    setDuration("");
+  function doDelete() {
+    setErr(null);
+    start(async () => {
+      const res = await deleteLessonAction({
+        lessonId: lesson.id,
+        communitySlug,
+        courseSlug,
+      });
+      if (res.ok) {
+        setOpen(false);
+        router.refresh();
+      } else {
+        setErr(res.reason);
+      }
+    });
   }
 
   return (
@@ -69,19 +94,17 @@ export function CreateLessonButton({
         type="button"
         onClick={() => setOpen(true)}
         style={{
-          padding: "10px 18px",
-          borderRadius: 8,
-          border: "1px dashed var(--border-subtle)",
           background: "transparent",
-          color: "var(--brand-green)",
-          fontWeight: 600,
-          fontSize: "var(--text-sm)",
+          border: "none",
+          color: "var(--text-muted)",
           cursor: "pointer",
-          marginTop: "var(--space-3)",
-          width: "100%",
+          padding: "2px 6px",
+          borderRadius: 4,
+          fontSize: "var(--text-xs)",
         }}
+        title="Chỉnh sửa lesson"
       >
-        + Thêm Lesson
+        ✏️
       </button>
 
       {open && (
@@ -125,7 +148,7 @@ export function CreateLessonButton({
                 color: "var(--header-primary)",
               }}
             >
-              + Thêm Lesson
+              Chỉnh sửa Lesson
             </div>
 
             <div
@@ -148,7 +171,7 @@ export function CreateLessonButton({
                   style={inputStyle}
                 />
               </Field>
-              <Field label="Mô tả ngắn (tuỳ chọn)">
+              <Field label="Mô tả ngắn">
                 <input
                   type="text"
                   value={description}
@@ -180,16 +203,28 @@ export function CreateLessonButton({
                   />
                 </div>
               </Field>
-              <Field label="Thời lượng (giây, tuỳ chọn)">
-                <input
-                  type="number"
-                  min={0}
-                  value={duration}
-                  onChange={(e) => setDuration(e.target.value)}
-                  disabled={pending}
-                  style={inputStyle}
-                />
-              </Field>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <Field label="Thời lượng (giây)">
+                  <input
+                    type="number"
+                    min={0}
+                    value={duration}
+                    onChange={(e) => setDuration(e.target.value)}
+                    disabled={pending}
+                    style={inputStyle}
+                  />
+                </Field>
+                <Field label="Vị trí (thứ tự)">
+                  <input
+                    type="number"
+                    min={0}
+                    value={position}
+                    onChange={(e) => setPosition(e.target.value)}
+                    disabled={pending}
+                    style={inputStyle}
+                  />
+                </Field>
+              </div>
               <Field label="Nội dung bài học (markdown / text)">
                 <textarea
                   value={content}
@@ -220,13 +255,52 @@ export function CreateLessonButton({
                 borderTop: "1px solid var(--border-subtle)",
                 display: "flex",
                 gap: 8,
+                alignItems: "center",
               }}
             >
+              {!confirmDelete ? (
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(true)}
+                  disabled={pending}
+                  style={{
+                    padding: "8px 14px",
+                    borderRadius: 8,
+                    border: "1px solid var(--danger)",
+                    background: "transparent",
+                    color: "var(--danger)",
+                    cursor: "pointer",
+                    fontSize: "var(--text-xs)",
+                    fontWeight: 600,
+                  }}
+                >
+                  Xoá
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={doDelete}
+                  disabled={pending}
+                  style={{
+                    padding: "8px 14px",
+                    borderRadius: 8,
+                    border: "none",
+                    background: "var(--danger)",
+                    color: "#fff",
+                    cursor: "pointer",
+                    fontSize: "var(--text-xs)",
+                    fontWeight: 600,
+                  }}
+                >
+                  {pending ? "Đang xoá…" : "Xác nhận xoá"}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => !pending && setOpen(false)}
                 disabled={pending}
                 style={{
+                  marginLeft: "auto",
                   padding: "10px 18px",
                   borderRadius: 8,
                   border: "1px solid var(--border-subtle)",
@@ -240,10 +314,9 @@ export function CreateLessonButton({
               </button>
               <button
                 type="button"
-                onClick={submit}
+                onClick={save}
                 disabled={pending || !title.trim()}
                 style={{
-                  marginLeft: "auto",
                   padding: "10px 22px",
                   borderRadius: 8,
                   border: "none",
@@ -257,7 +330,7 @@ export function CreateLessonButton({
                   opacity: pending ? 0.6 : 1,
                 }}
               >
-                {pending ? "Đang thêm…" : "Thêm Lesson"}
+                {pending ? "Đang lưu…" : "Lưu"}
               </button>
             </div>
           </div>

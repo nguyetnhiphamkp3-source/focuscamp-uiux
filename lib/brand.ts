@@ -52,6 +52,42 @@ export function ytId(url: string | null | undefined): string | null {
   return m ? m[1] : null;
 }
 
+export type VideoSource = "youtube" | "vimeo" | "bunny";
+
+/** Extract Vimeo video ID from various URL formats */
+export function vimeoId(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const m =
+    url.match(/player\.vimeo\.com\/video\/(\d+)/) ||
+    url.match(/vimeo\.com\/(\d+)/);
+  return m ? m[1] : null;
+}
+
+/** Convert a raw video URL to an embeddable iframe src */
+export function toEmbedUrl(url: string | null | undefined, source?: VideoSource): string | null {
+  if (!url) return null;
+  const trimmed = url.trim();
+
+  if (source === "bunny" || trimmed.includes("mediadelivery.net")) {
+    if (trimmed.includes("/embed/")) return trimmed;
+    const m = trimmed.match(/(?:video\.bunnycdn\.com|mediadelivery\.net)\/(?:play|library)\/([^/]+)\/([^/?]+)/);
+    if (m) return `https://iframe.mediadelivery.net/embed/${m[1]}/${m[2]}`;
+    return trimmed;
+  }
+
+  if (source === "vimeo" || trimmed.includes("vimeo.com")) {
+    const id = vimeoId(trimmed);
+    if (id) return `https://player.vimeo.com/video/${id}`;
+    return trimmed;
+  }
+
+  // Default: YouTube
+  if (trimmed.includes("/embed/")) return trimmed;
+  const id = ytId(trimmed);
+  if (id) return `https://www.youtube.com/embed/${id}`;
+  return trimmed;
+}
+
 /** YouTube thumbnail URL (mqdefault ~320x180) for any embed URL */
 export function ytThumb(url: string | null | undefined): string | null {
   const id = ytId(url);

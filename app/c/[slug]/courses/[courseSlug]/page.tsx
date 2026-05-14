@@ -5,7 +5,9 @@ import { CreateLessonButton } from "@/components/community/create-lesson-button"
 import { CourseSettingsPanel } from "@/components/community/course-settings-panel";
 import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
 import { MarkLessonCompleteButton } from "@/components/community/mark-lesson-complete-button";
+import { LockedLessonNotice } from "@/components/community/locked-lesson-notice";
 import { checkGate, getTiersConfig } from "@/lib/services/subscription";
+import { toEmbedUrl } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
 
@@ -82,16 +84,31 @@ export default async function CourseDetailPage({
     ? `${Math.floor(totalDuration / 60)} phút`
     : null;
 
-  // Query progress for active lesson
-  let activeLessonCompleted = false;
-  if (session?.user?.id && activeLesson) {
-    const progress = await prisma.courseProgress.findUnique({
+  // Query completion for ALL lessons (needed for sequential locking)
+  const completedSet = new Set<string>();
+  if (session?.user?.id && course.lessons.length > 0) {
+    const rows = await prisma.courseProgress.findMany({
       where: {
-        userId_lessonId: { userId: session.user.id, lessonId: activeLesson.id },
+        userId: session.user.id,
+        lessonId: { in: course.lessons.map((l) => l.id) },
+        completed: true,
       },
-      select: { completed: true },
+      select: { lessonId: true },
     });
-    activeLessonCompleted = progress?.completed ?? false;
+    for (const r of rows) completedSet.add(r.lessonId);
+  }
+
+  const activeLessonCompleted = activeLesson ? completedSet.has(activeLesson.id) : false;
+
+  // Sequential locking: lesson is locked if the previous lesson is not completed
+  // First lesson is always unlocked; owners bypass locking
+  let isLocked = false;
+  if (activeLesson && !isOwner && session?.user?.id) {
+    const idx = course.lessons.findIndex((l) => l.id === activeLesson.id);
+    if (idx > 0) {
+      const prevLesson = course.lessons[idx - 1];
+      isLocked = !completedSet.has(prevLesson.id);
+    }
   }
 
   return (
@@ -134,7 +151,7 @@ export default async function CourseDetailPage({
           }}
         >
           {/* VIDEO */}
-          {activeLesson ? (
+          {activeLesson && !isLocked ? (
             <div
               style={{
                 aspectRatio: "16/9",
@@ -147,7 +164,7 @@ export default async function CourseDetailPage({
             >
               {activeLesson.videoUrl ? (
                 <iframe
-                  src={activeLesson.videoUrl}
+                  src={toEmbedUrl(activeLesson.videoUrl) ?? activeLesson.videoUrl}
                   title={activeLesson.title}
                   allowFullScreen
                   style={{ width: "100%", height: "100%", border: 0 }}
@@ -168,6 +185,8 @@ export default async function CourseDetailPage({
                 </div>
               )}
             </div>
+          ) : activeLesson && isLocked ? (
+            <LockedLessonNotice communitySlug={slug} courseSlug={courseSlug} />
           ) : null}
 
           {/* TITLE */}
@@ -208,7 +227,7 @@ export default async function CourseDetailPage({
           </div>
 
           {/* DESCRIPTION */}
-          {(activeLesson?.description || course.description) && (
+          {!isLocked && (activeLesson?.description || course.description) && (
             <div
               className="ui-card"
               style={{
@@ -222,7 +241,7 @@ export default async function CourseDetailPage({
           )}
 
           {/* LESSON CONTENT (if any) */}
-          {activeLesson?.content && (
+          {!isLocked && activeLesson?.content && (
             <div
               className="ui-card ui-card-lg"
               style={{
@@ -236,7 +255,7 @@ export default async function CourseDetailPage({
           )}
 
           {/* Mark lesson complete */}
-          {session?.user?.id && activeLesson && !isOwner && (
+          {!isLocked && session?.user?.id && activeLesson && !isOwner && (
             <div style={{ marginTop: "var(--space-5)" }}>
               <MarkLessonCompleteButton
                 lessonId={activeLesson.id}
