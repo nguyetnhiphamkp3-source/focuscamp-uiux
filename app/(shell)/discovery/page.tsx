@@ -236,9 +236,13 @@ export default async function DiscoveryPage({
                   >
                     <div
                       className="dc-community-banner"
-                      style={{ background: BANNER_GRADIENTS[idx % BANNER_GRADIENTS.length] }}
+                      style={{
+                        background: c.bannerUrl
+                          ? `url(${c.bannerUrl}) center/cover no-repeat`
+                          : BANNER_GRADIENTS[idx % BANNER_GRADIENTS.length],
+                      }}
                     >
-                      {initials(c.name)}
+                      {!c.bannerUrl && initials(c.name)}
                       <span className={`dc-community-badge ${badge}`}>{badgeLabel}</span>
                     </div>
                     <div className="dc-community-body">
