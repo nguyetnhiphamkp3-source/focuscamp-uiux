@@ -43,10 +43,6 @@ export function DiscoveryFilters() {
     push(draftQ, category);
   }
 
-  function handleCategory(cat: string) {
-    push(q, cat);
-  }
-
   return (
     <>
       <form className="dc-search" onSubmit={submitSearch}>
@@ -60,22 +56,22 @@ export function DiscoveryFilters() {
           onChange={(e) => setDraftQ(e.target.value)}
         />
       </form>
-      <div className="dc-categories">
-        {DISCOVERY_CATEGORIES.map((c) => {
-          const isActive =
-            c === DISCOVERY_CATEGORY_ALL ? !category : category === c;
-          return (
-            <button
+      <div className="dc-filter-row">
+        <select
+          className="dc-category-select"
+          aria-label="Category"
+          value={category}
+          onChange={(e) => push(q, e.target.value)}
+        >
+          {DISCOVERY_CATEGORIES.map((c) => (
+            <option
               key={c}
-              type="button"
-              className={`dc-cat${isActive ? " active" : ""}`}
-              onClick={() => handleCategory(c)}
-              style={{ cursor: "pointer", background: "none", border: "none", padding: 0 }}
+              value={c === DISCOVERY_CATEGORY_ALL ? "" : c}
             >
               {c}
-            </button>
-          );
-        })}
+            </option>
+          ))}
+        </select>
       </div>
     </>
   );

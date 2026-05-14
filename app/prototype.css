@@ -4535,7 +4535,7 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
 
 .dc-pagination {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   align-items: center;
   gap: 6px;
   margin-top: 14px;
@@ -4576,28 +4576,31 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
 .dc-community-stats strong { color: var(--header-primary); font-weight: 700; }
 .dc-community-stats .sep { opacity: 0.4; }
 
-/* Discovery category chips */
-.dc-categories {
+/* Discovery category filter */
+.dc-filter-row {
   display: flex;
-  gap: 6px;
+  justify-content: flex-start;
   margin-bottom: 18px;
-  flex-wrap: wrap;
 }
-.dc-cat {
-  padding: 7px 14px;
-  border-radius: 20px;
+.dc-category-select {
+  min-width: 240px;
+  max-width: 100%;
+  min-height: 42px;
+  padding: 0 38px 0 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  color: var(--text-muted);
   font-size: var(--text-base);
   font-weight: 600;
-  color: var(--text-muted);
+  font-family: var(--font-heading);
   cursor: pointer;
-  background: var(--bg-elevated);
-  border: 1px solid transparent;
+  outline: none;
 }
-.dc-cat:hover { background: var(--bg-modifier-hover); color: var(--header-primary); }
-.dc-cat.active {
-  background: var(--online-green);
-  color: #fff;
-  border-color: var(--online-green);
+.dc-category-select:hover,
+.dc-category-select:focus {
+  border-color: var(--brand-green);
+  color: var(--header-primary);
 }
 
 /* ==========================================
