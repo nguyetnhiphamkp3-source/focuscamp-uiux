@@ -74,7 +74,7 @@ export function FeaturedGlobalToggle({
         opacity: pending ? 0.6 : 1,
       }}
     >
-      🌐 {featured ? "Đang public" : "Hiện global"}
+      🌐 {featured ? "Đang hiện trên Discovery" : "Hiện trên Discovery"}
       {err && <span style={{ color: "var(--danger)" }}> · {err}</span>}
     </button>
   );
