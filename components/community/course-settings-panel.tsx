@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { updateCourseAction } from "@/app/actions/course";
 import { ImageUploadField } from "@/components/shared/image-upload-field";
@@ -34,31 +34,32 @@ export function CourseSettingsPanel({
   const [level, setLevel] = useState(initial.level);
   const [isPublished, setIsPublished] = useState(initial.isPublished);
   const [thumbnailUrl, setThumbnailUrl] = useState(initial.thumbnailUrl ?? "");
-  const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
-  function save() {
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
     setErr(null);
     setSaved(false);
-    start(async () => {
-      const res = await updateCourseAction({
-        courseId,
-        communitySlug,
-        courseSlug,
-        title: title.trim(),
-        description: description.trim(),
-        level: level as "BASIC" | "ADVANCED" | "EXPERT",
-        isPublished,
-        thumbnailUrl: thumbnailUrl.trim(),
-      });
-      if (res.ok) {
-        setSaved(true);
-        router.refresh();
-      } else {
-        setErr(res.reason);
-      }
+    setSaving(true);
+    const res = await updateCourseAction({
+      courseId,
+      communitySlug,
+      courseSlug,
+      title: title.trim(),
+      description: description.trim(),
+      level: level as "BASIC" | "ADVANCED" | "EXPERT",
+      isPublished,
+      thumbnailUrl: thumbnailUrl.trim(),
     });
+    setSaving(false);
+    if (res.ok) {
+      setSaved(true);
+      router.refresh();
+    } else {
+      setErr(res.reason);
+    }
   }
 
   return (
@@ -121,7 +122,7 @@ export function CourseSettingsPanel({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               maxLength={160}
-              disabled={pending}
+              disabled={saving}
               style={inputStyle}
             />
           </label>
@@ -134,7 +135,7 @@ export function CourseSettingsPanel({
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
               maxLength={5000}
-              disabled={pending}
+              disabled={saving}
               style={{ ...inputStyle, resize: "vertical", fontFamily: "inherit" }}
             />
           </label>
@@ -152,7 +153,7 @@ export function CourseSettingsPanel({
               <select
                 value={level}
                 onChange={(e) => setLevel(e.target.value)}
-                disabled={pending}
+                disabled={saving}
                 style={inputStyle}
               >
                 <option value="BASIC">🟢 Basic</option>
@@ -169,7 +170,7 @@ export function CourseSettingsPanel({
                 onChange={(url) => setThumbnailUrl(url ?? "")}
                 context="community"
                 shape="banner"
-                disabled={pending}
+                disabled={saving}
                 placeholder="Ảnh bìa khoá học"
               />
             </div>
@@ -186,7 +187,7 @@ export function CourseSettingsPanel({
               type="checkbox"
               checked={isPublished}
               onChange={(e) => setIsPublished(e.target.checked)}
-              disabled={pending}
+              disabled={saving}
             />
             <span style={{ fontSize: "var(--text-sm)" }}>
               <strong>Publish</strong> (hiển thị cho members)
@@ -196,7 +197,7 @@ export function CourseSettingsPanel({
             <button
               type="button"
               onClick={save}
-              disabled={pending || !title.trim()}
+              disabled={saving || !title.trim()}
               style={{
                 marginLeft: "auto",
                 padding: "8px 18px",
@@ -206,11 +207,11 @@ export function CourseSettingsPanel({
                 color: "#fff",
                 fontWeight: 600,
                 fontSize: "var(--text-sm)",
-                cursor: pending ? "not-allowed" : "pointer",
-                opacity: pending ? 0.6 : 1,
+                cursor: saving ? "not-allowed" : "pointer",
+                opacity: saving ? 0.6 : 1,
               }}
             >
-              {pending ? "Đang lưu…" : "Lưu"}
+              {saving ? "Đang lưu…" : "Lưu"}
             </button>
           </div>
           {err && (
