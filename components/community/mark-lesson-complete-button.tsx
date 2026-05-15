@@ -41,11 +41,9 @@ export function MarkLessonCompleteButton({
         gap: "var(--space-2)",
         padding: "10px 20px",
         borderRadius: "var(--r-lg)",
-        border: completed
-          ? "1px solid var(--brand-green)"
-          : "1px solid var(--border-subtle)",
-        background: completed ? "var(--brand-green-soft)" : "var(--bg-card)",
-        color: completed ? "var(--brand-green-dark)" : "var(--text-normal)",
+        border: "none",
+        background: completed ? "var(--brand-green-soft)" : "var(--brand-green)",
+        color: completed ? "var(--brand-green-dark)" : "#fff",
         fontSize: "var(--text-sm)",
         fontWeight: "var(--fw-semibold)",
         cursor: pending ? "wait" : "pointer",
