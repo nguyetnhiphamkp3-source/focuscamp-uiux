@@ -41,7 +41,6 @@ export function ChallengeSettingsPanel({
   useEffect(() => {
     function handleOpen() {
       setOpen(true);
-      sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
     window.addEventListener("open-challenge-settings", handleOpen);
     return () => window.removeEventListener("open-challenge-settings", handleOpen);
@@ -98,6 +97,14 @@ export function ChallengeSettingsPanel({
   useEffect(() => {
     if (saved) router.refresh();
   }, [saved]);
+
+  useEffect(() => {
+    if (open) {
+      sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [open]);
+
+  if (!open) return null;
 
   return (
     <section
