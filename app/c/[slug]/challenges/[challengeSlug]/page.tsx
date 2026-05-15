@@ -189,13 +189,18 @@ export default async function ChallengeDetailPage({
   const myCheckins = session?.user?.id
     ? await prisma.checkin.findMany({
         where: { challengeId: challenge.id, userId: session.user.id },
-        select: { taskId: true, dayNumber: true, createdAt: true },
+        select: { taskId: true, dayNumber: true, createdAt: true, content: true, linkUrl: true, imageUrl: true },
       })
     : [];
   const doneDayNumbers = new Set(
     myCheckins
       .map((c) => c.dayNumber ?? null)
       .filter((n): n is number => n !== null)
+  );
+  const checkinByDay = new Map(
+    myCheckins
+      .filter((c) => c.dayNumber !== null)
+      .map((c) => [c.dayNumber!, c] as const)
   );
 
   // Leaderboard for this challenge
@@ -688,7 +693,13 @@ export default async function ChallengeDetailPage({
                 const isCurrent = !isDone && t.dayNumber === dayNow;
                 const isFuture = t.dayNumber > dayNow && !isDone;
                 const hasEvidenceHint = !!(t.evidenceLabel || t.evidenceType !== "TEXT");
-                const hasBody = !!(t.description || t.sopContent || t.videoUrl || hasEvidenceHint);
+                // Late = checkin was submitted >24h after that day's deadline
+                const checkinData = checkinByDay.get(t.dayNumber);
+                const dayDeadline = myMembership?.personalStartsAt
+                  ? new Date(myMembership.personalStartsAt.getTime() + t.dayNumber * 24 * 60 * 60 * 1000)
+                  : null;
+                const isLate = !!(isDone && checkinData && dayDeadline && checkinData.createdAt.getTime() > dayDeadline.getTime());
+                const hasBody = !!(t.description || t.sopContent || t.videoUrl || hasEvidenceHint || checkinData);
                 // When hideFutureTasks is on, show locked placeholder for future days (skip if member completed)
                 if (challenge.hideFutureTasks && isFuture && !permissions.canManageChallenges && myMembership && !myMembership.completedAt) {
                   return (
@@ -741,10 +752,7 @@ export default async function ChallengeDetailPage({
                           className="ch-task-title"
                           style={
                             isDone
-                              ? {
-                                  textDecoration: "line-through",
-                                  color: "var(--text-muted)",
-                                }
+                              ? { color: "var(--text-muted)" }
                               : undefined
                           }
                         >
@@ -757,7 +765,7 @@ export default async function ChallengeDetailPage({
                         </span>
                       )}
                       {isDone && (
-                        <span className="ch-task-status">
+                        <span className="ch-task-status" style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
                           <span
                             style={{
                               color: "var(--brand-green)",
@@ -767,6 +775,17 @@ export default async function ChallengeDetailPage({
                           >
                             ✓ Xong
                           </span>
+                          {isLate && (
+                            <span
+                              style={{
+                                color: "var(--warning)",
+                                fontSize: "var(--text-xs)",
+                                fontWeight: "var(--fw-bold)",
+                              }}
+                            >
+                              · Trễ
+                            </span>
+                          )}
                         </span>
                       )}
                       {permissions.canManageChallenges && (
@@ -871,6 +890,58 @@ export default async function ChallengeDetailPage({
                           >
                             Evidence: {evidenceTypeLabel(t.evidenceType)}
                             {t.evidenceLabel ? ` · ${t.evidenceLabel}` : ""}
+                          </div>
+                        )}
+                        {checkinData && (
+                          <div
+                            style={{
+                              marginTop: "var(--space-3)",
+                              padding: "var(--space-3)",
+                              borderRadius: "var(--r-md)",
+                              background: "var(--bg-secondary)",
+                              border: "1px solid var(--border-subtle)",
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: "var(--text-xs)",
+                                fontWeight: "var(--fw-bold)",
+                                color: "var(--text-muted)",
+                                marginBottom: "var(--space-2)",
+                              }}
+                            >
+                              Bài nộp của bạn
+                            </div>
+                            <div style={{ fontSize: "var(--text-sm)", whiteSpace: "pre-wrap" }}>
+                              {checkinData.content}
+                            </div>
+                            {checkinData.linkUrl && (
+                              <a
+                                href={checkinData.linkUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{
+                                  display: "inline-block",
+                                  marginTop: "var(--space-2)",
+                                  fontSize: "var(--text-sm)",
+                                  color: "var(--brand-green)",
+                                }}
+                              >
+                                {checkinData.linkUrl}
+                              </a>
+                            )}
+                            {checkinData.imageUrl && (
+                              <img
+                                src={checkinData.imageUrl}
+                                alt="Submission"
+                                style={{
+                                  display: "block",
+                                  marginTop: "var(--space-2)",
+                                  maxWidth: "100%",
+                                  borderRadius: "var(--r-md)",
+                                }}
+                              />
+                            )}
                           </div>
                         )}
                       </div>
