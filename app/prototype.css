@@ -5696,6 +5696,20 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
     transform: translateX(0);
   }
 
+  /* Dark overlay on content when drawer is open */
+  html.mobile-drawer-open .main-content {
+    position: relative;
+    pointer-events: none;
+  }
+  html.mobile-drawer-open .main-content::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 50;
+    border-radius: inherit;
+  }
+
   .channel-sidebar,
   .server-list {
     width: auto;
