@@ -58,16 +58,28 @@ export default async function DiscoveryPage({
     return `/discovery${qs ? `?${qs}` : ""}${hash ? `#${hash}` : ""}`;
   }
 
+  const activatedFilter: Prisma.CommunityWhereInput = {
+    OR: [
+      { planExpiresAt: { not: null } },
+      { planTier: "GRANDFATHER" },
+    ],
+  };
+
   const communityWhere: Prisma.CommunityWhereInput = {
-    ...(q
-      ? {
-          OR: [
-            { name: { contains: q, mode: "insensitive" } },
-            { tagline: { contains: q, mode: "insensitive" } },
-            { description: { contains: q, mode: "insensitive" } },
-          ],
-        }
-      : {}),
+    AND: [
+      activatedFilter,
+      ...(q
+        ? [
+            {
+              OR: [
+                { name: { contains: q, mode: "insensitive" as const } },
+                { tagline: { contains: q, mode: "insensitive" as const } },
+                { description: { contains: q, mode: "insensitive" as const } },
+              ],
+            },
+          ]
+        : []),
+    ],
   };
   const verifiedCommunityWhere: Prisma.CommunityWhereInput = {
     AND: [
@@ -116,7 +128,7 @@ export default async function DiscoveryPage({
     prisma.challenge.count({ where: featuredChallengeWhere }),
     prisma.challenge.count({ where: challengeWhere }),
     prisma.$transaction([
-      prisma.community.count(),
+      prisma.community.count({ where: activatedFilter }),
       prisma.challenge.count({ where: { status: { in: ["OPEN", "ACTIVE"] } } }),
       prisma.user.count(),
       prisma.product.count(),
