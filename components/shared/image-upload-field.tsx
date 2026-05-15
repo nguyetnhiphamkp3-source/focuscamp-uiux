@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import {
   deleteUploadedFile,
   uploadImage,
@@ -40,8 +40,25 @@ export function ImageUploadField({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const stagedUploadsRef = useRef(new Set<string>());
+  const valueRef = useRef(value);
+  valueRef.current = value;
   const [uploading, setUploading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    const staged = stagedUploadsRef.current;
+    const onBeforeUnload = () => {
+      for (const url of staged) void deleteUploadedFile(url);
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      for (const url of staged) {
+        if (url === valueRef.current) continue;
+        void deleteUploadedFile(url);
+      }
+    };
+  }, []);
 
   const dim = SHAPE_STYLE[shape];
 
