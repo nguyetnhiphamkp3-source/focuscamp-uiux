@@ -27,6 +27,7 @@ import { ChallengeSalesIntro } from "@/components/community/challenge-sales-intr
 import { RenewPaymentButton } from "@/components/community/renew-payment-button";
 import { getEffectiveOwnership } from "@/lib/preview-mode";
 import { communityPermissionFlags, effectiveCommunityRole } from "@/lib/community-permissions";
+import { toEmbedUrl } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,13 @@ function diffLabel(d: string) {
   if (d === "HARD") return "⚔️ Hard";
   if (d === "CHAOS") return "🔥 Chaos";
   return "🛡️ Normal";
+}
+
+function evidenceTypeLabel(type: string) {
+  if (type === "LINK") return "Link";
+  if (type === "IMAGE") return "Image";
+  if (type === "FILE") return "File";
+  return "Text";
 }
 
 export default async function ChallengeDetailPage({
@@ -693,7 +701,8 @@ export default async function ChallengeDetailPage({
                 const isDone = doneDayNumbers.has(t.dayNumber);
                 const isCurrent = !isDone && t.dayNumber === dayNow;
                 const isFuture = t.dayNumber > dayNow && !isDone;
-                const hasBody = !!(t.description || t.sopContent);
+                const hasEvidenceHint = !!(t.evidenceLabel || t.evidenceType !== "TEXT");
+                const hasBody = !!(t.description || t.sopContent || t.videoUrl || hasEvidenceHint);
                 // When hideFutureTasks is on, show locked placeholder for future days (skip if member completed)
                 if (challenge.hideFutureTasks && isFuture && !permissions.canManageChallenges && myMembership && !myMembership.completedAt) {
                   return (
@@ -794,6 +803,62 @@ export default async function ChallengeDetailPage({
                     {hasBody && (
                       <div className="ch-task-body">
                         {t.description && <div className="ch-task-desc">{t.description}</div>}
+                        {t.videoUrl && (() => {
+                          const embedUrl = toEmbedUrl(t.videoUrl);
+                          const canEmbed =
+                            !!embedUrl &&
+                            (embedUrl.includes("youtube.com/embed/") ||
+                              embedUrl.includes("player.vimeo.com/video/") ||
+                              embedUrl.includes("iframe.mediadelivery.net/embed/"));
+
+                          return (
+                            <div className="ch-task-sop">
+                              <div className="ch-task-sop-label">
+                                Video hướng dẫn
+                              </div>
+                              {canEmbed ? (
+                                <div
+                                  style={{
+                                    position: "relative",
+                                    paddingBottom: "56.25%",
+                                    height: 0,
+                                    borderRadius: "var(--r-md)",
+                                    overflow: "hidden",
+                                    background: "#000",
+                                  }}
+                                >
+                                  <iframe
+                                    src={embedUrl}
+                                    title={`Day ${t.dayNumber} video`}
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowFullScreen
+                                    style={{
+                                      position: "absolute",
+                                      top: 0,
+                                      left: 0,
+                                      width: "100%",
+                                      height: "100%",
+                                      border: "none",
+                                    }}
+                                  />
+                                </div>
+                              ) : (
+                                <a
+                                  href={t.videoUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  style={{
+                                    color: "var(--brand-green)",
+                                    fontSize: "var(--text-sm)",
+                                    fontWeight: "var(--fw-semibold)",
+                                  }}
+                                >
+                                  Mở video
+                                </a>
+                              )}
+                            </div>
+                          );
+                        })()}
                         {t.sopContent && (
                           <div className="ch-task-sop">
                             <div className="ch-task-sop-label">
@@ -805,6 +870,21 @@ export default async function ChallengeDetailPage({
                             >
                               {t.sopContent}
                             </div>
+                          </div>
+                        )}
+                        {hasEvidenceHint && (
+                          <div
+                            style={{
+                              marginTop: "var(--space-3)",
+                              padding: "var(--space-2) var(--space-3)",
+                              borderRadius: "var(--r-md)",
+                              border: "1px solid var(--border-subtle)",
+                              color: "var(--text-muted)",
+                              fontSize: "var(--text-sm)",
+                            }}
+                          >
+                            Evidence: {evidenceTypeLabel(t.evidenceType)}
+                            {t.evidenceLabel ? ` · ${t.evidenceLabel}` : ""}
                           </div>
                         )}
                       </div>
