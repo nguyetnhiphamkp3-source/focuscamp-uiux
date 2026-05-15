@@ -5567,11 +5567,10 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
 .mobile-menu-btn { display: none !important; }
 
 .mobile-drawer-backdrop {
-  display: none;
   position: fixed;
   inset: 0 0 calc(56px + env(safe-area-inset-bottom, 0px)) 0;
   background: rgba(0, 0, 0, 0.45);
-  z-index: 100;
+  z-index: 140;
 }
 
 /* ==========================================
@@ -5695,9 +5694,6 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
 
   html.mobile-drawer-open .left-section {
     transform: translateX(0);
-  }
-  html.mobile-drawer-open .mobile-drawer-backdrop {
-    display: block;
   }
 
   .channel-sidebar,
