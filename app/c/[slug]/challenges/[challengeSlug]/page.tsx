@@ -166,8 +166,7 @@ export default async function ChallengeDetailPage({
     };
   }
 
-  // Recent social check-ins (all members, last 20) + vote counts + whether
-  // current user has voted
+  // Recent social check-ins (temporarily hidden in UI; kept intact for re-enable)
   const recentCheckins = await prisma.checkin.findMany({
     where: { challengeId: challenge.id },
     orderBy: { createdAt: "desc" },
@@ -365,19 +364,6 @@ export default async function ChallengeDetailPage({
                 joinedAt: m.joinedAt,
                 user: m.user,
               }))}
-            />
-          )}
-
-          {/* Admin/Mod submission review panel (Phase C) */}
-          {permissions.canReviewSubmissions && submissionData && (
-            <SubmissionReviewPanel
-              challengeId={challenge.id}
-              communitySlug={slug}
-              challengeSlug={challengeSlug}
-              submissions={submissionData.rows}
-              total={submissionData.total}
-              pendingCount={submissionData.pendingCount}
-              activeStatus={reviewTab}
             />
           )}
 
@@ -911,7 +897,7 @@ export default async function ChallengeDetailPage({
 
           {/* Social feed — recent check-ins from everyone */}
           {recentCheckins.length > 0 && (
-            <div style={{ marginTop: "var(--space-8)" }}>
+            <div style={{ display: "none", marginTop: "var(--space-8)" }}>
               <h2 style={{ marginBottom: "var(--space-3)" }}>
                 🔥 Check-in gần đây ({recentCheckins.length})
               </h2>
@@ -1266,6 +1252,21 @@ export default async function ChallengeDetailPage({
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {/* Admin/Mod submission review panel */}
+          {permissions.canReviewSubmissions && submissionData && (
+            <div style={{ marginTop: "var(--space-8)" }}>
+              <SubmissionReviewPanel
+                challengeId={challenge.id}
+                communitySlug={slug}
+                challengeSlug={challengeSlug}
+                submissions={submissionData.rows}
+                total={submissionData.total}
+                pendingCount={submissionData.pendingCount}
+                activeStatus={reviewTab}
+              />
             </div>
           )}
         </div>
