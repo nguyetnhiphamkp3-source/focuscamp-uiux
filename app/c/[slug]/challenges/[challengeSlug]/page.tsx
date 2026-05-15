@@ -189,11 +189,13 @@ export default async function ChallengeDetailPage({
   const myCheckins = session?.user?.id
     ? await prisma.checkin.findMany({
         where: { challengeId: challenge.id, userId: session.user.id },
-        select: { taskId: true, dayNumber: true, createdAt: true, content: true, linkUrl: true, imageUrl: true },
+        select: { id: true, taskId: true, dayNumber: true, createdAt: true, content: true, linkUrl: true, imageUrl: true, status: true, reviewNote: true, rejectCount: true },
       })
     : [];
+  // Only count non-rejected checkins as done
   const doneDayNumbers = new Set(
     myCheckins
+      .filter((c) => c.status !== "REJECTED")
       .map((c) => c.dayNumber ?? null)
       .filter((n): n is number => n !== null)
   );
@@ -689,12 +691,13 @@ export default async function ChallengeDetailPage({
                 </span>
               </div>
               {challenge.tasks.map((t) => {
-                const isDone = doneDayNumbers.has(t.dayNumber);
-                const isCurrent = !isDone && t.dayNumber === dayNow;
-                const isFuture = t.dayNumber > dayNow && !isDone;
                 const hasEvidenceHint = !!(t.evidenceLabel || t.evidenceType !== "TEXT");
-                // Late = checkin was submitted >24h after that day's deadline
                 const checkinData = checkinByDay.get(t.dayNumber);
+                const isRejected = checkinData?.status === "REJECTED";
+                const isDone = doneDayNumbers.has(t.dayNumber);
+                const isCurrent = !isDone && !isRejected && t.dayNumber === dayNow;
+                const isFuture = t.dayNumber > dayNow && !isDone && !isRejected;
+                const isOverdue = !isDone && !isRejected && !isCurrent && t.dayNumber < dayNow;
                 const dayDeadline = myMembership?.personalStartsAt
                   ? new Date(myMembership.personalStartsAt.getTime() + t.dayNumber * 24 * 60 * 60 * 1000)
                   : null;
@@ -734,14 +737,15 @@ export default async function ChallengeDetailPage({
                         className="ch-task-day"
                         style={
                           isDone
-                            ? {
-                                background: "var(--brand-green)",
-                                color: "#fff",
-                              }
-                            : undefined
+                            ? { background: "var(--brand-green)", color: "#fff" }
+                            : isRejected
+                              ? { background: "var(--danger)", color: "#fff" }
+                              : isOverdue
+                                ? { background: "var(--text-muted)", color: "#fff" }
+                                : undefined
                         }
                       >
-                        {isDone ? "✓" : t.dayNumber}
+                        {isDone ? "✓" : isRejected ? "✕" : t.dayNumber}
                       </div>
                       <div className="ch-task-info">
                         <div className="ch-task-label">
@@ -751,7 +755,7 @@ export default async function ChallengeDetailPage({
                         <div
                           className="ch-task-title"
                           style={
-                            isDone
+                            isDone || isRejected || isOverdue
                               ? { color: "var(--text-muted)" }
                               : undefined
                           }
@@ -765,27 +769,20 @@ export default async function ChallengeDetailPage({
                         </span>
                       )}
                       {isDone && (
-                        <span className="ch-task-status" style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-                          <span
-                            style={{
-                              color: "var(--brand-green)",
-                              fontSize: "var(--text-xs)",
-                              fontWeight: "var(--fw-bold)",
-                            }}
-                          >
-                            ✓ Xong
+                        <span className="ch-task-status">
+                          <span className={isLate ? "late" : "done"}>
+                            {isLate ? "Hoàn thành (Trễ)" : "Hoàn thành"}
                           </span>
-                          {isLate && (
-                            <span
-                              style={{
-                                color: "var(--warning)",
-                                fontSize: "var(--text-xs)",
-                                fontWeight: "var(--fw-bold)",
-                              }}
-                            >
-                              · Trễ
-                            </span>
-                          )}
+                        </span>
+                      )}
+                      {isRejected && (
+                        <span className="ch-task-status">
+                          <span className="rejected">Từ chối</span>
+                        </span>
+                      )}
+                      {isOverdue && (
+                        <span className="ch-task-status">
+                          <span className="overdue">Quá hạn</span>
                         </span>
                       )}
                       {permissions.canManageChallenges && (
@@ -893,26 +890,16 @@ export default async function ChallengeDetailPage({
                           </div>
                         )}
                         {checkinData && (
-                          <div
-                            style={{
-                              marginTop: "var(--space-3)",
-                              padding: "var(--space-3)",
-                              borderRadius: "var(--r-md)",
-                              background: "var(--bg-secondary)",
-                              border: "1px solid var(--border-subtle)",
-                            }}
-                          >
-                            <div
-                              style={{
-                                fontSize: "var(--text-xs)",
-                                fontWeight: "var(--fw-bold)",
-                                color: "var(--text-muted)",
-                                marginBottom: "var(--space-2)",
-                              }}
-                            >
-                              Bài nộp của bạn
+                          <div className={`ch-submission${isRejected ? " ch-submission-rejected" : ""}`}>
+                            <div className="ch-submission-label">
+                              {isRejected ? "Bài nộp bị từ chối" : "Bài nộp của bạn"}
                             </div>
-                            <div style={{ fontSize: "var(--text-sm)", whiteSpace: "pre-wrap" }}>
+                            {isRejected && checkinData.reviewNote && (
+                              <div className="ch-submission-reject-note">
+                                <strong>Lý do:</strong> {checkinData.reviewNote}
+                              </div>
+                            )}
+                            <div className="ch-submission-content">
                               {checkinData.content}
                             </div>
                             {checkinData.linkUrl && (
@@ -920,12 +907,7 @@ export default async function ChallengeDetailPage({
                                 href={checkinData.linkUrl}
                                 target="_blank"
                                 rel="noreferrer"
-                                style={{
-                                  display: "inline-block",
-                                  marginTop: "var(--space-2)",
-                                  fontSize: "var(--text-sm)",
-                                  color: "var(--brand-green)",
-                                }}
+                                className="ch-submission-link"
                               >
                                 {checkinData.linkUrl}
                               </a>
@@ -934,12 +916,20 @@ export default async function ChallengeDetailPage({
                               <img
                                 src={checkinData.imageUrl}
                                 alt="Submission"
-                                style={{
-                                  display: "block",
-                                  marginTop: "var(--space-2)",
-                                  maxWidth: "100%",
-                                  borderRadius: "var(--r-md)",
+                                className="ch-submission-image"
+                              />
+                            )}
+                            {isRejected && (
+                              <ResubmitForm
+                                checkinId={checkinData.id}
+                                communitySlug={slug}
+                                challengeSlug={challengeSlug}
+                                initial={{
+                                  content: checkinData.content,
+                                  linkUrl: checkinData.linkUrl,
+                                  imageUrl: checkinData.imageUrl,
                                 }}
+                                rejectCount={checkinData.rejectCount}
                               />
                             )}
                           </div>
