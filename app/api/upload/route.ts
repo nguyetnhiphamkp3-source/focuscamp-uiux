@@ -10,7 +10,12 @@
 import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { uploadFile, isStorageConfigured } from "@/lib/storage";
+import {
+  uploadFile,
+  isStorageConfigured,
+  keyFromPublicUrl,
+  deleteFile,
+} from "@/lib/storage";
 import { rateLimit } from "@/lib/rate-limit";
 
 const IMAGE_TYPES = new Set([
@@ -128,4 +133,39 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ publicUrl, key });
+}
+
+export async function DELETE(req: Request) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "invalid_json" }, { status: 400 });
+  }
+
+  const publicUrl =
+    body && typeof body === "object" && "publicUrl" in body
+      ? (body as { publicUrl?: unknown }).publicUrl
+      : null;
+  if (typeof publicUrl !== "string") {
+    return NextResponse.json({ error: "missing_public_url" }, { status: 400 });
+  }
+
+  const key = keyFromPublicUrl(publicUrl);
+  if (!key) {
+    return NextResponse.json({ ok: true, skipped: true });
+  }
+
+  const [context, ownerId] = key.split("/");
+  if (!(context in MAX_FILE_SIZES) || ownerId !== session.user.id) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+
+  await deleteFile(key);
+  return NextResponse.json({ ok: true });
 }

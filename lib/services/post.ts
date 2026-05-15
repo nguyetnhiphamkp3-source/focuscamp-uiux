@@ -10,6 +10,7 @@ import { createNotification } from "./notification";
 import { awardXp } from "./xp";
 import { assertCommunityCanWrite } from "./community";
 import { canCommunity, effectiveCommunityRole } from "@/lib/community-permissions";
+import { deleteReplacedMediaUrl, deleteStoredMediaUrl } from "@/lib/media-cleanup";
 
 const LIKE_EMOJI = "❤️";
 
@@ -341,6 +342,7 @@ export async function updatePost(input: {
   title?: string;
   body: string;
   pillar?: string;
+  imageUrl?: string | null;
 }) {
   const post = await prisma.post.findUnique({
     where: { id: input.postId },
@@ -365,7 +367,14 @@ export async function updatePost(input: {
       title: input.title?.trim() || null,
       body: input.body.trim(),
       pillar: validatedPillar,
+      ...(input.imageUrl !== undefined
+        ? { imageUrl: input.imageUrl?.trim() || null }
+        : {}),
     },
+  });
+  await deleteReplacedMediaUrl(post.imageUrl, updated.imageUrl, {
+    postId: input.postId,
+    field: "imageUrl",
   });
   logger.info({ postId: input.postId, userId: input.userId }, "[post] updated");
   return updated;
@@ -399,6 +408,10 @@ export async function deletePost(input: { userId: string; postId: string }) {
   if (!canDelete) throw new Error("Không có quyền xoá bài này");
 
   await prisma.post.delete({ where: { id: input.postId } });
+  await deleteStoredMediaUrl(post.imageUrl, {
+    postId: input.postId,
+    field: "imageUrl",
+  });
   logger.info(
     { postId: input.postId, by: input.userId, author: post.userId },
     "[post] deleted"

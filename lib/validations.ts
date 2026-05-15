@@ -205,6 +205,7 @@ export const UpdatePostSchema = z.object({
     .regex(/^[a-z0-9-]+$/)
     .optional()
     .or(z.literal("")),
+  imageUrl: z.string().url().max(500).optional().nullable().or(z.literal("")),
 });
 
 export const DeletePostSchema = z.object({

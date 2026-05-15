@@ -1,7 +1,11 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { uploadImage, type UploadContext } from "@/lib/upload-client";
+import {
+  deleteUploadedFile,
+  uploadImage,
+  type UploadContext,
+} from "@/lib/upload-client";
 
 /**
  * Generic file upload — same presigned-URL flow as ImageUploadField, but
@@ -24,6 +28,7 @@ export function FileUploadField({
   maxSizeNote?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const stagedUploadsRef = useRef(new Set<string>());
   const [uploading, setUploading] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -36,8 +41,13 @@ export function FileUploadField({
     setUploading(true);
     setFileName(file.name);
     try {
+      const previousValue = value;
       const url = await uploadImage(file, context);
+      stagedUploadsRef.current.add(url);
       onChange(url);
+      if (previousValue && stagedUploadsRef.current.delete(previousValue)) {
+        void deleteUploadedFile(previousValue);
+      }
     } catch (ex) {
       setErr(ex instanceof Error ? ex.message : "upload_failed");
       setFileName(null);
@@ -105,6 +115,9 @@ export function FileUploadField({
           <button
             type="button"
             onClick={() => {
+              if (stagedUploadsRef.current.delete(value)) {
+                void deleteUploadedFile(value);
+              }
               onChange(null);
               setFileName(null);
             }}

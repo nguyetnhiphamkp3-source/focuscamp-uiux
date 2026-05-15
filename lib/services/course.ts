@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { assertCommunityCanWrite } from "./community";
 import { canCommunity, effectiveCommunityRole } from "@/lib/community-permissions";
+import { deleteReplacedMediaUrl } from "@/lib/media-cleanup";
 
 async function assertCommunityOwner(userId: string, communityId: string) {
   const c = await prisma.community.findUnique({
@@ -94,7 +95,7 @@ export async function updateCourse(input: {
   thumbnailUrl?: string | null;
   featuredOnGlobal?: boolean;
 }) {
-  await assertCourseAdmin(input.userId, input.courseId);
+  const course = await assertCourseAdmin(input.userId, input.courseId);
   const updated = await prisma.course.update({
     where: { id: input.courseId },
     data: {
@@ -114,6 +115,10 @@ export async function updateCourse(input: {
         ? { featuredOnGlobal: input.featuredOnGlobal }
         : {}),
     },
+  });
+  await deleteReplacedMediaUrl(course.thumbnailUrl, updated.thumbnailUrl, {
+    courseId: input.courseId,
+    field: "thumbnailUrl",
   });
   return updated;
 }

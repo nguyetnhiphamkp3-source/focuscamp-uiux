@@ -14,6 +14,7 @@ import {
   type PlanTier,
 } from "@/lib/platform-plans";
 import { createPayment } from "@/lib/sepay";
+import { deleteReplacedMediaUrl } from "@/lib/media-cleanup";
 
 /**
  * Assert the community plan allows writing (post, challenge, course, etc).
@@ -317,13 +318,13 @@ export async function updateCommunityInfo(input: {
 }) {
   const c = await prisma.community.findUnique({
     where: { id: input.communityId },
-    select: { ownerId: true },
+    select: { ownerId: true, bannerUrl: true, iconUrl: true },
   });
   if (!c) throw new Error("Cộng đồng không tồn tại");
   if (c.ownerId !== input.userId)
     throw new Error("Chỉ chủ cộng đồng mới sửa được thông tin");
 
-  await prisma.community.update({
+  const updated = await prisma.community.update({
     where: { id: input.communityId },
     data: {
       ...(input.name !== undefined ? { name: input.name } : {}),
@@ -347,6 +348,16 @@ export async function updateCommunityInfo(input: {
         : {}),
     },
   });
+  await Promise.all([
+    deleteReplacedMediaUrl(c.bannerUrl, updated.bannerUrl, {
+      communityId: input.communityId,
+      field: "bannerUrl",
+    }),
+    deleteReplacedMediaUrl(c.iconUrl, updated.iconUrl, {
+      communityId: input.communityId,
+      field: "iconUrl",
+    }),
+  ]);
   logger.info(
     { communityId: input.communityId, by: input.userId },
     "[community] info updated"

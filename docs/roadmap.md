@@ -1,6 +1,6 @@
 # focus.camp — Roadmap & Module Spec
 
-_Updated: 2026-05-14. Source of truth for "what's shipped / what's next"._
+_Updated: 2026-05-15. Source of truth for "what's shipped / what's next"._
 
 ## Positioning
 
@@ -147,6 +147,7 @@ Key: ✅ done · 🟡 partial · ❌ not started · 🚫 deferred (Phase 2+)
 | Middleware auth + security headers | ✅ |
 | Zod validation layer | ✅ |
 | Pino logger + Sentry | ✅ |
+| R2 media upload + cleanup on replace/delete | ✅ |
 | CI: GH Actions → GHCR → VPS pull | ✅ |
 | VPS: 4GB swap, Caddy reverse proxy, docker compose | ✅ |
 | DB backup cron | ✅ |

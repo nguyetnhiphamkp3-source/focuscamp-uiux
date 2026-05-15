@@ -52,3 +52,11 @@ export async function uploadImage(
   const { publicUrl } = await res.json();
   return publicUrl;
 }
+
+export async function deleteUploadedFile(publicUrl: string): Promise<void> {
+  await fetch("/api/upload", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ publicUrl }),
+  }).catch(() => {});
+}

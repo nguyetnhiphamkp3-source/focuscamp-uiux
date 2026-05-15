@@ -6,6 +6,7 @@ import {
   deletePostAction,
   updatePostAction,
 } from "@/app/actions/posts";
+import { ImageUploadField } from "@/components/shared/image-upload-field";
 import type { PillarConfig } from "@/lib/community-config";
 
 /**
@@ -29,7 +30,12 @@ export function PostMenu({
   canDelete: boolean;
   /** True on detail page — after delete, server action redirects to list */
   redirectOnDelete?: boolean;
-  initial: { title: string | null; body: string; pillar: string | null };
+  initial: {
+    title: string | null;
+    body: string;
+    pillar: string | null;
+    imageUrl: string | null;
+  };
   pillars: PillarConfig[];
 }) {
   const router = useRouter();
@@ -38,6 +44,7 @@ export function PostMenu({
   const [title, setTitle] = useState(initial.title ?? "");
   const [body, setBody] = useState(initial.body);
   const [pillar, setPillar] = useState(initial.pillar ?? "");
+  const [imageUrl, setImageUrl] = useState(initial.imageUrl ?? "");
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -75,6 +82,7 @@ export function PostMenu({
         title: title.trim() || undefined,
         body: body.trim(),
         pillar: pillar || undefined,
+        imageUrl: imageUrl.trim(),
       });
       if (res.ok) {
         setEditing(false);
@@ -239,8 +247,17 @@ export function PostMenu({
                       {p.label}
                     </option>
                   ))}
-                </select>
+                  </select>
               )}
+              <ImageUploadField
+                value={imageUrl || null}
+                onChange={(url) => setImageUrl(url ?? "")}
+                context="post"
+                shape="banner"
+                disabled={pending}
+                maxSizeNote="Tối đa 10MB"
+                placeholder="Ảnh kèm (tuỳ chọn)"
+              />
             </div>
             {err && (
               <div

@@ -1,7 +1,11 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { uploadImage, type UploadContext } from "@/lib/upload-client";
+import {
+  deleteUploadedFile,
+  uploadImage,
+  type UploadContext,
+} from "@/lib/upload-client";
 
 type Shape = "circle" | "square" | "banner";
 
@@ -35,6 +39,7 @@ export function ImageUploadField({
   maxSizeNote?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const stagedUploadsRef = useRef(new Set<string>());
   const [uploading, setUploading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -47,8 +52,13 @@ export function ImageUploadField({
     setErr(null);
     setUploading(true);
     try {
+      const previousValue = value;
       const url = await uploadImage(file, context);
+      stagedUploadsRef.current.add(url);
       onChange(url);
+      if (previousValue && stagedUploadsRef.current.delete(previousValue)) {
+        void deleteUploadedFile(previousValue);
+      }
     } catch (ex) {
       setErr(ex instanceof Error ? ex.message : "upload_failed");
     } finally {
@@ -120,7 +130,12 @@ export function ImageUploadField({
           {value && (
             <button
               type="button"
-              onClick={() => onChange(null)}
+              onClick={() => {
+                if (stagedUploadsRef.current.delete(value)) {
+                  void deleteUploadedFile(value);
+                }
+                onChange(null);
+              }}
               disabled={disabled || uploading}
               style={{
                 padding: "6px 10px",

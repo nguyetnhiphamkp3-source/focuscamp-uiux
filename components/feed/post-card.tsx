@@ -183,7 +183,12 @@ export function PostCard({
           canDelete={
             !!currentUserId && (currentUserId === post.user.id || isOwner)
           }
-          initial={{ title: post.title, body: post.body, pillar: post.pillar }}
+          initial={{
+            title: post.title,
+            body: post.body,
+            pillar: post.pillar,
+            imageUrl: post.imageUrl,
+          }}
           pillars={pillars}
         />
       </div>

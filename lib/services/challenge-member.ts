@@ -9,6 +9,7 @@ import { createNotification } from "./notification";
 import { awardXp } from "./xp";
 import { assertCommunityCanWrite } from "./community";
 import { canCommunity, effectiveCommunityRole } from "@/lib/community-permissions";
+import { deleteReplacedMediaUrl } from "@/lib/media-cleanup";
 
 export type SubmissionStatus = "PENDING" | "APPROVED" | "REJECTED";
 
@@ -443,6 +444,10 @@ export async function resubmitCheckin(input: {
       reviewNote: null,
     },
   });
+  await deleteReplacedMediaUrl(checkin.imageUrl, updated.imageUrl, {
+    checkinId: input.checkinId,
+    field: "imageUrl",
+  });
   logger.info(
     { checkinId: input.checkinId, by: input.userId, rejectCount: checkin.rejectCount },
     "[challenge] submission resubmitted"
@@ -512,7 +517,7 @@ export async function updateChallengeSettings(input: {
   bumpProductId?: string | null;
 }) {
   const ch = await assertChallengeAdmin(input.userId, input.challengeId);
-  await prisma.challenge.update({
+  const updated = await prisma.challenge.update({
     where: { id: input.challengeId },
     data: {
       ...(input.requiresApproval !== undefined ? { requiresApproval: input.requiresApproval } : {}),
@@ -538,6 +543,10 @@ export async function updateChallengeSettings(input: {
       ...(input.pitch !== undefined ? { pitch: input.pitch } : {}),
       ...(input.bumpProductId !== undefined ? { bumpProductId: input.bumpProductId } : {}),
     },
+  });
+  await deleteReplacedMediaUrl(ch.bannerUrl, updated.bannerUrl, {
+    challengeId: input.challengeId,
+    field: "bannerUrl",
   });
   logger.info(
     { challengeId: input.challengeId, by: input.userId },

@@ -258,6 +258,7 @@ export default async function PostDetailPage({
                     title: post.title,
                     body: post.body,
                     pillar: post.pillar,
+                    imageUrl: post.imageUrl,
                   }}
                   pillars={pillars}
                 />

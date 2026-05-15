@@ -125,6 +125,7 @@ export async function updatePostAction(input: {
   title?: string;
   body: string;
   pillar?: string;
+  imageUrl?: string | null;
 }): Promise<ActionResult> {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
@@ -134,6 +135,7 @@ export async function updatePostAction(input: {
     title: input.title,
     body: input.body,
     pillar: input.pillar,
+    imageUrl: input.imageUrl === undefined ? undefined : input.imageUrl,
   });
   if (!parsed.success) {
     return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
@@ -146,6 +148,7 @@ export async function updatePostAction(input: {
       title: parsed.data.title || undefined,
       body: parsed.data.body,
       pillar: parsed.data.pillar || undefined,
+      imageUrl: parsed.data.imageUrl === undefined ? undefined : parsed.data.imageUrl,
     });
     revalidatePath(`/c/${input.communitySlug}/p/${input.postId}`);
     revalidatePath(`/c/${input.communitySlug}/feed`);
