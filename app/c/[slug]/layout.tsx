@@ -19,6 +19,7 @@ import {
 } from "@/lib/community-config";
 import { getPlanStatus } from "@/lib/platform-plans";
 import { PlanStatusBanner } from "@/components/community/plan-status-banner";
+import { communityPermissionFlags, effectiveCommunityRole } from "@/lib/community-permissions";
 
 import { PREVIEW_MEMBER_COOKIE } from "@/lib/preview-mode";
 
@@ -76,6 +77,11 @@ export default async function CommunityLayout({
 
   const ui = getUiConfig(community);
   const isOwner = community.ownerId === session?.user?.id;
+  const role = effectiveCommunityRole({
+    isOwner,
+    membershipRole: membership?.role,
+  });
+  const permissions = communityPermissionFlags(role);
   const cookieStore = await cookies();
   const previewAsMember =
     isOwner && cookieStore.get(PREVIEW_MEMBER_COOKIE)?.value === "1";
@@ -219,7 +225,7 @@ export default async function CommunityLayout({
                   <span className="feature-name">AI Agent</span>
                 </FeatureLink>
               )}
-              {isOwner && !previewAsMember && (
+              {permissions.canManageOrders && !previewAsMember && (
                 <>
                   <div className="features-section-title">Quản lý</div>
                   <FeatureLink href={`/c/${slug}/orders`}>

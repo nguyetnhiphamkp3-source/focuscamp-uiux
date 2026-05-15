@@ -28,11 +28,12 @@ Do not add ad-hoc role checks in pages/actions/services. Use `lib/community-perm
 | Content moderation: delete post/comment, pin, CỐT | ✅ | ✅ | ✅ | ❌ |
 | Publish Signals | ✅ | ✅ | ❌ | ❌ |
 | Events: create/manage/meeting URL/attendees | ✅ | ✅ | ❌ | ❌ |
-| Marketplace products / orders / manual payment approval | ✅ | ❌ | ❌ | ❌ |
+| Marketplace products | ✅ | ❌ | ❌ | ❌ |
+| Orders dashboard / manual payment approval | ✅ | ✅ | ❌ | ❌ |
 
 ## Notes
 
-- Keep marketplace/order/payment owner-only unless product policy changes.
+- Keep marketplace product CRUD owner-only unless product policy changes.
 - Keep role management owner-only. Admins must not grant admin/mod or remove other members.
 - If a UI hides a button, the matching service/action must still enforce the same permission.
 - `MASTER` is not a valid community role. Do not introduce it without updating this doc, validation, and the permission helper.

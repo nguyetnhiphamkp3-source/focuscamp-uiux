@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { listCommunityOrders } from "@/lib/services/community-orders";
 import { OrdersPanel } from "@/components/settings/orders-panel";
+import { canCommunity, effectiveCommunityRole } from "@/lib/community-permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -24,10 +25,19 @@ export default async function OrdersPage({
 
   const community = await prisma.community.findUnique({
     where: { slug },
-    select: { id: true, ownerId: true, name: true },
+    select: {
+      id: true,
+      ownerId: true,
+      name: true,
+      memberships: { where: { userId: session.user.id }, select: { role: true } },
+    },
   });
   if (!community) notFound();
-  if (community.ownerId !== session.user.id) redirect(`/c/${slug}`);
+  const role = effectiveCommunityRole({
+    isOwner: community.ownerId === session.user.id,
+    membershipRole: community.memberships[0]?.role,
+  });
+  if (!canCommunity(role, "manage_orders")) redirect(`/c/${slug}`);
 
   const status = VALID_STATUSES.includes(sp.status ?? "") ? sp.status : undefined;
   const page = Math.max(1, parseInt(sp.page ?? "1", 10));

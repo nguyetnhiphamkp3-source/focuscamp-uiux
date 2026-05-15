@@ -49,6 +49,7 @@ const ROLE_PERMISSIONS: Record<CommunityRole, ReadonlySet<CommunityPermission>> 
     "moderate_content",
     "publish_signals",
     "manage_events",
+    "manage_orders",
   ]),
   MOD: new Set(["review_submissions", "moderate_content"]),
   MEMBER: new Set(),

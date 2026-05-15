@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { logError, logger } from "@/lib/logger";
+import { canCommunity, effectiveCommunityRole } from "@/lib/community-permissions";
 
 type ActionResult = { ok: true } | { ok: false; reason: string };
 
@@ -19,14 +20,29 @@ export async function approveOrderAction(input: {
     select: {
       id: true,
       status: true,
-      product: { select: { communityId: true, title: true, community: { select: { ownerId: true } } } },
+      product: {
+        select: {
+          communityId: true,
+          title: true,
+          community: {
+            select: {
+              ownerId: true,
+              memberships: { where: { userId: s.user.id }, select: { role: true } },
+            },
+          },
+        },
+      },
       user: { select: { name: true, email: true } },
       amountVnd: true,
     },
   });
 
   if (!purchase) return { ok: false, reason: "not_found" };
-  if (purchase.product.community.ownerId !== s.user.id) return { ok: false, reason: "unauthorized" };
+  const role = effectiveCommunityRole({
+    isOwner: purchase.product.community.ownerId === s.user.id,
+    membershipRole: purchase.product.community.memberships[0]?.role,
+  });
+  if (!canCommunity(role, "manage_orders")) return { ok: false, reason: "unauthorized" };
   if (purchase.status !== "PENDING") return { ok: false, reason: "already_processed" };
 
   const manualRef = `MANUAL-${Date.now()}`;
@@ -93,9 +109,18 @@ export async function approvePaymentAction(input: {
 
   const community = await prisma.community.findUnique({
     where: { slug: input.communitySlug },
-    select: { id: true, ownerId: true },
+    select: {
+      id: true,
+      ownerId: true,
+      memberships: { where: { userId: s.user.id }, select: { role: true } },
+    },
   });
-  if (!community || community.ownerId !== s.user.id) return { ok: false, reason: "unauthorized" };
+  if (!community) return { ok: false, reason: "unauthorized" };
+  const role = effectiveCommunityRole({
+    isOwner: community.ownerId === s.user.id,
+    membershipRole: community.memberships[0]?.role,
+  });
+  if (!canCommunity(role, "manage_orders")) return { ok: false, reason: "unauthorized" };
 
   const payment = await prisma.payment.findUnique({ where: { id: input.paymentId } });
   if (!payment) return { ok: false, reason: "not_found" };
