@@ -61,7 +61,7 @@ export function ResubmitForm({
           borderRadius: 6,
         }}
       >
-        Đã bị từ chối {rejectCount} lần — liên hệ admin để nộp lại lần nữa
+        Đã bị từ chối {rejectCount} lần, bạn không thể nộp lại được nữa
       </div>
     );
   }
