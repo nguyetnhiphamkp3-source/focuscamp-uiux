@@ -9,6 +9,7 @@ import { LockedLessonNotice } from "@/components/community/locked-lesson-notice"
 import { checkGate, getTiersConfig } from "@/lib/services/subscription";
 import { toEmbedUrl } from "@/lib/brand";
 import { getEffectiveOwnership } from "@/lib/preview-mode";
+import { communityPermissionFlags, effectiveCommunityRole } from "@/lib/community-permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -27,12 +28,29 @@ export default async function CourseDetailPage({
     where: { community: { slug }, slug: courseSlug },
     include: {
       lessons: { orderBy: { position: "asc" } },
-      community: { select: { id: true, ownerId: true } },
+      community: {
+        select: {
+          id: true,
+          ownerId: true,
+          memberships: session?.user?.id
+            ? { where: { userId: session.user.id }, select: { role: true } }
+            : false,
+        },
+      },
     },
   });
   if (!course) notFound();
   const realIsOwner = session?.user?.id === course.community.ownerId;
   const { effectiveIsOwner: isOwner } = await getEffectiveOwnership(realIsOwner);
+  const role = effectiveCommunityRole({
+    isOwner,
+    membershipRole: Array.isArray(course.community.memberships)
+      ? course.community.memberships[0]?.role
+      : null,
+  });
+  const permissions = communityPermissionFlags(role);
+
+  if (!course.isPublished && !permissions.canManageCourses) notFound();
 
   // Tier gate for non-BASIC courses (always bypass for real owner)
   let courseGateBlock: { message: string; requiredTier: string } | null = null;
@@ -103,9 +121,9 @@ export default async function CourseDetailPage({
   const activeLessonCompleted = activeLesson ? completedSet.has(activeLesson.id) : false;
 
   // Sequential locking: lesson is locked if the previous lesson is not completed
-  // First lesson is always unlocked; owners bypass locking
+  // First lesson is always unlocked; course managers bypass locking
   let isLocked = false;
-  if (activeLesson && !isOwner) {
+  if (activeLesson && !permissions.canManageCourses) {
     const idx = course.lessons.findIndex((l) => l.id === activeLesson.id);
     if (idx > 0) {
       const prevLesson = course.lessons[idx - 1];
@@ -128,7 +146,7 @@ export default async function CourseDetailPage({
           overflowY: "auto",
         }}
       >
-        {isOwner && (
+        {permissions.canManageCourses && (
           <div style={{ padding: "var(--space-4) var(--space-4) 0" }}>
             <CourseSettingsPanel
               courseId={course.id}
@@ -258,7 +276,7 @@ export default async function CourseDetailPage({
           )}
 
           {/* Mark lesson complete */}
-          {!isLocked && session?.user?.id && activeLesson && !isOwner && (
+          {!isLocked && session?.user?.id && activeLesson && !permissions.canManageCourses && (
             <div style={{ marginTop: "var(--space-5)" }}>
               <MarkLessonCompleteButton
                 lessonId={activeLesson.id}
@@ -270,7 +288,7 @@ export default async function CourseDetailPage({
           )}
 
           {/* Fallback for no lessons */}
-          {course.lessons.length === 0 && !isOwner && (
+          {course.lessons.length === 0 && !permissions.canManageCourses && (
             <div className="ui-empty">
               <div className="ui-empty-icon">📘</div>
               <div className="ui-empty-title">Chưa có bài học nào</div>
@@ -279,7 +297,7 @@ export default async function CourseDetailPage({
           )}
 
           {/* Admin: add lesson */}
-          {isOwner && (
+          {permissions.canManageCourses && (
             <CreateLessonButton
               courseId={course.id}
               communitySlug={slug}

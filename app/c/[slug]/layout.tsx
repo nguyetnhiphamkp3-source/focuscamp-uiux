@@ -42,7 +42,7 @@ export default async function CommunityLayout({
   if (!community) notFound();
 
   let membership = null;
-  let myCommunities: { id: string; slug: string; name: string; iconUrl: string | null }[] = [];
+  let myCommunities: { id: string; slug: string; name: string; iconUrl: string | null; isOwner: boolean }[] = [];
   let freshUser: { id: string; name: string | null; email: string | null; image: string | null } | null = null;
   let notifUnread = 0;
   if (session?.user?.id) {
@@ -55,11 +55,14 @@ export default async function CommunityLayout({
       prisma.membership
         .findMany({
           where: { userId: session.user.id },
-          include: { community: { select: { id: true, slug: true, name: true, iconUrl: true } } },
+          include: { community: { select: { id: true, slug: true, name: true, iconUrl: true, ownerId: true } } },
           orderBy: { joinedAt: "asc" },
         })
         .then((mems) => {
-          myCommunities = mems.map((m) => m.community);
+          myCommunities = mems.map((m) => ({
+            ...m.community,
+            isOwner: m.community.ownerId === session.user!.id,
+          }));
         }),
       prisma.user.findUnique({
         where: { id: session.user.id },

@@ -23,6 +23,7 @@ import { CommentItem } from "@/components/feed/comment-item";
 import type { CommentItemData } from "@/components/feed/comment-item";
 import { EmptyState } from "@/components/ui/empty-state";
 import { getEffectiveOwnership } from "@/lib/preview-mode";
+import { communityPermissionFlags, effectiveCommunityRole } from "@/lib/community-permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -90,13 +91,17 @@ export default async function PostDetailPage({
   const realIsOwner = userId === community.ownerId;
   const { effectiveIsOwner: isOwner } = await getEffectiveOwnership(realIsOwner);
   const isAuthor = userId === post.user.id;
-  const isMember = userId
-    ? !!(await prisma.membership.findUnique({
+  const membership = userId
+    ? await prisma.membership.findUnique({
         where: {
           userId_communityId: { userId, communityId: community.id },
         },
-      }))
-    : false;
+        select: { role: true },
+      })
+    : null;
+  const isMember = !!membership;
+  const role = effectiveCommunityRole({ isOwner, membershipRole: membership?.role });
+  const permissions = communityPermissionFlags(role);
 
   const authorName = post.user.name || "Ẩn danh";
   const isQuestion = post.type === "QUESTION";
@@ -235,7 +240,7 @@ export default async function PostDetailPage({
               <span className="feed-post-action" style={{ cursor: "default" }}>
                 💬 {post.commentCount} bình luận
               </span>
-              {isOwner && (
+              {permissions.canModerateContent && (
                 <CotToggleButton
                   postId={post.id}
                   communitySlug={slug}
@@ -247,7 +252,7 @@ export default async function PostDetailPage({
                   postId={post.id}
                   communitySlug={slug}
                   canEdit={isAuthor}
-                  canDelete={isAuthor || isOwner}
+                  canDelete={isAuthor || permissions.canModerateContent}
                   redirectOnDelete={true}
                   initial={{
                     title: post.title,
@@ -307,7 +312,7 @@ export default async function PostDetailPage({
                         }
                       : null
                   }
-                  isOwner={isOwner}
+                  isOwner={permissions.canModerateContent}
                   postAuthorId={post.user.id}
                   isQuestion={isQuestion}
                 />

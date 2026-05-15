@@ -1,28 +1,47 @@
 /**
  * Course / Lesson admin CRUD.
- * Community owner only (platform admin role = Phase 2).
+ * Owner + ADMIN manage course content. See docs/roles-permissions.md.
  */
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { assertCommunityCanWrite } from "./community";
+import { canCommunity, effectiveCommunityRole } from "@/lib/community-permissions";
 
 async function assertCommunityOwner(userId: string, communityId: string) {
   const c = await prisma.community.findUnique({
     where: { id: communityId },
-    select: { ownerId: true },
+    select: {
+      ownerId: true,
+      memberships: { where: { userId }, select: { role: true } },
+    },
   });
   if (!c) throw new Error("Cộng đồng không tồn tại");
-  if (c.ownerId !== userId)
+  const role = effectiveCommunityRole({
+    isOwner: c.ownerId === userId,
+    membershipRole: c.memberships[0]?.role,
+  });
+  if (!canCommunity(role, "manage_courses"))
     throw new Error("Chỉ admin cộng đồng mới quản lý khoá học");
 }
 
 async function assertCourseAdmin(userId: string, courseId: string) {
   const course = await prisma.course.findUnique({
     where: { id: courseId },
-    include: { community: { select: { ownerId: true } } },
+    include: {
+      community: {
+        select: {
+          ownerId: true,
+          memberships: { where: { userId }, select: { role: true } },
+        },
+      },
+    },
   });
   if (!course) throw new Error("Khoá học không tồn tại");
-  if (course.community.ownerId !== userId)
+  const role = effectiveCommunityRole({
+    isOwner: course.community.ownerId === userId,
+    membershipRole: course.community.memberships[0]?.role,
+  });
+  if (!canCommunity(role, "manage_courses"))
     throw new Error("Chỉ admin cộng đồng mới sửa được");
   return course;
 }

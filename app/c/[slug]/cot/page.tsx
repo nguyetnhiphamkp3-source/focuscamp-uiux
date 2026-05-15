@@ -6,6 +6,7 @@ import { getPillars, getCurrency } from "@/lib/community-config";
 import { FeedList } from "@/components/feed/feed-list";
 import { EmptyState } from "@/components/ui/empty-state";
 import { getEffectiveOwnership } from "@/lib/preview-mode";
+import { communityPermissionFlags, effectiveCommunityRole } from "@/lib/community-permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +36,14 @@ export default async function CotPage({
   const userId = session?.user?.id;
   const realIsOwner = userId === community.ownerId;
   const { effectiveIsOwner: isOwner } = await getEffectiveOwnership(realIsOwner);
+  const membership = userId
+    ? await prisma.membership.findUnique({
+        where: { userId_communityId: { userId, communityId: community.id } },
+        select: { role: true },
+      })
+    : null;
+  const role = effectiveCommunityRole({ isOwner, membershipRole: membership?.role });
+  const permissions = communityPermissionFlags(role);
 
   const PAGE_SIZE = 20;
   const posts = await listFeed({
@@ -92,7 +101,7 @@ export default async function CotPage({
               icon="⭐"
               title="Chưa có bài CỐT nào"
               description={
-                isOwner
+                permissions.canModerateContent
                   ? "Vào Bảng tin, bấm “☆ Mark CỐT” dưới bài viết chất lượng để đưa về đây."
                   : "Admin cộng đồng sẽ đánh dấu những bài xuất sắc từ Bảng tin. Quay lại sau nhé!"
               }
@@ -105,7 +114,7 @@ export default async function CotPage({
               type="POST"
               pillars={pillars}
               currency={currency}
-              isOwner={isOwner}
+              isOwner={permissions.canModerateContent}
               currentUserId={userId ?? null}
               pageSize={PAGE_SIZE}
               showCotBadge={false}

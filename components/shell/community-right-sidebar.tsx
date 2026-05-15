@@ -1,5 +1,5 @@
 import { JoinButton } from "./join-button";
-import { CommunitySearchBar } from "./community-header";
+import { CommunitySearchBar } from "./community-search-bar";
 import { InviteCopyButton } from "./invite-copy-button";
 import { CartIcon } from "@/components/marketplace/cart-icon";
 import { classByKey } from "@/lib/community-config";
@@ -100,7 +100,7 @@ function GuestView({
             .toUpperCase()
         )}
       </div>
-      <CommunitySearchBar name={community.name} />
+      <CommunitySearchBar name={community.name} slug={community.slug} />
       <div className="rs-body">
         <div className="rs-card">
           <div className="rs-community-name">{community.name}</div>
@@ -204,7 +204,7 @@ function MemberView({
           }}
         />
       </div>
-      <CommunitySearchBar name={community.name} />
+      <CommunitySearchBar name={community.name} slug={community.slug} />
       <div className="rs-body">
         <div className="rs-card">
           <div

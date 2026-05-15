@@ -9,6 +9,7 @@ import { getPillars } from "@/lib/community-config";
 import { createNotification } from "./notification";
 import { awardXp } from "./xp";
 import { assertCommunityCanWrite } from "./community";
+import { canCommunity, effectiveCommunityRole } from "@/lib/community-permissions";
 
 const LIKE_EMOJI = "❤️";
 
@@ -232,11 +233,20 @@ export async function createPost(input: {
     }),
     prisma.community.findUnique({
       where: { id: communityId },
-      select: { pillarsConfig: true },
+      select: { ownerId: true, pillarsConfig: true },
     }),
   ]);
   if (!membership) throw new Error("Bạn chưa tham gia cộng đồng này");
   if (!community) throw new Error("Cộng đồng không tồn tại");
+  if (type === "SIGNAL") {
+    const role = effectiveCommunityRole({
+      isOwner: community.ownerId === userId,
+      membershipRole: membership.role,
+    });
+    if (!canCommunity(role, "publish_signals")) {
+      throw new Error("Chỉ admin cộng đồng mới đăng tín hiệu");
+    }
+  }
 
   // Ignore pillar that doesn't match community's configured pillars.
   let validatedPillar: string | null = null;
@@ -363,17 +373,29 @@ export async function updatePost(input: {
 
 /**
  * Delete a post + all cascades (comments, reactions, votes).
- * Allowed to: post author OR community owner.
+ * Allowed to: post author OR community content moderator.
  */
 export async function deletePost(input: { userId: string; postId: string }) {
   const post = await prisma.post.findUnique({
     where: { id: input.postId },
-    include: { community: { select: { slug: true, ownerId: true } } },
+    include: {
+      community: {
+        select: {
+          slug: true,
+          ownerId: true,
+          memberships: { where: { userId: input.userId }, select: { role: true } },
+        },
+      },
+    },
   });
   if (!post) throw new Error("Bài viết không tồn tại");
 
+  const role = effectiveCommunityRole({
+    isOwner: post.community.ownerId === input.userId,
+    membershipRole: post.community.memberships[0]?.role,
+  });
   const canDelete =
-    post.userId === input.userId || post.community.ownerId === input.userId;
+    post.userId === input.userId || canCommunity(role, "moderate_content");
   if (!canDelete) throw new Error("Không có quyền xoá bài này");
 
   await prisma.post.delete({ where: { id: input.postId } });
@@ -384,14 +406,25 @@ export async function deletePost(input: { userId: string; postId: string }) {
   return { communitySlug: post.community.slug, type: post.type };
 }
 
-/** Toggle pinned state on a post (admin / community owner only). */
+/** Toggle pinned state on a post (content moderator only). */
 export async function togglePinPost(input: { userId: string; postId: string }) {
   const post = await prisma.post.findUnique({
     where: { id: input.postId },
-    include: { community: { select: { ownerId: true } } },
+    include: {
+      community: {
+        select: {
+          ownerId: true,
+          memberships: { where: { userId: input.userId }, select: { role: true } },
+        },
+      },
+    },
   });
   if (!post) throw new Error("Post không tồn tại");
-  if (post.community.ownerId !== input.userId) {
+  const role = effectiveCommunityRole({
+    isOwner: post.community.ownerId === input.userId,
+    membershipRole: post.community.memberships[0]?.role,
+  });
+  if (!canCommunity(role, "moderate_content")) {
     throw new Error("Chỉ admin cộng đồng mới ghim bài");
   }
   const updated = await prisma.post.update({
@@ -405,14 +438,25 @@ export async function togglePinPost(input: { userId: string; postId: string }) {
   return updated;
 }
 
-/** Toggle Cốt flag (admin / community owner only). */
+/** Toggle Cốt flag (content moderator only). */
 export async function toggleCot(input: { userId: string; postId: string }) {
   const post = await prisma.post.findUnique({
     where: { id: input.postId },
-    include: { community: { select: { ownerId: true } } },
+    include: {
+      community: {
+        select: {
+          ownerId: true,
+          memberships: { where: { userId: input.userId }, select: { role: true } },
+        },
+      },
+    },
   });
   if (!post) throw new Error("Post không tồn tại");
-  if (post.community.ownerId !== input.userId) {
+  const role = effectiveCommunityRole({
+    isOwner: post.community.ownerId === input.userId,
+    membershipRole: post.community.memberships[0]?.role,
+  });
+  if (!canCommunity(role, "moderate_content")) {
     throw new Error("Chỉ admin cộng đồng mới đánh dấu được Cốt");
   }
 

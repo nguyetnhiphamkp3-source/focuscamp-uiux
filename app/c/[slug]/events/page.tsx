@@ -7,6 +7,7 @@ import { fmtVnd } from "@/lib/brand";
 import { CreateEventButton } from "@/components/community/create-event-button";
 import { EventRsvpButton } from "@/components/community/event-rsvp-button";
 import { getEffectiveOwnership } from "@/lib/preview-mode";
+import { canCommunity, effectiveCommunityRole } from "@/lib/community-permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -31,8 +32,13 @@ export default async function EventsListPage({
   if (!community) notFound();
   const realIsOwner = session?.user?.id === community.ownerId;
   const { effectiveIsOwner: isOwner } = await getEffectiveOwnership(realIsOwner);
-  const memberRole = Array.isArray(community.memberships) ? (community.memberships[0]?.role ?? "MEMBER") : "MEMBER";
-  const canCreateEvent = isOwner || memberRole === "ADMIN" || memberRole === "MASTER";
+  const role = effectiveCommunityRole({
+    isOwner,
+    membershipRole: Array.isArray(community.memberships)
+      ? community.memberships[0]?.role
+      : null,
+  });
+  const canCreateEvent = canCommunity(role, "manage_events");
 
   const events = await listEvents({ communityId: community.id, scope: "upcoming" });
 

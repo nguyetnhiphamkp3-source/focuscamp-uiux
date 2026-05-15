@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { updateChallengeSettingsAction } from "@/app/actions/challenge-review";
 import { ImageUploadField } from "@/components/shared/image-upload-field";
@@ -36,6 +36,16 @@ export function ChallengeSettingsPanel({
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    function handleOpen() {
+      setOpen(true);
+      sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    window.addEventListener("open-challenge-settings", handleOpen);
+    return () => window.removeEventListener("open-challenge-settings", handleOpen);
+  }, []);
   const [title, setTitle] = useState(initial.title);
   const [description, setDescription] = useState(initial.description ?? "");
   const [pitch, setPitch] = useState(initial.pitch ?? "");
@@ -91,6 +101,8 @@ export function ChallengeSettingsPanel({
 
   return (
     <section
+      ref={sectionRef}
+      id="challenge-settings"
       className="ui-card ui-card-lg"
       style={{ marginBottom: "var(--space-4)" }}
     >

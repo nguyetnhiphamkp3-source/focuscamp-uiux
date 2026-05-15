@@ -7,6 +7,7 @@ import { PostComposer } from "@/components/feed/post-composer";
 import { FeedList } from "@/components/feed/feed-list";
 import { EmptyState } from "@/components/ui/empty-state";
 import { getEffectiveOwnership } from "@/lib/preview-mode";
+import { communityPermissionFlags, effectiveCommunityRole } from "@/lib/community-permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +37,14 @@ export default async function SignalsPage({
   const userId = session?.user?.id;
   const realIsOwner = userId === community.ownerId;
   const { effectiveIsOwner: isOwner } = await getEffectiveOwnership(realIsOwner);
+  const membership = userId
+    ? await prisma.membership.findUnique({
+        where: { userId_communityId: { userId, communityId: community.id } },
+        select: { role: true },
+      })
+    : null;
+  const role = effectiveCommunityRole({ isOwner, membershipRole: membership?.role });
+  const permissions = communityPermissionFlags(role);
 
   const PAGE_SIZE = 20;
   const signals = await listFeed({
@@ -89,7 +98,7 @@ export default async function SignalsPage({
           </div>
 
           {/* Admin-only composer */}
-          {isOwner && session?.user && userId && (
+          {permissions.canPublishSignals && session?.user && userId && (
             <PostComposer
               communityId={community.id}
               communitySlug={slug}
@@ -111,7 +120,7 @@ export default async function SignalsPage({
               icon="⚡"
               title="Chưa có tín hiệu nào"
               description={
-                isOwner
+                permissions.canPublishSignals
                   ? "Đăng tín hiệu đầu tiên cho cộng đồng — trend, cơ hội mới, market pulse…"
                   : "Admin cộng đồng sẽ đăng các tín hiệu mới ở đây. Quay lại sau nhé!"
               }
@@ -124,7 +133,7 @@ export default async function SignalsPage({
               type="SIGNAL"
               pillars={pillars}
               currency={currency}
-              isOwner={isOwner}
+              isOwner={permissions.canModerateContent}
               currentUserId={userId ?? null}
               pageSize={PAGE_SIZE}
             />

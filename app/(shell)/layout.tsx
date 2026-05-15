@@ -17,14 +17,14 @@ export default async function ShellLayout({
 }) {
   const session = await auth();
 
-  let myCommunities: { id: string; slug: string; name: string; iconUrl: string | null }[] = [];
+  let myCommunities: { id: string; slug: string; name: string; iconUrl: string | null; isOwner: boolean }[] = [];
   let notifUnread = 0;
   let freshUser: { id: string; name: string | null; email: string | null; image: string | null; handle: string | null } | null = null;
   if (session?.user?.id) {
     const [mems, n, u] = await Promise.all([
       prisma.membership.findMany({
         where: { userId: session.user.id },
-        include: { community: { select: { id: true, slug: true, name: true, iconUrl: true } } },
+        include: { community: { select: { id: true, slug: true, name: true, iconUrl: true, ownerId: true } } },
         orderBy: { joinedAt: "asc" },
       }),
       unreadCount(session.user.id),
@@ -33,7 +33,10 @@ export default async function ShellLayout({
         select: { id: true, name: true, email: true, image: true, handle: true },
       }),
     ]);
-    myCommunities = mems.map((m) => m.community);
+    myCommunities = mems.map((m) => ({
+      ...m.community,
+      isOwner: m.community.ownerId === session.user!.id,
+    }));
     notifUnread = n;
     freshUser = u;
   }

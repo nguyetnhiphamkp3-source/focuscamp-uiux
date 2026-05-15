@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { createPayment } from "@/lib/sepay";
 import { assertCommunityCanWrite } from "./community";
+import { canCommunity, effectiveCommunityRole } from "@/lib/community-permissions";
 import { getGoogleAccessToken } from "./google-oauth";
 import {
   createMeetSpace,
@@ -24,9 +25,13 @@ async function assertCommunityOwner(userId: string, communityId: string) {
     },
   });
   if (!c) throw new Error("Cộng đồng không tồn tại");
-  const role = c.memberships[0]?.role ?? "MEMBER";
-  const canManage = c.ownerId === userId || role === "ADMIN" || role === "MASTER";
-  if (!canManage) throw new Error("Cần quyền ADMIN hoặc MASTER để tạo event");
+  const role = effectiveCommunityRole({
+    isOwner: c.ownerId === userId,
+    membershipRole: c.memberships[0]?.role,
+  });
+  if (!canCommunity(role, "manage_events")) {
+    throw new Error("Cần quyền ADMIN để quản lý event");
+  }
 }
 
 export async function createEvent(input: {

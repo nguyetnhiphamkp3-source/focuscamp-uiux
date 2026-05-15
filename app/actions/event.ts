@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createEvent, bookEvent } from "@/lib/services/event";
 import { logError } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
+import { canCommunity, effectiveCommunityRole } from "@/lib/community-permissions";
 
 type ActionResult<T = unknown> =
   | { ok: true; data?: T }
@@ -72,9 +73,11 @@ export async function updateEventMeetingUrlAction(input: {
       },
     });
     if (!event) return { ok: false, reason: "Không tìm thấy event" };
-    const role = event.community.memberships[0]?.role ?? "MEMBER";
-    const canManage = event.community.ownerId === s.user.id || role === "ADMIN" || role === "MASTER";
-    if (!canManage) return { ok: false, reason: "Cần quyền ADMIN hoặc MASTER" };
+    const role = effectiveCommunityRole({
+      isOwner: event.community.ownerId === s.user.id,
+      membershipRole: event.community.memberships[0]?.role,
+    });
+    if (!canCommunity(role, "manage_events")) return { ok: false, reason: "Cần quyền ADMIN" };
     await prisma.event.update({
       where: { id: input.eventId },
       data: { meetingUrl: input.meetingUrl.trim() || null },

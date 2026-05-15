@@ -14,6 +14,7 @@ Source of truth docs (in this repo):
 2. **[`docs/competitor-analysis.md`](docs/competitor-analysis.md)** — Skool + Whop + TAIP.IO analysis. Product positioning (challenge-first), USPs (AI Agent, custom domain), feature inheritance. Future agents: re-read this before "should we do X?" questions.
 3. **[`docs/module-challenges.md`](docs/module-challenges.md)** — detailed spec for the Challenge module (TAIP origin).
 4. **[`docs/design-system.md`](docs/design-system.md)** — Discord-inspired visual tokens.
+5. **[`docs/roles-permissions.md`](docs/roles-permissions.md)** — community OWNER / ADMIN / MOD / MEMBER permission matrix. Use `lib/community-permissions.ts`; do not add ad-hoc role checks.
 
 These are git-tracked at `app/docs/`. Check commit history to understand when things shipped.
 
@@ -139,4 +140,3 @@ TODO: chuyển sang Upstash Redis khi scale multi-instance.
 ## Deploy
 - Push main → GitHub Actions SSH vào VPS → `git pull && docker compose up -d --build`
 - Sau khi code deploy ổn, chạy 1 lần `bash scripts/init-prisma-migrations.sh` trong container để chuyển sang migration-based DB management.
-

@@ -6,6 +6,7 @@ import { Prisma } from "@prisma/client";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CreateChallengeButton } from "@/components/community/create-challenge-button";
 import { getEffectiveOwnership } from "@/lib/preview-mode";
+import { communityPermissionFlags, effectiveCommunityRole } from "@/lib/community-permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +40,14 @@ export default async function QuestLogPage({
   const { tab = "active" } = await searchParams;
   const session = await auth();
 
-  const community = await prisma.community.findUnique({ where: { slug } });
+  const community = await prisma.community.findUnique({
+    where: { slug },
+    include: {
+      memberships: session?.user?.id
+        ? { where: { userId: session.user.id }, select: { role: true } }
+        : false,
+    },
+  });
   if (!community) notFound();
 
   // Load by tab — only query what we need
@@ -95,8 +103,15 @@ export default async function QuestLogPage({
   // Owner: load all challenges they haven't joined yet (to show management section)
   const realIsOwner = session?.user?.id === community.ownerId;
   const { effectiveIsOwner: isOwner } = await getEffectiveOwnership(realIsOwner);
+  const role = effectiveCommunityRole({
+    isOwner,
+    membershipRole: Array.isArray(community.memberships)
+      ? community.memberships[0]?.role
+      : null,
+  });
+  const permissions = communityPermissionFlags(role);
   const ownerUnjoined =
-    tab === "active" && isOwner
+    tab === "active" && permissions.canManageChallenges
       ? await prisma.challenge.findMany({
           where: {
             communityId: community.id,
@@ -134,7 +149,7 @@ export default async function QuestLogPage({
       >
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
           {/* Admin: create new challenge */}
-          {session?.user?.id === community.ownerId && (
+          {permissions.canManageChallenges && (
             <div
               style={{
                 display: "flex",

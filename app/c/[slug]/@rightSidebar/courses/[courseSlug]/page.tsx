@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { fmtDuration, ytThumb } from "@/lib/brand";
 import { EditLessonButton } from "@/components/community/edit-lesson-button";
 import { getEffectiveOwnership } from "@/lib/preview-mode";
+import { communityPermissionFlags, effectiveCommunityRole } from "@/lib/community-permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -22,12 +23,27 @@ export default async function CoursePlaylistSidebar({
     where: { community: { slug }, slug: courseSlug },
     include: {
       lessons: { orderBy: { position: "asc" } },
-      community: { select: { ownerId: true } },
+      community: {
+        select: {
+          ownerId: true,
+          memberships: session?.user?.id
+            ? { where: { userId: session.user.id }, select: { role: true } }
+            : false,
+        },
+      },
     },
   });
   if (!course) notFound();
   const realIsOwner = session?.user?.id === course.community.ownerId;
   const { effectiveIsOwner: isOwner } = await getEffectiveOwnership(realIsOwner);
+  const role = effectiveCommunityRole({
+    isOwner,
+    membershipRole: Array.isArray(course.community.memberships)
+      ? course.community.memberships[0]?.role
+      : null,
+  });
+  const permissions = communityPermissionFlags(role);
+  if (!course.isPublished && !permissions.canManageCourses) notFound();
 
   // Query completion status for all lessons
   const completedSet = new Set<string>();
@@ -251,7 +267,7 @@ export default async function CoursePlaylistSidebar({
                   >
                     {l.title}
                   </div>
-                  {isOwner && (
+                  {permissions.canManageCourses && (
                     <EditLessonButton
                       lesson={l}
                       communitySlug={slug}

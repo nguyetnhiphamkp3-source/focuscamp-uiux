@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { createNotification } from "./notification";
 import { awardXp } from "./xp";
+import { canCommunity, effectiveCommunityRole } from "@/lib/community-permissions";
 
 export async function createComment(input: {
   userId: string;
@@ -213,19 +214,32 @@ export async function updateComment(input: {
   return { updated, postId: comment.postId };
 }
 
-/** Delete a comment. Allowed to: author of the comment OR community owner. */
+/** Delete a comment. Allowed to: comment author OR community content moderator. */
 export async function deleteComment(input: { userId: string; commentId: string }) {
   const comment = await prisma.comment.findUnique({
     where: { id: input.commentId },
     include: {
-      post: { select: { community: { select: { ownerId: true } } } },
+      post: {
+        select: {
+          community: {
+            select: {
+              ownerId: true,
+              memberships: { where: { userId: input.userId }, select: { role: true } },
+            },
+          },
+        },
+      },
     },
   });
   if (!comment) throw new Error("Comment không tồn tại");
 
+  const role = effectiveCommunityRole({
+    isOwner: comment.post.community.ownerId === input.userId,
+    membershipRole: comment.post.community.memberships[0]?.role,
+  });
   const canDelete =
     comment.userId === input.userId ||
-    comment.post.community.ownerId === input.userId;
+    canCommunity(role, "moderate_content");
   if (!canDelete) throw new Error("Không có quyền xoá comment này");
 
   await prisma.comment.delete({ where: { id: input.commentId } });

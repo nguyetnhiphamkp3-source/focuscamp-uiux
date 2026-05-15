@@ -8,17 +8,51 @@ import { logger } from "@/lib/logger";
 import { createNotification } from "./notification";
 import { awardXp } from "./xp";
 import { assertCommunityCanWrite } from "./community";
+import { canCommunity, effectiveCommunityRole } from "@/lib/community-permissions";
 
 export type SubmissionStatus = "PENDING" | "APPROVED" | "REJECTED";
 
 export async function assertChallengeAdmin(userId: string, challengeId: string) {
   const ch = await prisma.challenge.findUnique({
     where: { id: challengeId },
-    include: { community: { select: { ownerId: true } } },
+    include: {
+      community: {
+        select: {
+          ownerId: true,
+          memberships: { where: { userId }, select: { role: true } },
+        },
+      },
+    },
   });
   if (!ch) throw new Error("Challenge không tồn tại");
-  // Admin = community owner. (Future: add mod roles.)
-  if (ch.community.ownerId !== userId) {
+  const role = effectiveCommunityRole({
+    isOwner: ch.community.ownerId === userId,
+    membershipRole: ch.community.memberships[0]?.role,
+  });
+  if (!canCommunity(role, "manage_challenges")) {
+    throw new Error("Chỉ admin cộng đồng mới quản lý challenge");
+  }
+  return ch;
+}
+
+async function assertChallengeReviewer(userId: string, challengeId: string) {
+  const ch = await prisma.challenge.findUnique({
+    where: { id: challengeId },
+    include: {
+      community: {
+        select: {
+          ownerId: true,
+          memberships: { where: { userId }, select: { role: true } },
+        },
+      },
+    },
+  });
+  if (!ch) throw new Error("Challenge không tồn tại");
+  const role = effectiveCommunityRole({
+    isOwner: ch.community.ownerId === userId,
+    membershipRole: ch.community.memberships[0]?.role,
+  });
+  if (!canCommunity(role, "review_submissions")) {
     throw new Error("Chỉ admin cộng đồng mới review submission");
   }
   return ch;
@@ -27,10 +61,17 @@ export async function assertChallengeAdmin(userId: string, challengeId: string) 
 async function assertCommunityOwner(userId: string, communityId: string) {
   const c = await prisma.community.findUnique({
     where: { id: communityId },
-    select: { ownerId: true },
+    select: {
+      ownerId: true,
+      memberships: { where: { userId }, select: { role: true } },
+    },
   });
   if (!c) throw new Error("Cộng đồng không tồn tại");
-  if (c.ownerId !== userId)
+  const role = effectiveCommunityRole({
+    isOwner: c.ownerId === userId,
+    membershipRole: c.memberships[0]?.role,
+  });
+  if (!canCommunity(role, "manage_challenges"))
     throw new Error("Chỉ admin cộng đồng mới tạo challenge");
 }
 
@@ -52,10 +93,26 @@ export async function approveChallengeMember(input: {
 }) {
   const member = await prisma.challengeMember.findUnique({
     where: { id: input.memberId },
-    include: { challenge: { include: { community: { select: { ownerId: true, slug: true } } } } },
+    include: {
+      challenge: {
+        include: {
+          community: {
+            select: {
+              ownerId: true,
+              slug: true,
+              memberships: { where: { userId: input.userId }, select: { role: true } },
+            },
+          },
+        },
+      },
+    },
   });
   if (!member) throw new Error("Member không tồn tại");
-  if (member.challenge.community.ownerId !== input.userId) {
+  const role = effectiveCommunityRole({
+    isOwner: member.challenge.community.ownerId === input.userId,
+    membershipRole: member.challenge.community.memberships[0]?.role,
+  });
+  if (!canCommunity(role, "review_challenge_members")) {
     throw new Error("Chỉ admin cộng đồng mới duyệt được");
   }
   const updated = await prisma.challengeMember.update({
@@ -92,10 +149,26 @@ export async function rejectChallengeMember(input: {
 }) {
   const member = await prisma.challengeMember.findUnique({
     where: { id: input.memberId },
-    include: { challenge: { include: { community: { select: { ownerId: true, slug: true } } } } },
+    include: {
+      challenge: {
+        include: {
+          community: {
+            select: {
+              ownerId: true,
+              slug: true,
+              memberships: { where: { userId: input.userId }, select: { role: true } },
+            },
+          },
+        },
+      },
+    },
   });
   if (!member) throw new Error("Member không tồn tại");
-  if (member.challenge.community.ownerId !== input.userId) {
+  const role = effectiveCommunityRole({
+    isOwner: member.challenge.community.ownerId === input.userId,
+    membershipRole: member.challenge.community.memberships[0]?.role,
+  });
+  if (!canCommunity(role, "review_challenge_members")) {
     throw new Error("Chỉ admin cộng đồng mới từ chối được");
   }
   const updated = await prisma.challengeMember.update({
@@ -171,7 +244,7 @@ export async function reviewSubmission(input: {
     where: { id: input.checkinId },
   });
   if (!checkin) throw new Error("Check-in không tồn tại");
-  await assertChallengeAdmin(input.userId, checkin.challengeId);
+  await assertChallengeReviewer(input.userId, checkin.challengeId);
 
   if (input.action === "REJECT" && !input.note?.trim()) {
     throw new Error("Vui lòng ghi note khi reject để người làm biết cần sửa gì");
@@ -253,7 +326,7 @@ export async function flagSubmissionForReview(input: {
     where: { id: input.checkinId },
   });
   if (!checkin) throw new Error("Check-in không tồn tại");
-  await assertChallengeAdmin(input.userId, checkin.challengeId);
+  await assertChallengeReviewer(input.userId, checkin.challengeId);
 
   const updated = await prisma.checkin.update({
     where: { id: input.checkinId },
@@ -278,7 +351,7 @@ export async function approveAllPending(input: {
   userId: string;
   challengeId: string;
 }) {
-  await assertChallengeAdmin(input.userId, input.challengeId);
+  await assertChallengeReviewer(input.userId, input.challengeId);
   const res = await prisma.checkin.updateMany({
     where: { challengeId: input.challengeId, status: "PENDING" },
     data: {

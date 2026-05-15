@@ -7,7 +7,7 @@ export function ServerList({
   activeSlug,
   onDiscovery,
 }: {
-  communities: { id: string; slug: string; name: string; iconUrl?: string | null }[];
+  communities: { id: string; slug: string; name: string; iconUrl?: string | null; isOwner?: boolean }[];
   activeSlug?: string;
   onDiscovery?: boolean;
 }) {
@@ -65,6 +65,7 @@ export function ServerList({
                 initials(c.name)
               )}
             </Link>
+            {c.isOwner && <div className="server-owner-badge" title="Owner">👑</div>}
           </div>
         );
       })}

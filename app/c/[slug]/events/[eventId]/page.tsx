@@ -6,6 +6,7 @@ import { fetchPostMeetingData } from "@/lib/services/event";
 import { EventRsvpButton } from "@/components/community/event-rsvp-button";
 import { EventMeetingUrlEditor } from "@/components/community/event-meeting-url-editor";
 import { getEffectiveOwnership } from "@/lib/preview-mode";
+import { canCommunity, effectiveCommunityRole } from "@/lib/community-permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,14 @@ export default async function EventDetailPage({
 
   const community = await prisma.community.findUnique({
     where: { slug },
-    select: { id: true, name: true, ownerId: true },
+    select: {
+      id: true,
+      name: true,
+      ownerId: true,
+      memberships: session?.user?.id
+        ? { where: { userId: session.user.id }, select: { role: true } }
+        : false,
+    },
   });
   if (!community) notFound();
 
@@ -37,6 +45,13 @@ export default async function EventDetailPage({
 
   const realIsOwner = session?.user?.id === community.ownerId;
   const { effectiveIsOwner: isOwner } = await getEffectiveOwnership(realIsOwner);
+  const role = effectiveCommunityRole({
+    isOwner,
+    membershipRole: Array.isArray(community.memberships)
+      ? community.memberships[0]?.role
+      : null,
+  });
+  const canManageEvent = canCommunity(role, "manage_events");
   const myBooking = session?.user?.id ? (event.bookings as { id: string; status: string; attendedAt: Date | null }[])[0] ?? null : null;
   const confirmed = myBooking?.status === "CONFIRMED" || myBooking?.status === "ATTENDED";
   const full = event._count.bookings >= event.capacity;
@@ -47,7 +62,7 @@ export default async function EventDetailPage({
 
   // Lazy-fetch post-meeting data after event ends (owner's token)
   let postMeeting: { recordingUrl: string | null; transcriptUrl: string | null } | null = null;
-  if (isEnded && event.meetSpaceName && isOwner && session?.user?.id) {
+  if (isEnded && event.meetSpaceName && canManageEvent && session?.user?.id) {
     postMeeting = await fetchPostMeetingData(eventId, session.user.id).catch(() => null);
     if (!postMeeting && (event.meetRecordingUrl || event.meetTranscriptUrl)) {
       postMeeting = { recordingUrl: event.meetRecordingUrl, transcriptUrl: event.meetTranscriptUrl };
@@ -56,9 +71,9 @@ export default async function EventDetailPage({
     postMeeting = { recordingUrl: event.meetRecordingUrl, transcriptUrl: event.meetTranscriptUrl };
   }
 
-  // Owner: list all confirmed bookings
+  // Event managers: list all confirmed bookings
   let allBookings: { id: string; status: string; attendedAt: Date | null; user: { name: string | null; email: string; image: string | null } }[] = [];
-  if (isOwner) {
+  if (canManageEvent) {
     allBookings = await prisma.eventBooking.findMany({
       where: { eventId, status: { in: ["CONFIRMED", "ATTENDED"] } },
       include: { user: { select: { name: true, email: true, image: true } } },
@@ -135,7 +150,7 @@ export default async function EventDetailPage({
               </div>
 
               {/* CTA */}
-              {!isEnded && !isOwner && (
+              {!isEnded && !canManageEvent && (
                 confirmed ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
                     <div style={{ padding: "4px 12px", borderRadius: 8, background: "var(--success-soft)", color: "var(--success)", fontSize: "var(--text-sm)", fontWeight: 700 }}>
@@ -171,8 +186,8 @@ export default async function EventDetailPage({
                 )
               )}
 
-              {/* Owner: show meet link directly */}
-              {isOwner && event.meetingUrl && !isEnded && (
+              {/* Event manager: show meet link directly */}
+              {canManageEvent && event.meetingUrl && !isEnded && (
                 <a
                   href={event.meetingUrl}
                   target="_blank"
@@ -191,8 +206,8 @@ export default async function EventDetailPage({
               </div>
             )}
 
-            {/* Owner: set/update meeting URL */}
-            {isOwner && !isEnded && (
+            {/* Event manager: set/update meeting URL */}
+            {canManageEvent && !isEnded && (
               <EventMeetingUrlEditor
                 eventId={event.id}
                 communitySlug={slug}
@@ -232,8 +247,8 @@ export default async function EventDetailPage({
             </div>
           )}
 
-          {/* Owner: attendee list */}
-          {isOwner && allBookings.length > 0 && (
+          {/* Event manager: attendee list */}
+          {canManageEvent && allBookings.length > 0 && (
             <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 12, padding: 20 }}>
               <div style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--header-primary)", marginBottom: 12 }}>
                 👥 Danh sách đăng ký ({allBookings.length})

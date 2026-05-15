@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { CreateCourseButton } from "@/components/community/create-course-button";
 import { FeaturedGlobalToggle } from "@/components/marketplace/featured-global-toggle";
 import { getEffectiveOwnership } from "@/lib/preview-mode";
+import { communityPermissionFlags, effectiveCommunityRole } from "@/lib/community-permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -82,8 +83,11 @@ export default async function CoursesPage({
   const community = await prisma.community.findUnique({
     where: { slug },
     include: {
+      memberships: session?.user?.id
+        ? { where: { userId: session.user.id }, select: { role: true } }
+        : false,
       courses: {
-        // Owners see unpublished drafts too; members/guests see only published
+        // Course managers see unpublished drafts too; members/guests see only published
         include: {
           lessons: { select: { id: true } },
           _count: { select: { lessons: true } },
@@ -95,7 +99,14 @@ export default async function CoursesPage({
   if (!community) notFound();
   const realIsOwner = session?.user?.id === community.ownerId;
   const { effectiveIsOwner: isOwner } = await getEffectiveOwnership(realIsOwner);
-  const visibleCourses = isOwner
+  const role = effectiveCommunityRole({
+    isOwner,
+    membershipRole: Array.isArray(community.memberships)
+      ? community.memberships[0]?.role
+      : null,
+  });
+  const permissions = communityPermissionFlags(role);
+  const visibleCourses = permissions.canManageCourses
     ? community.courses
     : community.courses.filter((c) => c.isPublished);
   const progressByCourse = new Map<
@@ -158,7 +169,7 @@ export default async function CoursesPage({
 
       <div className="courses-list-wrap">
         <div className="courses-list-inner">
-          {isOwner && (
+          {permissions.canManageCourses && (
             <div
               style={{
                 display: "flex",
@@ -265,7 +276,7 @@ export default async function CoursesPage({
                       </span>
                     </div>
                   </Link>
-                  {isOwner && (
+                  {permissions.canManageCourses && (
                     <FeaturedGlobalToggle
                       kind="course"
                       resourceId={c.id}

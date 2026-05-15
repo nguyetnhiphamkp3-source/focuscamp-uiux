@@ -8,6 +8,7 @@ import { SubmissionReviewPanel } from "@/components/community/submission-review-
 import type { SubmissionRow } from "@/components/community/submission-review-panel";
 import { PendingMembersPanel } from "@/components/community/pending-members-panel";
 import { ChallengeSettingsPanel } from "@/components/community/challenge-settings-panel";
+import { ChallengeEditButton } from "@/components/community/challenge-edit-button";
 import { CheckinVoteButton } from "@/components/community/checkin-vote-button";
 import { ResubmitForm } from "@/components/community/resubmit-form";
 import { TaskEditorButton } from "@/components/community/task-editor";
@@ -25,6 +26,7 @@ import {
 import { ChallengeSalesIntro } from "@/components/community/challenge-sales-intro";
 import { RenewPaymentButton } from "@/components/community/renew-payment-button";
 import { getEffectiveOwnership } from "@/lib/preview-mode";
+import { communityPermissionFlags, effectiveCommunityRole } from "@/lib/community-permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -55,7 +57,17 @@ export default async function ChallengeDetailPage({
     include: {
       tasks: { orderBy: { dayNumber: "asc" } },
       _count: { select: { members: true } },
-      community: { select: { name: true, id: true, ownerId: true, tiersConfig: true } },
+      community: {
+        select: {
+          name: true,
+          id: true,
+          ownerId: true,
+          tiersConfig: true,
+          memberships: session?.user?.id
+            ? { where: { userId: session.user.id }, select: { role: true } }
+            : false,
+        },
+      },
       products: {
         orderBy: { relevance: "asc" },
         include: { product: true },
@@ -67,6 +79,13 @@ export default async function ChallengeDetailPage({
   const realIsOwner =
     !!session?.user?.id && session.user.id === challenge.community.ownerId;
   const { effectiveIsOwner: isOwner } = await getEffectiveOwnership(realIsOwner);
+  const role = effectiveCommunityRole({
+    isOwner,
+    membershipRole: Array.isArray(challenge.community.memberships)
+      ? challenge.community.memberships[0]?.role
+      : null,
+  });
+  const permissions = communityPermissionFlags(role);
 
   // Tier gate check — non-owners must have sufficient tier for this difficulty
   let tierGateBlock: { message: string; requiredTier: string } | null = null;
@@ -90,7 +109,7 @@ export default async function ChallengeDetailPage({
     }
   }
 
-  // Phase C — admin review panel data (only when owner)
+  // Phase C — operator review panel data
   type ReviewTab = "ALL" | "PENDING" | "APPROVED" | "REJECTED";
   const reviewTab = ((): ReviewTab => {
     const t = (sp.review || "").toUpperCase();
@@ -103,15 +122,15 @@ export default async function ChallengeDetailPage({
     total: number;
     pendingCount: number;
   } | null = null;
-  const pendingMembers = isOwner ? await listPendingMembers(challenge.id) : [];
-  const communityProducts = isOwner
+  const pendingMembers = permissions.canReviewChallengeMembers ? await listPendingMembers(challenge.id) : [];
+  const communityProducts = permissions.canManageChallenges
     ? await prisma.product.findMany({
         where: { communityId: challenge.community.id },
         select: { id: true, title: true },
         orderBy: { createdAt: "desc" },
       })
     : [];
-  if (isOwner) {
+  if (permissions.canReviewSubmissions) {
     const res = await listChallengeSubmissions({
       challengeId: challenge.id,
       status: reviewTab,
@@ -274,6 +293,7 @@ export default async function ChallengeDetailPage({
       <header className="view-header">
         <span className="view-title">{challenge.title}</span>
         <span className="view-subtitle">{diffLabel(challenge.difficulty)} · {challenge.requiredDays} ngày</span>
+        {permissions.canManageChallenges && <ChallengeEditButton />}
       </header>
 
       <div
@@ -305,7 +325,7 @@ export default async function ChallengeDetailPage({
           })()}
 
           {/* Admin-only settings panel */}
-          {isOwner && (
+          {permissions.canManageChallenges && (
             <ChallengeSettingsPanel
               challengeId={challenge.id}
               communitySlug={slug}
@@ -328,7 +348,7 @@ export default async function ChallengeDetailPage({
           )}
 
           {/* Admin-only pending member requests panel */}
-          {isOwner && pendingMembers.length > 0 && (
+          {permissions.canReviewChallengeMembers && pendingMembers.length > 0 && (
             <PendingMembersPanel
               communitySlug={slug}
               challengeSlug={challengeSlug}
@@ -340,8 +360,8 @@ export default async function ChallengeDetailPage({
             />
           )}
 
-          {/* Admin-only submission review panel (Phase C) */}
-          {isOwner && submissionData && (
+          {/* Admin/Mod submission review panel (Phase C) */}
+          {permissions.canReviewSubmissions && submissionData && (
             <SubmissionReviewPanel
               challengeId={challenge.id}
               communitySlug={slug}
@@ -659,12 +679,12 @@ export default async function ChallengeDetailPage({
           )}
 
           {/* Tasks list — only for members/owners; non-members see the preview in ChallengeSalesIntro */}
-          {(challenge.tasks.length > 0 || isOwner) && (myMembership || isOwner) && (
+          {(challenge.tasks.length > 0 || permissions.canManageChallenges) && (myMembership || permissions.canManageChallenges) && (
             <>
               <div className="ch-section-title" style={{ marginTop: 24 }}>
                 <span>Daily Tasks</span>
                 <span className="count">
-                  {challenge.hideFutureTasks && myMembership && !isOwner
+                  {challenge.hideFutureTasks && myMembership && !permissions.canManageChallenges
                     ? `Ngày ${dayNow} / ${challenge.tasks.length}`
                     : `${challenge.tasks.length} tasks`}
                 </span>
@@ -675,7 +695,7 @@ export default async function ChallengeDetailPage({
                 const isFuture = t.dayNumber > dayNow && !isDone;
                 const hasBody = !!(t.description || t.sopContent);
                 // When hideFutureTasks is on, show locked placeholder for future days (skip if member completed)
-                if (challenge.hideFutureTasks && isFuture && !isOwner && myMembership && !myMembership.completedAt) {
+                if (challenge.hideFutureTasks && isFuture && !permissions.canManageChallenges && myMembership && !myMembership.completedAt) {
                   return (
                     <div key={t.id} className="ch-task" style={{ opacity: 0.5, userSelect: "none" }}>
                       <div className="ch-task-head" style={{ cursor: "default" }}>
@@ -696,8 +716,8 @@ export default async function ChallengeDetailPage({
                     className={`ch-task${isCurrent ? " current" : ""}`}
                     open={isCurrent}
                     style={{
-                      opacity: challenge.hideFutureTasks && isFuture && !isOwner && !myMembership?.completedAt ? 0.5 : 1,
-                      pointerEvents: challenge.hideFutureTasks && isFuture && !isOwner && !myMembership?.completedAt ? "none" : "auto",
+                      opacity: challenge.hideFutureTasks && isFuture && !permissions.canManageChallenges && !myMembership?.completedAt ? 0.5 : 1,
+                      pointerEvents: challenge.hideFutureTasks && isFuture && !permissions.canManageChallenges && !myMembership?.completedAt ? "none" : "auto",
                     }}
                   >
                     <summary
@@ -754,7 +774,7 @@ export default async function ChallengeDetailPage({
                           </span>
                         </span>
                       )}
-                      {isOwner && (
+                      {permissions.canManageChallenges && (
                         <TaskEditorButton
                           taskId={t.id}
                           communitySlug={slug}
@@ -795,8 +815,8 @@ export default async function ChallengeDetailPage({
             </>
           )}
 
-          {/* Owner-only: add new task at bottom of the list */}
-          {isOwner && (
+          {/* Admin-only: add new task at bottom of the list */}
+          {permissions.canManageChallenges && (
             <CreateTaskButton
               challengeId={challenge.id}
               communitySlug={slug}
