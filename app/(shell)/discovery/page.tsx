@@ -328,7 +328,10 @@ export default async function DiscoveryPage({
                     className="ch-card"
                     style={{ textDecoration: "none", color: "inherit" }}
                   >
-                    <div className={`ch-card-banner ${diff}`}>
+                    <div
+                      className={`ch-card-banner ${diff}`}
+                      style={ch.bannerUrl ? { background: `url(${ch.bannerUrl}) center/cover no-repeat` } : undefined}
+                    >
                       <span className="ch-diff-badge">{diffLabel}</span>
                       <span className={`ch-status-badge ${statusClass}`}>
                         {ch.status}
