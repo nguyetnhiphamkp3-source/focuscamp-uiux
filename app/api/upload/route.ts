@@ -17,6 +17,7 @@ import {
   deleteFile,
 } from "@/lib/storage";
 import { rateLimit } from "@/lib/rate-limit";
+import sharp from "sharp";
 
 const IMAGE_TYPES = new Set([
   "image/jpeg",
@@ -123,10 +124,21 @@ export async function POST(req: Request) {
   const ext = file.name.split(".").pop()?.toLowerCase() || "bin";
   const ts = Date.now();
   const rand = randomBytes(3).toString("hex");
-  const key = `${context}/${session.user.id}/${ts}-${rand}.${ext}`;
 
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const publicUrl = await uploadFile({ key, body: buffer, contentType: file.type });
+  let buffer: Buffer = Buffer.from(await file.arrayBuffer());
+  let contentType = file.type;
+  let finalExt = ext;
+
+  // Convert images to webp (skip gif to preserve animation, skip if already webp)
+  const CONVERTIBLE = new Set(["image/jpeg", "image/png", "image/avif"]);
+  if (CONVERTIBLE.has(file.type)) {
+    buffer = await sharp(buffer).webp({ quality: 80 }).toBuffer() as Buffer;
+    contentType = "image/webp";
+    finalExt = "webp";
+  }
+
+  const key = `${context}/${session.user.id}/${ts}-${rand}.${finalExt}`;
+  const publicUrl = await uploadFile({ key, body: buffer, contentType });
 
   if (!publicUrl) {
     return NextResponse.json({ error: "upload_failed" }, { status: 500 });
