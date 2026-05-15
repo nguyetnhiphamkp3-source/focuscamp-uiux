@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { CreateProductButton } from "@/components/community/create-product-button";
 import { FeaturedGlobalToggle } from "@/components/marketplace/featured-global-toggle";
 import { MarketplaceFilters } from "@/components/community/marketplace-filters";
+import { getEffectiveOwnership } from "@/lib/preview-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,8 @@ export default async function MarketplacePage({
     select: { id: true, ownerId: true, _count: { select: { products: true } } },
   });
   if (!community) notFound();
-  const isOwner = session?.user?.id === community.ownerId;
+  const realIsOwner = session?.user?.id === community.ownerId;
+  const { effectiveIsOwner: isOwner } = await getEffectiveOwnership(realIsOwner);
 
   const productWhere: Record<string, unknown> = { communityId: community.id };
   if (!isOwner) productWhere.isVisible = true;

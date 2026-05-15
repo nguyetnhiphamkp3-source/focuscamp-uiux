@@ -7,6 +7,7 @@ import { fmtVnd, TYPE_THUMB } from "@/components/marketplace/product-card";
 import { ProductSettingsPanel } from "@/components/marketplace/product-settings-panel";
 import { AddToCartButton } from "@/components/marketplace/add-to-cart-button";
 import { logError } from "@/lib/logger";
+import { getEffectiveOwnership } from "@/lib/preview-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +34,8 @@ export default async function ProductDetailPage({
   if (!product) notFound();
 
   const session = await auth();
-  const isOwner = session?.user?.id === product.community.ownerId;
+  const realIsOwner = session?.user?.id === product.community.ownerId;
+  const { effectiveIsOwner: isOwner } = await getEffectiveOwnership(realIsOwner);
 
   const communityProducts = isOwner
     ? await prisma.product.findMany({

@@ -5,6 +5,7 @@ import { fmtVnd } from "@/lib/brand";
 import { fetchPostMeetingData } from "@/lib/services/event";
 import { EventRsvpButton } from "@/components/community/event-rsvp-button";
 import { EventMeetingUrlEditor } from "@/components/community/event-meeting-url-editor";
+import { getEffectiveOwnership } from "@/lib/preview-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +35,8 @@ export default async function EventDetailPage({
   });
   if (!event) notFound();
 
-  const isOwner = session?.user?.id === community.ownerId;
+  const realIsOwner = session?.user?.id === community.ownerId;
+  const { effectiveIsOwner: isOwner } = await getEffectiveOwnership(realIsOwner);
   const myBooking = session?.user?.id ? (event.bookings as { id: string; status: string; attendedAt: Date | null }[])[0] ?? null : null;
   const confirmed = myBooking?.status === "CONFIRMED" || myBooking?.status === "ATTENDED";
   const full = event._count.bookings >= event.capacity;

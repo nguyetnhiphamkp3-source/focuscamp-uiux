@@ -24,6 +24,7 @@ import {
 } from "@/lib/services/challenge";
 import { ChallengeSalesIntro } from "@/components/community/challenge-sales-intro";
 import { RenewPaymentButton } from "@/components/community/renew-payment-button";
+import { getEffectiveOwnership } from "@/lib/preview-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -63,12 +64,13 @@ export default async function ChallengeDetailPage({
   });
   if (!challenge) notFound();
 
-  const isOwner =
+  const realIsOwner =
     !!session?.user?.id && session.user.id === challenge.community.ownerId;
+  const { effectiveIsOwner: isOwner } = await getEffectiveOwnership(realIsOwner);
 
   // Tier gate check — non-owners must have sufficient tier for this difficulty
   let tierGateBlock: { message: string; requiredTier: string } | null = null;
-  if (session?.user?.id && !isOwner && challenge.difficulty !== "NORMAL") {
+  if (session?.user?.id && !realIsOwner && challenge.difficulty !== "NORMAL") {
     const communityFull = await prisma.community.findUnique({
       where: { id: challenge.community.id },
       select: { tiersConfig: true },

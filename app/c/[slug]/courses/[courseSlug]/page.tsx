@@ -8,6 +8,7 @@ import { MarkLessonCompleteButton } from "@/components/community/mark-lesson-com
 import { LockedLessonNotice } from "@/components/community/locked-lesson-notice";
 import { checkGate, getTiersConfig } from "@/lib/services/subscription";
 import { toEmbedUrl } from "@/lib/brand";
+import { getEffectiveOwnership } from "@/lib/preview-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -30,13 +31,14 @@ export default async function CourseDetailPage({
     },
   });
   if (!course) notFound();
-  const isOwner = session?.user?.id === course.community.ownerId;
+  const realIsOwner = session?.user?.id === course.community.ownerId;
+  const { effectiveIsOwner: isOwner } = await getEffectiveOwnership(realIsOwner);
 
-  // Tier gate for non-BASIC courses
+  // Tier gate for non-BASIC courses (always bypass for real owner)
   let courseGateBlock: { message: string; requiredTier: string } | null = null;
   if (
     session?.user?.id &&
-    !isOwner &&
+    !realIsOwner &&
     course.level !== "BASIC"
   ) {
     const communityFull = await prisma.community.findUnique({

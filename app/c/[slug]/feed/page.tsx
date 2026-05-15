@@ -8,6 +8,7 @@ import { PostComposer } from "@/components/feed/post-composer";
 import { FeedList } from "@/components/feed/feed-list";
 import { EmptyState } from "@/components/ui/empty-state";
 import { followedUserIds } from "@/lib/services/follow";
+import { getEffectiveOwnership } from "@/lib/preview-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +48,8 @@ export default async function FeedPage({
 
   const session = await auth();
   const userId = session?.user?.id;
-  const isOwner = userId === community.ownerId;
+  const realIsOwner = userId === community.ownerId;
+  const { effectiveIsOwner: isOwner } = await getEffectiveOwnership(realIsOwner);
 
   const isMember = userId
     ? !!(await prisma.membership.findUnique({

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CreateChallengeButton } from "@/components/community/create-challenge-button";
+import { getEffectiveOwnership } from "@/lib/preview-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -92,7 +93,8 @@ export default async function QuestLogPage({
       : null;
 
   // Owner: load all challenges they haven't joined yet (to show management section)
-  const isOwner = session?.user?.id === community.ownerId;
+  const realIsOwner = session?.user?.id === community.ownerId;
+  const { effectiveIsOwner: isOwner } = await getEffectiveOwnership(realIsOwner);
   const ownerUnjoined =
     tab === "active" && isOwner
       ? await prisma.challenge.findMany({

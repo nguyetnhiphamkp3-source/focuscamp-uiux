@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { fmtDuration, ytThumb } from "@/lib/brand";
 import { EditLessonButton } from "@/components/community/edit-lesson-button";
+import { getEffectiveOwnership } from "@/lib/preview-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,8 @@ export default async function CoursePlaylistSidebar({
     },
   });
   if (!course) notFound();
-  const isOwner = session?.user?.id === course.community.ownerId;
+  const realIsOwner = session?.user?.id === course.community.ownerId;
+  const { effectiveIsOwner: isOwner } = await getEffectiveOwnership(realIsOwner);
 
   // Query completion status for all lessons
   const completedSet = new Set<string>();

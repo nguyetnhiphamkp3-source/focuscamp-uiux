@@ -22,6 +22,7 @@ import { CommentComposer } from "@/components/feed/comment-composer";
 import { CommentItem } from "@/components/feed/comment-item";
 import type { CommentItemData } from "@/components/feed/comment-item";
 import { EmptyState } from "@/components/ui/empty-state";
+import { getEffectiveOwnership } from "@/lib/preview-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -86,7 +87,8 @@ export default async function PostDetailPage({
   const currency = getCurrency(community);
   const pillar = pillarByKey(post.pillar, pillars);
 
-  const isOwner = userId === community.ownerId;
+  const realIsOwner = userId === community.ownerId;
+  const { effectiveIsOwner: isOwner } = await getEffectiveOwnership(realIsOwner);
   const isAuthor = userId === post.user.id;
   const isMember = userId
     ? !!(await prisma.membership.findUnique({

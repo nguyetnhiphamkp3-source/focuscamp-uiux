@@ -6,6 +6,7 @@ import { getPillars, getCurrency } from "@/lib/community-config";
 import { PostComposer } from "@/components/feed/post-composer";
 import { FeedList } from "@/components/feed/feed-list";
 import { EmptyState } from "@/components/ui/empty-state";
+import { getEffectiveOwnership } from "@/lib/preview-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +34,8 @@ export default async function SignalsPage({
 
   const session = await auth();
   const userId = session?.user?.id;
-  const isOwner = userId === community.ownerId;
+  const realIsOwner = userId === community.ownerId;
+  const { effectiveIsOwner: isOwner } = await getEffectiveOwnership(realIsOwner);
 
   const PAGE_SIZE = 20;
   const signals = await listFeed({

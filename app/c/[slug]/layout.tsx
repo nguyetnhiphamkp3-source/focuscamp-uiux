@@ -20,7 +20,7 @@ import {
 import { getPlanStatus } from "@/lib/platform-plans";
 import { PlanStatusBanner } from "@/components/community/plan-status-banner";
 
-export const PREVIEW_MEMBER_COOKIE = "fc_preview_member";
+import { PREVIEW_MEMBER_COOKIE } from "@/lib/preview-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -216,7 +216,7 @@ export default async function CommunityLayout({
                   <span className="feature-name">AI Agent</span>
                 </FeatureLink>
               )}
-              {isOwner && (
+              {isOwner && !previewAsMember && (
                 <>
                   <div className="features-section-title">Quản lý</div>
                   <FeatureLink href={`/c/${slug}/orders`}>

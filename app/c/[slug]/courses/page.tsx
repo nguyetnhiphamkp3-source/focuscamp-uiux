@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CreateCourseButton } from "@/components/community/create-course-button";
 import { FeaturedGlobalToggle } from "@/components/marketplace/featured-global-toggle";
+import { getEffectiveOwnership } from "@/lib/preview-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -92,7 +93,8 @@ export default async function CoursesPage({
     },
   });
   if (!community) notFound();
-  const isOwner = session?.user?.id === community.ownerId;
+  const realIsOwner = session?.user?.id === community.ownerId;
+  const { effectiveIsOwner: isOwner } = await getEffectiveOwnership(realIsOwner);
   const visibleCourses = isOwner
     ? community.courses
     : community.courses.filter((c) => c.isPublished);
