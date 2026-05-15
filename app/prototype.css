@@ -5683,8 +5683,8 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
   .left-section {
     position: fixed;
     inset: 0 auto calc(56px + env(safe-area-inset-bottom, 0px)) 0;
-    width: 86%;
-    max-width: 340px;
+    width: 100%;
+    max-width: none;
     transform: translateX(-100%);
     transition: transform 220ms ease;
     z-index: 150;
@@ -5745,10 +5745,6 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
 
 /* Very small (<480px): tighten further */
 @media (max-width: 479.98px) {
-  .left-section {
-    width: 92%;
-    max-width: none;
-  }
   .pf-inner {
     padding: 16px !important;
   }
