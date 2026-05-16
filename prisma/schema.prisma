@@ -430,6 +430,7 @@ model Checkin {
   reviewNote   String?  @db.Text
   rejectCount  Int      @default(0)
   createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   challenge  Challenge      @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)

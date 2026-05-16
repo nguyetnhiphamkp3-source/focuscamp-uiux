@@ -189,7 +189,7 @@ export default async function ChallengeDetailPage({
   const myCheckins = session?.user?.id
     ? await prisma.checkin.findMany({
         where: { challengeId: challenge.id, userId: session.user.id },
-        select: { id: true, taskId: true, dayNumber: true, createdAt: true, content: true, linkUrl: true, imageUrl: true, status: true, reviewNote: true, rejectCount: true },
+        select: { id: true, taskId: true, dayNumber: true, createdAt: true, updatedAt: true, content: true, linkUrl: true, imageUrl: true, status: true, reviewedAt: true, reviewNote: true, rejectCount: true },
       })
     : [];
   // Only count non-rejected checkins as done
@@ -897,11 +897,24 @@ export default async function ChallengeDetailPage({
                             {t.evidenceLabel ? ` · ${t.evidenceLabel}` : ""}
                           </div>
                         )}
-                        {checkinData && (
+                        {checkinData && (() => {
+                          const isResubmitted = checkinData.rejectCount > 0 && !isRejected;
+                          const displayTime = isResubmitted ? checkinData.updatedAt : checkinData.createdAt;
+                          const fmtOpts: Intl.DateTimeFormatOptions = { timeZone: "Asia/Ho_Chi_Minh", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false };
+                          const timeStr = displayTime.toLocaleString("vi-VN", fmtOpts);
+                          return (
                           <div className={`ch-submission${isRejected ? " ch-submission-rejected" : ""}`}>
                             <div className="ch-submission-label">
-                              {isRejected ? "Bài nộp bị từ chối" : "Bài nộp của bạn"}
+                              {isRejected ? "Bài nộp bị từ chối" : isResubmitted ? "Bài nộp lại" : "Bài nộp của bạn"}
+                              <span style={{ marginLeft: "var(--space-2)", fontWeight: "var(--fw-normal)", color: "var(--text-muted)", fontSize: "var(--text-xs)" }}>
+                                {isResubmitted ? `Nộp lại lúc ${timeStr}` : `Nộp lúc ${timeStr}`}
+                              </span>
                             </div>
+                            {checkinData.reviewedAt && !isRejected && (
+                              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: "var(--space-2)" }}>
+                                Duyệt lúc {checkinData.reviewedAt.toLocaleString("vi-VN", fmtOpts)}
+                              </div>
+                            )}
                             {isRejected && checkinData.reviewNote && (
                               <div className="ch-submission-reject-note">
                                 <strong>Lý do:</strong> {checkinData.reviewNote}
@@ -941,7 +954,8 @@ export default async function ChallengeDetailPage({
                               />
                             )}
                           </div>
-                        )}
+                          );
+                        })()}
                       </div>
                     )}
                   </details>
