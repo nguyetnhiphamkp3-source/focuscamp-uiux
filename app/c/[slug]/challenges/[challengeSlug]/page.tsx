@@ -694,6 +694,7 @@ export default async function ChallengeDetailPage({
                 const hasEvidenceHint = !!(t.evidenceLabel || t.evidenceType !== "TEXT");
                 const checkinData = checkinByDay.get(t.dayNumber);
                 const isRejected = checkinData?.status === "REJECTED";
+                const isPending = checkinData?.status === "PENDING";
                 const isDone = doneDayNumbers.has(t.dayNumber);
                 const isCurrent = !isDone && !isRejected && t.dayNumber === dayNow;
                 const isFuture = t.dayNumber > dayNow && !isDone && !isRejected;
@@ -736,16 +737,18 @@ export default async function ChallengeDetailPage({
                       <div
                         className="ch-task-day"
                         style={
-                          isDone
+                          isDone && !isPending
                             ? { background: "var(--brand-green)", color: "#fff" }
-                            : isRejected
-                              ? { background: "var(--danger)", color: "#fff" }
-                              : isOverdue
-                                ? { background: "var(--text-muted)", color: "#fff" }
-                                : undefined
+                            : isDone && isPending
+                              ? { background: "var(--warning)", color: "#fff" }
+                              : isRejected
+                                ? { background: "var(--danger)", color: "#fff" }
+                                : isOverdue
+                                  ? { background: "var(--text-muted)", color: "#fff" }
+                                  : undefined
                         }
                       >
-                        {isDone ? "✓" : isRejected ? "✕" : t.dayNumber}
+                        {isDone && !isPending ? "✓" : isDone && isPending ? "⏳" : isRejected ? "✕" : t.dayNumber}
                       </div>
                       <div className="ch-task-info">
                         <div className="ch-task-label">
@@ -768,7 +771,12 @@ export default async function ChallengeDetailPage({
                           <span className="pending">● Hôm nay</span>
                         </span>
                       )}
-                      {isDone && (
+                      {isDone && isPending && (
+                        <span className="ch-task-status">
+                          <span className="pending">⏳ Chờ duyệt</span>
+                        </span>
+                      )}
+                      {isDone && !isPending && (
                         <span className="ch-task-status">
                           <span className={isLate ? "late" : "done"}>
                             {isLate ? "Hoàn thành (Trễ)" : "Hoàn thành"}
@@ -1400,12 +1408,24 @@ async function CheckinGate({
     },
   });
 
+  const deadlineMs = active.personalStartsAt.getTime() + active.currentDay * 24 * 60 * 60 * 1000;
+  const deadlineDate = new Date(deadlineMs);
+  const deadlineStr = deadlineDate.toLocaleString("vi-VN", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+
   return (
     <CheckinForm
       challengeId={challengeId}
       communitySlug={communitySlug}
       challengeSlug={challengeSlug}
       task={today}
+      deadlineLabel={deadlineStr}
     />
   );
 }

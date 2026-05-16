@@ -29,11 +29,13 @@ export function CheckinForm({
   communitySlug,
   challengeSlug,
   task,
+  deadlineLabel,
 }: {
   challengeId: string;
   communitySlug: string;
   challengeSlug: string;
   task: TodayTask | null;
+  deadlineLabel?: string;
 }) {
   const router = useRouter();
   const [content, setContent] = useState("");
@@ -154,6 +156,11 @@ export function CheckinForm({
                 }}
               >
                 Task hôm nay{task.label ? ` · ${task.label}` : ""}
+                {deadlineLabel && (
+                  <span style={{ marginLeft: "var(--space-2)", color: "var(--warning)", fontWeight: "var(--fw-normal)" }}>
+                    · Hạn nộp: {deadlineLabel}
+                  </span>
+                )}
               </div>
               <div
                 style={{
