@@ -76,6 +76,8 @@ export const UpdateChallengeSettingsSchema = z.object({
   requiredTier: z.string().trim().max(40).optional().nullable().or(z.literal("")),
   pricingConfig: PricingConfigSchema,
   hideFutureTasks: z.boolean().optional(),
+  taskUnlockMode: z.enum(["ALL", "DAILY", "SEQUENTIAL", "MANUAL"]).optional(),
+  unlockIntervalHours: z.number().int().positive().max(720).optional(),
   freezeWindows: z
     .array(
       z.object({
@@ -99,6 +101,8 @@ export const CreateChallengeSchema = z.object({
   requiredDays: z.number().int().positive().max(365).optional(),
   requiresApproval: z.boolean().optional(),
   bannerUrl: z.string().url().max(500).optional().or(z.literal("")),
+  taskUnlockMode: z.enum(["ALL", "DAILY", "SEQUENTIAL", "MANUAL"]).optional(),
+  unlockIntervalHours: z.number().int().positive().max(720).optional(),
 });
 
 export const CreateChallengeTaskSchema = z.object({
@@ -108,9 +112,10 @@ export const CreateChallengeTaskSchema = z.object({
   description: z.string().trim().max(5000).optional().or(z.literal("")),
   sopContent: z.string().trim().max(10000).optional().or(z.literal("")),
   videoUrl: z.string().url().optional().or(z.literal("")),
-  evidenceType: z.enum(["TEXT", "LINK", "IMAGE", "FILE"]).optional(),
+  evidenceType: z.enum(["TEXT", "LINK", "IMAGE"]).optional(),
   evidenceLabel: z.string().trim().max(500).optional().or(z.literal("")),
   label: z.string().trim().max(60).optional().or(z.literal("")),
+  unlockAfterHours: z.number().int().positive().max(720).optional().nullable(),
 });
 
 export const DeleteChallengeTaskSchema = z.object({
@@ -123,9 +128,10 @@ export const UpdateChallengeTaskSchema = z.object({
   description: z.string().trim().max(5000).optional().or(z.literal("")),
   sopContent: z.string().trim().max(10000).optional().or(z.literal("")),
   videoUrl: z.string().url().optional().or(z.literal("")),
-  evidenceType: z.enum(["TEXT", "LINK", "IMAGE", "FILE"]).optional(),
+  evidenceType: z.enum(["TEXT", "LINK", "IMAGE"]).optional(),
   evidenceLabel: z.string().trim().max(500).optional().or(z.literal("")),
   label: z.string().trim().max(60).optional().or(z.literal("")),
+  unlockAfterHours: z.number().int().positive().max(720).optional().nullable(),
 });
 
 export const ReviewSubmissionSchema = z.object({

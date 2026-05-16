@@ -45,7 +45,6 @@ function diffLabel(d: string) {
 function evidenceTypeLabel(type: string) {
   if (type === "LINK") return "Link";
   if (type === "IMAGE") return "Image";
-  if (type === "FILE") return "File";
   return "Text";
 }
 
@@ -297,6 +296,41 @@ export default async function ChallengeDetailPage({
           )
         )
       : 0;
+
+  // Compute per-task unlock status based on taskUnlockMode
+  const unlockMode = challenge.taskUnlockMode ?? "DAILY";
+  const defaultInterval = challenge.unlockIntervalHours ?? 24;
+  const personalStart = myMembership?.personalStartsAt?.getTime() ?? 0;
+
+  const tasks = challenge.tasks;
+  function isTaskUnlocked(task: { dayNumber: number; unlockAfterHours: number | null }, taskIndex: number): boolean {
+    if (!myMembership?.personalStartsAt) return false;
+    if (myMembership.completedAt) return true;
+
+    switch (unlockMode) {
+      case "ALL":
+        return true;
+      case "DAILY": {
+        let cumulativeHours = 0;
+        for (let i = 0; i < taskIndex; i++) {
+          cumulativeHours += tasks[i].unlockAfterHours ?? defaultInterval;
+        }
+        const unlockTime = personalStart + cumulativeHours * 60 * 60 * 1000;
+        return Date.now() >= unlockTime;
+      }
+      case "SEQUENTIAL": {
+        if (taskIndex === 0) return true;
+        const prevTask = tasks[taskIndex - 1];
+        return doneDayNumbers.has(prevTask.dayNumber);
+      }
+      case "MANUAL": {
+        if (taskIndex === 0) return true;
+        return task.unlockAfterHours === 0;
+      }
+      default:
+        return true;
+    }
+  }
   const progressPct =
     challenge.requiredDays > 0
       ? Math.round((dayNow / challenge.requiredDays) * 100)
@@ -355,6 +389,8 @@ export default async function ChallengeDetailPage({
                 pricingConfig: parsePricingConfig(challenge.pricingConfig),
                 tiers: getTiersConfig(challenge.community.tiersConfig).map((t) => ({ key: t.key, label: t.label })),
                 hideFutureTasks: challenge.hideFutureTasks,
+                taskUnlockMode: challenge.taskUnlockMode,
+                unlockIntervalHours: challenge.unlockIntervalHours,
                 bumpProductId: (challenge as { bumpProductId?: string | null }).bumpProductId ?? null,
               }}
               communityProducts={communityProducts}
@@ -690,7 +726,7 @@ export default async function ChallengeDetailPage({
                     : `${challenge.tasks.length} tasks`}
                 </span>
               </div>
-              {challenge.tasks.map((t) => {
+              {challenge.tasks.map((t, taskIndex) => {
                 const hasEvidenceHint = !!(t.evidenceLabel || t.evidenceType !== "TEXT");
                 const checkinData = checkinByDay.get(t.dayNumber);
                 const isRejected = checkinData?.status === "REJECTED";
@@ -704,16 +740,19 @@ export default async function ChallengeDetailPage({
                   : null;
                 const isLate = !!(isDone && checkinData && dayDeadline && checkinData.createdAt.getTime() > dayDeadline.getTime());
                 const hasBody = !!(t.description || t.sopContent || t.videoUrl || hasEvidenceHint || checkinData);
-                // When hideFutureTasks is on, show locked placeholder for future days (skip if member completed)
-                if (challenge.hideFutureTasks && isFuture && !permissions.canManageChallenges && myMembership && !myMembership.completedAt) {
+                // Determine if task is locked based on unlock mode
+                const taskUnlocked = isDone || permissions.canManageChallenges || isTaskUnlocked(t, taskIndex);
+                const isLocked = !taskUnlocked && !isDone && !isRejected && myMembership && !myMembership.completedAt;
+                // When task is locked (by mode or hideFutureTasks), show locked placeholder
+                if ((isLocked || (challenge.hideFutureTasks && isFuture)) && !permissions.canManageChallenges && myMembership && !myMembership.completedAt) {
                   return (
                     <div key={t.id} className="ch-task" style={{ opacity: 0.5, userSelect: "none" }}>
                       <div className="ch-task-head" style={{ cursor: "default" }}>
                         <div className="ch-task-day">{t.dayNumber}</div>
                         <div className="ch-task-info">
-                          <div className="ch-task-label">Day {t.dayNumber}</div>
+                          <div className="ch-task-label">Day {t.dayNumber}{t.label ? ` · ${t.label}` : ""}</div>
                           <div className="ch-task-title" style={{ color: "var(--text-muted)", fontStyle: "italic" }}>
-                            🔒 Chưa mở khóa — hoàn thành ngày trước để tiếp tục
+                            🔒 Chưa mở khóa{unlockMode === "SEQUENTIAL" ? " — hoàn thành task trước để tiếp tục" : unlockMode === "MANUAL" ? " — chờ admin mở khóa" : " — chưa đến thời gian"}
                           </div>
                         </div>
                       </div>
@@ -725,8 +764,8 @@ export default async function ChallengeDetailPage({
                     key={t.id}
                     className={`ch-task${isCurrent ? " current" : ""}`}
                     style={{
-                      opacity: challenge.hideFutureTasks && isFuture && !permissions.canManageChallenges && !myMembership?.completedAt ? 0.5 : 1,
-                      pointerEvents: challenge.hideFutureTasks && isFuture && !permissions.canManageChallenges && !myMembership?.completedAt ? "none" : "auto",
+                      opacity: 1,
+                      pointerEvents: "auto",
                     }}
                   >
                     <summary
@@ -752,7 +791,19 @@ export default async function ChallengeDetailPage({
                       <div className="ch-task-info">
                         <div className="ch-task-label">
                           Day {t.dayNumber}
-                          {t.label ? ` · ${t.label}` : ""}
+                          {t.label && (
+                            <span style={{
+                              marginLeft: 6,
+                              padding: "1px 6px",
+                              borderRadius: 4,
+                              background: "var(--brand-green)",
+                              color: "#fff",
+                              fontSize: "var(--text-xs)",
+                              fontWeight: 600,
+                            }}>
+                              {t.label}
+                            </span>
+                          )}
                         </div>
                         <div
                           className="ch-task-title"
@@ -805,6 +856,7 @@ export default async function ChallengeDetailPage({
                             evidenceType: t.evidenceType,
                             evidenceLabel: t.evidenceLabel,
                             label: t.label,
+                            unlockAfterHours: t.unlockAfterHours,
                           }}
                         />
                       )}

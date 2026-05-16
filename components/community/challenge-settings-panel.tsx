@@ -30,6 +30,8 @@ export function ChallengeSettingsPanel({
     pricingConfig: PricingConfig | null;
     tiers: { key: string; label: string }[];
     hideFutureTasks: boolean;
+    taskUnlockMode: string;
+    unlockIntervalHours: number;
     bumpProductId?: string | null;
   };
   communityProducts?: { id: string; title: string }[];
@@ -49,6 +51,8 @@ export function ChallengeSettingsPanel({
   const [pitch, setPitch] = useState(initial.pitch ?? "");
   const [requiresApproval, setRequiresApproval] = useState(initial.requiresApproval);
   const [hideFutureTasks, setHideFutureTasks] = useState(initial.hideFutureTasks);
+  const [taskUnlockMode, setTaskUnlockMode] = useState(initial.taskUnlockMode);
+  const [unlockIntervalHours, setUnlockIntervalHours] = useState(String(initial.unlockIntervalHours));
   const [bannerUrl, setBannerUrl] = useState<string | null>(initial.bannerUrl);
   const [featuredOnGlobal, setFeaturedOnGlobal] = useState(initial.featuredOnGlobal);
   const [pricingConfig, setPricingConfig] = useState<PricingConfig | null>(initial.pricingConfig);
@@ -77,6 +81,8 @@ export function ChallengeSettingsPanel({
         pitch: pitch || null,
         requiresApproval,
         hideFutureTasks,
+        taskUnlockMode: taskUnlockMode as "ALL" | "DAILY" | "SEQUENTIAL" | "MANUAL",
+        unlockIntervalHours: parseInt(unlockIntervalHours, 10) || 24,
         bannerUrl: bannerUrl ?? "",
         featuredOnGlobal,
         pricingConfig: pricingConfig as Record<string, unknown> | null,
@@ -315,6 +321,54 @@ export function ChallengeSettingsPanel({
               </div>
             </div>
           </label>
+
+          {/* Task Unlock Mode */}
+          <div
+            style={{
+              padding: "12px",
+              background: "var(--bg-card)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: 8,
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+            }}
+          >
+            <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--header-primary)" }}>
+              🔓 Chế độ mở khóa task
+            </div>
+            <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+              Quy định cách thành viên mở khóa task tiếp theo trong challenge.
+            </div>
+            <select
+              value={taskUnlockMode}
+              onChange={(e) => setTaskUnlockMode(e.target.value)}
+              disabled={pending}
+              style={inputStyle}
+            >
+              <option value="ALL">Mở tất cả — Thành viên thấy toàn bộ task ngay</option>
+              <option value="DAILY">Theo thời gian — Mở khóa sau N giờ kể từ ngày bắt đầu</option>
+              <option value="SEQUENTIAL">Tuần tự — Hoàn thành task trước mới mở task sau</option>
+              <option value="MANUAL">Thủ công — Admin mở khóa từng task</option>
+            </select>
+            {taskUnlockMode === "DAILY" && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+                  Mỗi task mở sau:
+                </span>
+                <input
+                  type="number"
+                  min={1}
+                  max={720}
+                  value={unlockIntervalHours}
+                  onChange={(e) => setUnlockIntervalHours(e.target.value)}
+                  disabled={pending}
+                  style={{ ...inputStyle, width: 80 }}
+                />
+                <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>giờ</span>
+              </div>
+            )}
+          </div>
 
           <label
             style={{

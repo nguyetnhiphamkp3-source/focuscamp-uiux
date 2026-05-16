@@ -197,6 +197,8 @@ export async function updateChallengeSettingsAction(input: {
   requiredTier?: string | null;
   pricingConfig?: Record<string, unknown> | null;
   hideFutureTasks?: boolean;
+  taskUnlockMode?: "ALL" | "DAILY" | "SEQUENTIAL" | "MANUAL";
+  unlockIntervalHours?: number;
   freezeWindows?: Array<{ label?: string; startsAt: string; endsAt: string }> | null;
   pitch?: string | null;
   bumpProductId?: string | null;
@@ -218,6 +220,8 @@ export async function updateChallengeSettingsAction(input: {
     requiredTier: input.requiredTier,
     pricingConfig: input.pricingConfig,
     hideFutureTasks: input.hideFutureTasks,
+    taskUnlockMode: input.taskUnlockMode,
+    unlockIntervalHours: input.unlockIntervalHours,
     freezeWindows: input.freezeWindows,
     pitch: input.pitch,
     bumpProductId: input.bumpProductId,
@@ -240,6 +244,8 @@ export async function updateChallengeSettingsAction(input: {
       requiredTier: parsed.data.requiredTier === undefined ? undefined : parsed.data.requiredTier || null,
       pricingConfig: "pricingConfig" in parsed.data ? (parsed.data.pricingConfig as Record<string, unknown> | null) : undefined,
       hideFutureTasks: parsed.data.hideFutureTasks,
+      taskUnlockMode: parsed.data.taskUnlockMode,
+      unlockIntervalHours: parsed.data.unlockIntervalHours,
       freezeWindows: parsed.data.freezeWindows === null ? null : (parsed.data.freezeWindows ?? undefined),
       pitch: parsed.data.pitch ?? undefined,
       bumpProductId: parsed.data.bumpProductId !== undefined ? (parsed.data.bumpProductId ?? null) : undefined,
@@ -261,9 +267,10 @@ export async function updateTaskAction(input: {
   description?: string;
   sopContent?: string;
   videoUrl?: string;
-  evidenceType?: "TEXT" | "LINK" | "IMAGE" | "FILE";
+  evidenceType?: "TEXT" | "LINK" | "IMAGE";
   evidenceLabel?: string;
   label?: string;
+  unlockAfterHours?: number | null;
   communitySlug: string;
   challengeSlug: string;
 }): Promise<ActionResult> {
@@ -278,6 +285,7 @@ export async function updateTaskAction(input: {
     evidenceType: input.evidenceType,
     evidenceLabel: input.evidenceLabel,
     label: input.label,
+    unlockAfterHours: input.unlockAfterHours,
   });
   if (!parsed.success) {
     return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
@@ -293,6 +301,7 @@ export async function updateTaskAction(input: {
       evidenceType: parsed.data.evidenceType,
       evidenceLabel: parsed.data.evidenceLabel ?? undefined,
       label: parsed.data.label ?? undefined,
+      unlockAfterHours: parsed.data.unlockAfterHours,
     });
     bumpChallenge(input.communitySlug, input.challengeSlug);
     return { ok: true };
@@ -341,6 +350,8 @@ export async function createChallengeAction(input: {
   requiredDays?: number;
   requiresApproval?: boolean;
   bannerUrl?: string;
+  taskUnlockMode?: "ALL" | "DAILY" | "SEQUENTIAL" | "MANUAL";
+  unlockIntervalHours?: number;
 }): Promise<
   | { ok: true; slug: string }
   | { ok: false; reason: string }
@@ -356,6 +367,8 @@ export async function createChallengeAction(input: {
     requiredDays: input.requiredDays,
     requiresApproval: input.requiresApproval,
     bannerUrl: input.bannerUrl,
+    taskUnlockMode: input.taskUnlockMode,
+    unlockIntervalHours: input.unlockIntervalHours,
   });
   if (!parsed.success) {
     return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
@@ -371,6 +384,8 @@ export async function createChallengeAction(input: {
       requiredDays: parsed.data.requiredDays,
       requiresApproval: parsed.data.requiresApproval,
       bannerUrl: parsed.data.bannerUrl || undefined,
+      taskUnlockMode: parsed.data.taskUnlockMode,
+      unlockIntervalHours: parsed.data.unlockIntervalHours,
     });
     revalidatePath(`/c/${input.communitySlug}/challenges`);
     return { ok: true, slug: ch.slug };
@@ -388,9 +403,10 @@ export async function createTaskAction(input: {
   description?: string;
   sopContent?: string;
   videoUrl?: string;
-  evidenceType?: "TEXT" | "LINK" | "IMAGE" | "FILE";
+  evidenceType?: "TEXT" | "LINK" | "IMAGE";
   evidenceLabel?: string;
   label?: string;
+  unlockAfterHours?: number | null;
   communitySlug: string;
   challengeSlug: string;
 }): Promise<ActionResult> {
@@ -406,6 +422,7 @@ export async function createTaskAction(input: {
     evidenceType: input.evidenceType,
     evidenceLabel: input.evidenceLabel,
     label: input.label,
+    unlockAfterHours: input.unlockAfterHours,
   });
   if (!parsed.success) {
     return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
@@ -422,6 +439,7 @@ export async function createTaskAction(input: {
       evidenceType: parsed.data.evidenceType,
       evidenceLabel: parsed.data.evidenceLabel ?? undefined,
       label: parsed.data.label ?? undefined,
+      unlockAfterHours: parsed.data.unlockAfterHours,
     });
     bumpChallenge(input.communitySlug, input.challengeSlug);
     return { ok: true };

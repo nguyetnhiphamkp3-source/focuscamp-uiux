@@ -27,6 +27,7 @@ export function CreateTaskButton({
   const [videoUrl, setVideoUrl] = useState("");
   const [evidenceType, setEvidenceType] = useState("TEXT");
   const [evidenceLabel, setEvidenceLabel] = useState("");
+  const [unlockAfterHours, setUnlockAfterHours] = useState("");
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
 
@@ -48,6 +49,7 @@ export function CreateTaskButton({
         evidenceType: evidenceType as "TEXT" | "LINK" | "IMAGE",
         evidenceLabel: evidenceLabel.trim(),
         label: label.trim(),
+        unlockAfterHours: unlockAfterHours.trim() ? parseInt(unlockAfterHours, 10) : null,
         communitySlug,
         challengeSlug,
       });
@@ -70,6 +72,7 @@ export function CreateTaskButton({
     setVideoUrl("");
     setEvidenceType("TEXT");
     setEvidenceLabel("");
+    setUnlockAfterHours("");
   }
 
   return (
@@ -233,6 +236,18 @@ export function CreateTaskButton({
                   />
                 </Field>
               </div>
+              <Field label="Override mở khóa (giờ) — trống = mặc định">
+                <input
+                  type="number"
+                  min={1}
+                  max={720}
+                  value={unlockAfterHours}
+                  onChange={(e) => setUnlockAfterHours(e.target.value)}
+                  disabled={pending}
+                  placeholder="vd: 48"
+                  style={inputStyle}
+                />
+              </Field>
             </div>
 
             {err && (

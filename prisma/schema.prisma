@@ -322,6 +322,10 @@ model Challenge {
   pricingConfig  Json?
   /** When true, members only see tasks up to their current day — future tasks are hidden. */
   hideFutureTasks Boolean @default(false)
+  /** Task unlock mode: ALL (all visible), DAILY (time-based), SEQUENTIAL (complete prev first), MANUAL (admin unlocks) */
+  taskUnlockMode  String  @default("DAILY")
+  /** Default hours between task unlocks (used in DAILY mode). Default 24. */
+  unlockIntervalHours Int @default(24)
   /** Multiple freeze windows. Array of {label?: string, startsAt: string, endsAt: string} */
   freezeWindows  Json?
   /** Long-form sales pitch shown on challenge page to non-members. Markdown supported. */
@@ -368,6 +372,8 @@ model ChallengeTask {
   meetingAt     DateTime?
   evidenceType  String    @default("TEXT")
   evidenceLabel String?   @db.Text
+  /** Per-task unlock override in hours. Null = use challenge default. */
+  unlockAfterHours Int?
 
   challenge   Challenge        @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   completions TaskCompletion[]

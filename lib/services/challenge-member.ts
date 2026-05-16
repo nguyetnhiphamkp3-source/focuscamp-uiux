@@ -467,6 +467,8 @@ export async function createChallenge(input: {
   requiredDays?: number;
   requiresApproval?: boolean;
   bannerUrl?: string;
+  taskUnlockMode?: string;
+  unlockIntervalHours?: number;
 }) {
   await assertCommunityOwner(input.userId, input.communityId);
   await assertCommunityCanWrite(input.communityId);
@@ -489,6 +491,8 @@ export async function createChallenge(input: {
       bannerUrl: input.bannerUrl?.trim() || null,
       leaderId: input.userId,
       status: "OPEN",
+      taskUnlockMode: input.taskUnlockMode || "DAILY",
+      unlockIntervalHours: input.unlockIntervalHours ?? 24,
     },
   });
   logger.info(
@@ -512,6 +516,8 @@ export async function updateChallengeSettings(input: {
   requiredTier?: string | null;
   pricingConfig?: Record<string, unknown> | null;
   hideFutureTasks?: boolean;
+  taskUnlockMode?: string;
+  unlockIntervalHours?: number;
   freezeWindows?: Array<{ label?: string; startsAt: string; endsAt: string }> | null;
   pitch?: string | null;
   bumpProductId?: string | null;
@@ -537,6 +543,8 @@ export async function updateChallengeSettings(input: {
         ? { pricingConfig: input.pricingConfig === null ? Prisma.DbNull : (input.pricingConfig as Prisma.InputJsonValue) }
         : {}),
       ...(input.hideFutureTasks !== undefined ? { hideFutureTasks: input.hideFutureTasks } : {}),
+      ...(input.taskUnlockMode !== undefined ? { taskUnlockMode: input.taskUnlockMode } : {}),
+      ...(input.unlockIntervalHours !== undefined ? { unlockIntervalHours: input.unlockIntervalHours } : {}),
       ...("freezeWindows" in input
         ? { freezeWindows: input.freezeWindows === null ? Prisma.DbNull : (input.freezeWindows as Prisma.InputJsonValue) }
         : {}),
@@ -582,6 +590,7 @@ export async function updateChallengeTask(input: {
   evidenceType?: string;
   evidenceLabel?: string;
   label?: string;
+  unlockAfterHours?: number | null;
 }) {
   const task = await prisma.challengeTask.findUnique({
     where: { id: input.taskId },
@@ -610,6 +619,7 @@ export async function updateChallengeTask(input: {
         ? { evidenceLabel: input.evidenceLabel || null }
         : {}),
       ...(input.label !== undefined ? { label: input.label || null } : {}),
+      ...("unlockAfterHours" in input ? { unlockAfterHours: input.unlockAfterHours ?? null } : {}),
     },
   });
   logger.info(
@@ -630,6 +640,7 @@ export async function createChallengeTask(input: {
   evidenceType?: string;
   evidenceLabel?: string;
   label?: string;
+  unlockAfterHours?: number | null;
 }) {
   await assertChallengeAdmin(input.userId, input.challengeId);
   const task = await prisma.challengeTask.create({
@@ -643,6 +654,7 @@ export async function createChallengeTask(input: {
       evidenceType: input.evidenceType || "TEXT",
       evidenceLabel: input.evidenceLabel?.trim() || null,
       label: input.label?.trim() || null,
+      unlockAfterHours: input.unlockAfterHours ?? null,
     },
   });
   logger.info(

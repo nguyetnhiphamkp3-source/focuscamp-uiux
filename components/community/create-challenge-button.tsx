@@ -24,6 +24,8 @@ export function CreateChallengeButton({
   );
   const [requiredDays, setRequiredDays] = useState("21");
   const [requiresApproval, setRequiresApproval] = useState(false);
+  const [taskUnlockMode, setTaskUnlockMode] = useState<"ALL" | "DAILY" | "SEQUENTIAL" | "MANUAL">("DAILY");
+  const [unlockIntervalHours, setUnlockIntervalHours] = useState("24");
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
@@ -48,6 +50,8 @@ export function CreateChallengeButton({
         requiredDays: parseInt(requiredDays, 10) || 21,
         requiresApproval,
         bannerUrl: bannerUrl || undefined,
+        taskUnlockMode,
+        unlockIntervalHours: parseInt(unlockIntervalHours, 10) || 24,
       });
       if (res.ok) {
         setOpen(false);
@@ -186,6 +190,34 @@ export function CreateChallengeButton({
                   placeholder="Chưa có banner — dùng gradient"
                 />
               </Field>
+
+              {/* Unlock mode */}
+              <Field label="Chế độ mở khóa task">
+                <select
+                  value={taskUnlockMode}
+                  onChange={(e) => setTaskUnlockMode(e.target.value as "ALL" | "DAILY" | "SEQUENTIAL" | "MANUAL")}
+                  disabled={pending}
+                  style={inputStyle}
+                >
+                  <option value="ALL">Mở tất cả</option>
+                  <option value="DAILY">Theo thời gian (mặc định 24h)</option>
+                  <option value="SEQUENTIAL">Tuần tự (hoàn thành trước mở sau)</option>
+                  <option value="MANUAL">Thủ công (admin mở)</option>
+                </select>
+              </Field>
+              {taskUnlockMode === "DAILY" && (
+                <Field label="Mỗi task mở sau (giờ)">
+                  <input
+                    type="number"
+                    min={1}
+                    max={720}
+                    value={unlockIntervalHours}
+                    onChange={(e) => setUnlockIntervalHours(e.target.value)}
+                    disabled={pending}
+                    style={inputStyle}
+                  />
+                </Field>
+              )}
 
               <div
                 style={{

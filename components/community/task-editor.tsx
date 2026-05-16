@@ -29,6 +29,7 @@ export function TaskEditorButton({
     evidenceType: string;
     evidenceLabel: string | null;
     label: string | null;
+    unlockAfterHours: number | null;
   };
 }) {
   const router = useRouter();
@@ -42,6 +43,9 @@ export function TaskEditorButton({
     initial.evidenceLabel ?? ""
   );
   const [label, setLabel] = useState(initial.label ?? "");
+  const [unlockAfterHours, setUnlockAfterHours] = useState(
+    initial.unlockAfterHours != null ? String(initial.unlockAfterHours) : ""
+  );
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
 
@@ -75,6 +79,7 @@ export function TaskEditorButton({
         evidenceType: evidenceType as "TEXT" | "LINK" | "IMAGE",
         evidenceLabel: evidenceLabel.trim(),
         label: label.trim(),
+        unlockAfterHours: unlockAfterHours.trim() ? parseInt(unlockAfterHours, 10) : null,
         communitySlug,
         challengeSlug,
       });
@@ -244,6 +249,19 @@ export function TaskEditorButton({
                   />
                 </Field>
               </div>
+
+              <Field label="Override thời gian mở khóa (giờ) — để trống = dùng mặc định challenge">
+                <input
+                  type="number"
+                  min={1}
+                  max={720}
+                  value={unlockAfterHours}
+                  onChange={(e) => setUnlockAfterHours(e.target.value)}
+                  disabled={pending}
+                  placeholder="vd: 48 (mở sau 48h thay vì mặc định)"
+                  style={inputStyle}
+                />
+              </Field>
             </div>
 
             {err && (
