@@ -205,6 +205,7 @@ export async function updateCommunityInfoAction(input: {
   featuredOnGlobal?: boolean;
   bannerUrl?: string;
   iconUrl?: string;
+  introVideoUrl?: string;
 }): Promise<{ ok: true } | { ok: false; reason: string }> {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
@@ -218,6 +219,7 @@ export async function updateCommunityInfoAction(input: {
     featuredOnGlobal: input.featuredOnGlobal,
     bannerUrl: input.bannerUrl,
     iconUrl: input.iconUrl,
+    introVideoUrl: input.introVideoUrl,
   });
   if (!parsed.success) {
     return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
@@ -234,6 +236,7 @@ export async function updateCommunityInfoAction(input: {
       featuredOnGlobal: parsed.data.featuredOnGlobal,
       bannerUrl: parsed.data.bannerUrl ?? undefined,
       iconUrl: parsed.data.iconUrl ?? undefined,
+      introVideoUrl: parsed.data.introVideoUrl ?? undefined,
     });
     revalidatePath(`/c/${input.communitySlug}`);
     revalidatePath(`/c/${input.communitySlug}/settings`);

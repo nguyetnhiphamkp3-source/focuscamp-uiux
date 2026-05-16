@@ -29,6 +29,7 @@ export function CommunityInfoEditor({
     featuredOnGlobal: boolean;
     bannerUrl: string | null;
     iconUrl: string | null;
+    introVideoUrl?: string | null;
   };
   disabled?: boolean;
 }) {
@@ -42,6 +43,7 @@ export function CommunityInfoEditor({
   );
   const [bannerUrl, setBannerUrl] = useState(initial.bannerUrl ?? "");
   const [iconUrl, setIconUrl] = useState(initial.iconUrl ?? "");
+  const [introVideoUrl, setIntroVideoUrl] = useState(initial.introVideoUrl ?? "");
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -60,6 +62,7 @@ export function CommunityInfoEditor({
         featuredOnGlobal,
         bannerUrl: bannerUrl.trim(),
         iconUrl: iconUrl.trim(),
+        introVideoUrl: introVideoUrl.trim(),
       });
       if (res.ok) {
         setSaved(true);
@@ -181,6 +184,23 @@ export function CommunityInfoEditor({
               Khi bật, cộng đồng này được ưu tiên trong Featured Communities.
             </div>
           </div>
+        </label>
+
+        <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+            Video giới thiệu (YouTube / Loom URL)
+          </span>
+          <input
+            type="url"
+            value={introVideoUrl}
+            onChange={(e) => setIntroVideoUrl(e.target.value)}
+            placeholder="https://www.youtube.com/watch?v=..."
+            disabled={disabled || pending}
+            style={inputStyle}
+          />
+          <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+            Hiển thị trên trang giới thiệu cho người chưa tham gia.
+          </span>
         </label>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>

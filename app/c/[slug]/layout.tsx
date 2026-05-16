@@ -86,6 +86,7 @@ export default async function CommunityLayout({
   const previewAsMember =
     isOwner && cookieStore.get(PREVIEW_MEMBER_COOKIE)?.value === "1";
   const planState = getPlanStatus(community);
+  const isNonMember = !membership && !isOwner;
 
   const visible = (k: FeatureKey) =>
     isFeatureVisible(ui, k, isOwner, previewAsMember);
@@ -99,8 +100,8 @@ export default async function CommunityLayout({
         <div className="left-section-top">
           <ServerList communities={myCommunities} activeSlug={slug} />
 
-          {/* CHANNEL SIDEBAR */}
-          <aside className="channel-sidebar">
+          {/* CHANNEL SIDEBAR — hidden for non-members */}
+          {!isNonMember && <aside className="channel-sidebar">
             <CommunityHeader
               slug={slug}
               name={community.name}
@@ -235,7 +236,7 @@ export default async function CommunityLayout({
                 </>
               )}
             </div>
-          </aside>
+          </aside>}
         </div>{/* end left-section-top */}
 
         {/* User Panel */}

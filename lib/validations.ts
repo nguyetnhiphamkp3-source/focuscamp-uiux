@@ -410,6 +410,7 @@ export const UpdateCommunityInfoSchema = z.object({
   featuredOnGlobal: z.boolean().optional(),
   bannerUrl: z.string().url().optional().or(z.literal("")),
   iconUrl: z.string().url().optional().or(z.literal("")),
+  introVideoUrl: z.string().url().optional().or(z.literal("")),
 });
 
 /* ========== Course / Lesson CRUD ========== */
