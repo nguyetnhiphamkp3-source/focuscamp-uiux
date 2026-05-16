@@ -277,7 +277,6 @@ function CommunityIntroPage({
           {/* Description */}
           {community.description && (
             <section className="ui-card ui-card-lg" style={{ margin: 0 }}>
-              <h2 style={{ marginBottom: "var(--space-3)", fontSize: "var(--text-lg)" }}>Về cộng đồng</h2>
               <p style={{ lineHeight: "var(--lh-relaxed)", color: "var(--text-normal)", margin: 0, whiteSpace: "pre-wrap" }}>
                 {community.description}
               </p>
