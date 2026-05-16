@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect, useRef } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { updateChallengeSettingsAction } from "@/app/actions/challenge-review";
 import { ImageUploadField } from "@/components/shared/image-upload-field";
@@ -36,7 +36,6 @@ export function ChallengeSettingsPanel({
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     function handleOpen() {
@@ -98,57 +97,70 @@ export function ChallengeSettingsPanel({
     if (saved) router.refresh();
   }, [saved]);
 
-  useEffect(() => {
-    if (open) {
-      sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, [open]);
-
   if (!open) return null;
 
   return (
-    <section
-      ref={sectionRef}
-      id="challenge-settings"
-      className="ui-card ui-card-lg"
-      style={{ marginBottom: "var(--space-4)" }}
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 1000,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(0,0,0,0.5)",
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}
     >
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
+      <section
+        id="challenge-settings"
+        className="ui-card ui-card-lg"
         style={{
-          display: "flex",
-          width: "100%",
-          alignItems: "center",
-          gap: 8,
-          background: "transparent",
-          border: "none",
-          padding: 0,
-          cursor: "pointer",
-          color: "var(--header-primary)",
-          fontSize: "var(--text-base)",
-          fontWeight: 700,
-          textAlign: "left",
+          width: "min(600px, 90vw)",
+          maxHeight: "85vh",
+          overflowY: "auto",
+          position: "relative",
         }}
       >
-        <span>{open ? "▾" : "▸"}</span>
-        <span>⚙️ Cài đặt challenge (admin)</span>
-        <span
-          style={{
-            marginLeft: "auto",
-            fontSize: "var(--text-xs)",
-            color: requiresApproval ? "var(--warning)" : "var(--text-muted)",
-            fontWeight: 500,
-          }}
-        >
-          {requiresApproval ? "Yêu cầu duyệt" : "Tự động ACTIVE"}
-        </span>
-      </button>
-
-      {open && (
         <div
           style={{
-            marginTop: 12,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            marginBottom: 12,
+          }}
+        >
+          <span style={{ fontSize: "var(--text-base)", fontWeight: 700, color: "var(--header-primary)" }}>
+            ⚙️ Cài đặt challenge
+          </span>
+          <span
+            style={{
+              marginLeft: "auto",
+              fontSize: "var(--text-xs)",
+              color: requiresApproval ? "var(--warning)" : "var(--text-muted)",
+              fontWeight: 500,
+            }}
+          >
+            {requiresApproval ? "Yêu cầu duyệt" : "Tự động ACTIVE"}
+          </span>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              fontSize: 18,
+              color: "var(--text-muted)",
+              padding: "4px 8px",
+            }}
+          >
+            ✕
+          </button>
+        </div>
+
+        <div
+          style={{
             display: "flex",
             flexDirection: "column",
             gap: 10,
@@ -528,8 +540,8 @@ export function ChallengeSettingsPanel({
             </div>
           )}
         </div>
-      )}
-    </section>
+      </section>
+    </div>
   );
 }
 
