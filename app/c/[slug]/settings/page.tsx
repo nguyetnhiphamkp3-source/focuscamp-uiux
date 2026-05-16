@@ -70,6 +70,9 @@ export default async function SettingsPage({
   });
   const perms = communityPermissionFlags(role);
 
+  // Only OWNER and ADMIN can access settings
+  if (!isOwner && role !== "ADMIN") redirect(`/c/${slug}`);
+
   const pillars = getPillars(community);
   const classes = getClasses(community);
   const currency = getCurrency(community);
@@ -100,16 +103,16 @@ export default async function SettingsPage({
           {!isOwner && (
             <div
               style={{
-                background: "var(--danger-soft)",
-                border: "1px solid var(--danger)",
+                background: "var(--info-soft, rgba(59,130,246,0.1))",
+                border: "1px solid var(--info, #3b82f6)",
                 borderRadius: "var(--r-md)",
                 padding: "var(--space-3)",
-                color: "var(--danger)",
+                color: "var(--info, #3b82f6)",
                 fontSize: "var(--text-sm)",
                 marginBottom: "var(--space-4)",
               }}
             >
-              ⚠️ Bạn không phải chủ cộng đồng. Chỉ xem read-only.
+              Bạn đang xem với quyền Admin. Một số cài đặt chỉ dành cho chủ cộng đồng.
             </div>
           )}
 

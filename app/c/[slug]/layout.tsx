@@ -106,6 +106,7 @@ export default async function CommunityLayout({
               name={community.name}
               isOwner={isOwner}
               isMember={!!membership}
+              canAccessSettings={isOwner || role === "ADMIN"}
               previewAsMember={previewAsMember}
             />
 

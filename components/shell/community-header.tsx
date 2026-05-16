@@ -8,12 +8,14 @@ export function CommunityHeader({
   slug,
   name,
   isOwner = false,
+  canAccessSettings = false,
   previewAsMember = false,
 }: {
   slug: string;
   name: string;
   isOwner?: boolean;
   isMember?: boolean;
+  canAccessSettings?: boolean;
   previewAsMember?: boolean;
 }) {
   return (
@@ -43,7 +45,7 @@ export function CommunityHeader({
 
       {isOwner && <PreviewAsMemberToggle active={previewAsMember} />}
 
-      {isOwner && (
+      {canAccessSettings && (
         <Link
           href={`/c/${slug}/settings`}
           title="Cài đặt cộng đồng"
