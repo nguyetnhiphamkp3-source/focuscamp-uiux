@@ -9,6 +9,10 @@ import {
   getLevelTiers,
   getUiConfig,
 } from "@/lib/community-config";
+import {
+  effectiveCommunityRole,
+  communityPermissionFlags,
+} from "@/lib/community-permissions";
 import { PillarsEditor } from "@/components/settings/pillars-editor";
 import { ClassesEditor } from "@/components/settings/classes-editor";
 import { CurrencyEditor } from "@/components/settings/currency-editor";
@@ -47,6 +51,25 @@ export default async function SettingsPage({
 
   const isOwner = community.ownerId === session.user.id;
 
+  // Fetch membership role for permission checks
+  const membership = !isOwner
+    ? await prisma.membership.findUnique({
+        where: {
+          userId_communityId: {
+            userId: session.user.id,
+            communityId: community.id,
+          },
+        },
+        select: { role: true },
+      })
+    : null;
+
+  const role = effectiveCommunityRole({
+    isOwner,
+    membershipRole: membership?.role,
+  });
+  const perms = communityPermissionFlags(role);
+
   const pillars = getPillars(community);
   const classes = getClasses(community);
   const currency = getCurrency(community);
@@ -56,10 +79,9 @@ export default async function SettingsPage({
   const planState = getPlanStatus(community);
   const apiKeys = isOwner ? await listApiKeys(community.id) : [];
 
-  const { members, total } = await listMembers({
-    communityId: community.id,
-    limit: 100,
-  });
+  const { members, total } = perms.canViewMembers
+    ? await listMembers({ communityId: community.id, limit: 100 })
+    : { members: [], total: 0 };
 
   return (
     <>
@@ -110,7 +132,7 @@ export default async function SettingsPage({
             <CommunityPlanPanel communityId={community.id} state={planState} />
           )}
 
-          {isOwner && (
+          {perms.canManageOrders && (
             <div
               className="ui-card"
               style={{
@@ -315,26 +337,28 @@ export default async function SettingsPage({
           >
             Thành viên
           </div>
-          <MembersEditor
-            communityId={community.id}
-            communitySlug={slug}
-            members={members.map((m) => ({
-              userId: m.userId,
-              role: m.role,
-              tier: m.tier,
-              className: m.className,
-              xp: m.xp,
-              level: m.level,
-              joinedAt: m.joinedAt,
-              user: m.user,
-            }))}
-            total={total}
-            isOwner={isOwner}
-            ownerId={community.ownerId}
-            currentUserId={session.user.id}
-            classes={classes}
-            levelTiers={tiers}
-          />
+          {perms.canViewMembers && (
+            <MembersEditor
+              communityId={community.id}
+              communitySlug={slug}
+              members={members.map((m) => ({
+                userId: m.userId,
+                role: m.role,
+                tier: m.tier,
+                className: m.className,
+                xp: m.xp,
+                level: m.level,
+                joinedAt: m.joinedAt,
+                user: m.user,
+              }))}
+              total={total}
+              canManageRoles={perms.canManageRoles}
+              ownerId={community.ownerId}
+              currentUserId={session.user.id}
+              classes={classes}
+              levelTiers={tiers}
+            />
+          )}
 
           {isOwner && (
             <>

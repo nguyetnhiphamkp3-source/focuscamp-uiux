@@ -10,6 +10,7 @@ export type CommunityRole = "OWNER" | "ADMIN" | "MOD" | "MEMBER";
 
 export type CommunityPermission =
   | "manage_settings"
+  | "view_members"
   | "manage_roles"
   | "manage_billing"
   | "manage_api_keys"
@@ -27,6 +28,7 @@ export type CommunityPermission =
 const ROLE_PERMISSIONS: Record<CommunityRole, ReadonlySet<CommunityPermission>> = {
   OWNER: new Set([
     "manage_settings",
+    "view_members",
     "manage_roles",
     "manage_billing",
     "manage_api_keys",
@@ -42,6 +44,8 @@ const ROLE_PERMISSIONS: Record<CommunityRole, ReadonlySet<CommunityPermission>> 
     "manage_orders",
   ]),
   ADMIN: new Set([
+    "view_members",
+    "manage_roles",
     "manage_courses",
     "manage_challenges",
     "review_challenge_members",
@@ -49,6 +53,7 @@ const ROLE_PERMISSIONS: Record<CommunityRole, ReadonlySet<CommunityPermission>> 
     "moderate_content",
     "publish_signals",
     "manage_events",
+    "manage_marketplace",
     "manage_orders",
   ]),
   MOD: new Set(["review_submissions", "moderate_content"]),
@@ -74,6 +79,7 @@ export function canCommunity(role: CommunityRole, permission: CommunityPermissio
 export function communityPermissionFlags(role: CommunityRole) {
   return {
     canManageSettings: canCommunity(role, "manage_settings"),
+    canViewMembers: canCommunity(role, "view_members"),
     canManageRoles: canCommunity(role, "manage_roles"),
     canManageBilling: canCommunity(role, "manage_billing"),
     canManageApiKeys: canCommunity(role, "manage_api_keys"),

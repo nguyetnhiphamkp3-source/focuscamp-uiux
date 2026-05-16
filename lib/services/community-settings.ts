@@ -6,6 +6,11 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { logger } from "@/lib/logger";
+import {
+  effectiveCommunityRole,
+  canCommunity,
+  type CommunityPermission,
+} from "@/lib/community-permissions";
 import type {
   PillarConfig,
   ClassConfig,
@@ -22,6 +27,31 @@ async function assertOwner(userId: string, communityId: string): Promise<void> {
   if (!c) throw new Error("Cộng đồng không tồn tại");
   if (c.ownerId !== userId)
     throw new Error("Chỉ chủ cộng đồng mới sửa được cài đặt");
+}
+
+async function assertPermission(
+  userId: string,
+  communityId: string,
+  permission: CommunityPermission,
+): Promise<void> {
+  const community = await prisma.community.findUnique({
+    where: { id: communityId },
+    select: { ownerId: true },
+  });
+  if (!community) throw new Error("Cộng đồng không tồn tại");
+  const isOwner = community.ownerId === userId;
+  let membershipRole: string | null = null;
+  if (!isOwner) {
+    const m = await prisma.membership.findUnique({
+      where: { userId_communityId: { userId, communityId } },
+      select: { role: true },
+    });
+    membershipRole = m?.role ?? null;
+  }
+  const role = effectiveCommunityRole({ isOwner, membershipRole });
+  if (!canCommunity(role, permission)) {
+    throw new Error("Bạn không có quyền thực hiện hành động này");
+  }
 }
 
 /** Reject duplicate `key` within the same list. */
@@ -163,7 +193,7 @@ export async function updateMemberRole(input: {
   targetUserId: string;
   role: string;
 }) {
-  await assertOwner(input.userId, input.communityId);
+  await assertPermission(input.userId, input.communityId, "manage_roles");
   if (!ALLOWED_ROLES.has(input.role)) {
     throw new Error(`Role không hợp lệ: ${input.role}`);
   }
@@ -197,7 +227,7 @@ export async function removeMember(input: {
   communityId: string;
   targetUserId: string;
 }) {
-  await assertOwner(input.userId, input.communityId);
+  await assertPermission(input.userId, input.communityId, "manage_roles");
   if (input.targetUserId === input.userId) {
     throw new Error("Không thể tự xoá mình. Chuyển owner trước.");
   }

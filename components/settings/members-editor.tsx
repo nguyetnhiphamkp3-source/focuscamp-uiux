@@ -38,7 +38,7 @@ export function MembersEditor({
   communitySlug,
   members,
   total,
-  isOwner,
+  canManageRoles,
   ownerId,
   currentUserId,
   classes,
@@ -48,7 +48,7 @@ export function MembersEditor({
   communitySlug: string;
   members: MemberRow[];
   total: number;
-  isOwner: boolean;
+  canManageRoles: boolean;
   ownerId: string;
   currentUserId: string;
   classes: ClassConfig[];
@@ -110,9 +110,9 @@ export function MembersEditor({
       <SectionHeader
         title={`Thành viên (${total})`}
         subtitle={
-          isOwner
-            ? "Quản lý role + xoá thành viên. Owner không thể bị xoá; đổi owner trong DB nếu cần chuyển."
-            : "Read-only. Chỉ chủ cộng đồng mới quản lý được thành viên."
+          canManageRoles
+            ? "Quản lý role + xoá thành viên. Owner không thể bị xoá."
+            : "Danh sách thành viên (read-only)."
         }
       />
 
@@ -258,7 +258,7 @@ export function MembersEditor({
                 <div
                   style={{ display: "flex", gap: 6, alignItems: "center" }}
                 >
-                  {isOwner && !isSelfRow && !isOwnerRow ? (
+                  {canManageRoles && !isSelfRow && !isOwnerRow ? (
                     <>
                       <select
                         value={m.role}

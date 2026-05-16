@@ -18,7 +18,8 @@ Do not add ad-hoc role checks in pages/actions/services. Use `lib/community-perm
 | Permission | OWNER | ADMIN | MOD | MEMBER |
 |---|---:|---:|---:|---:|
 | Community settings | ✅ | ❌ | ❌ | ❌ |
-| Member role changes / remove member | ✅ | ❌ | ❌ | ❌ |
+| View member list | ✅ | ✅ | ❌ | ❌ |
+| Member role changes / remove member | ✅ | ✅ | ❌ | ❌ |
 | Billing / plan / renewal | ✅ | ❌ | ❌ | ❌ |
 | API keys / integrations / AI Agent config | ✅ | ❌ | ❌ | ❌ |
 | Courses: create/edit/lesson CRUD/drafts | ✅ | ✅ | ❌ | ❌ |
@@ -28,7 +29,7 @@ Do not add ad-hoc role checks in pages/actions/services. Use `lib/community-perm
 | Content moderation: delete post/comment, pin, CỐT | ✅ | ✅ | ✅ | ❌ |
 | Publish Signals | ✅ | ✅ | ❌ | ❌ |
 | Events: create/manage/meeting URL/attendees | ✅ | ✅ | ❌ | ❌ |
-| Marketplace products | ✅ | ❌ | ❌ | ❌ |
+| Marketplace products | ✅ | ✅ | ❌ | ❌ |
 | Orders dashboard / manual payment approval | ✅ | ✅ | ❌ | ❌ |
 
 ## Notes
