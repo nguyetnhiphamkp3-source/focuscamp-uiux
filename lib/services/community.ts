@@ -316,6 +316,7 @@ export async function updateCommunityInfo(input: {
   bannerUrl?: string;
   iconUrl?: string;
   introVideoUrl?: string;
+  introGallery?: { type: "video" | "image"; url: string }[];
 }) {
   const c = await prisma.community.findUnique({
     where: { id: input.communityId },
@@ -349,6 +350,9 @@ export async function updateCommunityInfo(input: {
         : {}),
       ...(input.introVideoUrl !== undefined
         ? { introVideoUrl: input.introVideoUrl.trim() || null }
+        : {}),
+      ...(input.introGallery !== undefined
+        ? { introGallery: input.introGallery }
         : {}),
     },
   });

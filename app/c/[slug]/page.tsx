@@ -3,7 +3,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { EmptyState } from "@/components/ui/empty-state";
-import { parseVideoEmbed } from "@/lib/parse-video-embed";
+import { IntroGallery, type GalleryItem } from "@/components/community/intro-gallery";
 
 export const dynamic = "force-dynamic";
 
@@ -196,9 +196,34 @@ type CommunityWithContent = {
   memberCount: number;
   onlineCount: number;
   introVideoUrl: string | null;
+  introGallery: unknown;
   courses: { id: string; title: string; slug: string }[];
   challenges: { id: string; title: string; slug: string; difficulty: string; requiredDays: number }[];
 };
+
+function buildGallery(community: CommunityWithContent): GalleryItem[] {
+  const items: GalleryItem[] = [];
+  const seen = new Set<string>();
+
+  const raw = community.introGallery;
+  if (Array.isArray(raw)) {
+    for (const item of raw) {
+      if (
+        typeof item === "object" && item !== null &&
+        "type" in item && "url" in item &&
+        typeof (item as GalleryItem).url === "string" &&
+        ((item as GalleryItem).type === "video" || (item as GalleryItem).type === "image")
+      ) {
+        const gi = item as GalleryItem;
+        if (!seen.has(gi.url)) { seen.add(gi.url); items.push(gi); }
+      }
+    }
+  }
+  if (community.introVideoUrl && !seen.has(community.introVideoUrl)) {
+    items.unshift({ type: "video", url: community.introVideoUrl });
+  }
+  return items;
+}
 
 function CommunityIntroPage({
   community,
@@ -206,7 +231,7 @@ function CommunityIntroPage({
   community: CommunityWithContent;
   slug: string;
 }) {
-  const embedUrl = community.introVideoUrl ? parseVideoEmbed(community.introVideoUrl) : null;
+  const galleryItems = buildGallery(community);
 
   return (
     <>
@@ -220,27 +245,9 @@ function CommunityIntroPage({
       <div style={{ flex: 1, overflowY: "auto", padding: "var(--space-5) var(--space-6)" }}>
         <div style={{ maxWidth: 720, display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
 
-          {/* Video embed — main focal point */}
-          {embedUrl ? (
-            <div
-              style={{
-                position: "relative",
-                paddingBottom: "56.25%",
-                height: 0,
-                borderRadius: "var(--r-lg)",
-                overflow: "hidden",
-                border: "1px solid var(--border-subtle)",
-                background: "#000",
-              }}
-            >
-              <iframe
-                src={embedUrl}
-                title="Video giới thiệu"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}
-              />
-            </div>
+          {/* Gallery — video + image slideshow */}
+          {galleryItems.length > 0 ? (
+            <IntroGallery items={galleryItems} />
           ) : community.bannerUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -326,7 +333,7 @@ function CommunityIntroPage({
           )}
 
           {/* Empty state */}
-          {!embedUrl && !community.bannerUrl && !community.description && community.courses.length === 0 && community.challenges.length === 0 && (
+          {galleryItems.length === 0 && !community.bannerUrl && !community.description && community.courses.length === 0 && community.challenges.length === 0 && (
             <div style={{ textAlign: "center", padding: "var(--space-10) 0", color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>
               Tham gia để khám phá nội dung của community.
             </div>

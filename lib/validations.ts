@@ -411,6 +411,10 @@ export const UpdateCommunityInfoSchema = z.object({
   bannerUrl: z.string().url().optional().or(z.literal("")),
   iconUrl: z.string().url().optional().or(z.literal("")),
   introVideoUrl: z.string().url().optional().or(z.literal("")),
+  introGallery: z.array(z.object({
+    type: z.enum(["video", "image"]),
+    url: z.string().url(),
+  })).max(20).optional(),
 });
 
 /* ========== Course / Lesson CRUD ========== */

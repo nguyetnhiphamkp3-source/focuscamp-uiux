@@ -126,12 +126,17 @@ export default async function CommunityLayout({
             >
               {isNonMember && (
                 <div style={{
-                  fontSize: "var(--text-xs)",
-                  color: "var(--text-muted)",
-                  padding: "var(--space-3) var(--space-3) 0",
+                  margin: "var(--space-3) var(--space-2) var(--space-1)",
+                  padding: "var(--space-2) var(--space-3)",
+                  background: "var(--bg-elevated)",
+                  border: "1px solid var(--border-subtle)",
+                  borderRadius: "var(--r-md)",
+                  fontSize: "var(--text-sm)",
+                  fontWeight: "var(--fw-bold)",
+                  color: "var(--text-heading)",
                   display: "flex",
                   alignItems: "center",
-                  gap: 4,
+                  gap: 6,
                 }}>
                   🔒 Tham gia để mở khoá
                 </div>
@@ -259,7 +264,7 @@ export default async function CommunityLayout({
         {/* User Panel */}
         <UserPanel
           user={user}
-          subtitle={membership ? `Member · ${membership.tier}` : "Online"}
+          subtitle={membership ? `Member · ${membership.tier}` : user ? "Online" : "Cần đăng nhập"}
           profileHref={`/c/${slug}/profile`}
         />
       </div>
