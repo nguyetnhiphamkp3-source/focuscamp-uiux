@@ -1,11 +1,11 @@
 "use client";
 
-export function ChallengeEditButton() {
+function SettingsEditButton({ eventName, label }: { eventName: string; label: string }) {
   return (
     <button
       type="button"
-      onClick={() => window.dispatchEvent(new Event("open-challenge-settings"))}
-      title="Chỉnh sửa challenge"
+      onClick={() => window.dispatchEvent(new Event(eventName))}
+      title={label}
       style={{
         marginLeft: "auto",
         display: "inline-flex",
@@ -36,4 +36,12 @@ export function ChallengeEditButton() {
       <span className="challenge-edit-label">Chỉnh sửa</span>
     </button>
   );
+}
+
+export function ChallengeEditButton() {
+  return <SettingsEditButton eventName="open-challenge-settings" label="Chỉnh sửa challenge" />;
+}
+
+export function CourseEditButton() {
+  return <SettingsEditButton eventName="open-course-settings" label="Chỉnh sửa khoá học" />;
 }

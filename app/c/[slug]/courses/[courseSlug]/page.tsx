@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { CreateLessonButton } from "@/components/community/create-lesson-button";
 import { CourseSettingsPanel } from "@/components/community/course-settings-panel";
+import { CourseEditButton } from "@/components/community/challenge-edit-button";
 import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
 import { MarkLessonCompleteButton } from "@/components/community/mark-lesson-complete-button";
 import { LockedLessonNotice } from "@/components/community/locked-lesson-notice";
@@ -138,6 +139,7 @@ export default async function CourseDetailPage({
         {course.pillar && (
           <span className="view-subtitle">{course.pillar}</span>
         )}
+        {permissions.canManageCourses && <CourseEditButton />}
       </header>
 
       <div
@@ -147,21 +149,19 @@ export default async function CourseDetailPage({
         }}
       >
         {permissions.canManageCourses && (
-          <div style={{ padding: "var(--space-4) var(--space-4) 0" }}>
-            <CourseSettingsPanel
-              courseId={course.id}
-              communitySlug={slug}
-              courseSlug={courseSlug}
-              initial={{
-                title: course.title,
-                description: course.description,
-                level: course.level,
-                isPublished: course.isPublished,
-                pillar: course.pillar,
-                thumbnailUrl: course.thumbnailUrl,
-              }}
-            />
-          </div>
+          <CourseSettingsPanel
+            courseId={course.id}
+            communitySlug={slug}
+            courseSlug={courseSlug}
+            initial={{
+              title: course.title,
+              description: course.description,
+              level: course.level,
+              isPublished: course.isPublished,
+              pillar: course.pillar,
+              thumbnailUrl: course.thumbnailUrl,
+            }}
+          />
         )}
         <div
           style={{

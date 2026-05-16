@@ -724,7 +724,6 @@ export default async function ChallengeDetailPage({
                   <details
                     key={t.id}
                     className={`ch-task${isCurrent ? " current" : ""}`}
-                    open={isCurrent}
                     style={{
                       opacity: challenge.hideFutureTasks && isFuture && !permissions.canManageChallenges && !myMembership?.completedAt ? 0.5 : 1,
                       pointerEvents: challenge.hideFutureTasks && isFuture && !permissions.canManageChallenges && !myMembership?.completedAt ? "none" : "auto",

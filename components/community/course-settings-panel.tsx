@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { updateCourseAction } from "@/app/actions/course";
 import { ImageUploadField } from "@/components/shared/image-upload-field";
 
 /**
- * Inline settings panel for course detail — owner can edit title,
- * description, level, isPublished toggle. Collapsed by default.
+ * Modal settings panel for course detail — owner can edit title,
+ * description, level, isPublished toggle. Opens via custom event.
  */
 export function CourseSettingsPanel({
   courseId,
@@ -29,6 +29,12 @@ export function CourseSettingsPanel({
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    function handleOpen() { setOpen(true); }
+    window.addEventListener("open-course-settings", handleOpen);
+    return () => window.removeEventListener("open-course-settings", handleOpen);
+  }, []);
   const [title, setTitle] = useState(initial.title);
   const [description, setDescription] = useState(initial.description ?? "");
   const [level, setLevel] = useState(initial.level);
@@ -62,52 +68,71 @@ export function CourseSettingsPanel({
     }
   }
 
+  if (!open) return null;
+
   return (
-    <section
+    <div
       style={{
-        marginBottom: "var(--space-4)",
-        background: "var(--bg-card)",
-        border: "1px solid var(--border-subtle)",
-        borderRadius: 10,
-        overflow: "hidden",
+        position: "fixed",
+        inset: 0,
+        zIndex: 1000,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(0,0,0,0.5)",
       }}
+      onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}
     >
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
+      <section
         style={{
-          display: "flex",
-          width: "100%",
-          alignItems: "center",
-          gap: 8,
-          background: "transparent",
-          border: "none",
-          padding: "10px 14px",
-          cursor: "pointer",
-          color: "var(--header-primary)",
-          fontSize: "var(--text-sm)",
-          fontWeight: 700,
-          textAlign: "left",
+          width: "min(600px, 90vw)",
+          maxHeight: "85vh",
+          overflowY: "auto",
+          background: "var(--bg-card)",
+          border: "1px solid var(--border-subtle)",
+          borderRadius: 10,
+          padding: 14,
         }}
       >
-        <span>{open ? "▾" : "▸"}</span>
-        <span>⚙️ Cài đặt khoá học (admin)</span>
-        <span
-          style={{
-            marginLeft: "auto",
-            fontSize: "var(--text-xs)",
-            color: isPublished ? "var(--success)" : "var(--warning)",
-            fontWeight: 500,
-          }}
-        >
-          {isPublished ? "Published" : "Draft"}
-        </span>
-      </button>
-
-      {open && (
         <div
           style={{
-            padding: "0 14px 14px",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            marginBottom: 12,
+          }}
+        >
+          <span style={{ fontSize: "var(--text-base)", fontWeight: 700, color: "var(--header-primary)" }}>
+            ⚙️ Cài đặt khoá học
+          </span>
+          <span
+            style={{
+              marginLeft: "auto",
+              fontSize: "var(--text-xs)",
+              color: isPublished ? "var(--success)" : "var(--warning)",
+              fontWeight: 500,
+            }}
+          >
+            {isPublished ? "Published" : "Draft"}
+          </span>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              fontSize: 18,
+              color: "var(--text-muted)",
+              padding: "4px 8px",
+            }}
+          >
+            ✕
+          </button>
+        </div>
+
+        <div
+          style={{
             display: "flex",
             flexDirection: "column",
             gap: 10,
@@ -241,8 +266,8 @@ export function CourseSettingsPanel({
             </div>
           )}
         </div>
-      )}
-    </section>
+      </section>
+    </div>
   );
 }
 
