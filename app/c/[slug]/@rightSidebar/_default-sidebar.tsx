@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { CommunityRightSidebar } from "@/components/shell/community-right-sidebar";
+import { BossChallengeCard } from "@/components/community/boss-challenge-card";
 import { getClasses } from "@/lib/community-config";
 import { computeBossState } from "@/lib/services/community-boss";
 import { getTiersConfig } from "@/lib/services/subscription";
@@ -37,32 +38,41 @@ export async function DefaultRightSidebar({
   const boss = await computeBossState(community.id);
 
   return (
-    <CommunityRightSidebar
-      community={{
-        id: community.id,
-        slug: community.slug,
-        name: community.name,
-        tagline: community.tagline,
-        description: community.description,
-        bannerUrl: community.bannerUrl,
-        iconUrl: community.iconUrl,
-        memberCount: community.memberCount,
-        onlineCount: community.onlineCount,
-      }}
-      membership={
-        membership
-          ? {
-              role: membership.role,
-              tier: membership.tier,
-              xp: membership.xp,
-              className: membership.className,
-            }
-          : null
-      }
-      isLoggedIn={!!session?.user}
-      classes={classes}
-      tiers={tiers}
-      boss={boss}
-    />
+    <>
+      {membership && session?.user?.id && (
+        <BossChallengeCard
+          userId={session.user.id}
+          communityId={community.id}
+          communitySlug={community.slug}
+        />
+      )}
+      <CommunityRightSidebar
+        community={{
+          id: community.id,
+          slug: community.slug,
+          name: community.name,
+          tagline: community.tagline,
+          description: community.description,
+          bannerUrl: community.bannerUrl,
+          iconUrl: community.iconUrl,
+          memberCount: community.memberCount,
+          onlineCount: community.onlineCount,
+        }}
+        membership={
+          membership
+            ? {
+                role: membership.role,
+                tier: membership.tier,
+                xp: membership.xp,
+                className: membership.className,
+              }
+            : null
+        }
+        isLoggedIn={!!session?.user}
+        classes={classes}
+        tiers={tiers}
+        boss={boss}
+      />
+    </>
   );
 }

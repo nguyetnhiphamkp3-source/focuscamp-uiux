@@ -6,11 +6,15 @@ export function UserPanel({
   user,
   subtitle,
   profileHref,
+  notifUnread,
+  chatHref,
 }: {
   user: { name?: string | null; email?: string | null; image?: string | null } | null | undefined;
   subtitle?: string;
   /** When set, the avatar + name block links to this URL (e.g. /c/<slug>/profile). */
   profileHref?: string;
+  notifUnread?: number;
+  chatHref?: string;
 }) {
   const displayName = user?.name || user?.email || "Guest";
 
@@ -62,6 +66,25 @@ export function UserPanel({
         </div>
       )}
       <div className="user-panel-actions">
+        {user && chatHref && (
+          <Link href={chatHref} title="Chat" style={{ display: "flex", alignItems: "center", justifyContent: "center", color: "var(--interactive-normal)" }}>
+            <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, fill: "currentColor" }}>
+              <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z" />
+            </svg>
+          </Link>
+        )}
+        {user && (
+          <Link href="/inbox" title="Thông báo" style={{ display: "flex", alignItems: "center", justifyContent: "center", position: "relative", color: "var(--interactive-normal)" }}>
+            <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, fill: "currentColor" }}>
+              <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
+            </svg>
+            {!!notifUnread && notifUnread > 0 && (
+              <span style={{ position: "absolute", top: -4, right: -4, background: "var(--danger)", color: "#fff", borderRadius: "50%", fontSize: 9, minWidth: 14, height: 14, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, lineHeight: 1, padding: "0 2px" }}>
+                {notifUnread > 9 ? "9+" : notifUnread}
+              </span>
+            )}
+          </Link>
+        )}
         {user ? (
           <form
             action={async () => {

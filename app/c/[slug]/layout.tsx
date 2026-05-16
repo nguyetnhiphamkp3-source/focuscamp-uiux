@@ -8,7 +8,6 @@ import { UserPanel } from "@/components/shell/user-panel";
 import { KeyboardShortcuts } from "@/components/shell/keyboard-shortcuts";
 import { ShortcutSheet } from "@/components/shell/shortcut-sheet";
 import { CommunityHeader } from "@/components/shell/community-header";
-import { BossChallengeCard } from "@/components/community/boss-challenge-card";
 import { FeatureUnreadBadge } from "@/components/community/feature-unread-badge";
 import { MobileBottomNav } from "@/components/shell/mobile-bottom-nav";
 import { unreadCount } from "@/lib/services/notification";
@@ -110,15 +109,6 @@ export default async function CommunityLayout({
               previewAsMember={previewAsMember}
             />
 
-            {/* Boss + Challenge combined card — members only */}
-            {!isNonMember && (
-              <BossChallengeCard
-                userId={session?.user?.id ?? null}
-                communityId={community.id}
-                communitySlug={slug}
-              />
-            )}
-
             {/* Features Module Menu — grayed + locked for non-members */}
             <div
               className="features-menu"
@@ -141,16 +131,10 @@ export default async function CommunityLayout({
                   🔒 Tham gia để mở khoá
                 </div>
               )}
-              {anyVisible("chat", "feed", "cot", "signals", "qa") && (
+              {anyVisible("feed", "cot", "signals", "qa") && (
                 <div className="features-section-title" style={{ paddingTop: "16px" }}>
                   Cộng đồng
                 </div>
-              )}
-              {visible("chat") && (
-                <FeatureLink href={`/c/${slug}`} exact>
-                  <span className="feature-icon"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg></span>
-                  <span className="feature-name">Chat</span>
-                </FeatureLink>
               )}
               {visible("feed") && (
                 <FeatureLink href={`/c/${slug}/feed`}>
@@ -266,6 +250,8 @@ export default async function CommunityLayout({
           user={user}
           subtitle={membership ? `Member · ${membership.tier}` : user ? "Online" : "Cần đăng nhập"}
           profileHref={`/c/${slug}/profile`}
+          notifUnread={notifUnread}
+          chatHref={visible("chat") ? `/c/${slug}` : undefined}
         />
       </div>
 
