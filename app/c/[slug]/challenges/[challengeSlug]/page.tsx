@@ -910,7 +910,7 @@ export default async function ChallengeDetailPage({
                                 {isResubmitted ? `Nộp lại lúc ${timeStr}` : `Nộp lúc ${timeStr}`}
                               </span>
                             </div>
-                            {checkinData.reviewedAt && !isRejected && (
+                            {checkinData.reviewedAt && !isRejected && permissions.canReviewSubmissions && (
                               <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: "var(--space-2)" }}>
                                 Duyệt lúc {checkinData.reviewedAt.toLocaleString("vi-VN", fmtOpts)}
                               </div>
