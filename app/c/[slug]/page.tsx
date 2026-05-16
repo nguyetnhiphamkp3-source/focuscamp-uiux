@@ -202,7 +202,6 @@ type CommunityWithContent = {
 
 function CommunityIntroPage({
   community,
-  slug,
 }: {
   community: CommunityWithContent;
   slug: string;
@@ -213,104 +212,16 @@ function CommunityIntroPage({
     <>
       <header className="view-header">
         <span className="view-title">{community.name}</span>
+        {community.tagline && (
+          <span className="view-subtitle">{community.tagline}</span>
+        )}
       </header>
 
-      <div style={{ flex: 1, overflowY: "auto" }}>
-        {/* Hero banner */}
-        <div
-          style={{
-            position: "relative",
-            height: 220,
-            background: community.bannerUrl
-              ? "transparent"
-              : "linear-gradient(135deg, var(--brand-green) 0%, #0d5c42 100%)",
-            overflow: "hidden",
-            flexShrink: 0,
-          }}
-        >
-          {community.bannerUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={community.bannerUrl}
-              alt={community.name}
-              referrerPolicy="no-referrer"
-              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-            />
-          )}
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              background: "linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 50%)",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "flex-end",
-              padding: "var(--space-6)",
-            }}
-          >
-            <h1
-              style={{
-                margin: 0,
-                fontSize: "var(--text-2xl)",
-                fontWeight: "var(--fw-extrabold)",
-                fontFamily: "var(--font-heading)",
-                color: "#fff",
-                lineHeight: "var(--lh-tight)",
-                textShadow: "0 1px 4px rgba(0,0,0,0.4)",
-              }}
-            >
-              {community.name}
-            </h1>
-            {community.tagline && (
-              <p
-                style={{
-                  margin: "var(--space-1) 0 0",
-                  fontSize: "var(--text-base)",
-                  color: "rgba(255,255,255,0.85)",
-                  fontFamily: "var(--font-body)",
-                }}
-              >
-                {community.tagline}
-              </p>
-            )}
-          </div>
-        </div>
+      <div style={{ flex: 1, overflowY: "auto", padding: "var(--space-5) var(--space-6)" }}>
+        <div style={{ maxWidth: 720, display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
 
-        {/* Stats row */}
-        <div
-          style={{
-            display: "flex",
-            gap: "var(--space-6)",
-            padding: "var(--space-4) var(--space-6)",
-            background: "var(--bg-card)",
-            borderBottom: "1px solid var(--border-subtle)",
-            flexWrap: "wrap",
-          }}
-        >
-          {[
-            { icon: "👥", value: community.memberCount, label: "thành viên" },
-            { icon: "🟢", value: community.onlineCount, label: "online" },
-            ...(community.courses.length > 0
-              ? [{ icon: "📚", value: community.courses.length, label: "khóa học" }]
-              : []),
-            ...(community.challenges.length > 0
-              ? [{ icon: "⚔️", value: community.challenges.length, label: "challenge" }]
-              : []),
-          ].map(({ icon, value, label }) => (
-            <div key={label} style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-              <span style={{ fontSize: "var(--text-base)" }}>{icon}</span>
-              <span style={{ fontWeight: "var(--fw-bold)", color: "var(--text-heading)", fontSize: "var(--text-base)" }}>
-                {value}
-              </span>
-              <span style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>{label}</span>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-
-          {/* Video embed */}
-          {embedUrl && (
+          {/* Video embed — main focal point */}
+          {embedUrl ? (
             <div
               style={{
                 position: "relative",
@@ -319,6 +230,7 @@ function CommunityIntroPage({
                 borderRadius: "var(--r-lg)",
                 overflow: "hidden",
                 border: "1px solid var(--border-subtle)",
+                background: "#000",
               }}
             >
               <iframe
@@ -326,23 +238,39 @@ function CommunityIntroPage({
                 title="Video giới thiệu"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  width: "100%",
-                  height: "100%",
-                  border: 0,
-                }}
+                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}
               />
             </div>
-          )}
+          ) : community.bannerUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={community.bannerUrl}
+              alt={community.name}
+              referrerPolicy="no-referrer"
+              style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", borderRadius: "var(--r-lg)", display: "block" }}
+            />
+          ) : null}
+
+          {/* Stats row */}
+          <div style={{ display: "flex", gap: "var(--space-5)", flexWrap: "wrap" }}>
+            {[
+              { icon: "👥", value: community.memberCount, label: "thành viên" },
+              { icon: "🟢", value: community.onlineCount, label: "online" },
+              ...(community.courses.length > 0 ? [{ icon: "📚", value: community.courses.length, label: "khóa học" }] : []),
+              ...(community.challenges.length > 0 ? [{ icon: "⚔️", value: community.challenges.length, label: "challenge" }] : []),
+            ].map(({ icon, value, label }) => (
+              <div key={label} style={{ display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
+                <span>{icon}</span>
+                <span style={{ fontWeight: "var(--fw-bold)", color: "var(--text-heading)", fontSize: "var(--text-sm)" }}>{value}</span>
+                <span style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>{label}</span>
+              </div>
+            ))}
+          </div>
 
           {/* Description */}
           {community.description && (
-            <section className="ui-card ui-card-lg">
-              <h2 style={{ marginBottom: "var(--space-3)", fontSize: "var(--text-lg)" }}>
-                Về cộng đồng
-              </h2>
+            <section className="ui-card ui-card-lg" style={{ margin: 0 }}>
+              <h2 style={{ marginBottom: "var(--space-3)", fontSize: "var(--text-lg)" }}>Về cộng đồng</h2>
               <p style={{ lineHeight: "var(--lh-relaxed)", color: "var(--text-normal)", margin: 0, whiteSpace: "pre-wrap" }}>
                 {community.description}
               </p>
@@ -354,40 +282,23 @@ function CommunityIntroPage({
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: community.courses.length > 0 && community.challenges.length > 0
-                  ? "1fr 1fr"
-                  : "1fr",
-                gap: "var(--space-4)",
+                gridTemplateColumns: community.courses.length > 0 && community.challenges.length > 0 ? "1fr 1fr" : "1fr",
+                gap: "var(--space-3)",
               }}
             >
               {community.courses.length > 0 && (
                 <section className="ui-card ui-card-lg" style={{ margin: 0 }}>
-                  <h3 style={{ fontSize: "var(--text-md)", fontWeight: "var(--fw-bold)", color: "var(--text-heading)", marginBottom: "var(--space-3)" }}>
+                  <h3 style={{ fontSize: "var(--text-base)", fontWeight: "var(--fw-bold)", color: "var(--text-heading)", marginBottom: "var(--space-2)" }}>
                     📚 Khóa học ({community.courses.length})
                   </h3>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
                     {community.courses.slice(0, 5).map((c) => (
-                      <div
-                        key={c.id}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "var(--space-2)",
-                          padding: "var(--space-2) var(--space-3)",
-                          background: "var(--bg-elevated)",
-                          borderRadius: "var(--r-md)",
-                          fontSize: "var(--text-sm)",
-                          color: "var(--text-muted)",
-                        }}
-                      >
-                        <span style={{ color: "var(--brand-green)" }}>📖</span>
-                        <span>{c.title}</span>
+                      <div key={c.id} style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", padding: "var(--space-1) 0" }}>
+                        📖 {c.title}
                       </div>
                     ))}
                     {community.courses.length > 5 && (
-                      <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", textAlign: "center", paddingTop: "var(--space-1)" }}>
-                        +{community.courses.length - 5} khóa học nữa…
-                      </div>
+                      <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>+{community.courses.length - 5} khóa học nữa…</div>
                     )}
                   </div>
                 </section>
@@ -395,33 +306,18 @@ function CommunityIntroPage({
 
               {community.challenges.length > 0 && (
                 <section className="ui-card ui-card-lg" style={{ margin: 0 }}>
-                  <h3 style={{ fontSize: "var(--text-md)", fontWeight: "var(--fw-bold)", color: "var(--text-heading)", marginBottom: "var(--space-3)" }}>
+                  <h3 style={{ fontSize: "var(--text-base)", fontWeight: "var(--fw-bold)", color: "var(--text-heading)", marginBottom: "var(--space-2)" }}>
                     ⚔️ Challenges ({community.challenges.length})
                   </h3>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
                     {community.challenges.slice(0, 5).map((c) => (
-                      <div
-                        key={c.id}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          gap: "var(--space-2)",
-                          padding: "var(--space-2) var(--space-3)",
-                          background: "var(--bg-elevated)",
-                          borderRadius: "var(--r-md)",
-                        }}
-                      >
-                        <span style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>{c.title}</span>
-                        <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-                          {c.requiredDays}d
-                        </span>
+                      <div key={c.id} style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-sm)", color: "var(--text-muted)", padding: "var(--space-1) 0" }}>
+                        <span>{c.title}</span>
+                        <span style={{ whiteSpace: "nowrap", marginLeft: "var(--space-2)" }}>{c.requiredDays}d</span>
                       </div>
                     ))}
                     {community.challenges.length > 5 && (
-                      <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", textAlign: "center", paddingTop: "var(--space-1)" }}>
-                        +{community.challenges.length - 5} challenges nữa…
-                      </div>
+                      <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>+{community.challenges.length - 5} challenges nữa…</div>
                     )}
                   </div>
                 </section>
@@ -429,16 +325,9 @@ function CommunityIntroPage({
             </div>
           )}
 
-          {/* Empty hint */}
-          {community.courses.length === 0 && community.challenges.length === 0 && !community.description && (
-            <div
-              style={{
-                textAlign: "center",
-                padding: "var(--space-10) var(--space-6)",
-                color: "var(--text-muted)",
-                fontSize: "var(--text-sm)",
-              }}
-            >
+          {/* Empty state */}
+          {!embedUrl && !community.bannerUrl && !community.description && community.courses.length === 0 && community.challenges.length === 0 && (
+            <div style={{ textAlign: "center", padding: "var(--space-10) 0", color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>
               Tham gia để khám phá nội dung của community.
             </div>
           )}

@@ -100,8 +100,8 @@ export default async function CommunityLayout({
         <div className="left-section-top">
           <ServerList communities={myCommunities} activeSlug={slug} />
 
-          {/* CHANNEL SIDEBAR — hidden for non-members */}
-          {!isNonMember && <aside className="channel-sidebar">
+          {/* CHANNEL SIDEBAR — always visible; features locked for non-members */}
+          <aside className="channel-sidebar">
             <CommunityHeader
               slug={slug}
               name={community.name}
@@ -110,15 +110,32 @@ export default async function CommunityLayout({
               previewAsMember={previewAsMember}
             />
 
-            {/* Boss + Challenge combined card */}
-            <BossChallengeCard
-              userId={session?.user?.id ?? null}
-              communityId={community.id}
-              communitySlug={slug}
-            />
+            {/* Boss + Challenge combined card — members only */}
+            {!isNonMember && (
+              <BossChallengeCard
+                userId={session?.user?.id ?? null}
+                communityId={community.id}
+                communitySlug={slug}
+              />
+            )}
 
-            {/* Features Module Menu */}
-            <div className="features-menu">
+            {/* Features Module Menu — grayed + locked for non-members */}
+            <div
+              className="features-menu"
+              style={isNonMember ? { opacity: 0.42, pointerEvents: "none", userSelect: "none" } : {}}
+            >
+              {isNonMember && (
+                <div style={{
+                  fontSize: "var(--text-xs)",
+                  color: "var(--text-muted)",
+                  padding: "var(--space-3) var(--space-3) 0",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                }}>
+                  🔒 Tham gia để mở khoá
+                </div>
+              )}
               {anyVisible("chat", "feed", "cot", "signals", "qa") && (
                 <div className="features-section-title" style={{ paddingTop: "16px" }}>
                   Cộng đồng
@@ -236,7 +253,7 @@ export default async function CommunityLayout({
                 </>
               )}
             </div>
-          </aside>}
+          </aside>
         </div>{/* end left-section-top */}
 
         {/* User Panel */}
