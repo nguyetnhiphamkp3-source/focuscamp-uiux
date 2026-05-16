@@ -152,19 +152,20 @@ export async function matchSePayTransactionToPayment(params: {
         });
       }
     } else if (payment.refType === "challenge") {
-      // refId = ChallengeMember.id — activate after payment
       const member = await tx.challengeMember.findUnique({
         where: { id: payment.refId },
         select: { challengeId: true },
       });
       if (member) {
+        const challenge = await tx.challenge.findUnique({
+          where: { id: member.challengeId },
+          select: { requiresApproval: true },
+        });
         await tx.challengeMember.update({
           where: { id: payment.refId },
-          data: {
-            status: "ACTIVE",
-            approvedAt: new Date(),
-            personalStartsAt: new Date(),
-          },
+          data: challenge?.requiresApproval
+            ? { status: "PENDING" }
+            : { status: "ACTIVE", approvedAt: new Date() },
         });
       }
       const meta = (payment.metadata ?? {}) as Record<string, unknown>;
