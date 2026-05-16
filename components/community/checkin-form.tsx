@@ -324,7 +324,7 @@ export function CheckinForm({
         </div>
 
         {/* Evidence: Link */}
-        {(needsLink || evType === "FILE") && (
+        {needsLink && (
           <div>
             <label
               style={{

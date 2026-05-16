@@ -45,7 +45,7 @@ export function CreateTaskButton({
         description: description.trim(),
         sopContent: sopContent.trim(),
         videoUrl: videoUrl.trim(),
-        evidenceType: evidenceType as "TEXT" | "LINK" | "IMAGE" | "FILE",
+        evidenceType: evidenceType as "TEXT" | "LINK" | "IMAGE",
         evidenceLabel: evidenceLabel.trim(),
         label: label.trim(),
         communitySlug,
@@ -220,7 +220,6 @@ export function CreateTaskButton({
                     <option value="TEXT">TEXT</option>
                     <option value="LINK">LINK</option>
                     <option value="IMAGE">IMAGE</option>
-                    <option value="FILE">FILE</option>
                   </select>
                 </Field>
                 <Field label="Yêu cầu cụ thể">

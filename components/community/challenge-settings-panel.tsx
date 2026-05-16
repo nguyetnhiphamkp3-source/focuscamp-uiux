@@ -281,8 +281,8 @@ export function ChallengeSettingsPanel({
                   marginTop: 2,
                 }}
               >
-                Khi bật: người tham gia phải chờ admin duyệt mới bắt đầu timer.
-                Khi tắt (mặc định): auto ACTIVE + bắt đầu ngay.
+                Khi bật: người tham gia phải chờ admin duyệt trước khi được vào challenge.
+                Khi tắt (mặc định): tự động vào challenge, thành viên tự nhấn Bắt đầu khi sẵn sàng.
               </div>
             </div>
           </label>
