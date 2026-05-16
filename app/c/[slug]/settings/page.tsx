@@ -124,6 +124,8 @@ export default async function SettingsPage({
               featuredOnGlobal: community.featuredOnGlobal,
               bannerUrl: community.bannerUrl,
               iconUrl: community.iconUrl,
+              introVideoUrl: community.introVideoUrl,
+              introGallery: community.introGallery,
             }}
             disabled={!isOwner}
           />

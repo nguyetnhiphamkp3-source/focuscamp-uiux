@@ -10,28 +10,6 @@ export function HomeSidebar({
 }) {
   return (
     <aside className="channel-sidebar">
-      {/* Banner */}
-      <div className="server-banner">
-        <div
-          className="banner-canvas"
-          style={{ background: "linear-gradient(135deg,#1B9E75,#157a5b)" }}
-        >
-          <div className="node" style={{ top: 25, left: 30 }}></div>
-          <div className="node filled" style={{ top: 40, left: 80 }}></div>
-          <div className="node" style={{ top: 20, left: 140 }}></div>
-          <div className="node filled" style={{ top: 55, left: 170 }}></div>
-          <div className="node" style={{ top: 35, left: 200 }}></div>
-          <div className="line" style={{ top: 31, left: 42, width: 40, transform: "rotate(12deg)" }}></div>
-          <div className="line" style={{ top: 46, left: 92, width: 50, transform: "rotate(-18deg)" }}></div>
-          <div className="line" style={{ top: 26, left: 152, width: 24, transform: "rotate(55deg)" }}></div>
-          <div className="server-banner-header">
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span className="server-name-text">focus.camp</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Menu */}
       <div className="features-menu">
         <div className="features-section-title" style={{ paddingTop: 16 }}>

@@ -137,6 +137,8 @@ model Community {
 
   category         String?
   featuredOnGlobal Boolean @default(false)
+  introVideoUrl    String?
+  introGallery     Json?
 
   memberCount Int @default(0)
   onlineCount Int @default(0)

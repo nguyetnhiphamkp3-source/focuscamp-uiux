@@ -30,6 +30,7 @@ export async function CommunityRightSidebar({
   membership,
   classes,
   tiers = [],
+  bossCard,
 }: {
   community: Community;
   membership: Membership;
@@ -37,11 +38,12 @@ export async function CommunityRightSidebar({
   classes: ClassConfig[];
   tiers?: TierConfigItem[];
   boss?: unknown;
+  bossCard?: React.ReactNode;
 }) {
   return (
     <aside className="right-sidebar" id="rightSidebar">
       {membership ? (
-        <MemberView community={community} membership={membership} classes={classes} />
+        <MemberView community={community} membership={membership} classes={classes} bossCard={bossCard} />
       ) : (
         <GuestView community={community} classes={classes} tiers={tiers} />
       )}
@@ -175,10 +177,12 @@ function MemberView({
   community,
   membership,
   classes,
+  bossCard,
 }: {
   community: Community;
   membership: NonNullable<Membership>;
   classes: ClassConfig[];
+  bossCard?: React.ReactNode;
 }) {
   const myClass = classByKey(membership.className, classes);
 
@@ -204,6 +208,7 @@ function MemberView({
           }}
         />
       </div>
+      {bossCard}
       <CommunitySearchBar name={community.name} slug={community.slug} />
       <div className="rs-body">
         <div className="rs-card">

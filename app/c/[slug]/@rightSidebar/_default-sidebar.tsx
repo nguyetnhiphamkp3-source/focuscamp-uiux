@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { CommunityRightSidebar } from "@/components/shell/community-right-sidebar";
+import { BossChallengeCard } from "@/components/community/boss-challenge-card";
 import { getClasses } from "@/lib/community-config";
 import { computeBossState } from "@/lib/services/community-boss";
 import { getTiersConfig } from "@/lib/services/subscription";
@@ -63,6 +64,15 @@ export async function DefaultRightSidebar({
       classes={classes}
       tiers={tiers}
       boss={boss}
+      bossCard={
+        membership && session?.user?.id ? (
+          <BossChallengeCard
+            userId={session.user.id}
+            communityId={community.id}
+            communitySlug={community.slug}
+          />
+        ) : undefined
+      }
     />
   );
 }

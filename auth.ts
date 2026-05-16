@@ -19,6 +19,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           scope: "openid email profile",
         },
       },
+      profile(profile) {
+        const cleanName = (profile.name ?? "").replace(/\s*\([^)]*\)/g, "").trim();
+        return {
+          id: profile.sub,
+          name: cleanName || (profile.name ?? null),
+          email: profile.email,
+          image: profile.picture,
+        };
+      },
     }),
     Resend({
       apiKey: process.env.RESEND_API_KEY,

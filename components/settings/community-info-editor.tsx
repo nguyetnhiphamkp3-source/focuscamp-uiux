@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { updateCommunityInfoAction } from "@/app/actions/community";
 import { ImageUploadField } from "@/components/shared/image-upload-field";
+import { uploadImage } from "@/lib/upload-client";
 import { COMMUNITY_CATEGORIES } from "@/lib/community-categories";
 import {
   inputStyle,
@@ -12,6 +13,29 @@ import {
   SuccessBox,
   SectionHeader,
 } from "./editor-shared";
+
+type GalleryItem = { type: "video" | "image"; url: string };
+
+function detectType(url: string): "video" | "image" {
+  return /youtube\.com|youtu\.be|loom\.com/.test(url) ? "video" : "image";
+}
+
+function parseInitialGallery(raw: unknown, introVideoUrl?: string | null): GalleryItem[] {
+  const items: GalleryItem[] = [];
+  const seen = new Set<string>();
+  if (Array.isArray(raw)) {
+    for (const item of raw) {
+      if (typeof item === "object" && item !== null && "url" in item && typeof (item as GalleryItem).url === "string") {
+        const gi = item as GalleryItem;
+        if (!seen.has(gi.url)) { seen.add(gi.url); items.push({ type: gi.type || "video", url: gi.url }); }
+      }
+    }
+  }
+  if (introVideoUrl && !seen.has(introVideoUrl)) {
+    items.unshift({ type: "video", url: introVideoUrl });
+  }
+  return items;
+}
 
 export function CommunityInfoEditor({
   communityId,
@@ -29,6 +53,8 @@ export function CommunityInfoEditor({
     featuredOnGlobal: boolean;
     bannerUrl: string | null;
     iconUrl: string | null;
+    introVideoUrl?: string | null;
+    introGallery?: unknown;
   };
   disabled?: boolean;
 }) {
@@ -37,19 +63,50 @@ export function CommunityInfoEditor({
   const [tagline, setTagline] = useState(initial.tagline ?? "");
   const [description, setDescription] = useState(initial.description ?? "");
   const [category, setCategory] = useState(initial.category ?? "");
-  const [featuredOnGlobal, setFeaturedOnGlobal] = useState(
-    initial.featuredOnGlobal
-  );
+  const [featuredOnGlobal, setFeaturedOnGlobal] = useState(initial.featuredOnGlobal);
   const [bannerUrl, setBannerUrl] = useState(initial.bannerUrl ?? "");
   const [iconUrl, setIconUrl] = useState(initial.iconUrl ?? "");
+  const [gallery, setGallery] = useState<GalleryItem[]>(() =>
+    parseInitialGallery(initial.introGallery, initial.introVideoUrl)
+  );
+  const [newUrl, setNewUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+
+  function addGalleryItem() {
+    const url = newUrl.trim();
+    if (!url || gallery.some(i => i.url === url)) return;
+    setGallery(prev => [...prev, { type: detectType(url), url }]);
+    setNewUrl("");
+  }
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const url = await uploadImage(file, "community");
+      setGallery(prev => [...prev, { type: "image", url }]);
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : "Upload thất bại");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  function removeGalleryItem(index: number) {
+    setGallery(prev => prev.filter((_, i) => i !== index));
+  }
 
   function submit() {
     setErr(null);
     setSaved(false);
     start(async () => {
+      const firstVideo = gallery.find(i => i.type === "video");
       const res = await updateCommunityInfoAction({
         communityId,
         communitySlug,
@@ -60,6 +117,8 @@ export function CommunityInfoEditor({
         featuredOnGlobal,
         bannerUrl: bannerUrl.trim(),
         iconUrl: iconUrl.trim(),
+        introVideoUrl: firstVideo?.url ?? "",
+        introGallery: gallery,
       });
       if (res.ok) {
         setSaved(true);
@@ -182,6 +241,79 @@ export function CommunityInfoEditor({
             </div>
           </div>
         </label>
+
+        {/* Gallery — videos + images for intro page */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", fontWeight: 600 }}>
+            Gallery giới thiệu (YouTube, Loom, hoặc URL ảnh)
+          </span>
+          {gallery.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {gallery.map((item, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", width: 36, flexShrink: 0 }}>
+                    {item.type === "video" ? "🎬" : "🖼"} #{i + 1}
+                  </span>
+                  <input
+                    type="url"
+                    value={item.url}
+                    onChange={(e) => {
+                      const url = e.target.value;
+                      setGallery(prev => prev.map((it, idx) => idx === i ? { type: detectType(url), url } : it));
+                    }}
+                    disabled={disabled || pending}
+                    style={{ ...inputStyle, flex: 1, fontSize: "var(--text-xs)" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeGalleryItem(i)}
+                    disabled={disabled || pending}
+                    style={{ border: "none", background: "none", color: "var(--danger)", cursor: "pointer", padding: "0 4px", fontSize: 16 }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{ display: "flex", gap: 6 }}>
+            <input
+              type="url"
+              value={newUrl}
+              onChange={(e) => setNewUrl(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addGalleryItem())}
+              placeholder="YouTube / Loom URL…"
+              disabled={disabled || pending || uploading}
+              style={{ ...inputStyle, flex: 1, fontSize: "var(--text-xs)" }}
+            />
+            <button
+              type="button"
+              onClick={addGalleryItem}
+              disabled={disabled || pending || uploading || !newUrl.trim()}
+              style={{ ...btnPrimary, padding: "0 12px", fontSize: "var(--text-xs)", opacity: !newUrl.trim() ? 0.5 : 1, whiteSpace: "nowrap" }}
+            >
+              + Video
+            </button>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={disabled || pending || uploading}
+              style={{ ...btnPrimary, padding: "0 12px", fontSize: "var(--text-xs)", background: "var(--bg-elevated)", color: "var(--text-normal)", border: "1px solid var(--border-subtle)", whiteSpace: "nowrap" }}
+            >
+              {uploading ? "Đang tải…" : "📷 Tải ảnh"}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={handleImageUpload}
+            />
+          </div>
+          <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+            Item đầu tiên = video/ảnh chính. Thêm nhiều để tạo slideshow.
+          </span>
+        </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
