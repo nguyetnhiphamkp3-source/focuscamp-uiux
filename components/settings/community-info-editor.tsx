@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { updateCommunityInfoAction } from "@/app/actions/community";
 import { ImageUploadField } from "@/components/shared/image-upload-field";
+import { uploadImage } from "@/lib/upload-client";
 import { COMMUNITY_CATEGORIES } from "@/lib/community-categories";
 import {
   inputStyle,
@@ -69,6 +70,8 @@ export function CommunityInfoEditor({
     parseInitialGallery(initial.introGallery, initial.introVideoUrl)
   );
   const [newUrl, setNewUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -78,6 +81,21 @@ export function CommunityInfoEditor({
     if (!url || gallery.some(i => i.url === url)) return;
     setGallery(prev => [...prev, { type: detectType(url), url }]);
     setNewUrl("");
+  }
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const url = await uploadImage(file, "community");
+      setGallery(prev => [...prev, { type: "image", url }]);
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : "Upload thất bại");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   }
 
   function removeGalleryItem(index: number) {
@@ -264,18 +282,33 @@ export function CommunityInfoEditor({
               value={newUrl}
               onChange={(e) => setNewUrl(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addGalleryItem())}
-              placeholder="https://www.youtube.com/watch?v=... hoặc URL ảnh"
-              disabled={disabled || pending}
+              placeholder="YouTube / Loom URL…"
+              disabled={disabled || pending || uploading}
               style={{ ...inputStyle, flex: 1, fontSize: "var(--text-xs)" }}
             />
             <button
               type="button"
               onClick={addGalleryItem}
-              disabled={disabled || pending || !newUrl.trim()}
-              style={{ ...btnPrimary, padding: "0 12px", fontSize: "var(--text-xs)", opacity: !newUrl.trim() ? 0.5 : 1 }}
+              disabled={disabled || pending || uploading || !newUrl.trim()}
+              style={{ ...btnPrimary, padding: "0 12px", fontSize: "var(--text-xs)", opacity: !newUrl.trim() ? 0.5 : 1, whiteSpace: "nowrap" }}
             >
-              + Thêm
+              + Video
             </button>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={disabled || pending || uploading}
+              style={{ ...btnPrimary, padding: "0 12px", fontSize: "var(--text-xs)", background: "var(--bg-elevated)", color: "var(--text-normal)", border: "1px solid var(--border-subtle)", whiteSpace: "nowrap" }}
+            >
+              {uploading ? "Đang tải…" : "📷 Tải ảnh"}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={handleImageUpload}
+            />
           </div>
           <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
             Item đầu tiên = video/ảnh chính. Thêm nhiều để tạo slideshow.
