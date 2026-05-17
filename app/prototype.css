@@ -5800,6 +5800,12 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
   }
 }
 
+/* Mobile lesson list — only visible when right sidebar is hidden */
+.mobile-lesson-list { display: none; }
+@media (max-width: 1023.98px) {
+  .mobile-lesson-list { display: block; }
+}
+
 /* Discovery hero — stack on mobile */
 @media (max-width: 767.98px) {
   .dc-hero { flex-direction: column; align-items: stretch; padding: 20px; }

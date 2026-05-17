@@ -210,6 +210,91 @@ export default async function CourseDetailPage({
             </div>
           ) : null}
 
+          {/* MOBILE LESSON LIST — visible only when right sidebar is hidden */}
+          {course.lessons.length > 1 && (
+            <details className="mobile-lesson-list" style={{ marginBottom: "var(--space-4)" }}>
+              <summary
+                style={{
+                  cursor: "pointer",
+                  fontSize: "var(--text-sm)",
+                  fontWeight: 600,
+                  color: "var(--text-heading)",
+                  padding: "var(--space-3)",
+                  background: "var(--bg-elevated)",
+                  borderRadius: "var(--r-md)",
+                  border: "1px solid var(--border-subtle)",
+                  listStyle: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <span>📋 Danh sách bài học ({completedSet.size}/{course.lessons.length})</span>
+                <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>▼</span>
+              </summary>
+              <div
+                style={{
+                  marginTop: "var(--space-2)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "var(--space-1)",
+                }}
+              >
+                {course.lessons.map((l, i) => {
+                  const isActive = activeLesson?.id === l.id;
+                  const isCompleted = completedSet.has(l.id);
+                  return (
+                    <a
+                      key={l.id}
+                      href={`/c/${slug}/courses/${courseSlug}?lessonId=${l.id}`}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "var(--space-2)",
+                        padding: "var(--space-2) var(--space-3)",
+                        borderRadius: "var(--r-md)",
+                        background: isActive ? "var(--bg-modifier-active)" : "transparent",
+                        textDecoration: "none",
+                        color: "inherit",
+                        fontSize: "var(--text-sm)",
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: 22,
+                          height: 22,
+                          borderRadius: "var(--r-full)",
+                          background: isCompleted ? "var(--brand-green)" : "var(--bg-elevated)",
+                          color: isCompleted ? "#fff" : "var(--text-muted)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "var(--text-xs)",
+                          fontWeight: 700,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {isCompleted ? "✓" : i + 1}
+                      </span>
+                      <span
+                        style={{
+                          flex: 1,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          fontWeight: isActive ? 700 : 400,
+                          color: isActive ? "var(--text-heading)" : "var(--text-normal)",
+                        }}
+                      >
+                        {l.title}
+                      </span>
+                    </a>
+                  );
+                })}
+              </div>
+            </details>
+          )}
+
           {/* TITLE */}
           <h1
             style={{
