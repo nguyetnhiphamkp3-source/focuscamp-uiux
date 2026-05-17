@@ -116,22 +116,23 @@ export default async function SettingsPage({
             </div>
           )}
 
-          <CommunityInfoEditor
-            communityId={community.id}
-            communitySlug={slug}
-            initial={{
-              name: community.name,
-              tagline: community.tagline,
-              description: community.description,
-              category: community.category,
-              featuredOnGlobal: community.featuredOnGlobal,
-              bannerUrl: community.bannerUrl,
-              iconUrl: community.iconUrl,
-              introVideoUrl: community.introVideoUrl,
-              introGallery: community.introGallery,
-            }}
-            disabled={!isOwner}
-          />
+          {isOwner && (
+            <CommunityInfoEditor
+              communityId={community.id}
+              communitySlug={slug}
+              initial={{
+                name: community.name,
+                tagline: community.tagline,
+                description: community.description,
+                category: community.category,
+                featuredOnGlobal: community.featuredOnGlobal,
+                bannerUrl: community.bannerUrl,
+                iconUrl: community.iconUrl,
+                introVideoUrl: community.introVideoUrl,
+                introGallery: community.introGallery,
+              }}
+            />
+          )}
 
           {isOwner && (
             <CommunityPlanPanel communityId={community.id} state={planState} />
@@ -261,74 +262,70 @@ export default async function SettingsPage({
             </span>
           </div>
 
-          <div
-            style={{
-              fontSize: "var(--text-xl)",
-              fontWeight: 700,
-              color: "var(--header-primary)",
-              padding: "var(--space-6) 0 var(--space-3)",
-              borderTop: "1px solid var(--border-subtle)",
-              marginTop: "var(--space-4)",
-            }}
-          >
-            Concept
-          </div>
-          <div
-            style={{
-              fontSize: "var(--text-sm)",
-              color: "var(--text-muted)",
-              marginBottom: "var(--space-4)",
-            }}
-          >
-            Tuỳ chỉnh “ngôn ngữ” riêng cho cộng đồng của bạn: chủ đề (pillars),
-            vai trò thành viên (classes), đồng điểm (currency), các bậc level
-            (tiers). Mỗi cộng đồng có taxonomy riêng, không bị ảnh hưởng bởi
-            cộng đồng khác.
-          </div>
+          {isOwner && (
+            <>
+              <div
+                style={{
+                  fontSize: "var(--text-xl)",
+                  fontWeight: 700,
+                  color: "var(--header-primary)",
+                  padding: "var(--space-6) 0 var(--space-3)",
+                  borderTop: "1px solid var(--border-subtle)",
+                  marginTop: "var(--space-4)",
+                }}
+              >
+                Concept
+              </div>
+              <div
+                style={{
+                  fontSize: "var(--text-sm)",
+                  color: "var(--text-muted)",
+                  marginBottom: "var(--space-4)",
+                }}
+              >
+                {`Tuỳ chỉnh "ngôn ngữ" riêng cho cộng đồng của bạn: chủ đề (pillars), vai trò thành viên (classes), đồng điểm (currency), các bậc level (tiers). Mỗi cộng đồng có taxonomy riêng, không bị ảnh hưởng bởi cộng đồng khác.`}
+              </div>
 
-          <PillarsEditor
-            communityId={community.id}
-            communitySlug={slug}
-            initial={pillars}
-            disabled={!isOwner}
-          />
-          <ClassesEditor
-            communityId={community.id}
-            communitySlug={slug}
-            initial={classes}
-            disabled={!isOwner}
-          />
-          <CurrencyEditor
-            communityId={community.id}
-            communitySlug={slug}
-            initial={currency}
-            disabled={!isOwner}
-          />
-          <LevelsEditor
-            communityId={community.id}
-            communitySlug={slug}
-            initial={tiers}
-            disabled={!isOwner}
-          />
+              <PillarsEditor
+                communityId={community.id}
+                communitySlug={slug}
+                initial={pillars}
+              />
+              <ClassesEditor
+                communityId={community.id}
+                communitySlug={slug}
+                initial={classes}
+              />
+              <CurrencyEditor
+                communityId={community.id}
+                communitySlug={slug}
+                initial={currency}
+              />
+              <LevelsEditor
+                communityId={community.id}
+                communitySlug={slug}
+                initial={tiers}
+              />
 
-          <div
-            style={{
-              fontSize: "var(--text-xl)",
-              fontWeight: 700,
-              color: "var(--header-primary)",
-              padding: "var(--space-6) 0 var(--space-3)",
-              borderTop: "1px solid var(--border-subtle)",
-              marginTop: "var(--space-4)",
-            }}
-          >
-            Subscription Tiers
-          </div>
-          <TiersEditor
-            tiers={subscriptionTiers}
-            communityId={community.id}
-            communitySlug={slug}
-            disabled={!isOwner}
-          />
+              <div
+                style={{
+                  fontSize: "var(--text-xl)",
+                  fontWeight: 700,
+                  color: "var(--header-primary)",
+                  padding: "var(--space-6) 0 var(--space-3)",
+                  borderTop: "1px solid var(--border-subtle)",
+                  marginTop: "var(--space-4)",
+                }}
+              >
+                Subscription Tiers
+              </div>
+              <TiersEditor
+                tiers={subscriptionTiers}
+                communityId={community.id}
+                communitySlug={slug}
+              />
+            </>
+          )}
 
           <div
             style={{

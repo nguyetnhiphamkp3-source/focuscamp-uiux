@@ -123,7 +123,7 @@ export default async function CommunityHomePage({
                 {community.posts.map((post) => (
                   <Link
                     key={post.id}
-                    href={`/c/${slug}/feed/p/${post.id}`}
+                    href={`/c/${slug}/p/${post.id}`}
                     style={{ textDecoration: "none", color: "inherit" }}
                   >
                     <div

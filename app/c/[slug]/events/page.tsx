@@ -31,12 +31,14 @@ export default async function EventsListPage({
   });
   if (!community) notFound();
   const realIsOwner = session?.user?.id === community.ownerId;
-  const { effectiveIsOwner: isOwner } = await getEffectiveOwnership(realIsOwner);
+  const { effectiveIsOwner: isOwner, previewAsMember } = await getEffectiveOwnership(realIsOwner);
   const role = effectiveCommunityRole({
     isOwner,
-    membershipRole: Array.isArray(community.memberships)
-      ? community.memberships[0]?.role
-      : null,
+    membershipRole: previewAsMember
+      ? null
+      : Array.isArray(community.memberships)
+        ? community.memberships[0]?.role
+        : null,
   });
   const canCreateEvent = canCommunity(role, "manage_events");
 
