@@ -282,20 +282,16 @@ export default async function ChallengeDetailPage({
     effectivePrice = calculateEffectivePrice(pricingConfig, { isMember: false, tierKey: null, aipBalance: 0 });
   }
 
-  const dayNow = myMembership?.completedAt
-    ? challenge.requiredDays
-    : myMembership?.personalStartsAt
-      ? Math.min(
-          challenge.requiredDays,
-          Math.max(
-            1,
-            Math.floor(
-              (Date.now() - myMembership.personalStartsAt.getTime()) /
-                (1000 * 60 * 60 * 24)
-            ) + 1
-          )
-        )
-      : 0;
+  const dayNow = (() => {
+    if (myMembership?.completedAt) return challenge.requiredDays;
+    if (!myMembership?.personalStartsAt) return 0;
+    const startDay = new Date(myMembership.personalStartsAt);
+    startDay.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const elapsedDays = Math.floor((today.getTime() - startDay.getTime()) / (1000 * 60 * 60 * 24));
+    return Math.min(challenge.requiredDays, Math.max(1, elapsedDays + 1));
+  })();
 
   // Compute per-task unlock status based on taskUnlockMode
   const unlockMode = challenge.taskUnlockMode ?? "DAILY";
@@ -523,13 +519,7 @@ export default async function ChallengeDetailPage({
             <>
               {/* Missed day warning */}
               {(() => {
-                const elapsed = myMembership.personalStartsAt
-                  ? Math.floor(
-                      (Date.now() - myMembership.personalStartsAt.getTime()) /
-                        (1000 * 60 * 60 * 24)
-                    ) + 1
-                  : 1;
-                const currentDay = Math.min(challenge.requiredDays, Math.max(1, elapsed));
+                const currentDay = dayNow;
                 let missed = 0;
                 for (let d = 1; d < currentDay; d++) {
                   if (!doneDayNumbers.has(d)) missed++;
