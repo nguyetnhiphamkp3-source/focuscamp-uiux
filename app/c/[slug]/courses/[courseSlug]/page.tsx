@@ -210,90 +210,59 @@ export default async function CourseDetailPage({
             </div>
           ) : null}
 
-          {/* MOBILE LESSON LIST — visible only when right sidebar is hidden */}
-          {course.lessons.length > 1 && (
-            <details className="mobile-lesson-list" style={{ marginBottom: "var(--space-4)" }}>
-              <summary
-                style={{
-                  cursor: "pointer",
-                  fontSize: "var(--text-sm)",
-                  fontWeight: 600,
-                  color: "var(--text-heading)",
-                  padding: "var(--space-3)",
-                  background: "var(--bg-elevated)",
-                  borderRadius: "var(--r-md)",
-                  border: "1px solid var(--border-subtle)",
-                  listStyle: "none",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <span>📋 Danh sách bài học ({completedSet.size}/{course.lessons.length})</span>
-                <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>▼</span>
-              </summary>
-              <div
-                style={{
-                  marginTop: "var(--space-2)",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "var(--space-1)",
-                }}
-              >
-                {course.lessons.map((l, i) => {
-                  const isActive = activeLesson?.id === l.id;
-                  const isCompleted = completedSet.has(l.id);
-                  return (
-                    <a
-                      key={l.id}
-                      href={`/c/${slug}/courses/${courseSlug}?lessonId=${l.id}`}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "var(--space-2)",
-                        padding: "var(--space-2) var(--space-3)",
-                        borderRadius: "var(--r-md)",
-                        background: isActive ? "var(--bg-modifier-active)" : "transparent",
-                        textDecoration: "none",
-                        color: "inherit",
-                        fontSize: "var(--text-sm)",
-                      }}
-                    >
-                      <span
-                        style={{
-                          width: 22,
-                          height: 22,
-                          borderRadius: "var(--r-full)",
-                          background: isCompleted ? "var(--brand-green)" : "var(--bg-elevated)",
-                          color: isCompleted ? "#fff" : "var(--text-muted)",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: "var(--text-xs)",
-                          fontWeight: 700,
-                          flexShrink: 0,
-                        }}
+          {/* MOBILE LESSON NAV — pill bar + prev/next, visible only < 1024px */}
+          {course.lessons.length > 1 && (() => {
+            const activeIdx = course.lessons.findIndex((l) => l.id === activeLesson?.id);
+            const prevLesson = activeIdx > 0 ? course.lessons[activeIdx - 1] : null;
+            const nextLesson = activeIdx < course.lessons.length - 1 ? course.lessons[activeIdx + 1] : null;
+            return (
+              <div className="mobile-lesson-list" style={{ marginBottom: "var(--space-4)" }}>
+                {/* Pill bar */}
+                <div className="mobile-lesson-pills">
+                  {course.lessons.map((l, i) => {
+                    const isActive = activeLesson?.id === l.id;
+                    const isCompleted = completedSet.has(l.id);
+                    return (
+                      <a
+                        key={l.id}
+                        href={`/c/${slug}/courses/${courseSlug}?lessonId=${l.id}`}
+                        className={`mobile-lesson-pill${isActive ? " active" : ""}${isCompleted ? " completed" : ""}`}
+                        title={l.title}
                       >
                         {isCompleted ? "✓" : i + 1}
-                      </span>
-                      <span
-                        style={{
-                          flex: 1,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                          fontWeight: isActive ? 700 : 400,
-                          color: isActive ? "var(--text-heading)" : "var(--text-normal)",
-                        }}
-                      >
-                        {l.title}
-                      </span>
+                      </a>
+                    );
+                  })}
+                </div>
+                {/* Prev / Next */}
+                <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
+                  {prevLesson ? (
+                    <a
+                      href={`/c/${slug}/courses/${courseSlug}?lessonId=${prevLesson.id}`}
+                      className="mobile-lesson-nav-btn"
+                    >
+                      ← Bài trước
                     </a>
-                  );
-                })}
+                  ) : (
+                    <span className="mobile-lesson-nav-btn disabled">← Bài trước</span>
+                  )}
+                  <span style={{ flex: 1, textAlign: "center", fontSize: "var(--text-xs)", color: "var(--text-muted)", alignSelf: "center" }}>
+                    Bài {activeIdx + 1}/{course.lessons.length}
+                  </span>
+                  {nextLesson ? (
+                    <a
+                      href={`/c/${slug}/courses/${courseSlug}?lessonId=${nextLesson.id}`}
+                      className="mobile-lesson-nav-btn"
+                    >
+                      Bài tiếp →
+                    </a>
+                  ) : (
+                    <span className="mobile-lesson-nav-btn disabled">Bài tiếp →</span>
+                  )}
+                </div>
               </div>
-            </details>
-          )}
+            );
+          })()}
 
           {/* TITLE */}
           <h1
