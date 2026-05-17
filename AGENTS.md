@@ -145,12 +145,16 @@ TODO: chuyển sang Upstash Redis khi scale multi-instance.
 
 ## ⚠️ Community Image Changes
 
-KHÔNG thay đổi `iconUrl`, `bannerUrl` trực tiếp trong database hoặc qua Prisma script.
+Khi user yêu cầu AI đổi hình community (`iconUrl`, `bannerUrl`), PHẢI đi đúng flow:
 
-Lý do:
-- Hình ảnh phải được upload lên R2 thông qua UI website (Settings → Community Info)
-- Thay đổi URL trực tiếp sẽ KHÔNG upload file lên R2 → hình có thể mất bất cứ lúc nào hoặc không đồng bộ giữa discovery page và community page
-- File served từ server, không phải từ URL bên ngoài — chỉ có flow upload qua UI mới đảm bảo file thực sự tồn tại trên R2
+1. **Download** hình từ URL user cung cấp
+2. **Convert sang .webp** bằng `sharp` (quality 80) — giống logic trong `app/api/upload/route.ts`
+3. **Upload lên R2** qua `uploadFile()` từ `lib/storage.ts` với key format: `community/<userId>/<timestamp>-<rand>.webp`
+4. **Update DB** với public URL trả về từ R2
 
-Nếu user yêu cầu đổi hình community → hướng dẫn họ vào: `/c/<slug>/settings` → phần "Community Info" → upload hình mới.
-Đây là thao tác đơn giản trên UI, không cần AI hỗ trợ.
+KHÔNG được:
+- Ghi URL bên ngoài (imgur, discord CDN, google drive…) trực tiếp vào DB — file phải nằm trên R2
+- Bỏ qua bước convert webp
+- Dùng URL cũ mà không verify file tồn tại trên R2
+
+Nếu không có quyền truy cập server/R2 credentials → hướng dẫn user vào UI: `/c/<slug>/settings` → "Community Info" → upload hình mới. Đây là thao tác đơn giản trên UI, không cần AI hỗ trợ.
