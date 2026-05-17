@@ -2,7 +2,7 @@
 
 FROM node:20-alpine AS base
 RUN apk add --no-cache libc6-compat openssl
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@10.24.0 --activate
 WORKDIR /app
 
 # ---- deps ----
