@@ -317,6 +317,13 @@ export default async function ChallengeDetailPage({
         for (let i = 0; i < taskIndex; i++) {
           cumulativeHours += tasks[i].unlockAfterHours ?? defaultInterval;
         }
+        // For whole-day intervals, compare against midnight-normalized dayNow
+        // so unlock is consistent with the displayed day number.
+        const unlockAfterDays = cumulativeHours / 24;
+        if (Number.isInteger(unlockAfterDays)) {
+          return dayNow > unlockAfterDays;
+        }
+        // Non-whole-day intervals: fall back to raw timestamp comparison
         const unlockTime = personalStart + cumulativeHours * 60 * 60 * 1000;
         return Date.now() >= unlockTime;
       }
