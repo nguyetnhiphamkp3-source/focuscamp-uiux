@@ -130,7 +130,7 @@ export default async function EventsListPage({
                           marginTop: 4,
                         }}
                       >
-                        🗓 {startsAt.toLocaleString("vi-VN", { dateStyle: "medium", timeStyle: "short" })}
+                        🗓 {`${startsAt.getDate().toString().padStart(2, "0")}/${(startsAt.getMonth() + 1).toString().padStart(2, "0")}/${startsAt.getFullYear()} ${startsAt.getHours().toString().padStart(2, "0")}:${startsAt.getMinutes().toString().padStart(2, "0")}`}
                         {" · "}⏱ {e.durationMin}p
                         {" · "}👥 {e._count.bookings}/{e.capacity}
                       </div>

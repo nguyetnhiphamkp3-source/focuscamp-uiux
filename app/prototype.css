@@ -5800,6 +5800,31 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
   }
 }
 
+/* Discovery hero — stack on mobile */
+@media (max-width: 767.98px) {
+  .dc-hero { flex-direction: column; align-items: stretch; padding: 20px; }
+  .dc-hero-stats { gap: 12px; }
+}
+
+/* Feed post actions — hide overflow actions on mobile */
+@media (max-width: 767.98px) {
+  .feed-post-actions { gap: 12px; }
+  .feed-post-actions .feed-action-overflow { display: none; }
+}
+
+/* Courses filters — horizontal scroll on mobile */
+@media (max-width: 767.98px) {
+  .cl-filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+  }
+  .cl-filters::-webkit-scrollbar { display: none; }
+  .cl-filter { white-space: nowrap; flex-shrink: 0; }
+}
+
 /* Very small (<480px): tighten further */
 @media (max-width: 479.98px) {
   .pf-inner {

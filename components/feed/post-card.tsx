@@ -155,14 +155,16 @@ export function PostCard({
           💬 {post.commentCount} bình luận
         </Link>
         {currentUserId && (
-          <BookmarkButton
-            postId={post.id}
-            communitySlug={communitySlug}
-            initialBookmarked={post.bookmarkedByMe ?? false}
-          />
+          <span className="feed-action-overflow">
+            <BookmarkButton
+              postId={post.id}
+              communitySlug={communitySlug}
+              initialBookmarked={post.bookmarkedByMe ?? false}
+            />
+          </span>
         )}
         {canEditCot && (
-          <>
+          <span className="feed-action-overflow">
             <PinToggleButton
               postId={post.id}
               communitySlug={communitySlug}
@@ -173,9 +175,11 @@ export function PostCard({
               communitySlug={communitySlug}
               initialIsCot={post.isCot}
             />
-          </>
+          </span>
         )}
-        <ShareButton communitySlug={communitySlug} postId={post.id} />
+        <span className="feed-action-overflow">
+          <ShareButton communitySlug={communitySlug} postId={post.id} />
+        </span>
         <PostMenu
           postId={post.id}
           communitySlug={communitySlug}

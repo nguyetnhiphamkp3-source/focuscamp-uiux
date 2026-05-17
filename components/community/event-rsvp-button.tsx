@@ -68,8 +68,8 @@ export function EventRsvpButton({
           : full
             ? "Đã đủ chỗ"
             : isFree
-              ? "RSVP"
-              : `Book — ${fmtVnd(priceVnd)}đ`}
+              ? "Đăng ký"
+              : `Đăng ký — ${fmtVnd(priceVnd)}đ`}
       </button>
       {error && (
         <span
