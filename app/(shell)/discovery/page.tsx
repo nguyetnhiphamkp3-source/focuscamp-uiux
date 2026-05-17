@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { getOnlineCounts } from "@/lib/presence";
 import { DiscoveryFilters } from "@/components/discovery/discovery-filters";
 import { BRAND_GRADIENTS as BANNER_GRADIENTS, initials } from "@/lib/brand";
 
@@ -154,6 +155,12 @@ export default async function DiscoveryPage({
       verifiedCount: verifiedCommunityCount,
       verifiedCommunityWhere,
       unverifiedCommunityWhere,
+    }).then(async (rows) => {
+      const onlineCounts = await getOnlineCounts();
+      return rows.map((c) => ({
+        ...c,
+        onlineCount: onlineCounts.get(c.id) ?? 0,
+      }));
     }),
     prisma.challenge.findMany({
       take: DISCOVERY_PAGE_SIZE,
