@@ -140,3 +140,17 @@ TODO: chuyển sang Upstash Redis khi scale multi-instance.
 ## Deploy
 - Push main → GitHub Actions SSH vào VPS → `git pull && docker compose up -d --build`
 - Sau khi code deploy ổn, chạy 1 lần `bash scripts/init-prisma-migrations.sh` trong container để chuyển sang migration-based DB management.
+
+---
+
+## ⚠️ Community Image Changes
+
+KHÔNG thay đổi `iconUrl`, `bannerUrl` trực tiếp trong database hoặc qua Prisma script.
+
+Lý do:
+- Hình ảnh phải được upload lên R2 thông qua UI website (Settings → Community Info)
+- Thay đổi URL trực tiếp sẽ KHÔNG upload file lên R2 → hình có thể mất bất cứ lúc nào hoặc không đồng bộ giữa discovery page và community page
+- File served từ server, không phải từ URL bên ngoài — chỉ có flow upload qua UI mới đảm bảo file thực sự tồn tại trên R2
+
+Nếu user yêu cầu đổi hình community → hướng dẫn họ vào: `/c/<slug>/settings` → phần "Community Info" → upload hình mới.
+Đây là thao tác đơn giản trên UI, không cần AI hỗ trợ.

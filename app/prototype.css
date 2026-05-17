@@ -4632,7 +4632,8 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
 }
 
 .dc-community-body { padding: 14px; }
-.dc-community-name { font-size: var(--text-md); font-weight: 700; color: var(--header-primary); font-family: var(--font-heading); margin-bottom: 4px; }
+.dc-community-name { font-size: var(--text-md); font-weight: 700; color: var(--header-primary); font-family: var(--font-heading); margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+.dc-community-icon { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
 .dc-community-desc { font-size: var(--text-sm); color: var(--text-muted); line-height: 1.5; margin-bottom: 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .dc-community-stats { display: flex; align-items: center; gap: 10px; font-size: var(--text-sm); color: var(--text-muted); }
 .dc-community-stats .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--online-green); }

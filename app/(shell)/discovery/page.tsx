@@ -258,7 +258,16 @@ export default async function DiscoveryPage({
                       <span className={`dc-community-badge ${badge}`}>{badgeLabel}</span>
                     </div>
                     <div className="dc-community-body">
-                      <div className="dc-community-name">{c.name}</div>
+                      <div className="dc-community-name">
+                        {c.iconUrl && (
+                          <img
+                            src={c.iconUrl}
+                            alt=""
+                            className="dc-community-icon"
+                          />
+                        )}
+                        {c.name}
+                      </div>
                       <div className="dc-community-desc">
                         {c.tagline || c.description || "Community trên focus.camp."}
                       </div>
