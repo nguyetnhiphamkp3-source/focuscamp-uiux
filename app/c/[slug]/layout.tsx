@@ -10,6 +10,7 @@ import { ShortcutSheet } from "@/components/shell/shortcut-sheet";
 import { CommunityHeader } from "@/components/shell/community-header";
 import { FeatureUnreadBadge } from "@/components/community/feature-unread-badge";
 import { MobileBottomNav } from "@/components/shell/mobile-bottom-nav";
+import { PresenceHeartbeat } from "@/components/shell/presence-heartbeat";
 import { unreadCount } from "@/lib/services/notification";
 import {
   getUiConfig,
@@ -270,6 +271,7 @@ export default async function CommunityLayout({
       {rightSidebar}
       <KeyboardShortcuts />
       <ShortcutSheet />
+      {session && <PresenceHeartbeat communityId={community.id} />}
       <MobileBottomNav
         notifUnread={notifUnread}
         profileHref={`/c/${slug}/profile`}

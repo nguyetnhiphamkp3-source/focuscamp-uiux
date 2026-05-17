@@ -27,6 +27,10 @@ export const notificationQueue = connection
   ? new Queue("notifications", { connection })
   : null;
 
+export const presenceQueue = connection
+  ? new Queue("presence-sync", { connection })
+  : null;
+
 /* ===== Job dispatch helpers ===== */
 
 export type BadgeJobData = {
@@ -114,5 +118,39 @@ export function startWorkers(): void {
     { connection, concurrency: 5 },
   );
 
-  logger.info("[queue] workers started (badges, notifications)");
+  // Presence sync worker — updates community.onlineCount every 60s
+  if (presenceQueue) {
+    presenceQueue.upsertJobScheduler("presence-sync", { every: 60_000 });
+    new Worker(
+      "presence-sync",
+      async () => {
+        const { getOnlineCounts } = await import("./presence");
+        const { prisma } = await import("./prisma");
+        const counts = await getOnlineCounts();
+
+        // Update communities with active users
+        const updates = [...counts.entries()].map(([id, count]) =>
+          prisma.community.updateMany({
+            where: { id },
+            data: { onlineCount: count },
+          }),
+        );
+
+        // Reset communities that are no longer active
+        const activeIds = [...counts.keys()];
+        const resetInactive = prisma.community.updateMany({
+          where: {
+            onlineCount: { gt: 0 },
+            ...(activeIds.length > 0 ? { id: { notIn: activeIds } } : {}),
+          },
+          data: { onlineCount: 0 },
+        });
+
+        await Promise.all([...updates, resetInactive]);
+      },
+      { connection, concurrency: 1 },
+    );
+  }
+
+  logger.info("[queue] workers started (badges, notifications, presence-sync)");
 }
