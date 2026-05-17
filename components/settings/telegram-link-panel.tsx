@@ -6,6 +6,7 @@ import {
   generateTelegramPairCodeAction,
   unlinkTelegramAction,
 } from "@/app/actions/telegram-link";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
 
 export function TelegramLinkPanel({
   initial,
@@ -33,8 +34,14 @@ export function TelegramLinkPanel({
     });
   }
 
+  const [showUnlinkConfirm, setShowUnlinkConfirm] = useState(false);
+
   function unlink() {
-    if (!confirm("Huỷ liên kết Telegram? Bot sẽ không nhớ ngữ cảnh của bạn nữa.")) return;
+    setShowUnlinkConfirm(true);
+  }
+
+  function confirmUnlink() {
+    setShowUnlinkConfirm(false);
     start(async () => {
       const res = await unlinkTelegramAction();
       if (res.ok) {
@@ -55,6 +62,16 @@ export function TelegramLinkPanel({
   }
 
   return (
+    <>
+    <ConfirmModal
+      open={showUnlinkConfirm}
+      title="Huỷ liên kết Telegram"
+      message="Huỷ liên kết Telegram? Bot sẽ không nhớ ngữ cảnh của bạn nữa."
+      confirmLabel="Huỷ liên kết"
+      danger
+      onConfirm={confirmUnlink}
+      onCancel={() => setShowUnlinkConfirm(false)}
+    />
     <section
       className="ui-card ui-card-lg"
       style={{ marginBottom: "var(--space-4)" }}
@@ -211,5 +228,6 @@ export function TelegramLinkPanel({
         </div>
       )}
     </section>
+    </>
   );
 }

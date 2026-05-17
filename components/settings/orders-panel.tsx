@@ -6,6 +6,7 @@ import { rowCard, SectionHeader } from "./editor-shared";
 import { fmtVnd, avatarColorFor, initials, fmtRelativeTime } from "@/lib/brand";
 import type { OrderRow } from "@/lib/services/community-orders";
 import { approveOrderAction, approvePaymentAction } from "@/app/actions/orders";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
 
 interface OrdersPanelProps {
   orders: OrderRow[];
@@ -78,11 +79,12 @@ function StatusBadge({ status }: { status: string }) {
 function ApproveButton({ order, communitySlug }: { order: OrderRow; communitySlug: string }) {
   const [pending, startTransition] = useTransition();
   const [done, setDone] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   if (done) return <span style={{ fontSize: "var(--text-xs)", color: "var(--success)", fontWeight: 600 }}>Đã duyệt ✓</span>;
 
-  const handleApprove = () => {
-    if (!confirm("Duyệt thủ công đơn hàng này?")) return;
+  function confirmApprove() {
+    setShowConfirm(false);
     startTransition(async () => {
       let res;
       if (order.orderType === "product" && order.purchaseId) {
@@ -93,16 +95,26 @@ function ApproveButton({ order, communitySlug }: { order: OrderRow; communitySlu
       if (res.ok) setDone(true);
       else alert("Lỗi: " + res.reason);
     });
-  };
+  }
 
   return (
-    <button
-      disabled={pending}
-      onClick={handleApprove}
-      style={{ fontSize: "var(--text-xs)", fontWeight: 600, padding: "3px 10px", borderRadius: 5, border: "1px solid var(--brand-green)", background: "transparent", color: "var(--brand-green)", cursor: pending ? "not-allowed" : "pointer", opacity: pending ? 0.6 : 1 }}
-    >
-      {pending ? "Đang duyệt…" : "Duyệt"}
-    </button>
+    <>
+      <ConfirmModal
+        open={showConfirm}
+        title="Duyệt đơn hàng"
+        message="Duyệt thủ công đơn hàng này?"
+        confirmLabel="Duyệt"
+        onConfirm={confirmApprove}
+        onCancel={() => setShowConfirm(false)}
+      />
+      <button
+        disabled={pending}
+        onClick={() => setShowConfirm(true)}
+        style={{ fontSize: "var(--text-xs)", fontWeight: 600, padding: "3px 10px", borderRadius: 5, border: "1px solid var(--brand-green)", background: "transparent", color: "var(--brand-green)", cursor: pending ? "not-allowed" : "pointer", opacity: pending ? 0.6 : 1 }}
+      >
+        {pending ? "Đang duyệt…" : "Duyệt"}
+      </button>
+    </>
   );
 }
 

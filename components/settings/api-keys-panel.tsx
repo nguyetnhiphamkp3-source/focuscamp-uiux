@@ -6,6 +6,7 @@ import {
   createApiKeyAction,
   revokeApiKeyAction,
 } from "@/app/actions/api-keys";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
 import {
   inputStyle,
   btnPrimary,
@@ -42,6 +43,7 @@ export function ApiKeysPanel({
   const [err, setErr] = useState<string | null>(null);
   const [revealedPlain, setRevealedPlain] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [revokeTargetId, setRevokeTargetId] = useState<string | null>(null);
 
   function generate() {
     setErr(null);
@@ -65,7 +67,13 @@ export function ApiKeysPanel({
   }
 
   function revoke(id: string) {
-    if (!confirm("Revoke key này? Hành động không thể undo.")) return;
+    setRevokeTargetId(id);
+  }
+
+  function confirmRevoke() {
+    if (!revokeTargetId) return;
+    const id = revokeTargetId;
+    setRevokeTargetId(null);
     start(async () => {
       const res = await revokeApiKeyAction({
         communityId,
@@ -90,6 +98,15 @@ export function ApiKeysPanel({
       className="ui-card ui-card-lg"
       style={{ marginBottom: "var(--space-4)" }}
     >
+      <ConfirmModal
+        open={revokeTargetId !== null}
+        title="Revoke API Key"
+        message="Revoke key này? Hành động không thể undo."
+        confirmLabel="Revoke"
+        danger
+        onConfirm={confirmRevoke}
+        onCancel={() => setRevokeTargetId(null)}
+      />
       <SectionHeader
         title="API Keys (MCP)"
         subtitle="Key cho phép agent ngoài (vd goclaw.sh) đọc + thực thi action trên cộng đồng này. Plaintext chỉ hiện 1 lần — nhớ copy lưu chỗ an toàn."

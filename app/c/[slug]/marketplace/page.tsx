@@ -10,6 +10,7 @@ import { CreateProductButton } from "@/components/community/create-product-butto
 import { FeaturedGlobalToggle } from "@/components/marketplace/featured-global-toggle";
 import { MarketplaceFilters } from "@/components/community/marketplace-filters";
 import { getEffectiveOwnership } from "@/lib/preview-mode";
+import { effectiveCommunityRole } from "@/lib/community-permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,16 @@ export default async function MarketplacePage({
   if (!community) notFound();
   const realIsOwner = session?.user?.id === community.ownerId;
   const { effectiveIsOwner: isOwner } = await getEffectiveOwnership(realIsOwner);
+
+  // Check if user is admin (for stats visibility)
+  const membership = session?.user?.id && !realIsOwner
+    ? await prisma.membership.findUnique({
+        where: { userId_communityId: { userId: session.user.id, communityId: community.id } },
+        select: { role: true },
+      })
+    : null;
+  const role = effectiveCommunityRole({ isOwner: realIsOwner, membershipRole: membership?.role });
+  const canSeeStats = isOwner || role === "ADMIN";
 
   const productWhere: Record<string, unknown> = { communityId: community.id };
   if (!isOwner) productWhere.isVisible = true;
@@ -95,13 +106,15 @@ export default async function MarketplacePage({
             </div>
           </div>
 
-          {/* Stats */}
-          <div className="mk-stats">
-            <StatCard icon="⚔️" label="Challenges" value={String(paidChallenges.length)} sub="đang mở" />
-            <StatCard icon="📦" label="Items" value={String(community._count.products)} sub="trong shop" />
-            <StatCard icon="🛍️" label="Purchases" value={fmtVnd(totalSales)} sub="đơn" />
-            <StatCard icon="💰" label="Volume" value={`${fmtVnd(totalVolume)}đ`} sub="doanh thu" />
-          </div>
+          {/* Stats — only visible to owner/admin */}
+          {canSeeStats && (
+            <div className="mk-stats">
+              <StatCard icon="⚔️" label="Challenges" value={String(paidChallenges.length)} sub="đang mở" />
+              <StatCard icon="📦" label="Items" value={String(community._count.products)} sub="trong shop" />
+              <StatCard icon="🛍️" label="Purchases" value={fmtVnd(totalSales)} sub="đơn" />
+              <StatCard icon="💰" label="Volume" value={`${fmtVnd(totalVolume)}đ`} sub="doanh thu" />
+            </div>
+          )}
 
           {/* ===== CHALLENGES — flagship section ===== */}
           {paidChallenges.length > 0 && (

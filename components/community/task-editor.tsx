@@ -7,6 +7,7 @@ import {
   updateTaskAction,
   deleteTaskAction,
 } from "@/app/actions/challenge-review";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
 
 /**
  * Admin-only inline task editor. Tiny '✎' button on each task row; opens
@@ -49,8 +50,14 @@ export function TaskEditorButton({
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   function deleteTask() {
-    if (!confirm("Xoá task này? Submission liên quan cũng sẽ mất liên kết.")) return;
+    setShowDeleteConfirm(true);
+  }
+
+  function confirmDeleteTask() {
+    setShowDeleteConfirm(false);
     setErr(null);
     start(async () => {
       const res = await deleteTaskAction({
@@ -94,6 +101,16 @@ export function TaskEditorButton({
 
   return (
     <>
+      <ConfirmModal
+        open={showDeleteConfirm}
+        title="Xoá task"
+        message="Xoá task này? Submission liên quan cũng sẽ mất liên kết."
+        confirmLabel="Xoá"
+        danger
+        onConfirm={confirmDeleteTask}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
+
       <button
         type="button"
         onClick={(e) => {

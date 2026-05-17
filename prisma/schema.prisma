@@ -137,6 +137,7 @@ model Community {
 
   category         String?
   featuredOnGlobal Boolean @default(false)
+  slugChangedAt    DateTime?
   introVideoUrl    String?
   introGallery     Json?
 

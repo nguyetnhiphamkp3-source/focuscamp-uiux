@@ -15,6 +15,7 @@ import {
   tierForLevel,
 } from "@/lib/community-config";
 import { SectionHeader, btnDanger, ErrorBox } from "./editor-shared";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
 
 export type MemberRow = {
   userId: string;
@@ -57,6 +58,7 @@ export function MembersEditor({
   const [q, setQ] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  const [removingMember, setRemovingMember] = useState<MemberRow | null>(null);
   const router = useRouter();
 
   const filtered = members.filter((m) => {
@@ -84,12 +86,13 @@ export function MembersEditor({
   }
 
   function removeOne(m: MemberRow) {
-    if (
-      !confirm(
-        `Xoá thành viên "${m.user.name ?? m.user.email}" khỏi cộng đồng?\nHọ sẽ mất membership + streak + level ở community này.`
-      )
-    )
-      return;
+    setRemovingMember(m);
+  }
+
+  function confirmRemove() {
+    if (!removingMember) return;
+    const m = removingMember;
+    setRemovingMember(null);
     setErr(null);
     start(async () => {
       const res = await removeMemberAction({
@@ -309,6 +312,16 @@ export function MembersEditor({
       )}
 
       <ErrorBox msg={err} />
+
+      <ConfirmModal
+        open={!!removingMember}
+        title="Xoá thành viên"
+        message={removingMember ? `Xoá thành viên "${removingMember.user.name ?? removingMember.user.email}" khỏi cộng đồng?\nHọ sẽ mất membership + streak + level ở community này.` : ""}
+        confirmLabel="Xoá"
+        danger
+        onConfirm={confirmRemove}
+        onCancel={() => setRemovingMember(null)}
+      />
 
       {total > members.length && (
         <div

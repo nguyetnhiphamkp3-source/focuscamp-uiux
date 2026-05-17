@@ -9,6 +9,7 @@ import {
   initials,
   fmtRelativeTime,
 } from "@/lib/brand";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
 import {
   markBestAnswerAction,
   deleteCommentAction,
@@ -83,8 +84,14 @@ export function CommentItem({
     });
   }
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   function onDelete() {
-    if (!confirm("Xoá comment này? (Các trả lời bên dưới cũng sẽ xoá)")) return;
+    setShowDeleteConfirm(true);
+  }
+
+  function confirmDelete() {
+    setShowDeleteConfirm(false);
     setErr(null);
     start(async () => {
       const res = await deleteCommentAction({
@@ -467,6 +474,16 @@ export function CommentItem({
           )}
         </div>
       </div>
+
+      <ConfirmModal
+        open={showDeleteConfirm}
+        title="Xoá comment"
+        message="Xoá comment này? Các trả lời bên dưới cũng sẽ bị xoá."
+        confirmLabel="Xoá"
+        danger
+        onConfirm={confirmDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
 
       {replies.length > 0 && (
         <div

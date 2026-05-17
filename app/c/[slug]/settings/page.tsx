@@ -34,6 +34,7 @@ import { getPlanStatus } from "@/lib/platform-plans";
 import { getTiersConfig } from "@/lib/services/subscription";
 import { listMembers } from "@/lib/services/community-settings";
 import { DangerZone } from "@/components/settings/danger-zone";
+import { SlugChangeEditor } from "@/components/settings/slug-change-editor";
 
 export const dynamic = "force-dynamic";
 
@@ -131,6 +132,14 @@ export default async function SettingsPage({
                 introVideoUrl: community.introVideoUrl,
                 introGallery: community.introGallery,
               }}
+            />
+          )}
+
+          {isOwner && (
+            <SlugChangeEditor
+              communityId={community.id}
+              currentSlug={slug}
+              slugChangedAt={community.slugChangedAt}
             />
           )}
 

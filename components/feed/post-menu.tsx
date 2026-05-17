@@ -7,6 +7,7 @@ import {
   updatePostAction,
 } from "@/app/actions/posts";
 import { ImageUploadField } from "@/components/shared/image-upload-field";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
 import type { PillarConfig } from "@/lib/community-config";
 
 /**
@@ -59,8 +60,14 @@ export function PostMenu({
     return () => document.removeEventListener("click", onClick);
   }, [open]);
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   function onDelete() {
-    if (!confirm("Xoá bài viết này? Toàn bộ comment + reaction cũng sẽ mất.")) return;
+    setShowDeleteConfirm(true);
+  }
+
+  function confirmDelete() {
+    setShowDeleteConfirm(false);
     setErr(null);
     start(async () => {
       const res = await deletePostAction({
@@ -166,6 +173,16 @@ export function PostMenu({
           {err}
         </div>
       )}
+
+      <ConfirmModal
+        open={showDeleteConfirm}
+        title="Xoá bài viết"
+        message="Xoá bài viết này? Toàn bộ comment + reaction cũng sẽ mất."
+        confirmLabel="Xoá"
+        danger
+        onConfirm={confirmDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
 
       {editing && (
         <div

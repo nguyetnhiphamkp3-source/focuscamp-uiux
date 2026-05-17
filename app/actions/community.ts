@@ -251,3 +251,63 @@ export async function updateCommunityInfoAction(input: {
     return { ok: false, reason: "unknown" };
   }
 }
+
+const SLUG_COOLDOWN_MS = 6 * 30 * 24 * 60 * 60 * 1000; // ~6 months
+const RESERVED_SLUGS = ["admin", "settings", "new", "null", "undefined", "api", "support", "help", "login", "signup"];
+
+export async function changeCommunitySlugAction(input: {
+  communityId: string;
+  newSlug: string;
+}): Promise<{ ok: true; newSlug: string } | { ok: false; reason: string }> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+
+  const slug = input.newSlug
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+
+  if (!slug || slug.length < 3 || slug.length > 60) {
+    return { ok: false, reason: "Slug phải từ 3-60 ký tự (a-z, 0-9, dấu gạch ngang)" };
+  }
+
+  if (RESERVED_SLUGS.includes(slug)) {
+    return { ok: false, reason: "URL này đã được bảo lưu bởi hệ thống" };
+  }
+
+  const community = await prisma.community.findUnique({
+    where: { id: input.communityId },
+    select: { ownerId: true, slug: true, slugChangedAt: true },
+  });
+  if (!community) return { ok: false, reason: "Community không tồn tại" };
+  if (community.ownerId !== s.user.id) return { ok: false, reason: "Chỉ owner mới được đổi URL" };
+  if (community.slug === slug) return { ok: false, reason: "Slug mới trùng slug hiện tại" };
+
+  if (community.slugChangedAt) {
+    const elapsed = Date.now() - community.slugChangedAt.getTime();
+    if (elapsed < SLUG_COOLDOWN_MS) {
+      const remainDays = Math.ceil((SLUG_COOLDOWN_MS - elapsed) / (24 * 60 * 60 * 1000));
+      return { ok: false, reason: `Bạn chỉ được đổi URL mỗi 6 tháng. Còn ${remainDays} ngày nữa.` };
+    }
+  }
+
+  const existing = await prisma.community.findUnique({ where: { slug } });
+  if (existing) return { ok: false, reason: "URL này đã được sử dụng" };
+
+  try {
+    await prisma.community.update({
+      where: { id: input.communityId },
+      data: { slug, slugChangedAt: new Date() },
+    });
+    revalidatePath(`/c/${slug}/settings`);
+    revalidatePath("/discovery");
+    return { ok: true, newSlug: slug };
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      return { ok: false, reason: "URL này đã được sử dụng" };
+    }
+    logError(err, { userId: s.user.id, communityId: input.communityId });
+    return { ok: false, reason: "Lỗi hệ thống" };
+  }
+}

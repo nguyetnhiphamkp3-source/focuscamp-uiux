@@ -9,6 +9,7 @@ import {
   approveAllPendingAction,
 } from "@/app/actions/challenge-review";
 import { avatarColorFor, initials, fmtRelativeTime } from "@/lib/brand";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
 
 export type SubmissionRow = {
   id: string;
@@ -45,6 +46,7 @@ export function SubmissionReviewPanel({
   const router = useRouter();
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
+  const [showApproveAllConfirm, setShowApproveAllConfirm] = useState(false);
 
   function review(
     checkinId: string,
@@ -79,7 +81,11 @@ export function SubmissionReviewPanel({
   }
 
   function approveAll() {
-    if (!confirm(`Duyệt tất cả ${pendingCount} submission đang chờ?`)) return;
+    setShowApproveAllConfirm(true);
+  }
+
+  function confirmApproveAll() {
+    setShowApproveAllConfirm(false);
     setErr(null);
     start(async () => {
       const res = await approveAllPendingAction({
@@ -97,6 +103,14 @@ export function SubmissionReviewPanel({
       className="ui-card ui-card-lg"
       style={{ marginBottom: "var(--space-4)" }}
     >
+      <ConfirmModal
+        open={showApproveAllConfirm}
+        title="Duyệt tất cả submission"
+        message={`Duyệt tất cả ${pendingCount} submission đang chờ?`}
+        confirmLabel="Duyệt tất cả"
+        onConfirm={confirmApproveAll}
+        onCancel={() => setShowApproveAllConfirm(false)}
+      />
       <div
         style={{
           display: "flex",
