@@ -293,6 +293,12 @@ export default async function ChallengeDetailPage({
     return Math.min(challenge.requiredDays, Math.max(1, elapsedDays + 1));
   })();
 
+  const currentTaskDeadlineLabel = myMembership?.personalStartsAt && dayNow > 0
+    ? new Date(myMembership.personalStartsAt.getTime() + dayNow * 24 * 60 * 60 * 1000).toLocaleString("vi-VN", {
+        timeZone: "Asia/Ho_Chi_Minh", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false,
+      })
+    : undefined;
+
   // Compute per-task unlock status based on taskUnlockMode
   const unlockMode = challenge.taskUnlockMode ?? "DAILY";
   const defaultInterval = challenge.unlockIntervalHours ?? 24;
@@ -568,20 +574,6 @@ export default async function ChallengeDetailPage({
                 </div>
               </div>
 
-              {/* Daily check-in form — only when active + not completed */}
-              {!myMembership.completedAt && session?.user && (() => {
-                return (
-                  <div style={{ marginTop: "var(--space-5)" }}>
-                    <CheckinGate
-                      userId={session.user.id!}
-                      communityId={challenge.community.id}
-                      challengeId={challenge.id}
-                      communitySlug={slug}
-                      challengeSlug={challengeSlug}
-                    />
-                  </div>
-                );
-              })()}
             </>
           ) : tierGateBlock ? (
             <UpgradePrompt
@@ -729,7 +721,7 @@ export default async function ChallengeDetailPage({
                   ? new Date(myMembership.personalStartsAt.getTime() + t.dayNumber * 24 * 60 * 60 * 1000)
                   : null;
                 const isLate = !!(isDone && checkinData && dayDeadline && checkinData.createdAt.getTime() > dayDeadline.getTime());
-                const hasBody = !!(t.description || t.sopContent || t.videoUrl || hasEvidenceHint || checkinData);
+                const hasBody = !!(t.description || t.sopContent || t.videoUrl || hasEvidenceHint || checkinData || isCurrent);
                 // Determine if task is locked based on unlock mode
                 const taskUnlocked = isDone || permissions.canManageChallenges || isTaskUnlocked(t, taskIndex);
                 const isLocked = !taskUnlocked && !isDone && !isRejected && myMembership && !myMembership.completedAt;
@@ -753,6 +745,7 @@ export default async function ChallengeDetailPage({
                   <details
                     key={t.id}
                     className={`ch-task${isCurrent ? " current" : ""}`}
+                    open={isCurrent}
                     style={{
                       opacity: 1,
                       pointerEvents: "auto",
@@ -944,59 +937,93 @@ export default async function ChallengeDetailPage({
                           const fmtOpts: Intl.DateTimeFormatOptions = { timeZone: "Asia/Ho_Chi_Minh", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false };
                           const timeStr = displayTime.toLocaleString("vi-VN", fmtOpts);
                           return (
-                          <div className={`ch-submission${isRejected ? " ch-submission-rejected" : ""}`}>
-                            <div className="ch-submission-label">
-                              {isRejected ? "Bài nộp bị từ chối" : isResubmitted ? "Bài nộp lại" : "Bài nộp của bạn"}
-                              <span style={{ marginLeft: "var(--space-2)", fontWeight: "var(--fw-normal)", color: "var(--text-muted)", fontSize: "var(--text-xs)" }}>
-                                {isResubmitted ? `Nộp lại lúc ${timeStr}` : `Nộp lúc ${timeStr}`}
-                              </span>
-                            </div>
-                            {checkinData.reviewedAt && !isRejected && permissions.canReviewSubmissions && (
-                              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: "var(--space-2)" }}>
-                                Duyệt lúc {checkinData.reviewedAt.toLocaleString("vi-VN", fmtOpts)}
+                          <>
+                            {/* Recap block for completed tasks */}
+                            {isDone && !isRejected && checkinData.content && (
+                              <div style={{
+                                marginTop: "var(--space-3)",
+                                padding: "var(--space-3) var(--space-4)",
+                                borderRadius: "var(--r-md)",
+                                borderLeft: "3px solid var(--brand-green)",
+                                background: "rgba(27,158,117,0.06)",
+                              }}>
+                                <div style={{ fontSize: "var(--text-xs)", fontWeight: "var(--fw-semibold)", color: "var(--brand-green)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "var(--space-2)" }}>
+                                  📌 Nhật ký của bạn · {timeStr}
+                                </div>
+                                <div style={{ fontSize: "var(--text-sm)", color: "var(--text-normal)", lineHeight: "var(--lh-relaxed)", whiteSpace: "pre-wrap", fontStyle: "italic" }}>
+                                  &ldquo;{checkinData.content}&rdquo;
+                                </div>
+                                {checkinData.linkUrl && (
+                                  <a href={checkinData.linkUrl} target="_blank" rel="noreferrer" className="ch-submission-link" style={{ marginTop: "var(--space-2)", display: "inline-block" }}>
+                                    {checkinData.linkUrl}
+                                  </a>
+                                )}
+                                {checkinData.imageUrl && (
+                                  <img src={checkinData.imageUrl} alt="Submission" className="ch-submission-image" style={{ marginTop: "var(--space-2)" }} />
+                                )}
                               </div>
                             )}
-                            {isRejected && checkinData.reviewNote && (
-                              <div className="ch-submission-reject-note">
-                                <strong>Lý do:</strong> {checkinData.reviewNote}
+                            {/* Submission detail for rejected/pending/admin */}
+                            {(isRejected || isPending || permissions.canReviewSubmissions) && (
+                              <div className={`ch-submission${isRejected ? " ch-submission-rejected" : ""}`}>
+                                <div className="ch-submission-label">
+                                  {isRejected ? "Bài nộp bị từ chối" : isResubmitted ? "Bài nộp lại" : "Bài nộp của bạn"}
+                                  <span style={{ marginLeft: "var(--space-2)", fontWeight: "var(--fw-normal)", color: "var(--text-muted)", fontSize: "var(--text-xs)" }}>
+                                    {isResubmitted ? `Nộp lại lúc ${timeStr}` : `Nộp lúc ${timeStr}`}
+                                  </span>
+                                </div>
+                                {checkinData.reviewedAt && !isRejected && permissions.canReviewSubmissions && (
+                                  <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: "var(--space-2)" }}>
+                                    Duyệt lúc {checkinData.reviewedAt.toLocaleString("vi-VN", fmtOpts)}
+                                  </div>
+                                )}
+                                {isRejected && checkinData.reviewNote && (
+                                  <div className="ch-submission-reject-note">
+                                    <strong>Lý do:</strong> {checkinData.reviewNote}
+                                  </div>
+                                )}
+                                <div className="ch-submission-content">{checkinData.content}</div>
+                                {isRejected && (
+                                  <ResubmitForm
+                                    checkinId={checkinData.id}
+                                    communitySlug={slug}
+                                    challengeSlug={challengeSlug}
+                                    initial={{
+                                      content: checkinData.content,
+                                      linkUrl: checkinData.linkUrl,
+                                      imageUrl: checkinData.imageUrl,
+                                    }}
+                                    rejectCount={checkinData.rejectCount}
+                                  />
+                                )}
                               </div>
                             )}
-                            <div className="ch-submission-content">
-                              {checkinData.content}
-                            </div>
-                            {checkinData.linkUrl && (
-                              <a
-                                href={checkinData.linkUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="ch-submission-link"
-                              >
-                                {checkinData.linkUrl}
-                              </a>
-                            )}
-                            {checkinData.imageUrl && (
-                              <img
-                                src={checkinData.imageUrl}
-                                alt="Submission"
-                                className="ch-submission-image"
-                              />
-                            )}
-                            {isRejected && (
-                              <ResubmitForm
-                                checkinId={checkinData.id}
-                                communitySlug={slug}
-                                challengeSlug={challengeSlug}
-                                initial={{
-                                  content: checkinData.content,
-                                  linkUrl: checkinData.linkUrl,
-                                  imageUrl: checkinData.imageUrl,
-                                }}
-                                rejectCount={checkinData.rejectCount}
-                              />
-                            )}
-                          </div>
+                          </>
                           );
                         })()}
+                        {/* Inline check-in form for current task */}
+                        {isCurrent && !myMembership?.completedAt && session?.user && (
+                          <div style={{ marginTop: "var(--space-4)", paddingTop: "var(--space-3)", borderTop: "1px solid var(--border-subtle)" }}>
+                            <CheckinForm
+                              challengeId={challenge.id}
+                              communitySlug={slug}
+                              challengeSlug={challengeSlug}
+                              hideHeader
+                              task={{
+                                id: t.id,
+                                dayNumber: t.dayNumber,
+                                title: t.title,
+                                label: t.label,
+                                description: t.description,
+                                sopContent: t.sopContent,
+                                videoUrl: t.videoUrl,
+                                evidenceType: t.evidenceType,
+                                evidenceLabel: t.evidenceLabel,
+                              }}
+                              deadlineLabel={currentTaskDeadlineLabel}
+                            />
+                          </div>
+                        )}
                       </div>
                     )}
                   </details>

@@ -30,12 +30,14 @@ export function CheckinForm({
   challengeSlug,
   task,
   deadlineLabel,
+  hideHeader,
 }: {
   challengeId: string;
   communitySlug: string;
   challengeSlug: string;
   task: TodayTask | null;
   deadlineLabel?: string;
+  hideHeader?: boolean;
 }) {
   const router = useRouter();
   const [content, setContent] = useState("");
@@ -117,7 +119,7 @@ export function CheckinForm({
         style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}
       >
         {/* Task header (current day) */}
-        {task && (
+        {!hideHeader && task && (
           <div
             style={{
               display: "flex",
