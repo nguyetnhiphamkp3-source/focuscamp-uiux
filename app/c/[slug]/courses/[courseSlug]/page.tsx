@@ -7,6 +7,7 @@ import { CourseEditButton } from "@/components/community/challenge-edit-button";
 import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
 import { MarkLessonCompleteButton } from "@/components/community/mark-lesson-complete-button";
 import { LockedLessonNotice } from "@/components/community/locked-lesson-notice";
+import { MobileLessonScroll } from "@/components/community/mobile-lesson-scroll";
 import { checkGate, getTiersConfig } from "@/lib/services/subscription";
 import { toEmbedUrl } from "@/lib/brand";
 import { getEffectiveOwnership } from "@/lib/preview-mode";
@@ -217,6 +218,7 @@ export default async function CourseDetailPage({
             const nextLesson = activeIdx < course.lessons.length - 1 ? course.lessons[activeIdx + 1] : null;
             return (
               <div className="mobile-lesson-list" style={{ marginBottom: "var(--space-4)" }}>
+                <MobileLessonScroll />
                 {/* Pill bar */}
                 <div className="mobile-lesson-pills">
                   {course.lessons.map((l, i) => {
