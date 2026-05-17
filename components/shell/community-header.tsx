@@ -21,8 +21,8 @@ export function CommunityHeader({
   return (
     <div
       style={{
-        padding: "var(--space-3)",
-        borderBottom: "1px solid var(--border-subtle)",
+        padding: "var(--space-4) var(--space-3)",
+        borderBottom: "2px solid var(--border-strong)",
         display: "flex",
         alignItems: "center",
         gap: "var(--space-2)",
@@ -32,7 +32,7 @@ export function CommunityHeader({
         style={{
           flex: 1,
           minWidth: 0,
-          fontSize: "var(--text-base)",
+          fontSize: "var(--text-md)",
           fontWeight: 700,
           color: "var(--header-primary)",
           overflow: "hidden",

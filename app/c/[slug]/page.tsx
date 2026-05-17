@@ -25,6 +25,12 @@ export default async function CommunityHomePage({
       },
       channels: { orderBy: { position: "asc" }, take: 8 },
       owner: { select: { id: true, name: true, image: true } },
+      posts: {
+        where: { isPinned: true },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        select: { id: true, title: true, body: true, createdAt: true },
+      },
     },
   });
   if (!community) notFound();
@@ -64,15 +70,82 @@ export default async function CommunityHomePage({
         }}
       >
         <div style={{ maxWidth: 920 }}>
-          {community.description && (
+          {/* Onboarding card */}
+          <section
+            className="ui-card ui-card-lg"
+            style={{ marginBottom: "var(--space-5)" }}
+          >
+            <h2 style={{ marginBottom: "var(--space-3)" }}>👋 Bắt đầu tại đây</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+              {community.channels.length > 0 && (
+                <Link
+                  href={`/c/${slug}/chat/${community.channels[0].slug}`}
+                  style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", padding: "var(--space-2) var(--space-3)", background: "var(--bg-elevated)", borderRadius: "var(--r-md)", textDecoration: "none", color: "var(--text-normal)", fontSize: "var(--text-sm)" }}
+                >
+                  <svg viewBox="0 0 24 24" style={{ width: 16, height: 16, fill: "var(--brand-green)", flexShrink: 0 }}><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" /></svg>
+                  Tham gia chat cộng đồng
+                </Link>
+              )}
+              {community.challenges.length > 0 && (
+                <Link
+                  href={`/c/${slug}/challenges`}
+                  style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", padding: "var(--space-2) var(--space-3)", background: "var(--bg-elevated)", borderRadius: "var(--r-md)", textDecoration: "none", color: "var(--text-normal)", fontSize: "var(--text-sm)" }}
+                >
+                  <svg viewBox="0 0 24 24" style={{ width: 16, height: 16, fill: "var(--brand-green)", flexShrink: 0 }}><path d="M7 2v11h3v9l7-12h-4l3-8z" /></svg>
+                  Tham gia challenge đầu tiên
+                </Link>
+              )}
+              {community.courses.length > 0 && (
+                <Link
+                  href={`/c/${slug}/courses`}
+                  style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", padding: "var(--space-2) var(--space-3)", background: "var(--bg-elevated)", borderRadius: "var(--r-md)", textDecoration: "none", color: "var(--text-normal)", fontSize: "var(--text-sm)" }}
+                >
+                  <svg viewBox="0 0 24 24" style={{ width: 16, height: 16, fill: "var(--brand-green)", flexShrink: 0 }}><path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1zm0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z" /></svg>
+                  Khám phá các khóa học
+                </Link>
+              )}
+              {community.description && (
+                <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", lineHeight: "var(--lh-relaxed)", margin: 0, paddingTop: "var(--space-2)", borderTop: "1px solid var(--border-subtle)" }}>
+                  {community.description}
+                </p>
+              )}
+            </div>
+          </section>
+
+          {/* Pinned announcements */}
+          {community.posts.length > 0 && (
             <section
               className="ui-card ui-card-lg"
               style={{ marginBottom: "var(--space-5)" }}
             >
-              <h2 style={{ marginBottom: "var(--space-2)" }}>Giới thiệu</h2>
-              <p style={{ lineHeight: "var(--lh-relaxed)" }}>
-                {community.description}
-              </p>
+              <h2 style={{ marginBottom: "var(--space-3)" }}>📌 Thông báo quan trọng</h2>
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                {community.posts.map((post) => (
+                  <Link
+                    key={post.id}
+                    href={`/c/${slug}/feed/p/${post.id}`}
+                    style={{ textDecoration: "none", color: "inherit" }}
+                  >
+                    <div
+                      style={{
+                        padding: "var(--space-3)",
+                        background: "var(--bg-elevated)",
+                        borderRadius: "var(--r-md)",
+                        borderLeft: "3px solid var(--brand-green)",
+                      }}
+                    >
+                      {post.title && (
+                        <div style={{ fontWeight: "var(--fw-bold)", color: "var(--text-heading)", fontSize: "var(--text-base)", marginBottom: "var(--space-1)" }}>
+                          {post.title}
+                        </div>
+                      )}
+                      <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", lineHeight: "var(--lh-relaxed)", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                        {post.body}
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </section>
           )}
 
