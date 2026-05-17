@@ -5938,4 +5938,15 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
   .ch-active-thumb {
     width: 100% !important;
   }
+  .ch-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+  }
+  .ch-tabs::-webkit-scrollbar { display: none; }
+  .ch-tabs a {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
 }

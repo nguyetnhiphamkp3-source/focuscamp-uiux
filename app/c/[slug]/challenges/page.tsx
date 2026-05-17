@@ -167,6 +167,7 @@ export default async function QuestLogPage({
           )}
           {/* Tabs */}
           <div
+            className="ch-tabs"
             style={{
               display: "flex",
               gap: "var(--space-2)",
