@@ -361,6 +361,7 @@ function ActiveTab({
           <Link
             key={m.id}
             href={`/c/${slug}/challenges/${m.challenge.slug}`}
+            className="ch-active-card"
             style={{
               position: "relative",
               display: "grid",
@@ -391,9 +392,9 @@ function ActiveTab({
 
             {/* Thumbnail — 16:9 */}
             <div
+              className="ch-active-thumb"
               style={{
                 position: "relative",
-                width: 192,
                 aspectRatio: "16 / 9",
                 borderRadius: 10,
                 overflow: "hidden",
