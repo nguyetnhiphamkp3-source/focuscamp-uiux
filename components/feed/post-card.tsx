@@ -8,10 +8,7 @@ import {
 import { pillarByKey, DEFAULT_GEMS } from "@/lib/community-config";
 import type { PillarConfig, GemsConfig } from "@/lib/community-config";
 import { ReactionButton } from "./reaction-button";
-import { CotToggleButton } from "./cot-toggle-button";
-import { PinToggleButton } from "./pin-toggle-button";
 import { PostMenu } from "./post-menu";
-import { ShareButton } from "./share-button";
 import { BookmarkButton } from "./bookmark-button";
 import { LinkPreview } from "./link-preview";
 import { PostImageLightbox } from "./post-image-lightbox";
@@ -155,31 +152,12 @@ export function PostCard({
           💬 {post.commentCount} bình luận
         </Link>
         {currentUserId && (
-          <span className="feed-action-overflow">
-            <BookmarkButton
-              postId={post.id}
-              communitySlug={communitySlug}
-              initialBookmarked={post.bookmarkedByMe ?? false}
-            />
-          </span>
+          <BookmarkButton
+            postId={post.id}
+            communitySlug={communitySlug}
+            initialBookmarked={post.bookmarkedByMe ?? false}
+          />
         )}
-        {canEditCot && (
-          <span className="feed-action-overflow">
-            <PinToggleButton
-              postId={post.id}
-              communitySlug={communitySlug}
-              initialIsPinned={post.isPinned}
-            />
-            <CotToggleButton
-              postId={post.id}
-              communitySlug={communitySlug}
-              initialIsCot={post.isCot}
-            />
-          </span>
-        )}
-        <span className="feed-action-overflow">
-          <ShareButton communitySlug={communitySlug} postId={post.id} />
-        </span>
         <PostMenu
           postId={post.id}
           communitySlug={communitySlug}
@@ -187,6 +165,9 @@ export function PostCard({
           canDelete={
             !!currentUserId && (currentUserId === post.user.id || isOwner)
           }
+          canManagePostActions={canEditCot}
+          initialIsPinned={post.isPinned}
+          initialIsCot={post.isCot}
           initial={{
             title: post.title,
             body: post.body,

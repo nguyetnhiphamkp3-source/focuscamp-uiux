@@ -15,7 +15,6 @@ import {
   fmtRelativeTime,
 } from "@/lib/brand";
 import { ReactionButton } from "@/components/feed/reaction-button";
-import { CotToggleButton } from "@/components/feed/cot-toggle-button";
 import { PostMenu } from "@/components/feed/post-menu";
 import { PostImageLightbox } from "@/components/feed/post-image-lightbox";
 import { CommentComposer } from "@/components/feed/comment-composer";
@@ -240,19 +239,15 @@ export default async function PostDetailPage({
               <span className="feed-post-action" style={{ cursor: "default" }}>
                 💬 {post.commentCount} bình luận
               </span>
-              {permissions.canModerateContent && (
-                <CotToggleButton
-                  postId={post.id}
-                  communitySlug={slug}
-                  initialIsCot={post.isCot}
-                />
-              )}
               <div style={{ marginLeft: "auto" }}>
                 <PostMenu
                   postId={post.id}
                   communitySlug={slug}
                   canEdit={isAuthor}
                   canDelete={isAuthor || permissions.canModerateContent}
+                  canManagePostActions={permissions.canModerateContent}
+                  initialIsPinned={post.isPinned}
+                  initialIsCot={post.isCot}
                   redirectOnDelete={true}
                   initial={{
                     title: post.title,

@@ -10,9 +10,13 @@ import { useState } from "react";
 export function ShareButton({
   communitySlug,
   postId,
+  variant = "inline",
+  onDone,
 }: {
   communitySlug: string;
   postId: string;
+  variant?: "inline" | "menu";
+  onDone?: () => void;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -26,21 +30,43 @@ export function ShareButton({
       // Clipboard blocked (old browser / permission denied) → fallback prompt
       window.prompt("Copy link bài viết:", url);
     }
+    onDone?.();
   }
 
   return (
     <button
       type="button"
-      className="feed-post-action"
+      className={variant === "inline" ? "feed-post-action" : undefined}
       onClick={onClick}
-      style={{
-        marginLeft: "auto",
-        color: copied ? "var(--success)" : undefined,
-        fontWeight: copied ? 600 : undefined,
-      }}
+      style={
+        variant === "menu"
+          ? menuButtonStyle(copied ? "var(--success)" : "var(--text-normal)")
+          : {
+              marginLeft: "auto",
+              color: copied ? "var(--success)" : undefined,
+              fontWeight: copied ? 600 : undefined,
+            }
+      }
       aria-label="Copy link bài viết"
     >
       {copied ? "✓ Đã copy" : "🔗 Share"}
     </button>
   );
+}
+
+function menuButtonStyle(color: string): React.CSSProperties {
+  return {
+    display: "block",
+    width: "100%",
+    padding: "8px 12px",
+    textAlign: "left",
+    background: "transparent",
+    border: "none",
+    borderRadius: 4,
+    cursor: "pointer",
+    fontSize: "var(--text-sm)",
+    color,
+    fontFamily: "inherit",
+    fontWeight: 600,
+  };
 }

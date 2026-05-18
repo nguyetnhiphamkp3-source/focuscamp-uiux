@@ -8,10 +8,14 @@ export function CotToggleButton({
   postId,
   communitySlug,
   initialIsCot,
+  variant = "inline",
+  onDone,
 }: {
   postId: string;
   communitySlug: string;
   initialIsCot: boolean;
+  variant?: "inline" | "menu";
+  onDone?: () => void;
 }) {
   const router = useRouter();
   const [isCot, setIsCot] = useState(initialIsCot);
@@ -22,24 +26,48 @@ export function CotToggleButton({
       const res = await toggleCotAction({ postId, communitySlug });
       if (res.ok && res.data) {
         setIsCot(res.data.isCot);
+        onDone?.();
         router.refresh();
       }
     });
   }
 
+  const label = isCot ? "⭐ Bỏ CỐT" : "☆ Mark CỐT";
+
   return (
     <button
       type="button"
-      className="feed-post-action"
+      className={variant === "inline" ? "feed-post-action" : undefined}
       onClick={toggle}
       disabled={pending}
       title={isCot ? "Bỏ đánh dấu CỐT" : "Đánh dấu bài chất lượng cao (CỐT)"}
-      style={{
-        color: isCot ? "var(--premium-gold)" : undefined,
-        fontWeight: isCot ? 700 : undefined,
-      }}
+      style={
+        variant === "menu"
+          ? menuButtonStyle(isCot ? "var(--premium-gold)" : "var(--text-normal)")
+          : {
+              color: isCot ? "var(--premium-gold)" : undefined,
+              fontWeight: isCot ? 700 : undefined,
+            }
+      }
     >
-      {isCot ? "⭐ CỐT" : "☆ Mark CỐT"}
+      {variant === "inline" && isCot ? "⭐ CỐT" : label}
     </button>
   );
+}
+
+function menuButtonStyle(color: string): React.CSSProperties {
+  return {
+    display: "block",
+    width: "100%",
+    padding: "8px 12px",
+    textAlign: "left",
+    background: "transparent",
+    border: "none",
+    borderRadius: 4,
+    cursor: "pointer",
+    fontSize: "var(--text-sm)",
+    color,
+    fontFamily: "inherit",
+    fontWeight: 600,
+  };
 }

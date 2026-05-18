@@ -8,11 +8,15 @@ import {
 } from "@/app/actions/posts";
 import { ImageUploadField } from "@/components/shared/image-upload-field";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { CotToggleButton } from "./cot-toggle-button";
+import { PinToggleButton } from "./pin-toggle-button";
+import { ShareButton } from "./share-button";
 import type { PillarConfig } from "@/lib/community-config";
 
 /**
- * Three-dot menu on a post — shows when current user is author or community
- * owner. Actions:
+ * Three-dot menu on a post. Actions:
+ *   - Share (all viewers)
+ *   - Pin / Mark CỐT (moderators)
  *   - Edit (author only)
  *   - Delete (author or owner)
  */
@@ -21,6 +25,10 @@ export function PostMenu({
   communitySlug,
   canEdit,
   canDelete,
+  canManagePostActions = false,
+  initialIsPinned = false,
+  initialIsCot = false,
+  showShare = true,
   redirectOnDelete = false,
   initial,
   pillars,
@@ -29,6 +37,10 @@ export function PostMenu({
   communitySlug: string;
   canEdit: boolean;
   canDelete: boolean;
+  canManagePostActions?: boolean;
+  initialIsPinned?: boolean;
+  initialIsCot?: boolean;
+  showShare?: boolean;
   /** True on detail page — after delete, server action redirects to list */
   redirectOnDelete?: boolean;
   initial: {
@@ -100,7 +112,7 @@ export function PostMenu({
     });
   }
 
-  if (!canEdit && !canDelete) return null;
+  if (!showShare && !canManagePostActions && !canEdit && !canDelete) return null;
 
   return (
     <>
@@ -128,11 +140,41 @@ export function PostMenu({
               border: "1px solid var(--border-subtle)",
               borderRadius: 8,
               padding: 4,
-              minWidth: 140,
+              minWidth: 168,
               boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
               zIndex: 10,
             }}
           >
+            {showShare && (
+              <ShareButton
+                communitySlug={communitySlug}
+                postId={postId}
+                variant="menu"
+                onDone={() => setOpen(false)}
+              />
+            )}
+            {canManagePostActions && (
+              <>
+                {showShare && <div style={menuDividerStyle} />}
+                <PinToggleButton
+                  postId={postId}
+                  communitySlug={communitySlug}
+                  initialIsPinned={initialIsPinned}
+                  variant="menu"
+                  onDone={() => setOpen(false)}
+                />
+                <CotToggleButton
+                  postId={postId}
+                  communitySlug={communitySlug}
+                  initialIsCot={initialIsCot}
+                  variant="menu"
+                  onDone={() => setOpen(false)}
+                />
+              </>
+            )}
+            {(canEdit || canDelete) && (showShare || canManagePostActions) && (
+              <div style={menuDividerStyle} />
+            )}
             {canEdit && (
               <button
                 type="button"
@@ -365,4 +407,10 @@ const inputDlg: React.CSSProperties = {
   color: "var(--text-normal)",
   fontSize: "var(--text-sm)",
   outline: "none",
+};
+
+const menuDividerStyle: React.CSSProperties = {
+  height: 1,
+  background: "var(--border-subtle)",
+  margin: "4px 0",
 };
