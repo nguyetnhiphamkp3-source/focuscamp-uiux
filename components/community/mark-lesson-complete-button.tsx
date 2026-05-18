@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { markLessonCompleteAction } from "@/app/actions/course";
 
 export function MarkLessonCompleteButton({
@@ -14,8 +15,13 @@ export function MarkLessonCompleteButton({
   courseSlug: string;
   initialCompleted: boolean;
 }) {
+  const router = useRouter();
   const [completed, setCompleted] = useState(initialCompleted);
   const [pending, startTransition] = useTransition();
+
+  useEffect(() => {
+    setCompleted(initialCompleted);
+  }, [lessonId, initialCompleted]);
 
   function toggle() {
     startTransition(async () => {
@@ -26,7 +32,10 @@ export function MarkLessonCompleteButton({
         courseSlug,
         completed: next,
       });
-      if (res.ok) setCompleted(next);
+      if (res.ok) {
+        setCompleted(next);
+        router.refresh();
+      }
     });
   }
 
