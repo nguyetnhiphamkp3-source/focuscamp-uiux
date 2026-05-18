@@ -14,6 +14,10 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { publish } from "@/lib/realtime";
 
+export const NOTIFICATION_INBOX_LIMIT = 42;
+const READ_RETENTION_DAYS = 14;
+const UNREAD_RETENTION_DAYS = 30;
+
 export type NotificationType =
   | "POST_COMMENT"
   | "COMMENT_REPLY"
@@ -25,6 +29,48 @@ export type NotificationType =
   | "FOLLOW"
   | "UNFOLLOW"
   | "AGENT_BROADCAST";
+
+function daysAgo(days: number): Date {
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+}
+
+async function deleteExpiredNotifications(userId: string): Promise<number> {
+  const res = await prisma.notification.deleteMany({
+    where: {
+      userId,
+      OR: [
+        { readAt: { lt: daysAgo(READ_RETENTION_DAYS) } },
+        { readAt: null, createdAt: { lt: daysAgo(UNREAD_RETENTION_DAYS) } },
+      ],
+    },
+  });
+  return res.count;
+}
+
+async function pruneNotificationOverflow(userId: string): Promise<number> {
+  const overflow = await prisma.notification.findMany({
+    where: { userId },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    skip: NOTIFICATION_INBOX_LIMIT,
+    select: { id: true },
+  });
+  if (overflow.length === 0) return 0;
+  const res = await prisma.notification.deleteMany({
+    where: { userId, id: { in: overflow.map((n) => n.id) } },
+  });
+  return res.count;
+}
+
+async function pruneNotificationsForUser(userId: string): Promise<void> {
+  const expired = await deleteExpiredNotifications(userId);
+  const overflow = await pruneNotificationOverflow(userId);
+  if (expired > 0 || overflow > 0) {
+    logger.info(
+      { userId, expired, overflow },
+      "[notification] pruned inbox"
+    );
+  }
+}
 
 /**
  * Create a notification. No-op (and logs) when recipient === actor — we
@@ -58,6 +104,9 @@ export async function createNotification(input: {
         commentId: input.commentId ?? null,
       },
     });
+    pruneNotificationsForUser(input.userId).catch((err) => {
+      logger.warn({ err, userId: input.userId }, "[notification] prune failed");
+    });
     // Push to SSE stream (non-blocking)
     publish(`notification:${input.userId}`, {
       id: notif.id,
@@ -83,7 +132,9 @@ export async function listNotifications(input: {
   limit?: number;
   unreadOnly?: boolean;
 }) {
-  const { userId, limit = 50, unreadOnly = false } = input;
+  const { userId, unreadOnly = false } = input;
+  const limit = Math.min(input.limit ?? NOTIFICATION_INBOX_LIMIT, NOTIFICATION_INBOX_LIMIT);
+  await pruneNotificationsForUser(userId);
   const [items, unread] = await Promise.all([
     prisma.notification.findMany({
       where: {
@@ -102,6 +153,7 @@ export async function listNotifications(input: {
 }
 
 export async function unreadCount(userId: string): Promise<number> {
+  await deleteExpiredNotifications(userId);
   return prisma.notification.count({ where: { userId, readAt: null } });
 }
 

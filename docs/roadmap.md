@@ -46,7 +46,7 @@ Key: ✅ done · 🟡 partial · ❌ not started · 🚫 deferred (Phase 2+)
 | Settings: member list + role change + remove | ✅ | |
 | Role permissions: OWNER / ADMIN / MOD / MEMBER | ✅ | `docs/roles-permissions.md` + `lib/community-permissions.ts`; admin has full community settings edit access except community deletion, mod reviews submissions + moderates |
 | Settings: challenge-level toggles (requiresApproval, freeze) | ✅ | ChallengeSettingsPanel |
-| Notifications inbox + bell badge + 6 emitters | ✅ | Global inbox |
+| Notifications inbox + bell badge + 6 emitters | ✅ | Global inbox; keeps 42 newest/user, prunes read after 14d and unread after 30d |
 | Bell badge live polling (30s, pause on hidden tab) | ✅ | `/api/notifications/unread-count` |
 | Feature unread badges (Feed/Q&A/Signals/CỐT) | ✅ | Last-viewed per feature; Chat unread deferred |
 | Real-time push (SSE / WebSocket) | 🚫 | Phase 2 — polling works for now |

@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { listNotifications } from "@/lib/services/notification";
+import {
+  listNotifications,
+  NOTIFICATION_INBOX_LIMIT,
+} from "@/lib/services/notification";
 import {
   NotificationItem,
   MarkAllReadLink,
@@ -16,7 +19,7 @@ export default async function InboxPage() {
 
   const { items, unread } = await listNotifications({
     userId: session.user.id,
-    limit: 100,
+    limit: NOTIFICATION_INBOX_LIMIT,
   });
 
   return (
