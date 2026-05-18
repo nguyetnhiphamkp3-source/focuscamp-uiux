@@ -207,7 +207,7 @@ export default async function SettingsPage({
             <AgentConfigEditor
               communityId={community.id}
               communitySlug={slug}
-              initial={{ prompt: community.agentSystemPrompt ?? "" }}
+              initial={{ prompt: community.agentSystemPrompt ?? "", hasApiKey: !!community.agentApiKey }}
             />
           )}
 

@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { streamText, convertToModelMessages, type UIMessage } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
+import { createAnthropic } from "@ai-sdk/anthropic";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import {
   appendMessage,
   checkQuota,
+  getAgentApiKey,
   getOrCreateConversation,
   getSystemPrompt,
 } from "@/lib/services/agent";
@@ -95,14 +96,15 @@ export async function POST(req: Request) {
 
   const systemPrompt = await getSystemPrompt(body.communityId);
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = await getAgentApiKey(body.communityId);
   if (!apiKey) {
     return NextResponse.json(
-      { error: "agent_not_configured", message: "ANTHROPIC_API_KEY chưa set" },
+      { error: "agent_not_configured", message: "Chủ cộng đồng chưa cấu hình API key cho AI Agent." },
       { status: 503 },
     );
   }
 
+  const anthropic = createAnthropic({ apiKey });
   const modelMessages = await convertToModelMessages(body.messages);
 
   const result = streamText({

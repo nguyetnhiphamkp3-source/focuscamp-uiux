@@ -32,18 +32,22 @@ export async function searchAll(input: {
 }) {
   const q = input.query.trim();
   if (q.length < 2) {
-    return { query: q, posts: [], users: [], communities: [] };
+    return { query: q, posts: [], users: [], communities: [], challenges: [] };
   }
   const limit = input.limit ?? 15;
   const tsq = toTsQuery(q);
 
+  // Challenge search (no searchVector, always ILIKE)
+  const challengesPromise = searchChallenges(q, limit);
+
   // Try tsvector search first, fall back to ILIKE
   if (tsq) {
     try {
-      const [rawPosts, rawUsers, communities] = await Promise.all([
+      const [rawPosts, rawUsers, communities, challenges] = await Promise.all([
         searchPostsFts(tsq, limit, input.communityId),
         searchUsersFts(tsq, limit),
         searchCommunitiesFts(tsq, limit),
+        challengesPromise,
       ]);
       // Normalize FTS results to match Prisma shape
       const posts = rawPosts.map((p) => ({
@@ -64,7 +68,7 @@ export async function searchAll(input: {
         bio: u.bio,
         _count: { memberships: u.membershipCount },
       }));
-      return { query: q, posts, users, communities };
+      return { query: q, posts, users, communities, challenges };
     } catch (err) {
       // tsvector columns might not exist yet — fall back
       logger.warn({ err }, "[search] FTS failed, falling back to ILIKE");
@@ -162,11 +166,34 @@ async function searchCommunitiesFts(tsq: string, limit: number) {
   );
 }
 
+/* ===== Challenge search (ILIKE, no searchVector) ===== */
+
+async function searchChallenges(q: string, limit: number) {
+  const like = { contains: q, mode: "insensitive" as const };
+  return prisma.challenge.findMany({
+    where: {
+      status: { in: ["OPEN", "ACTIVE"] },
+      OR: [{ title: like }, { description: like }],
+    },
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      description: true,
+      difficulty: true,
+      status: true,
+      community: { select: { slug: true, name: true } },
+    },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+  });
+}
+
 /* ===== ILIKE fallback (pre-migration) ===== */
 
 async function searchFallback(q: string, limit: number, communityId?: string) {
   const like = { contains: q, mode: "insensitive" as const };
-  const [posts, users, communities] = await Promise.all([
+  const [posts, users, communities, challenges] = await Promise.all([
     prisma.post.findMany({
       where: {
         AND: [
@@ -213,6 +240,7 @@ async function searchFallback(q: string, limit: number, communityId?: string) {
       },
       take: limit,
     }),
+    searchChallenges(q, limit),
   ]);
-  return { query: q, posts, users, communities };
+  return { query: q, posts, users, communities, challenges };
 }

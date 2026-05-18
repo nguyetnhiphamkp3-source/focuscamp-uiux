@@ -134,6 +134,8 @@ model Community {
 
   /** AI Agent system prompt configured by owner. Empty = generic helper. */
   agentSystemPrompt String? @db.Text
+  /** Encrypted Anthropic API key for per-community AI Agent. */
+  agentApiKey       String? @db.Text
 
   category         String?
   featuredOnGlobal Boolean @default(false)

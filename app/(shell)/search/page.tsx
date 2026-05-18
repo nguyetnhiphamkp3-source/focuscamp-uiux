@@ -194,10 +194,38 @@ export default async function SearchPage({
               </Section>
             )}
 
+            {/* Challenges */}
+            {results.challenges.length > 0 && (
+              <Section title={`Challenge (${results.challenges.length})`}>
+                {results.challenges.map((ch) => (
+                  <Link
+                    key={ch.id}
+                    href={`/c/${ch.community.slug}/challenges/${ch.slug}`}
+                    style={resultCardStyle}
+                  >
+                    <div style={{ fontSize: 20, flexShrink: 0 }}>🏆</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={cardTitleStyle}>{ch.title}</div>
+                      <div style={cardMetaStyle}>
+                        {ch.community.name} · {ch.difficulty} · {ch.status === "OPEN" ? "Đang mở" : "Đang diễn ra"}
+                      </div>
+                      {ch.description && (
+                        <div style={cardMetaStyle}>
+                          {ch.description.slice(0, 100)}
+                          {ch.description.length > 100 ? "…" : ""}
+                        </div>
+                      )}
+                    </div>
+                  </Link>
+                ))}
+              </Section>
+            )}
+
             {/* Empty */}
             {results.posts.length === 0 &&
               results.users.length === 0 &&
-              results.communities.length === 0 && (
+              results.communities.length === 0 &&
+              results.challenges.length === 0 && (
                 <div
                   style={{
                     textAlign: "center",

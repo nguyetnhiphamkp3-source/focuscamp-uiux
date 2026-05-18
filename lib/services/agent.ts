@@ -153,3 +153,33 @@ export async function setSystemPrompt(input: {
   });
   logger.info({ communityId: input.communityId }, "[agent] system prompt updated");
 }
+
+export async function getAgentApiKey(communityId: string): Promise<string | null> {
+  const c = await prisma.community.findUnique({
+    where: { id: communityId },
+    select: { agentApiKey: true },
+  });
+  return c?.agentApiKey ?? null;
+}
+
+export async function setAgentApiKey(input: {
+  userId: string;
+  communityId: string;
+  apiKey: string;
+}) {
+  await assertCommunityPermission(input.userId, input.communityId, "manage_ai_agent");
+  const trimmed = input.apiKey.trim();
+  await prisma.community.update({
+    where: { id: input.communityId },
+    data: { agentApiKey: trimmed || null },
+  });
+  logger.info({ communityId: input.communityId }, "[agent] API key updated");
+}
+
+export async function hasAgentApiKey(communityId: string): Promise<boolean> {
+  const c = await prisma.community.findUnique({
+    where: { id: communityId },
+    select: { agentApiKey: true },
+  });
+  return !!(c?.agentApiKey?.trim());
+}
