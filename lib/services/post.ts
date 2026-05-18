@@ -407,6 +407,7 @@ export async function deletePost(input: { userId: string; postId: string }) {
     post.userId === input.userId || canCommunity(role, "moderate_content");
   if (!canDelete) throw new Error("Không có quyền xoá bài này");
 
+  await prisma.notification.deleteMany({ where: { postId: input.postId } });
   await prisma.post.delete({ where: { id: input.postId } });
   await deleteStoredMediaUrl(post.imageUrl, {
     postId: input.postId,

@@ -242,6 +242,7 @@ export async function deleteComment(input: { userId: string; commentId: string }
     canCommunity(role, "moderate_content");
   if (!canDelete) throw new Error("Không có quyền xoá comment này");
 
+  await prisma.notification.deleteMany({ where: { commentId: input.commentId } });
   await prisma.comment.delete({ where: { id: input.commentId } });
   logger.info({ commentId: input.commentId, by: input.userId }, "[comment] deleted");
 }
