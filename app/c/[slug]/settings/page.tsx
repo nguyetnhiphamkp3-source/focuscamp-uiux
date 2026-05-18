@@ -42,10 +42,13 @@ export const dynamic = "force-dynamic";
 
 export default async function SettingsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
   const { slug } = await params;
+  const { tab: tabParam } = await searchParams;
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
@@ -54,7 +57,6 @@ export default async function SettingsPage({
 
   const isOwner = community.ownerId === session.user.id;
 
-  // Fetch membership role for permission checks
   const membership = !isOwner
     ? await prisma.membership.findUnique({
         where: {
@@ -75,6 +77,17 @@ export default async function SettingsPage({
 
   if (!perms.canManageSettings) redirect(`/c/${slug}`);
 
+  const tabs = [
+    { slug: "general", label: "Tổng quan", visible: perms.canManageSettings },
+    { slug: "billing", label: "Thanh toán", visible: perms.canManageBilling },
+    { slug: "content", label: "Nội dung", visible: perms.canManageSettings },
+    { slug: "integrations", label: "Tích hợp", visible: perms.canManageAiAgent || perms.canManageApiKeys },
+    { slug: "members", label: "Thành viên", visible: perms.canViewMembers },
+  ].filter((t) => t.visible);
+
+  const tab = tabs.find((t) => t.slug === tabParam)?.slug ?? tabs[0]?.slug ?? "general";
+
+  // Sync getters (read from community object, no DB call)
   const pillars = getPillars(community);
   const classes = getClasses(community);
   const currency = getCurrency(community);
@@ -82,11 +95,13 @@ export default async function SettingsPage({
   const subscriptionTiers = getTiersConfig(community.tiersConfig);
   const uiConfig = getUiConfig(community);
   const planState = getPlanStatus(community);
-  const apiKeys = perms.canManageApiKeys ? await listApiKeys(community.id) : [];
 
-  const { members, total } = perms.canViewMembers
-    ? await listMembers({ communityId: community.id, limit: 100 })
-    : { members: [], total: 0 };
+  // Async queries — only fetch for active tab
+  const apiKeys = tab === "integrations" && perms.canManageApiKeys ? await listApiKeys(community.id) : [];
+  const { members, total } =
+    tab === "members" && perms.canViewMembers
+      ? await listMembers({ communityId: community.id, limit: 100 })
+      : { members: [], total: 0 };
 
   return (
     <>
@@ -94,6 +109,19 @@ export default async function SettingsPage({
         <span className="view-title">Community Settings</span>
         <span className="view-subtitle">{community.name}</span>
       </header>
+
+      <div className="settings-tabs-bar">
+        {tabs.map((t) => (
+          <Link
+            key={t.slug}
+            href={`/c/${slug}/settings?tab=${t.slug}`}
+            className={`settings-tab ${tab === t.slug ? "active" : ""}`}
+          >
+            {t.label}
+          </Link>
+        ))}
+      </div>
+
       <div
         style={{
           flex: 1,
@@ -102,7 +130,7 @@ export default async function SettingsPage({
         }}
       >
         <div style={{ maxWidth: 860 }}>
-          {!isOwner && (
+          {!isOwner && tab === "general" && (
             <div
               style={{
                 background: "var(--info-soft, rgba(59,130,246,0.1))",
@@ -118,182 +146,176 @@ export default async function SettingsPage({
             </div>
           )}
 
-          {perms.canManageSettings && (
-            <CommunityInfoEditor
-              communityId={community.id}
-              communitySlug={slug}
-              initial={{
-                name: community.name,
-                tagline: community.tagline,
-                description: community.description,
-                category: community.category,
-                featuredOnGlobal: community.featuredOnGlobal,
-                bannerUrl: community.bannerUrl,
-                iconUrl: community.iconUrl,
-                introVideoUrl: community.introVideoUrl,
-                introGallery: community.introGallery,
-              }}
-            />
-          )}
-
-          {perms.canManageSettings && (
-            <SlugChangeEditor
-              communityId={community.id}
-              currentSlug={slug}
-              slugChangedAt={community.slugChangedAt}
-            />
-          )}
-
-          {perms.canManageBilling && (
-            <CommunityPlanPanel communityId={community.id} state={planState} />
-          )}
-
-          {perms.canManageBilling && (
-            <PaymentConfigEditor
-              communityId={community.id}
-              communitySlug={slug}
-              initial={getPaymentConfig(community)}
-            />
-          )}
-
-          {perms.canManageOrders && (
-            <div
-              className="ui-card"
-              style={{
-                marginBottom: "var(--space-4)",
-                padding: "var(--space-4) var(--space-5)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: "var(--space-4)",
-              }}
-            >
-              <div>
-                <div style={{ fontWeight: 700, color: "var(--header-primary)", fontSize: "var(--text-base)" }}>
-                  Đơn hàng
-                </div>
-                <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 2 }}>
-                  Xem và quản lý các đơn hàng từ marketplace
-                </div>
-              </div>
-              <Link
-                href={`/c/${slug}/orders`}
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: 8,
-                  border: "none",
-                  background: "var(--brand-green)",
-                  color: "#fff",
-                  fontWeight: 600,
-                  fontSize: "var(--text-sm)",
-                  textDecoration: "none",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                Xem đơn hàng →
-              </Link>
-            </div>
-          )}
-
-          {perms.canManageSettings && (
-            <UiConfigEditor
-              communityId={community.id}
-              communitySlug={slug}
-              initial={{ hiddenFeatures: uiConfig.hiddenFeatures }}
-            />
-          )}
-
-          {perms.canManageAiAgent && (
-            <AgentConfigEditor
-              communityId={community.id}
-              communitySlug={slug}
-              initial={{ prompt: community.agentSystemPrompt ?? "", hasApiKey: !!community.agentApiKey }}
-            />
-          )}
-
-          {perms.canManageApiKeys && (
-            <ApiKeysPanel
-              communityId={community.id}
-              communitySlug={slug}
-              initial={apiKeys}
-            />
-          )}
-
-          {perms.canManageSettings && (
-            <AffiliateConfigEditor
-              communityId={community.id}
-              communitySlug={slug}
-              initial={getAffiliateConfig(community)}
-            />
-          )}
-
-          {perms.canManageApiKeys &&
-            (() => {
-              const cfg = (community.channelConfig ?? {}) as {
-                discord?: { webhookUrl: string; eventTypes: string[] };
-                telegram?: { chatId: string; eventTypes: string[] };
-              };
-              return (
-                <ChannelConfigEditor
+          {/* Tab: Tổng quan */}
+          {tab === "general" && (
+            <>
+              {perms.canManageSettings && (
+                <CommunityInfoEditor
                   communityId={community.id}
                   communitySlug={slug}
                   initial={{
-                    discord: cfg.discord ?? null,
-                    telegram: cfg.telegram
-                      ? {
-                          chatId: cfg.telegram.chatId,
-                          eventTypes: cfg.telegram.eventTypes,
-                        }
-                      : null,
+                    name: community.name,
+                    tagline: community.tagline,
+                    description: community.description,
+                    category: community.category,
+                    featuredOnGlobal: community.featuredOnGlobal,
+                    bannerUrl: community.bannerUrl,
+                    iconUrl: community.iconUrl,
+                    introVideoUrl: community.introVideoUrl,
+                    introGallery: community.introGallery,
                   }}
                 />
-              );
-            })()}
+              )}
 
-          {perms.canManageAiAgent && <AgentActivityPanel communityId={community.id} />}
+              {perms.canManageSettings && (
+                <SlugChangeEditor
+                  communityId={community.id}
+                  currentSlug={slug}
+                  slugChangedAt={community.slugChangedAt}
+                />
+              )}
 
-          {perms.canManageSettings && <CommunityStatsCard communityId={community.id} />}
+              {perms.canManageSettings && (
+                <UiConfigEditor
+                  communityId={community.id}
+                  communitySlug={slug}
+                  initial={{ hiddenFeatures: uiConfig.hiddenFeatures }}
+                />
+              )}
 
-          <div
-            className="ui-card"
-            style={{
-              marginBottom: "var(--space-4)",
-              padding: "var(--space-4) var(--space-5)",
-              fontSize: "var(--text-sm)",
-              color: "var(--text-muted)",
-              display: "flex",
-              gap: 20,
-              flexWrap: "wrap",
-            }}
-          >
-            <span>
-              Slug: <code>{community.slug}</code>
-            </span>
-            <span>
-              <strong style={{ color: "var(--text-heading)" }}>
-                {community.memberCount}
-              </strong>{" "}
-              thành viên
-            </span>
-            <span>
-              Tạo {community.createdAt.toLocaleDateString("vi-VN")}
-            </span>
-          </div>
+              {perms.canManageSettings && <CommunityStatsCard communityId={community.id} />}
 
-          {perms.canManageSettings && (
-            <>
               <div
+                className="ui-card"
                 style={{
-                  fontSize: "var(--text-xl)",
-                  fontWeight: 700,
-                  color: "var(--header-primary)",
-                  padding: "var(--space-6) 0 var(--space-3)",
-                  borderTop: "1px solid var(--border-subtle)",
-                  marginTop: "var(--space-4)",
+                  marginBottom: "var(--space-4)",
+                  padding: "var(--space-4) var(--space-5)",
+                  fontSize: "var(--text-sm)",
+                  color: "var(--text-muted)",
+                  display: "flex",
+                  gap: 20,
+                  flexWrap: "wrap",
                 }}
               >
-                Concept
+                <span>
+                  Slug: <code>{community.slug}</code>
+                </span>
+                <span>
+                  <strong style={{ color: "var(--text-heading)" }}>
+                    {community.memberCount}
+                  </strong>{" "}
+                  thành viên
+                </span>
+                <span>
+                  Tạo {community.createdAt.toLocaleDateString("vi-VN")}
+                </span>
               </div>
+
+              {isOwner && (
+                <>
+                  <div
+                    style={{
+                      fontSize: "var(--text-xl)",
+                      fontWeight: 700,
+                      color: "var(--danger)",
+                      padding: "var(--space-6) 0 var(--space-3)",
+                      borderTop: "1px solid var(--danger)",
+                      marginTop: "var(--space-4)",
+                    }}
+                  >
+                    Danger Zone
+                  </div>
+                  <DangerZone
+                    communityId={community.id}
+                    communitySlug={slug}
+                    communityName={community.name}
+                  />
+                </>
+              )}
+            </>
+          )}
+
+          {/* Tab: Thanh toán */}
+          {tab === "billing" && (
+            <>
+              {perms.canManageBilling && (
+                <CommunityPlanPanel communityId={community.id} state={planState} />
+              )}
+
+              {perms.canManageBilling && (
+                <PaymentConfigEditor
+                  communityId={community.id}
+                  communitySlug={slug}
+                  initial={getPaymentConfig(community)}
+                />
+              )}
+
+              {perms.canManageOrders && (
+                <div
+                  className="ui-card"
+                  style={{
+                    marginBottom: "var(--space-4)",
+                    padding: "var(--space-4) var(--space-5)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "var(--space-4)",
+                  }}
+                >
+                  <div>
+                    <div style={{ fontWeight: 700, color: "var(--header-primary)", fontSize: "var(--text-base)" }}>
+                      Đơn hàng
+                    </div>
+                    <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 2 }}>
+                      Xem và quản lý các đơn hàng từ marketplace
+                    </div>
+                  </div>
+                  <Link
+                    href={`/c/${slug}/orders`}
+                    style={{
+                      padding: "8px 16px",
+                      borderRadius: 8,
+                      border: "none",
+                      background: "var(--brand-green)",
+                      color: "#fff",
+                      fontWeight: 600,
+                      fontSize: "var(--text-sm)",
+                      textDecoration: "none",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    Xem đơn hàng →
+                  </Link>
+                </div>
+              )}
+
+              {perms.canManageSettings && (
+                <>
+                  <div
+                    style={{
+                      fontSize: "var(--text-xl)",
+                      fontWeight: 700,
+                      color: "var(--header-primary)",
+                      padding: "var(--space-6) 0 var(--space-3)",
+                      borderTop: "1px solid var(--border-subtle)",
+                      marginTop: "var(--space-4)",
+                    }}
+                  >
+                    Subscription Tiers
+                  </div>
+                  <TiersEditor
+                    tiers={subscriptionTiers}
+                    communityId={community.id}
+                    communitySlug={slug}
+                  />
+                </>
+              )}
+            </>
+          )}
+
+          {/* Tab: Nội dung */}
+          {tab === "content" && (
+            <>
               <div
                 style={{
                   fontSize: "var(--text-sm)",
@@ -325,101 +347,91 @@ export default async function SettingsPage({
                 initial={tiers}
               />
 
-              <div
-                style={{
-                  fontSize: "var(--text-xl)",
-                  fontWeight: 700,
-                  color: "var(--header-primary)",
-                  padding: "var(--space-6) 0 var(--space-3)",
-                  borderTop: "1px solid var(--border-subtle)",
-                  marginTop: "var(--space-4)",
-                }}
-              >
-                Subscription Tiers
-              </div>
-              <TiersEditor
-                tiers={subscriptionTiers}
-                communityId={community.id}
-                communitySlug={slug}
-              />
+              {perms.canManageSettings && (
+                <AffiliateConfigEditor
+                  communityId={community.id}
+                  communitySlug={slug}
+                  initial={getAffiliateConfig(community)}
+                />
+              )}
             </>
           )}
 
-          <div
-            style={{
-              fontSize: "var(--text-xl)",
-              fontWeight: 700,
-              color: "var(--header-primary)",
-              padding: "var(--space-6) 0 var(--space-3)",
-              borderTop: "1px solid var(--border-subtle)",
-              marginTop: "var(--space-4)",
-            }}
-          >
-            Thành viên
-          </div>
-          {perms.canViewMembers && (
-            <MembersEditor
-              communityId={community.id}
-              communitySlug={slug}
-              members={members.map((m) => ({
-                userId: m.userId,
-                role: m.role,
-                tier: m.tier,
-                className: m.className,
-                xp: m.xp,
-                level: m.level,
-                joinedAt: m.joinedAt,
-                user: m.user,
-              }))}
-              total={total}
-              canManageRoles={perms.canManageRoles}
-              ownerId={community.ownerId}
-              currentUserId={session.user.id}
-              classes={classes}
-              levelTiers={tiers}
-            />
+          {/* Tab: Tích hợp */}
+          {tab === "integrations" && (
+            <>
+              {perms.canManageAiAgent && (
+                <AgentConfigEditor
+                  communityId={community.id}
+                  communitySlug={slug}
+                  initial={{ prompt: community.agentSystemPrompt ?? "", hasApiKey: !!community.agentApiKey }}
+                />
+              )}
+
+              {perms.canManageApiKeys && (
+                <ApiKeysPanel
+                  communityId={community.id}
+                  communitySlug={slug}
+                  initial={apiKeys}
+                />
+              )}
+
+              {perms.canManageApiKeys &&
+                (() => {
+                  const cfg = (community.channelConfig ?? {}) as {
+                    discord?: { webhookUrl: string; eventTypes: string[] };
+                    telegram?: { chatId: string; eventTypes: string[] };
+                  };
+                  return (
+                    <ChannelConfigEditor
+                      communityId={community.id}
+                      communitySlug={slug}
+                      initial={{
+                        discord: cfg.discord ?? null,
+                        telegram: cfg.telegram
+                          ? {
+                              chatId: cfg.telegram.chatId,
+                              eventTypes: cfg.telegram.eventTypes,
+                            }
+                          : null,
+                      }}
+                    />
+                  );
+                })()}
+
+              {perms.canManageAiAgent && <AgentActivityPanel communityId={community.id} />}
+            </>
           )}
 
-          {isOwner && (
+          {/* Tab: Thành viên */}
+          {tab === "members" && (
             <>
-              <div
-                style={{
-                  fontSize: "var(--text-xl)",
-                  fontWeight: 700,
-                  color: "var(--danger)",
-                  padding: "var(--space-6) 0 var(--space-3)",
-                  borderTop: "1px solid var(--danger)",
-                  marginTop: "var(--space-4)",
-                }}
-              >
-                Danger Zone
-              </div>
-              <DangerZone
-                communityId={community.id}
-                communitySlug={slug}
-                communityName={community.name}
-              />
+              {perms.canViewMembers && (
+                <MembersEditor
+                  communityId={community.id}
+                  communitySlug={slug}
+                  members={members.map((m) => ({
+                    userId: m.userId,
+                    role: m.role,
+                    tier: m.tier,
+                    className: m.className,
+                    xp: m.xp,
+                    level: m.level,
+                    joinedAt: m.joinedAt,
+                    user: m.user,
+                  }))}
+                  total={total}
+                  canManageRoles={perms.canManageRoles}
+                  ownerId={community.ownerId}
+                  currentUserId={session.user.id}
+                  classes={classes}
+                  levelTiers={tiers}
+                />
+              )}
             </>
           )}
         </div>
       </div>
     </>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        padding: "var(--space-2) 0",
-        borderBottom: "1px solid var(--border-subtle)",
-        fontSize: "var(--text-base)",
-      }}
-    >
-      <span style={{ color: "var(--text-muted)" }}>{label}</span>
-      <strong style={{ color: "var(--text-heading)" }}>{value}</strong>
-    </div>
   );
 }
