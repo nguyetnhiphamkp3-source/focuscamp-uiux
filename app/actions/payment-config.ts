@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { PaymentConfigSchema } from "@/lib/community-config";
 import { logError } from "@/lib/logger";
+import { assertCommunityPermission } from "@/lib/services/community-settings";
 
 type ActionResult<T = unknown> =
   | { ok: true; data?: T }
@@ -24,10 +25,15 @@ export async function updatePaymentConfigAction(input: {
 
   const community = await prisma.community.findUnique({
     where: { id: input.communityId },
-    select: { ownerId: true, billingModel: true },
+    select: { billingModel: true },
   });
   if (!community) return { ok: false, reason: "community_not_found" };
-  if (community.ownerId !== s.user.id) return { ok: false, reason: "not_owner" };
+  try {
+    await assertCommunityPermission(s.user.id, input.communityId, "manage_billing");
+  } catch (err) {
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "forbidden" };
+  }
 
   const parsed = PaymentConfigSchema.safeParse({
     bankCode: input.bankCode.trim(),
@@ -68,10 +74,15 @@ export async function regenerateWebhookKeyAction(input: {
 
   const community = await prisma.community.findUnique({
     where: { id: input.communityId },
-    select: { ownerId: true, billingModel: true },
+    select: { billingModel: true },
   });
   if (!community) return { ok: false, reason: "community_not_found" };
-  if (community.ownerId !== s.user.id) return { ok: false, reason: "not_owner" };
+  try {
+    await assertCommunityPermission(s.user.id, input.communityId, "manage_billing");
+  } catch (err) {
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "forbidden" };
+  }
   if (!community.billingModel) return { ok: false, reason: "no_config" };
 
   const sepayApiKey = `sk_${randomBytes(24).toString("hex")}`;

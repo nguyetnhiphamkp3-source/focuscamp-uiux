@@ -11,6 +11,7 @@
  */
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { assertCommunityPermission } from "@/lib/services/community-settings";
 
 const DAILY_QUOTA_FREE = 50;
 
@@ -141,14 +142,7 @@ export async function setSystemPrompt(input: {
   communityId: string;
   prompt: string;
 }) {
-  const c = await prisma.community.findUnique({
-    where: { id: input.communityId },
-    select: { ownerId: true },
-  });
-  if (!c) throw new Error("community_not_found");
-  if (c.ownerId !== input.userId) {
-    throw new Error("Chỉ chủ cộng đồng mới sửa được system prompt");
-  }
+  await assertCommunityPermission(input.userId, input.communityId, "manage_ai_agent");
   const trimmed = input.prompt.trim();
   if (trimmed.length > 4000) {
     throw new Error("System prompt tối đa 4000 ký tự");

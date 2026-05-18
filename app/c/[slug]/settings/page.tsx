@@ -73,8 +73,7 @@ export default async function SettingsPage({
   });
   const perms = communityPermissionFlags(role);
 
-  // Only OWNER and ADMIN can access settings
-  if (!isOwner && role !== "ADMIN") redirect(`/c/${slug}`);
+  if (!perms.canManageSettings) redirect(`/c/${slug}`);
 
   const pillars = getPillars(community);
   const classes = getClasses(community);
@@ -83,7 +82,7 @@ export default async function SettingsPage({
   const subscriptionTiers = getTiersConfig(community.tiersConfig);
   const uiConfig = getUiConfig(community);
   const planState = getPlanStatus(community);
-  const apiKeys = isOwner ? await listApiKeys(community.id) : [];
+  const apiKeys = perms.canManageApiKeys ? await listApiKeys(community.id) : [];
 
   const { members, total } = perms.canViewMembers
     ? await listMembers({ communityId: community.id, limit: 100 })
@@ -115,11 +114,11 @@ export default async function SettingsPage({
                 marginBottom: "var(--space-4)",
               }}
             >
-              Bạn đang xem với quyền Admin. Một số cài đặt chỉ dành cho chủ cộng đồng.
+              Bạn đang xem với quyền Admin. Bạn có thể xem và chỉnh cài đặt; chỉ chủ cộng đồng mới xoá cộng đồng.
             </div>
           )}
 
-          {isOwner && (
+          {perms.canManageSettings && (
             <CommunityInfoEditor
               communityId={community.id}
               communitySlug={slug}
@@ -137,7 +136,7 @@ export default async function SettingsPage({
             />
           )}
 
-          {isOwner && (
+          {perms.canManageSettings && (
             <SlugChangeEditor
               communityId={community.id}
               currentSlug={slug}
@@ -145,11 +144,11 @@ export default async function SettingsPage({
             />
           )}
 
-          {isOwner && (
+          {perms.canManageBilling && (
             <CommunityPlanPanel communityId={community.id} state={planState} />
           )}
 
-          {isOwner && (
+          {perms.canManageBilling && (
             <PaymentConfigEditor
               communityId={community.id}
               communitySlug={slug}
@@ -196,7 +195,7 @@ export default async function SettingsPage({
             </div>
           )}
 
-          {isOwner && (
+          {perms.canManageSettings && (
             <UiConfigEditor
               communityId={community.id}
               communitySlug={slug}
@@ -204,7 +203,7 @@ export default async function SettingsPage({
             />
           )}
 
-          {isOwner && (
+          {perms.canManageAiAgent && (
             <AgentConfigEditor
               communityId={community.id}
               communitySlug={slug}
@@ -212,7 +211,7 @@ export default async function SettingsPage({
             />
           )}
 
-          {isOwner && (
+          {perms.canManageApiKeys && (
             <ApiKeysPanel
               communityId={community.id}
               communitySlug={slug}
@@ -220,7 +219,7 @@ export default async function SettingsPage({
             />
           )}
 
-          {isOwner && (
+          {perms.canManageSettings && (
             <AffiliateConfigEditor
               communityId={community.id}
               communitySlug={slug}
@@ -228,7 +227,7 @@ export default async function SettingsPage({
             />
           )}
 
-          {isOwner &&
+          {perms.canManageApiKeys &&
             (() => {
               const cfg = (community.channelConfig ?? {}) as {
                 discord?: { webhookUrl: string; eventTypes: string[] };
@@ -251,9 +250,9 @@ export default async function SettingsPage({
               );
             })()}
 
-          {isOwner && <AgentActivityPanel communityId={community.id} />}
+          {perms.canManageAiAgent && <AgentActivityPanel communityId={community.id} />}
 
-          {isOwner && <CommunityStatsCard communityId={community.id} />}
+          {perms.canManageSettings && <CommunityStatsCard communityId={community.id} />}
 
           <div
             className="ui-card"
@@ -281,7 +280,7 @@ export default async function SettingsPage({
             </span>
           </div>
 
-          {isOwner && (
+          {perms.canManageSettings && (
             <>
               <div
                 style={{

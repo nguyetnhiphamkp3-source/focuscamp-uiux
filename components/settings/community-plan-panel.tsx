@@ -12,7 +12,7 @@ import {
 import { btnPrimary, ErrorBox, SectionHeader } from "./editor-shared";
 
 /**
- * Owner-only panel showing current plan state + renew button.
+ * Owner/admin panel showing current plan state + renew button.
  */
 export function CommunityPlanPanel({
   communityId,

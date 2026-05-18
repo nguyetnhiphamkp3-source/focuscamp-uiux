@@ -15,6 +15,7 @@ import {
 } from "@/lib/platform-plans";
 import { createPayment } from "@/lib/sepay";
 import { deleteReplacedMediaUrl } from "@/lib/media-cleanup";
+import { assertCommunityPermission } from "@/lib/services/community-settings";
 
 /**
  * Assert the community plan allows writing (post, challenge, course, etc).
@@ -215,14 +216,12 @@ export async function renewCommunityPlan(input: {
   userId: string;
   communityId: string;
 }) {
+  await assertCommunityPermission(input.userId, input.communityId, "manage_billing");
   const c = await prisma.community.findUnique({
     where: { id: input.communityId },
-    select: { id: true, ownerId: true, planTier: true, slug: true },
+    select: { id: true, planTier: true, slug: true },
   });
   if (!c) throw new Error("Cộng đồng không tồn tại");
-  if (c.ownerId !== input.userId) {
-    throw new Error("Chỉ chủ cộng đồng mới gia hạn được");
-  }
   const tier = (c.planTier || "SOLO") as PlanTier;
   if (tier === "GRANDFATHER") {
     throw new Error("Cộng đồng grandfather, không cần gia hạn");
@@ -301,7 +300,7 @@ export async function activateCommunityPlan(
 }
 
 /**
- * Update community metadata. Owner only. Cannot change slug or ownerId
+ * Update community metadata. Owner/admin only. Cannot change slug or ownerId
  * here — slug change is risky (breaks URLs) and ownership transfer is
  * a separate ceremony.
  */
@@ -318,13 +317,12 @@ export async function updateCommunityInfo(input: {
   introVideoUrl?: string;
   introGallery?: { type: "video" | "image"; url: string }[];
 }) {
+  await assertCommunityPermission(input.userId, input.communityId, "manage_settings");
   const c = await prisma.community.findUnique({
     where: { id: input.communityId },
-    select: { ownerId: true, bannerUrl: true, iconUrl: true },
+    select: { bannerUrl: true, iconUrl: true },
   });
   if (!c) throw new Error("Cộng đồng không tồn tại");
-  if (c.ownerId !== input.userId)
-    throw new Error("Chỉ chủ cộng đồng mới sửa được thông tin");
 
   const updated = await prisma.community.update({
     where: { id: input.communityId },

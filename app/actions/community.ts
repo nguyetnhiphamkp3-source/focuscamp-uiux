@@ -11,6 +11,7 @@ import {
   renewCommunityPlan,
 } from "@/lib/services/community";
 import { startTierSubscription } from "@/lib/services/subscription";
+import { assertCommunityPermission } from "@/lib/services/community-settings";
 import {
   JoinCommunitySchema,
   CreateCommunitySchema,
@@ -173,15 +174,16 @@ export async function updateTiersConfigAction(input: {
 
   const community = await prisma.community.findUnique({
     where: { id: input.communityId },
+    select: { id: true },
   });
-  if (!community || community.ownerId !== s.user.id)
-    return { ok: false, reason: "forbidden" };
+  if (!community) return { ok: false, reason: "forbidden" };
 
   const { getTiersConfig } = await import("@/lib/services/subscription");
   const parsed = getTiersConfig(input.tiersConfig);
   if (parsed.length === 0) return { ok: false, reason: "invalid_tiers" };
 
   try {
+    await assertCommunityPermission(s.user.id, input.communityId, "manage_settings");
     await prisma.community.update({
       where: { id: input.communityId },
       data: { tiersConfig: input.tiersConfig as Prisma.InputJsonValue },
@@ -278,10 +280,15 @@ export async function changeCommunitySlugAction(input: {
 
   const community = await prisma.community.findUnique({
     where: { id: input.communityId },
-    select: { ownerId: true, slug: true, slugChangedAt: true },
+    select: { slug: true, slugChangedAt: true },
   });
   if (!community) return { ok: false, reason: "Community không tồn tại" };
-  if (community.ownerId !== s.user.id) return { ok: false, reason: "Chỉ owner mới được đổi URL" };
+  try {
+    await assertCommunityPermission(s.user.id, input.communityId, "manage_settings");
+  } catch (err) {
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "forbidden" };
+  }
   if (community.slug === slug) return { ok: false, reason: "Slug mới trùng slug hiện tại" };
 
   if (community.slugChangedAt) {

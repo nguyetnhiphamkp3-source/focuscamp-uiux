@@ -1,5 +1,5 @@
 /**
- * Community concept settings — owner-only mutations of the JSON config
+ * Community concept settings — owner/admin mutations of the JSON config
  * fields on Community (pillarsConfig, classesConfig, gemsConfig,
  * levelsConfig). These are the dynamic "taxonomy" each community defines.
  */
@@ -19,17 +19,7 @@ import type {
   FeatureKey,
 } from "@/lib/community-config";
 
-async function assertOwner(userId: string, communityId: string): Promise<void> {
-  const c = await prisma.community.findUnique({
-    where: { id: communityId },
-    select: { ownerId: true },
-  });
-  if (!c) throw new Error("Cộng đồng không tồn tại");
-  if (c.ownerId !== userId)
-    throw new Error("Chỉ chủ cộng đồng mới sửa được cài đặt");
-}
-
-async function assertPermission(
+export async function assertCommunityPermission(
   userId: string,
   communityId: string,
   permission: CommunityPermission,
@@ -68,7 +58,7 @@ export async function updatePillarsConfig(input: {
   communityId: string;
   pillars: PillarConfig[];
 }) {
-  await assertOwner(input.userId, input.communityId);
+  await assertCommunityPermission(input.userId, input.communityId, "manage_settings");
   assertUniqueKeys(input.pillars, "Pillars");
 
   const cleaned = input.pillars.map((p) => ({
@@ -94,7 +84,7 @@ export async function updateClassesConfig(input: {
   communityId: string;
   classes: ClassConfig[];
 }) {
-  await assertOwner(input.userId, input.communityId);
+  await assertCommunityPermission(input.userId, input.communityId, "manage_settings");
   assertUniqueKeys(input.classes, "Classes");
 
   const cleaned = input.classes.map((c) => ({
@@ -120,7 +110,7 @@ export async function updateCurrencyConfig(input: {
   communityId: string;
   currency: GemsConfig;
 }) {
-  await assertOwner(input.userId, input.communityId);
+  await assertCommunityPermission(input.userId, input.communityId, "manage_settings");
 
   const cleaned = {
     currencyName: input.currency.currencyName,
@@ -193,7 +183,7 @@ export async function updateMemberRole(input: {
   targetUserId: string;
   role: string;
 }) {
-  await assertPermission(input.userId, input.communityId, "manage_roles");
+  await assertCommunityPermission(input.userId, input.communityId, "manage_roles");
   if (!ALLOWED_ROLES.has(input.role)) {
     throw new Error(`Role không hợp lệ: ${input.role}`);
   }
@@ -227,7 +217,7 @@ export async function removeMember(input: {
   communityId: string;
   targetUserId: string;
 }) {
-  await assertPermission(input.userId, input.communityId, "manage_roles");
+  await assertCommunityPermission(input.userId, input.communityId, "manage_roles");
   if (input.targetUserId === input.userId) {
     throw new Error("Không thể tự xoá mình. Chuyển owner trước.");
   }
@@ -267,7 +257,7 @@ export async function updateLevelsConfig(input: {
   communityId: string;
   tiers: LevelTier[];
 }) {
-  await assertOwner(input.userId, input.communityId);
+  await assertCommunityPermission(input.userId, input.communityId, "manage_settings");
 
   // Sort ascending and ensure no duplicate minLevel
   const sorted = input.tiers.slice().sort((a, b) => a.minLevel - b.minLevel);
@@ -301,7 +291,7 @@ export async function updateChannelConfig(input: {
   discord: { webhookUrl: string; eventTypes: string[] } | null;
   telegram: { botToken: string; chatId: string; eventTypes: string[] } | null;
 }) {
-  await assertOwner(input.userId, input.communityId);
+  await assertCommunityPermission(input.userId, input.communityId, "manage_api_keys");
   const { encryptSecret } = await import("@/lib/integrations/encryption");
 
   const config: Record<string, unknown> = {};
@@ -344,7 +334,7 @@ export async function updateUiConfig(input: {
   communityId: string;
   hiddenFeatures: FeatureKey[];
 }) {
-  await assertOwner(input.userId, input.communityId);
+  await assertCommunityPermission(input.userId, input.communityId, "manage_settings");
   // Dedupe + normalise (preserve input ordering)
   const seen = new Set<FeatureKey>();
   const hidden = input.hiddenFeatures.filter((k) => {

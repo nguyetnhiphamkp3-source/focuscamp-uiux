@@ -44,8 +44,12 @@ const ROLE_PERMISSIONS: Record<CommunityRole, ReadonlySet<CommunityPermission>> 
     "manage_orders",
   ]),
   ADMIN: new Set([
+    "manage_settings",
     "view_members",
     "manage_roles",
+    "manage_billing",
+    "manage_api_keys",
+    "manage_ai_agent",
     "manage_courses",
     "manage_challenges",
     "review_challenge_members",

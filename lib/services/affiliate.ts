@@ -8,6 +8,7 @@
 import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { assertCommunityPermission } from "@/lib/services/community-settings";
 
 const ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz";
 
@@ -263,13 +264,7 @@ export async function updateAffiliateConfig(input: {
   commissionPercent: number;
   cookieDays: number;
 }) {
-  const c = await prisma.community.findUnique({
-    where: { id: input.communityId },
-    select: { ownerId: true },
-  });
-  if (!c) throw new Error("community_not_found");
-  if (c.ownerId !== input.userId)
-    throw new Error("Chỉ owner mới sửa được affiliate config");
+  await assertCommunityPermission(input.userId, input.communityId, "manage_settings");
   await prisma.community.update({
     where: { id: input.communityId },
     data: {

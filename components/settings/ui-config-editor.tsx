@@ -16,8 +16,8 @@ import {
 } from "./editor-shared";
 
 /**
- * Owner-only editor — toggle each feature menu link visibility for members.
- * Owner always sees full menu; this controls what NON-owners see.
+ * Owner/admin editor — toggle each feature menu link visibility for members.
+ * Owner always sees full menu; this controls what non-owners see.
  */
 export function UiConfigEditor({
   communityId,

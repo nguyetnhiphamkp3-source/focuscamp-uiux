@@ -1,6 +1,6 @@
 # focus.camp — Roadmap & Module Spec
 
-_Updated: 2026-05-15. Source of truth for "what's shipped / what's next"._
+_Updated: 2026-05-18. Source of truth for "what's shipped / what's next"._
 
 ## Positioning
 
@@ -44,7 +44,7 @@ Key: ✅ done · 🟡 partial · ❌ not started · 🚫 deferred (Phase 2+)
 | Boss Sói gamification (HP/tagline/name, computed from activity) | ✅ | Per-community |
 | Admin Settings: pillars/classes/currency/levels CRUD | ✅ | |
 | Settings: member list + role change + remove | ✅ | |
-| Role permissions: OWNER / ADMIN / MOD / MEMBER | ✅ | `docs/roles-permissions.md` + `lib/community-permissions.ts`; admin manages course/challenge/event/moderation, mod reviews submissions + moderates |
+| Role permissions: OWNER / ADMIN / MOD / MEMBER | ✅ | `docs/roles-permissions.md` + `lib/community-permissions.ts`; admin has full community settings edit access except community deletion, mod reviews submissions + moderates |
 | Settings: challenge-level toggles (requiresApproval, freeze) | ✅ | ChallengeSettingsPanel |
 | Notifications inbox + bell badge + 6 emitters | ✅ | Global inbox |
 | Bell badge live polling (30s, pause on hidden tab) | ✅ | `/api/notifications/unread-count` |

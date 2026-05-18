@@ -6,19 +6,11 @@ import { prisma } from "@/lib/prisma";
 import { generatePlainKey, hashKey, keyPrefix } from "@/lib/api-keys";
 import { CreateApiKeySchema, RevokeApiKeySchema } from "@/lib/validations";
 import { logError, logger } from "@/lib/logger";
+import { assertCommunityPermission } from "@/lib/services/community-settings";
 
 type ActionResult<T = unknown> =
   | { ok: true; data?: T }
   | { ok: false; reason: string };
-
-async function assertOwner(userId: string, communityId: string) {
-  const c = await prisma.community.findUnique({
-    where: { id: communityId },
-    select: { ownerId: true },
-  });
-  if (!c) throw new Error("Cộng đồng không tồn tại");
-  if (c.ownerId !== userId) throw new Error("Chỉ chủ cộng đồng mới quản lý API key");
-}
 
 export async function createApiKeyAction(input: {
   communityId: string;
@@ -39,7 +31,7 @@ export async function createApiKeyAction(input: {
   }
 
   try {
-    await assertOwner(s.user.id, parsed.data.communityId);
+    await assertCommunityPermission(s.user.id, parsed.data.communityId, "manage_api_keys");
     const plain = generatePlainKey();
     const hash = hashKey(plain);
     const expiresAt = parsed.data.expiresInDays
@@ -86,7 +78,7 @@ export async function revokeApiKeyAction(input: {
   }
 
   try {
-    await assertOwner(s.user.id, parsed.data.communityId);
+    await assertCommunityPermission(s.user.id, parsed.data.communityId, "manage_api_keys");
     const updated = await prisma.apiKey.updateMany({
       where: {
         id: parsed.data.apiKeyId,
@@ -108,10 +100,9 @@ export async function revokeApiKeyAction(input: {
 export async function listApiKeys(communityId: string) {
   const s = await auth();
   if (!s?.user?.id) throw new Error("unauthorized");
-  // Scope strictly to the caller's own keys — never trust an ownerId argument
-  // from the client (server actions are network-callable).
+  await assertCommunityPermission(s.user.id, communityId, "manage_api_keys");
   return prisma.apiKey.findMany({
-    where: { communityId, ownerId: s.user.id },
+    where: { communityId },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
