@@ -55,7 +55,7 @@ export function PostComposer({
     };
   }, []);
 
-  const canSubmit = body.trim().length > 0 && !pending;
+  const canSubmit = !pending;
   const avatar = avatarColorFor(user.id);
   const letter = initials(user.name || "?");
 
@@ -88,6 +88,10 @@ export function PostComposer({
   function submit(e: { preventDefault: () => void }) {
     e.preventDefault();
     setError(null);
+    if (!body.trim()) {
+      setError("Cần nhập nội dung cho bài viết.");
+      return;
+    }
     start(async () => {
       const res = await createPostAction({
         communityId, communitySlug, type,
@@ -259,8 +263,8 @@ export function PostComposer({
           disabled={!canSubmit}
           style={{
             padding: "7px 18px", borderRadius: 6, border: "none",
-            background: canSubmit ? "var(--brand-green)" : "var(--bg-modifier-hover)",
-            color: canSubmit ? "#fff" : "var(--text-muted)",
+            background: "var(--brand-green)",
+            color: "#fff",
             fontWeight: 600, fontSize: "var(--text-sm)",
             cursor: canSubmit ? "pointer" : "not-allowed",
             opacity: pending ? 0.6 : 1, transition: "background 0.15s",
