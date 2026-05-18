@@ -241,6 +241,7 @@ export async function startTierSubscription(input: {
     select: { billingModel: true },
   });
   const bankCfg = community ? getPaymentConfig(community) : null;
+  if (!bankCfg) throw new Error("payment_not_configured");
   const payment = await createPayment({
     userId: input.userId,
     communityId: input.communityId,
@@ -249,12 +250,10 @@ export async function startTierSubscription(input: {
     refId: sub.id,
     amountVnd: input.priceVnd,
     ttlMinutes: 1440,
-    ...(bankCfg && {
-      bankCode: bankCfg.bankCode,
-      bankAccount: bankCfg.bankAccount,
-      bankHolder: bankCfg.bankHolder,
-      bankName: bankCfg.bankName,
-    }),
+    bankCode: bankCfg.bankCode,
+    bankAccount: bankCfg.bankAccount,
+    bankHolder: bankCfg.bankHolder,
+    bankName: bankCfg.bankName,
   });
 
   logger.info({ userId: input.userId, communityId: input.communityId, tier: input.tierKey }, "[subscription] payment started");

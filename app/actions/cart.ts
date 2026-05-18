@@ -93,6 +93,7 @@ export async function checkoutCartAction(
     });
     if (community) bankCfg = getPaymentConfig(community);
   }
+  if (!bankCfg) return { ok: false, reason: "payment_not_configured" };
   const payment = await createPayment({
     userId: s.user.id,
     communityId,
@@ -102,12 +103,10 @@ export async function checkoutCartAction(
     amountVnd: totalVnd,
     ttlMinutes: 1440,
     metadata: { productIds, breakdown },
-    ...(bankCfg && {
-      bankCode: bankCfg.bankCode,
-      bankAccount: bankCfg.bankAccount,
-      bankHolder: bankCfg.bankHolder,
-      bankName: bankCfg.bankName,
-    }),
+    bankCode: bankCfg.bankCode,
+    bankAccount: bankCfg.bankAccount,
+    bankHolder: bankCfg.bankHolder,
+    bankName: bankCfg.bankName,
   });
 
   // Clear cookie after checkout

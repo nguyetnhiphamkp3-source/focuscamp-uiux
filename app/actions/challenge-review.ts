@@ -19,6 +19,7 @@ import {
 } from "@/lib/services/challenge";
 import { startChallengePurchase } from "@/lib/services/payment";
 import { createPayment } from "@/lib/sepay";
+import { getPaymentConfig } from "@/lib/community-config";
 import { parsePricingConfig, calculateEffectivePrice } from "@/lib/services/pricing";
 import { getUserTier } from "@/lib/services/subscription";
 import { prisma } from "@/lib/prisma";
@@ -229,6 +230,29 @@ export async function updateChallengeSettingsAction(input: {
   if (!parsed.success) {
     return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
   }
+
+  // Block setting paid pricing if community has no SePay config
+  if (parsed.data.pricingConfig) {
+    const pc = parsed.data.pricingConfig as Record<string, unknown>;
+    const hasPrice = (pc.basePrice && Number(pc.basePrice) > 0) || (pc.price && Number(pc.price) > 0);
+    if (hasPrice) {
+      const challenge = await prisma.challenge.findUnique({
+        where: { id: parsed.data.challengeId },
+        select: { communityId: true },
+      });
+      if (challenge) {
+        const community = await prisma.community.findUnique({
+          where: { id: challenge.communityId },
+          select: { billingModel: true },
+        });
+        const bankCfg = community ? getPaymentConfig(community) : null;
+        if (!bankCfg) {
+          return { ok: false, reason: "Bạn cần cấu hình Thanh toán SePay trước khi đặt phí tham gia challenge." };
+        }
+      }
+    }
+  }
+
   try {
     await updateChallengeSettings({
       userId: s.user.id,
@@ -611,6 +635,13 @@ export async function renewChallengePaymentAction(input: {
   const basePriceVnd = Number(originalPayment.amountVnd);
   const newAmount = minutesSinceJoin > 30 ? basePriceVnd + 500000 : basePriceVnd;
 
+  const community = await prisma.community.findUnique({
+    where: { id: member.challenge.community.id },
+    select: { billingModel: true },
+  });
+  const bankCfg = community ? getPaymentConfig(community) : null;
+  if (!bankCfg) return { ok: false, reason: "payment_not_configured" };
+
   const payment = await createPayment({
     userId: s.user.id,
     communityId: member.challenge.community.id,
@@ -618,6 +649,10 @@ export async function renewChallengePaymentAction(input: {
     refType: "challenge",
     refId: member.id,
     amountVnd: newAmount,
+    bankCode: bankCfg.bankCode,
+    bankAccount: bankCfg.bankAccount,
+    bankHolder: bankCfg.bankHolder,
+    bankName: bankCfg.bankName,
   });
 
   return { ok: true, paymentCode: payment.paymentCode, amountVnd: newAmount };

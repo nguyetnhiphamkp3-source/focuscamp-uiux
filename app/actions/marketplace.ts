@@ -8,6 +8,7 @@ import { logError } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { createPayment } from "@/lib/sepay";
 import { startProductPurchase } from "@/lib/services/payment";
+import { getPaymentConfig } from "@/lib/community-config";
 
 type ActionResult<T = unknown> =
   | { ok: true; data?: T }
@@ -47,6 +48,19 @@ export async function createProductAction(input: {
   });
   if (!parsed.success) {
     return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
+  }
+
+  // Block paid product creation if community has no SePay config
+  const isPaid = !parsed.data.isFree && (parsed.data.priceVnd ?? 0) > 0;
+  if (isPaid) {
+    const community = await prisma.community.findUnique({
+      where: { id: parsed.data.communityId },
+      select: { billingModel: true },
+    });
+    const bankCfg = community ? getPaymentConfig(community) : null;
+    if (!bankCfg) {
+      return { ok: false, reason: "Bạn cần cấu hình Thanh toán SePay trước khi tạo sản phẩm trả phí." };
+    }
   }
 
   try {
@@ -114,6 +128,25 @@ export async function updateProductSettingsAction(input: {
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
   const parsed = UpdateProductSettingsSchema.safeParse(input);
   if (!parsed.success) return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
+
+  // Block setting price > 0 if community has no SePay config
+  if (parsed.data.priceVnd && parsed.data.priceVnd > 0) {
+    const product = await prisma.product.findUnique({
+      where: { id: parsed.data.productId },
+      select: { communityId: true },
+    });
+    if (product) {
+      const community = await prisma.community.findUnique({
+        where: { id: product.communityId },
+        select: { billingModel: true },
+      });
+      const bankCfg = community ? getPaymentConfig(community) : null;
+      if (!bankCfg) {
+        return { ok: false, reason: "Bạn cần cấu hình Thanh toán SePay trước khi đặt giá sản phẩm." };
+      }
+    }
+  }
+
   try {
     await updateProductSettings({ userId: s.user.id, ...parsed.data });
     revalidatePath(`/c/${input.communitySlug}/marketplace`);
@@ -144,19 +177,30 @@ export async function addBumpToPaymentAction(input: {
       select: { id: true, priceVnd: true, communityId: true },
     });
     if (!bump) return { ok: false, reason: "invalid_bump" };
+    const communityId = payment.communityId ?? bump.communityId;
+    const community = communityId ? await prisma.community.findUnique({
+      where: { id: communityId },
+      select: { billingModel: true },
+    }) : null;
+    const bankCfg = community ? getPaymentConfig(community) : null;
+    if (!bankCfg) return { ok: false, reason: "payment_not_configured" };
     await prisma.payment.update({
       where: { paymentCode: input.currentPaymentCode },
       data: { status: "EXPIRED" },
     });
     const newPayment = await createPayment({
       userId: payment.userId,
-      communityId: payment.communityId ?? undefined,
+      communityId: communityId ?? undefined,
       purpose: (payment.purpose as "subscription" | "product" | "challenge_deposit" | "challenge_entry" | "community_plan" | "event"),
       refType: payment.refType as "subscription" | "product" | "challenge" | "community" | "event",
       refId: payment.refId,
       amountVnd: Number(payment.amountVnd) + Number(bump.priceVnd),
       ttlMinutes: 1440,
       metadata: { ...meta, bumpProductId: bump.id, bumpPriceVnd: Number(bump.priceVnd) },
+      bankCode: bankCfg.bankCode,
+      bankAccount: bankCfg.bankAccount,
+      bankHolder: bankCfg.bankHolder,
+      bankName: bankCfg.bankName,
     });
     return { ok: true, newPaymentCode: newPayment.paymentCode };
   } catch (err) {
@@ -179,6 +223,13 @@ export async function removeBumpFromPaymentAction(input: {
     if (!meta.bumpProductId) return { ok: false, reason: "no_bump" };
     const bumpPriceVnd = Number(meta.bumpPriceVnd ?? 0);
     const originalAmount = Number(payment.amountVnd) - bumpPriceVnd;
+    const communityId = payment.communityId;
+    const community = communityId ? await prisma.community.findUnique({
+      where: { id: communityId },
+      select: { billingModel: true },
+    }) : null;
+    const bankCfg = community ? getPaymentConfig(community) : null;
+    if (!bankCfg) return { ok: false, reason: "payment_not_configured" };
     await prisma.payment.update({
       where: { paymentCode: input.currentPaymentCode },
       data: { status: "EXPIRED" },
@@ -194,6 +245,10 @@ export async function removeBumpFromPaymentAction(input: {
       amountVnd: originalAmount,
       ttlMinutes: 1440,
       metadata: restMeta,
+      bankCode: bankCfg.bankCode,
+      bankAccount: bankCfg.bankAccount,
+      bankHolder: bankCfg.bankHolder,
+      bankName: bankCfg.bankName,
     });
     return { ok: true, newPaymentCode: newPayment.paymentCode };
   } catch (err) {

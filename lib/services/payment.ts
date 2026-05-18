@@ -36,6 +36,7 @@ export async function startProductPurchase(params: {
       select: { billingModel: true },
     });
     const bankCfg = community ? getPaymentConfig(community) : null;
+    if (!bankCfg) throw new Error("payment_not_configured");
     const payment = await createPayment({
       userId,
       communityId: ctx.productCommunityId,
@@ -43,12 +44,10 @@ export async function startProductPurchase(params: {
       refType: "product",
       refId: ctx.purchase.id,
       amountVnd: ctx.amountVnd,
-      ...(bankCfg && {
-        bankCode: bankCfg.bankCode,
-        bankAccount: bankCfg.bankAccount,
-        bankHolder: bankCfg.bankHolder,
-        bankName: bankCfg.bankName,
-      }),
+      bankCode: bankCfg.bankCode,
+      bankAccount: bankCfg.bankAccount,
+      bankHolder: bankCfg.bankHolder,
+      bankName: bankCfg.bankName,
     });
     logger.info(
       { userId, productId, paymentCode: payment.paymentCode },
@@ -75,6 +74,7 @@ export async function startChallengePurchase(params: {
     select: { billingModel: true },
   });
   const bankCfg = community ? getPaymentConfig(community) : null;
+  if (!bankCfg) throw new Error("payment_not_configured");
   const payment = await createPayment({
     userId,
     communityId,
@@ -82,12 +82,10 @@ export async function startChallengePurchase(params: {
     refType: "challenge",
     refId: member.id,
     amountVnd,
-    ...(bankCfg && {
-      bankCode: bankCfg.bankCode,
-      bankAccount: bankCfg.bankAccount,
-      bankHolder: bankCfg.bankHolder,
-      bankName: bankCfg.bankName,
-    }),
+    bankCode: bankCfg.bankCode,
+    bankAccount: bankCfg.bankAccount,
+    bankHolder: bankCfg.bankHolder,
+    bankName: bankCfg.bankName,
   });
   logger.info({ userId, challengeId, paymentCode: payment.paymentCode }, "[payment] challenge entry started");
   return { member, payment };

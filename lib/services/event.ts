@@ -92,6 +92,7 @@ export async function createEvent(input: {
 
 export async function listEvents(input: {
   communityId: string;
+  viewerUserId?: string;
   scope?: "upcoming" | "past" | "all";
 }) {
   const now = new Date();
@@ -111,6 +112,13 @@ export async function listEvents(input: {
     orderBy: { startsAt: input.scope === "past" ? "desc" : "asc" },
     include: {
       _count: { select: { bookings: true } },
+      bookings: input.viewerUserId
+        ? {
+            where: { userId: input.viewerUserId },
+            select: { id: true, status: true, attendedAt: true },
+            take: 1,
+          }
+        : false,
     },
   });
 }
@@ -133,7 +141,6 @@ export async function bookEvent(input: {
   });
   if (!event) throw new Error("Event không tồn tại");
   if (event.status !== "OPEN") throw new Error("Event đã đóng");
-  if (event._count.bookings >= event.capacity) throw new Error("Event đã đủ chỗ");
 
   // Membership required
   const m = await prisma.membership.findUnique({
@@ -148,7 +155,14 @@ export async function bookEvent(input: {
   const existing = await prisma.eventBooking.findUnique({
     where: { eventId_userId: { eventId: event.id, userId: input.userId } },
   });
-  if (existing && existing.status === "CONFIRMED") return { status: "CONFIRMED" };
+  if (existing && (existing.status === "CONFIRMED" || existing.status === "ATTENDED")) {
+    return { status: "CONFIRMED" };
+  }
+
+  const existingReservesSeat = existing?.status === "PENDING";
+  if (event._count.bookings >= event.capacity && !existingReservesSeat) {
+    throw new Error("Event đã đủ chỗ");
+  }
 
   if (event.isFree) {
     if (existing) {
@@ -185,6 +199,7 @@ export async function bookEvent(input: {
     select: { billingModel: true },
   });
   const bankCfg = community ? getPaymentConfig(community) : null;
+  if (!bankCfg) throw new Error("payment_not_configured");
   const payment = await createPayment({
     userId: input.userId,
     communityId: event.communityId,
@@ -192,12 +207,10 @@ export async function bookEvent(input: {
     refType: "event",
     refId: booking.id,
     amountVnd: event.priceVnd,
-    ...(bankCfg && {
-      bankCode: bankCfg.bankCode,
-      bankAccount: bankCfg.bankAccount,
-      bankHolder: bankCfg.bankHolder,
-      bankName: bankCfg.bankName,
-    }),
+    bankCode: bankCfg.bankCode,
+    bankAccount: bankCfg.bankAccount,
+    bankHolder: bankCfg.bankHolder,
+    bankName: bankCfg.bankName,
   });
   logger.info(
     { eventId: event.id, bookingId: booking.id, paymentCode: payment.paymentCode },
