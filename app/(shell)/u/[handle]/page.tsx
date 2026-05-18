@@ -37,6 +37,14 @@ export default async function UserGlobalPage({
       location: true,
       createdAt: true,
       memberships: {
+        where: {
+          community: {
+            OR: [
+              { planExpiresAt: { not: null } },
+              { planTier: "GRANDFATHER" },
+            ],
+          },
+        },
         include: {
           community: {
             select: { id: true, slug: true, name: true, iconUrl: true, memberCount: true },
@@ -45,6 +53,12 @@ export default async function UserGlobalPage({
         orderBy: { joinedAt: "desc" },
       },
       ownedCommunities: {
+        where: {
+          OR: [
+            { planExpiresAt: { not: null } },
+            { planTier: "GRANDFATHER" },
+          ],
+        },
         select: { id: true, slug: true, name: true, iconUrl: true, memberCount: true },
       },
     },
