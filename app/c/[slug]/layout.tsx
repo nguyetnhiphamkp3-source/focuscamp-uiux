@@ -264,7 +264,45 @@ export default async function CommunityLayout({
           isOwner={isOwner}
           communityId={community.id}
         />
-        {children}
+        {!isOwner && (planState.status === "pending" || planState.status === "expired") ? (
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "var(--space-4)",
+              padding: "var(--space-10)",
+              textAlign: "center",
+            }}
+          >
+            <span style={{ fontSize: 48 }}>🔒</span>
+            <h2 style={{ fontSize: "var(--text-xl)", fontWeight: 700, color: "var(--header-primary)", margin: 0 }}>
+              Cộng đồng này chưa sẵn sàng
+            </h2>
+            <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", margin: 0, maxWidth: 360 }}>
+              Cộng đồng đang trong quá trình thiết lập. Hãy khám phá các cộng đồng khác đang hoạt động.
+            </p>
+            <a
+              href="/discovery"
+              style={{
+                marginTop: "var(--space-2)",
+                padding: "10px 20px",
+                background: "var(--brand-green)",
+                color: "#fff",
+                borderRadius: 8,
+                textDecoration: "none",
+                fontSize: "var(--text-sm)",
+                fontWeight: 600,
+              }}
+            >
+              Khám phá cộng đồng khác
+            </a>
+          </div>
+        ) : (
+          children
+        )}
       </main>
 
       {/* RIGHT SIDEBAR (parallel route slot) */}
