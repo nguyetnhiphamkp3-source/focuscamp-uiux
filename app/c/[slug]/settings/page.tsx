@@ -8,6 +8,7 @@ import {
   getCurrency,
   getLevelTiers,
   getUiConfig,
+  getPaymentConfig,
 } from "@/lib/community-config";
 import {
   effectiveCommunityRole,
@@ -30,6 +31,7 @@ import { listApiKeys } from "@/app/actions/api-keys";
 import { AffiliateConfigEditor } from "@/components/settings/affiliate-config-editor";
 import { getAffiliateConfig } from "@/lib/services/affiliate";
 import { ChannelConfigEditor } from "@/components/settings/channel-config-editor";
+import { PaymentConfigEditor } from "@/components/settings/payment-config-editor";
 import { getPlanStatus } from "@/lib/platform-plans";
 import { getTiersConfig } from "@/lib/services/subscription";
 import { listMembers } from "@/lib/services/community-settings";
@@ -145,6 +147,14 @@ export default async function SettingsPage({
 
           {isOwner && (
             <CommunityPlanPanel communityId={community.id} state={planState} />
+          )}
+
+          {isOwner && (
+            <PaymentConfigEditor
+              communityId={community.id}
+              communitySlug={slug}
+              initial={getPaymentConfig(community)}
+            />
           )}
 
           {perms.canManageOrders && (

@@ -5,6 +5,7 @@
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { createPayment } from "@/lib/sepay";
+import { getPaymentConfig } from "@/lib/community-config";
 import { assertCommunityCanWrite } from "./community";
 import { canCommunity, effectiveCommunityRole } from "@/lib/community-permissions";
 import { getGoogleAccessToken } from "./google-oauth";
@@ -179,6 +180,11 @@ export async function bookEvent(input: {
       },
     }));
 
+  const community = await prisma.community.findUnique({
+    where: { id: event.communityId },
+    select: { billingModel: true },
+  });
+  const bankCfg = community ? getPaymentConfig(community) : null;
   const payment = await createPayment({
     userId: input.userId,
     communityId: event.communityId,
@@ -186,6 +192,12 @@ export async function bookEvent(input: {
     refType: "event",
     refId: booking.id,
     amountVnd: event.priceVnd,
+    ...(bankCfg && {
+      bankCode: bankCfg.bankCode,
+      bankAccount: bankCfg.bankAccount,
+      bankHolder: bankCfg.bankHolder,
+      bankName: bankCfg.bankName,
+    }),
   });
   logger.info(
     { eventId: event.id, bookingId: booking.id, paymentCode: payment.paymentCode },

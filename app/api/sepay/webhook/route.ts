@@ -29,17 +29,27 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 1. Verify API key
+  // 1. Verify API key (platform key OR per-community key)
   const authHeader = req.headers.get("authorization") || "";
-  const expectedKey = process.env.SEPAY_WEBHOOK_API_KEY;
-  if (!expectedKey) {
+  const providedKey = authHeader.startsWith("Apikey ") ? authHeader.slice(7) : "";
+  const platformKey = process.env.SEPAY_WEBHOOK_API_KEY;
+  if (!platformKey) {
     logger.error("[SePay webhook] SEPAY_WEBHOOK_API_KEY not set");
     return NextResponse.json(
       { success: false, error: "server_misconfigured" },
       { status: 500 }
     );
   }
-  if (authHeader !== `Apikey ${expectedKey}`) {
+  let keyValid = providedKey === platformKey;
+  if (!keyValid && providedKey) {
+    // Check if key matches any community's sepayApiKey
+    const community = await prisma.community.findFirst({
+      where: { billingModel: { path: ["sepayApiKey"], equals: providedKey } },
+      select: { id: true },
+    });
+    keyValid = !!community;
+  }
+  if (!keyValid) {
     logger.warn({ ip }, "[SePay webhook] unauthorized");
     return NextResponse.json(
       { success: false, error: "unauthorized" },

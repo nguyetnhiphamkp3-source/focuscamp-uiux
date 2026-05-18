@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { createPayment } from "@/lib/sepay";
+import { getPaymentConfig } from "@/lib/community-config";
 import { parseCart, serializeCart, addItem, removeItem } from "@/lib/cart";
 
 const CART_COOKIE = "fc_cart";
@@ -83,15 +84,30 @@ export async function checkoutCartAction(
   const totalVnd = breakdown.reduce((sum, item) => sum + item.amountVnd, 0);
   if (totalVnd <= 0) return { ok: false, reason: "total_zero" };
 
+  const communityId = communityIds[0] ?? undefined;
+  let bankCfg: import("@/lib/community-config").PaymentConfig | null = null;
+  if (communityId) {
+    const community = await prisma.community.findUnique({
+      where: { id: communityId },
+      select: { billingModel: true },
+    });
+    if (community) bankCfg = getPaymentConfig(community);
+  }
   const payment = await createPayment({
     userId: s.user.id,
-    communityId: communityIds[0] ?? undefined,
+    communityId,
     purpose: "product",
     refType: "cart",
     refId: "cart",
     amountVnd: totalVnd,
     ttlMinutes: 1440,
     metadata: { productIds, breakdown },
+    ...(bankCfg && {
+      bankCode: bankCfg.bankCode,
+      bankAccount: bankCfg.bankAccount,
+      bankHolder: bankCfg.bankHolder,
+      bankName: bankCfg.bankName,
+    }),
   });
 
   // Clear cookie after checkout

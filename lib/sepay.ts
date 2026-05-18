@@ -66,6 +66,10 @@ export async function createPayment(params: {
   amountVnd: number;
   ttlMinutes?: number;
   metadata?: Record<string, unknown>;
+  bankCode?: string;
+  bankAccount?: string;
+  bankHolder?: string;
+  bankName?: string;
 }) {
   const ttl = params.ttlMinutes ?? 30;
   let paymentCode = generatePaymentCode();
@@ -73,6 +77,13 @@ export async function createPayment(params: {
   while (await prisma.payment.findUnique({ where: { paymentCode } })) {
     paymentCode = generatePaymentCode();
   }
+
+  const meta = {
+    ...(params.metadata ?? {}),
+    ...(params.bankCode ? { bankCode: params.bankCode } : {}),
+    ...(params.bankHolder ? { bankHolder: params.bankHolder } : {}),
+  };
+  const hasMetadata = Object.keys(meta).length > 0;
 
   return prisma.payment.create({
     data: {
@@ -85,11 +96,11 @@ export async function createPayment(params: {
       amountVnd: params.amountVnd,
       status: "PENDING",
       provider: "SEPAY_STANDARD",
-      bankName: process.env.SEPAY_BANK_NAME,
-      bankAccount: process.env.SEPAY_BANK_ACCOUNT,
+      bankName: params.bankName ?? process.env.SEPAY_BANK_NAME,
+      bankAccount: params.bankAccount ?? process.env.SEPAY_BANK_ACCOUNT,
       expiresAt: new Date(Date.now() + ttl * 60 * 1000),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ...(params.metadata !== undefined && { metadata: params.metadata as any }),
+      ...(hasMetadata && { metadata: meta as any }),
     },
   });
 }

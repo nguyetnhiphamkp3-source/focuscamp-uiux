@@ -104,10 +104,10 @@ export default async function PaymentPage({
     bumpItemTitle = bumpProd?.title ?? null;
   }
 
-  const bankCode = process.env.SEPAY_BANK_CODE || "MB";
-  const bankAccount = process.env.SEPAY_BANK_ACCOUNT || "";
-  const bankAccountHolder = process.env.SEPAY_BANK_HOLDER || "";
-  const bankName = process.env.SEPAY_BANK_NAME || "MB Bank";
+  const bankCode = (meta.bankCode as string) || process.env.SEPAY_BANK_CODE || "MB";
+  const bankAccount = payment.bankAccount || process.env.SEPAY_BANK_ACCOUNT || "";
+  const bankAccountHolder = (meta.bankHolder as string) || process.env.SEPAY_BANK_HOLDER || "";
+  const bankName = payment.bankName || process.env.SEPAY_BANK_NAME || "MB Bank";
 
   const qrUrl = bankAccount
     ? buildVietQRUrl({

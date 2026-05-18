@@ -14,6 +14,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
 import { createPayment } from "@/lib/sepay";
+import { getPaymentConfig } from "@/lib/community-config";
 
 /* ===== Config types ===== */
 
@@ -235,6 +236,11 @@ export async function startTierSubscription(input: {
     },
   });
 
+  const community = await prisma.community.findUnique({
+    where: { id: input.communityId },
+    select: { billingModel: true },
+  });
+  const bankCfg = community ? getPaymentConfig(community) : null;
   const payment = await createPayment({
     userId: input.userId,
     communityId: input.communityId,
@@ -243,6 +249,12 @@ export async function startTierSubscription(input: {
     refId: sub.id,
     amountVnd: input.priceVnd,
     ttlMinutes: 1440,
+    ...(bankCfg && {
+      bankCode: bankCfg.bankCode,
+      bankAccount: bankCfg.bankAccount,
+      bankHolder: bankCfg.bankHolder,
+      bankName: bankCfg.bankName,
+    }),
   });
 
   logger.info({ userId: input.userId, communityId: input.communityId, tier: input.tierKey }, "[subscription] payment started");

@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { createPayment } from "@/lib/sepay";
 import { logger } from "@/lib/logger";
 import { activateCommunityPlan } from "@/lib/services/community";
+import { getPaymentConfig } from "@/lib/community-config";
 import type { Prisma } from "@prisma/client";
 
 export async function startProductPurchase(params: {
@@ -30,6 +31,11 @@ export async function startProductPurchase(params: {
     });
     return { purchase, productCommunityId: product.communityId, amountVnd };
   }).then(async (ctx) => {
+    const community = await prisma.community.findUnique({
+      where: { id: ctx.productCommunityId },
+      select: { billingModel: true },
+    });
+    const bankCfg = community ? getPaymentConfig(community) : null;
     const payment = await createPayment({
       userId,
       communityId: ctx.productCommunityId,
@@ -37,6 +43,12 @@ export async function startProductPurchase(params: {
       refType: "product",
       refId: ctx.purchase.id,
       amountVnd: ctx.amountVnd,
+      ...(bankCfg && {
+        bankCode: bankCfg.bankCode,
+        bankAccount: bankCfg.bankAccount,
+        bankHolder: bankCfg.bankHolder,
+        bankName: bankCfg.bankName,
+      }),
     });
     logger.info(
       { userId, productId, paymentCode: payment.paymentCode },
@@ -58,6 +70,11 @@ export async function startChallengePurchase(params: {
     update: { status: "PAYMENT_PENDING" },
     create: { challengeId, userId, status: "PAYMENT_PENDING" },
   });
+  const community = await prisma.community.findUnique({
+    where: { id: communityId },
+    select: { billingModel: true },
+  });
+  const bankCfg = community ? getPaymentConfig(community) : null;
   const payment = await createPayment({
     userId,
     communityId,
@@ -65,6 +82,12 @@ export async function startChallengePurchase(params: {
     refType: "challenge",
     refId: member.id,
     amountVnd,
+    ...(bankCfg && {
+      bankCode: bankCfg.bankCode,
+      bankAccount: bankCfg.bankAccount,
+      bankHolder: bankCfg.bankHolder,
+      bankName: bankCfg.bankName,
+    }),
   });
   logger.info({ userId, challengeId, paymentCode: payment.paymentCode }, "[payment] challenge entry started");
   return { member, payment };

@@ -54,6 +54,15 @@ export const LevelTierSchema = z.object({
 });
 export type LevelTier = z.infer<typeof LevelTierSchema>;
 
+export const PaymentConfigSchema = z.object({
+  bankCode: z.string().min(1).max(20),
+  bankAccount: z.string().min(1).max(30),
+  bankHolder: z.string().min(1).max(100),
+  bankName: z.string().min(1).max(60),
+  sepayApiKey: z.string().min(1).max(100).optional(),
+});
+export type PaymentConfig = z.infer<typeof PaymentConfigSchema>;
+
 /** Shape of the fields we read off a Community row. */
 export type CommunityConfigSource = {
   pillarsConfig?: unknown;
@@ -61,6 +70,7 @@ export type CommunityConfigSource = {
   gemsConfig?: unknown;
   levelsConfig?: unknown;
   uiConfig?: unknown;
+  billingModel?: unknown;
 };
 
 /* ===== UI visibility config ===== */
@@ -200,4 +210,13 @@ export function isFeatureVisible(
 ): boolean {
   if (isOwner && !previewAsMember) return true;
   return !ui.hiddenFeatures.includes(feature);
+}
+
+/** Payment config — null if owner hasn't configured their bank account. */
+export function getPaymentConfig(c: CommunityConfigSource): PaymentConfig | null {
+  if (c.billingModel === null || c.billingModel === undefined) return null;
+  const parsed = PaymentConfigSchema.safeParse(c.billingModel);
+  if (parsed.success) return parsed.data;
+  logger.warn({ issues: parsed.error.issues }, "[community-config] bad billingModel");
+  return null;
 }
