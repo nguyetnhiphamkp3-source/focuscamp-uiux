@@ -728,7 +728,7 @@ export default async function ChallengeDetailPage({
                   ? new Date(myMembership.personalStartsAt.getTime() + t.dayNumber * 24 * 60 * 60 * 1000)
                   : null;
                 const isLate = !!(isDone && checkinData && dayDeadline && checkinData.createdAt.getTime() > dayDeadline.getTime());
-                const hasBody = !!(t.description || t.sopContent || t.videoUrl || hasEvidenceHint || checkinData || isCurrent);
+                const hasBody = !!(t.description || t.sopContent || t.videoUrl || hasEvidenceHint || checkinData || isCurrent || isOverdue);
                 // Determine if task is locked based on unlock mode
                 const taskUnlocked = isDone || permissions.canManageChallenges || isTaskUnlocked(t, taskIndex);
                 const isLocked = !taskUnlocked && !isDone && !isRejected && myMembership && !myMembership.completedAt;
@@ -1008,8 +1008,8 @@ export default async function ChallengeDetailPage({
                           </>
                           );
                         })()}
-                        {/* Inline check-in form for current task */}
-                        {isCurrent && !myMembership?.completedAt && session?.user && (
+                        {/* Inline check-in form for current or overdue task */}
+                        {(isCurrent || isOverdue) && !myMembership?.completedAt && session?.user && (
                           <div style={{ marginTop: "var(--space-4)", paddingTop: "var(--space-3)", borderTop: "1px solid var(--border-subtle)" }}>
                             <CheckinForm
                               challengeId={challenge.id}
@@ -1027,7 +1027,7 @@ export default async function ChallengeDetailPage({
                                 evidenceType: t.evidenceType,
                                 evidenceLabel: t.evidenceLabel,
                               }}
-                              deadlineLabel={currentTaskDeadlineLabel}
+                              deadlineLabel={isOverdue ? "Nộp bù" : currentTaskDeadlineLabel}
                             />
                           </div>
                         )}
