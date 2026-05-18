@@ -1,9 +1,14 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
-import { markNotificationReadAction } from "@/app/actions/notifications";
+import { useState, useTransition, type CSSProperties } from "react";
+import {
+  clearAllNotificationsAction,
+  clearReadNotificationsAction,
+  markAllReadAction,
+  markNotificationReadAction,
+} from "@/app/actions/notifications";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { avatarColorFor, initials, fmtRelativeTime } from "@/lib/brand";
 
 export type InboxItem = {
@@ -178,31 +183,123 @@ export function NotificationItem({ n }: { n: InboxItem }) {
   );
 }
 
-export function MarkAllReadLink() {
+export function NotificationBulkActions({
+  unread,
+  hasRead,
+  hasAny,
+}: {
+  unread: number;
+  hasRead: boolean;
+  hasAny: boolean;
+}) {
   const [pending, start] = useTransition();
   const router = useRouter();
+  const [confirmTarget, setConfirmTarget] = useState<"read" | "all" | null>(null);
+
+  if (!hasAny) return null;
+
+  function markAllRead() {
+    start(async () => {
+      const res = await markAllReadAction();
+      if (res.ok) router.refresh();
+    });
+  }
+
+  function confirmDelete() {
+    const target = confirmTarget;
+    if (!target) return;
+    setConfirmTarget(null);
+    start(async () => {
+      const res =
+        target === "read"
+          ? await clearReadNotificationsAction()
+          : await clearAllNotificationsAction();
+      if (res.ok) router.refresh();
+    });
+  }
+
+  const confirmCopy =
+    confirmTarget === "read"
+      ? {
+          title: "Xoá thông báo đã đọc",
+          message: "Xoá toàn bộ thông báo đã đọc khỏi inbox của bạn?",
+          label: "Xoá đã đọc",
+        }
+      : {
+          title: "Xoá tất cả thông báo",
+          message: "Xoá toàn bộ inbox thông báo của bạn? Hành động này không thể hoàn tác.",
+          label: "Xoá tất cả",
+        };
+
   return (
-    <button
-      type="button"
-      disabled={pending}
-      onClick={() => {
-        start(async () => {
-          const res = await import("@/app/actions/notifications").then((m) =>
-            m.markAllReadAction()
-          );
-          if (res.ok) router.refresh();
-        });
-      }}
+    <div
       style={{
-        background: "transparent",
-        border: "none",
-        color: "var(--brand-green)",
-        fontSize: "var(--text-sm)",
-        cursor: "pointer",
-        fontWeight: 600,
+        display: "flex",
+        gap: 8,
+        alignItems: "center",
+        flexWrap: "wrap",
+        justifyContent: "flex-end",
       }}
     >
-      {pending ? "Đang…" : "Đánh dấu tất cả là đã đọc"}
-    </button>
+      <ConfirmModal
+        open={confirmTarget !== null}
+        title={confirmCopy.title}
+        message={confirmCopy.message}
+        confirmLabel={confirmCopy.label}
+        danger
+        onConfirm={confirmDelete}
+        onCancel={() => setConfirmTarget(null)}
+      />
+      {unread > 0 && (
+        <button
+          type="button"
+          disabled={pending}
+          onClick={markAllRead}
+          style={actionButtonStyle("primary", pending)}
+        >
+          {pending ? "Đang…" : "Đánh dấu tất cả đã đọc"}
+        </button>
+      )}
+      <button
+        type="button"
+        disabled={pending || !hasRead}
+        onClick={() => setConfirmTarget("read")}
+        style={actionButtonStyle("secondary", pending || !hasRead)}
+      >
+        Xoá đã đọc
+      </button>
+      <button
+        type="button"
+        disabled={pending || !hasAny}
+        onClick={() => setConfirmTarget("all")}
+        style={actionButtonStyle("danger", pending || !hasAny)}
+      >
+        Xoá tất cả
+      </button>
+    </div>
   );
+}
+
+function actionButtonStyle(
+  tone: "primary" | "secondary" | "danger",
+  disabled: boolean,
+): CSSProperties {
+  const color =
+    tone === "primary"
+      ? "var(--brand-green)"
+      : tone === "danger"
+        ? "var(--danger)"
+        : "var(--text-muted)";
+  return {
+    background: "transparent",
+    border: "1px solid var(--border-subtle)",
+    borderRadius: 8,
+    color,
+    fontSize: "var(--text-sm)",
+    cursor: disabled ? "not-allowed" : "pointer",
+    fontWeight: 600,
+    padding: "7px 10px",
+    opacity: disabled ? 0.45 : 1,
+    whiteSpace: "nowrap",
+  };
 }

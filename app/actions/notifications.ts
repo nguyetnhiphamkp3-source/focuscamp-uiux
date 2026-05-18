@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import {
   markAsRead,
   markAllRead,
+  clearRead,
   clearAll,
 } from "@/lib/services/notification";
 import { logError } from "@/lib/logger";
@@ -54,6 +55,19 @@ export async function clearAllNotificationsAction(): Promise<ActionResult> {
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
   try {
     await clearAll({ userId: s.user.id });
+    revalidatePath("/inbox");
+    return { ok: true };
+  } catch (err) {
+    logError(err, { userId: s.user.id });
+    return { ok: false, reason: err instanceof Error ? err.message : "unknown" };
+  }
+}
+
+export async function clearReadNotificationsAction(): Promise<ActionResult> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+  try {
+    await clearRead({ userId: s.user.id });
     revalidatePath("/inbox");
     return { ok: true };
   } catch (err) {

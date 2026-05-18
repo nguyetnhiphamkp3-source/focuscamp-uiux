@@ -175,6 +175,14 @@ export async function markAllRead(input: { userId: string }) {
   return { count: res.count };
 }
 
+/** Delete read notifications for a user. */
+export async function clearRead(input: { userId: string }) {
+  const res = await prisma.notification.deleteMany({
+    where: { userId: input.userId, readAt: { not: null } },
+  });
+  return { count: res.count };
+}
+
 /** Delete ALL notifications for a user (rarely used — inbox cleanup). */
 export async function clearAll(input: { userId: string }) {
   const res = await prisma.notification.deleteMany({

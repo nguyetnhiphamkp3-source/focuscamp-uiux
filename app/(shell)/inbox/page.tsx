@@ -6,7 +6,7 @@ import {
 } from "@/lib/services/notification";
 import {
   NotificationItem,
-  MarkAllReadLink,
+  NotificationBulkActions,
 } from "@/components/shell/notification-item";
 import { EmptyState } from "@/components/ui/empty-state";
 
@@ -21,6 +21,7 @@ export default async function InboxPage() {
     userId: session.user.id,
     limit: NOTIFICATION_INBOX_LIMIT,
   });
+  const hasRead = items.some((n) => n.readAt !== null);
 
   return (
     <div
@@ -64,7 +65,11 @@ export default async function InboxPage() {
                 : `${items.length} thông báo · bạn đã xem hết`}
             </div>
           </div>
-          {unread > 0 && <MarkAllReadLink />}
+          <NotificationBulkActions
+            unread={unread}
+            hasRead={hasRead}
+            hasAny={items.length > 0}
+          />
         </header>
 
         {items.length === 0 ? (
