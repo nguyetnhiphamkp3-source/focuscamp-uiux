@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { addToCartAction } from "@/app/actions/cart";
+import { addToCartAction, removeFromCartAction } from "@/app/actions/cart";
 import { fmtVnd } from "@/components/marketplace/product-card";
 
 export function CartBumpOffer({
@@ -16,17 +16,27 @@ export function CartBumpOffer({
   const [err, setErr] = useState<string | null>(null);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    if (!e.target.checked || pending || added) return;
-    setAdded(true);
+    if (pending) return;
+    const nextAdded = e.target.checked;
+    setAdded(nextAdded);
     setErr(null);
     start(async () => {
-      const res = await addToCartAction(product.id);
-      if (res.ok) {
+      try {
+        if (nextAdded) {
+          const res = await addToCartAction(product.id);
+          if (!res.ok) {
+            setAdded(false);
+            setErr("Không thể thêm vào giỏ: " + res.reason);
+            return;
+          }
+        } else {
+          await removeFromCartAction(product.id);
+        }
         window.dispatchEvent(new Event("cartUpdated"));
         router.refresh();
-      } else {
-        setAdded(false);
-        setErr("Không thể thêm vào giỏ: " + res.reason);
+      } catch {
+        setAdded(!nextAdded);
+        setErr(nextAdded ? "Không thể thêm vào giỏ. Thử lại nhé." : "Không thể bỏ khỏi giỏ. Thử lại nhé.");
       }
     });
   }
@@ -58,14 +68,14 @@ export function CartBumpOffer({
           display: "flex",
           alignItems: "center",
           gap: 10,
-          cursor: added || pending ? "default" : "pointer",
+          cursor: pending ? "default" : "pointer",
         }}
       >
         <input
           type="checkbox"
           checked={added}
           onChange={handleChange}
-          disabled={pending || added}
+          disabled={pending}
           style={{ flexShrink: 0, width: 16, height: 16 }}
         />
         <span style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-heading)" }}>
