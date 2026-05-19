@@ -115,7 +115,7 @@ export const CreateChallengeTaskSchema = z.object({
   evidenceType: z.enum(["TEXT", "LINK", "IMAGE"]).optional(),
   evidenceLabel: z.string().trim().max(500).optional().or(z.literal("")),
   label: z.string().trim().max(60).optional().or(z.literal("")),
-  unlockAfterHours: z.number().int().positive().max(720).optional().nullable(),
+  unlockAfterHours: z.number().int().min(0).max(720).optional().nullable(),
 });
 
 export const DeleteChallengeTaskSchema = z.object({
@@ -131,7 +131,7 @@ export const UpdateChallengeTaskSchema = z.object({
   evidenceType: z.enum(["TEXT", "LINK", "IMAGE"]).optional(),
   evidenceLabel: z.string().trim().max(500).optional().or(z.literal("")),
   label: z.string().trim().max(60).optional().or(z.literal("")),
-  unlockAfterHours: z.number().int().positive().max(720).optional().nullable(),
+  unlockAfterHours: z.number().int().min(0).max(720).optional().nullable(),
 });
 
 export const ReviewSubmissionSchema = z.object({

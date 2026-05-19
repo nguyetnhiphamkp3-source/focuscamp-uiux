@@ -250,6 +250,10 @@ export default async function ChallengeDetailPage({
     }
   }
 
+  const activeChallenge = session?.user?.id
+    ? await getActiveChallenge(session.user.id, challenge.community.id)
+    : null;
+
   const joinAction = joinChallengeAction.bind(null, {
     challengeId: challenge.id,
     communityId: challenge.community.id,

@@ -239,12 +239,12 @@ export function CreateTaskButton({
               <Field label="Override mở khóa (giờ) — trống = mặc định">
                 <input
                   type="number"
-                  min={1}
+                  min={0}
                   max={720}
                   value={unlockAfterHours}
                   onChange={(e) => setUnlockAfterHours(e.target.value)}
                   disabled={pending}
-                  placeholder="vd: 48"
+                  placeholder="0 = mở ngay, 48 = sau 48h"
                   style={inputStyle}
                 />
               </Field>

@@ -270,12 +270,12 @@ export function TaskEditorButton({
               <Field label="Override thời gian mở khóa (giờ) — để trống = dùng mặc định challenge">
                 <input
                   type="number"
-                  min={1}
+                  min={0}
                   max={720}
                   value={unlockAfterHours}
                   onChange={(e) => setUnlockAfterHours(e.target.value)}
                   disabled={pending}
-                  placeholder="vd: 48 (mở sau 48h thay vì mặc định)"
+                  placeholder="0 = mở ngay, 48 = sau 48h"
                   style={inputStyle}
                 />
               </Field>

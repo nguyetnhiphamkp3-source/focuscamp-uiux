@@ -292,7 +292,6 @@ body[data-theme="luxury"] .settings-panel-title {
 
 .server-icon--owner {
   outline: 2px solid var(--brand-green);
-  outline-offset: 2px;
 }
 
 .server-icon.add-server,
