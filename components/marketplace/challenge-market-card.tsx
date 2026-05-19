@@ -37,7 +37,7 @@ export function ChallengeMarketCard({
       {/* Banner */}
       <div
         style={{
-          height: 140,
+          aspectRatio: "16 / 9",
           background: challenge.bannerUrl
             ? `url("${challenge.bannerUrl}") center/cover no-repeat`
             : `linear-gradient(135deg, ${diffColor} 0%, ${diffColor}99 100%)`,
