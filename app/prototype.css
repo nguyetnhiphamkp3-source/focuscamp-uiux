@@ -2788,6 +2788,79 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
   color: var(--text-normal);
   line-height: 1.65;
 }
+.ch-task-sop-content h1,
+.ch-task-sop-content h2,
+.ch-task-sop-content h3 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  margin: 16px 0 8px;
+  color: var(--header-primary);
+}
+.ch-task-sop-content h1 { font-size: var(--text-lg); }
+.ch-task-sop-content h2 { font-size: var(--text-md); }
+.ch-task-sop-content h3 { font-size: var(--text-base); }
+.ch-task-sop-content ul,
+.ch-task-sop-content ol {
+  padding-left: 20px;
+  margin: 6px 0 10px;
+}
+.ch-task-sop-content li { margin: 4px 0; }
+.ch-task-sop-content p { margin: 8px 0; }
+.ch-task-sop-content strong { font-weight: 700; color: var(--header-primary); }
+.ch-task-sop-content code {
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.9em;
+  font-family: monospace;
+  color: var(--brand-green);
+}
+.ch-task-sop-content pre {
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin: 10px 0;
+  overflow-x: auto;
+}
+.ch-task-sop-content pre code {
+  background: none;
+  padding: 0;
+  color: var(--text-normal);
+  font-size: var(--text-sm);
+}
+.ch-task-sop-content hr {
+  border: none;
+  border-top: 1px solid var(--border-subtle);
+  margin: 14px 0;
+}
+.ch-task-sop-content blockquote {
+  border-left: 3px solid var(--brand-green);
+  padding-left: 12px;
+  margin: 8px 0;
+  color: var(--text-muted);
+}
+.ch-task-sop-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+  font-size: var(--text-sm);
+}
+.ch-task-sop-content th,
+.ch-task-sop-content td {
+  border: 1px solid var(--border-subtle);
+  padding: 6px 10px;
+  text-align: left;
+}
+.ch-task-sop-content th {
+  background: var(--bg-secondary);
+  font-weight: 700;
+}
+.ch-task-sop-content a {
+  color: var(--brand-green);
+  text-decoration: underline;
+}
+.ch-task-sop-content h1:first-child,
+.ch-task-sop-content h2:first-child { margin-top: 0; }
 
 .ch-task-evidence-label {
   font-size: var(--text-sm);
