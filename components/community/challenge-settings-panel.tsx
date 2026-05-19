@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { updateChallengeSettingsAction } from "@/app/actions/challenge-review";
 import { ImageUploadField } from "@/components/shared/image-upload-field";
@@ -66,42 +66,39 @@ export function ChallengeSettingsPanel({
       : []
   );
   const [bumpProductId, setBumpProductId] = useState<string>(initial.bumpProductId ?? "");
-  const [pending, start] = useTransition();
+  const [pending, setPending] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
-  function save() {
+  async function save() {
     setErr(null);
     setSaved(false);
-    start(async () => {
-      const res = await updateChallengeSettingsAction({
-        challengeId,
-        title: title.trim(),
-        description: description.trim(),
-        pitch: pitch || null,
-        requiresApproval,
-        hideFutureTasks,
-        taskUnlockMode: taskUnlockMode as "ALL" | "DAILY" | "SEQUENTIAL" | "MANUAL",
-        unlockIntervalHours: parseInt(unlockIntervalHours, 10) || 24,
-        bannerUrl: bannerUrl ?? "",
-        featuredOnGlobal,
-        pricingConfig: pricingConfig as Record<string, unknown> | null,
-        freezeWindows: freezeWindows.length > 0 ? freezeWindows : null,
-        bumpProductId: bumpProductId || null,
-        communitySlug,
-        challengeSlug,
-      });
-      if (res.ok) {
-        setSaved(true);
-      } else {
-        setErr(res.reason);
-      }
+    setPending(true);
+    const res = await updateChallengeSettingsAction({
+      challengeId,
+      title: title.trim(),
+      description: description.trim(),
+      pitch: pitch || null,
+      requiresApproval,
+      hideFutureTasks,
+      taskUnlockMode: taskUnlockMode as "ALL" | "DAILY" | "SEQUENTIAL" | "MANUAL",
+      unlockIntervalHours: parseInt(unlockIntervalHours, 10) || 24,
+      bannerUrl: bannerUrl ?? "",
+      featuredOnGlobal,
+      pricingConfig: pricingConfig as Record<string, unknown> | null,
+      freezeWindows: freezeWindows.length > 0 ? freezeWindows : null,
+      bumpProductId: bumpProductId || null,
+      communitySlug,
+      challengeSlug,
     });
+    setPending(false);
+    if (res.ok) {
+      setSaved(true);
+      router.refresh();
+    } else {
+      setErr(res.reason);
+    }
   }
-
-  useEffect(() => {
-    if (saved) router.refresh();
-  }, [saved]);
 
   if (!open) return null;
 
