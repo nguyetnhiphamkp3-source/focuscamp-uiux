@@ -722,9 +722,12 @@ function ChallengeCard({
         }
       >
         <span className="ch-diff-badge">{diffLabel(challenge.difficulty)}</span>
-        <div className="ch-card-banner-title">{challenge.title}</div>
+        {!challenge.bannerUrl && <div className="ch-card-banner-title">{challenge.title}</div>}
       </div>
       <div className="ch-card-body">
+        <div style={{ fontSize: "var(--text-md)", fontWeight: 800, color: "var(--text-heading)", lineHeight: 1.3, marginBottom: 4 }}>
+          {challenge.title}
+        </div>
         <div className="ch-card-desc">
           {challenge.description || "Challenge trong focus.camp."}
         </div>
