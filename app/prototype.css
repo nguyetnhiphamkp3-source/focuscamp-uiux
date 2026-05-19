@@ -290,14 +290,9 @@ body[data-theme="luxury"] .settings-panel-title {
   margin: 2px 0;
 }
 
-.server-owner-badge {
-  position: absolute;
-  bottom: -2px;
-  right: 8px;
-  font-size: 10px;
-  line-height: 1;
-  pointer-events: none;
-  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.3));
+.server-icon--owner {
+  outline: 2px solid var(--brand-green);
+  outline-offset: 2px;
 }
 
 .server-icon.add-server,

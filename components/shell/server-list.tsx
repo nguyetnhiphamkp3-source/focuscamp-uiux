@@ -40,13 +40,13 @@ export function ServerList({
             <div className={`indicator ${active ? "active" : ""}`}></div>
             <Link
               href={`/c/${c.slug}`}
-              className={`server-icon ${c.iconUrl ? "" : "server-icon-text"} ${active ? "active" : ""}`}
+              className={`server-icon ${c.iconUrl ? "" : "server-icon-text"} ${active ? "active" : ""} ${c.isOwner ? "server-icon--owner" : ""}`}
               style={
                 c.iconUrl
                   ? { background: "var(--bg-card)", overflow: "hidden", padding: 0 }
                   : { background: BRAND_GRADIENTS[i % BRAND_GRADIENTS.length] }
               }
-              title={c.name}
+              title={c.isOwner ? `${c.name} (của bạn)` : c.name}
             >
               {c.iconUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -65,7 +65,6 @@ export function ServerList({
                 initials(c.name)
               )}
             </Link>
-            {c.isOwner && <div className="server-owner-badge" title="Owner">👑</div>}
           </div>
         );
       })}
