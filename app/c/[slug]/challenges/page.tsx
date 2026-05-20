@@ -716,7 +716,11 @@ function ChallengeCard({
         className={`ch-card-banner ${diffClass(challenge.difficulty)}`}
         style={
           challenge.bannerUrl
-            ? ({ ["--bg-img" as string]: `url("${challenge.bannerUrl}")` } as React.CSSProperties)
+            ? {
+                backgroundImage: `url("${challenge.bannerUrl}")`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }
             : undefined
         }
       >
