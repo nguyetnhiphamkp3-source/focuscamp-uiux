@@ -117,7 +117,6 @@ export default async function QuestLogPage({
       ? await prisma.challenge.findMany({
           where: {
             communityId: community.id,
-            id: { notIn: [...myChallengeIds] },
           },
           orderBy: { createdAt: "desc" },
           select: {
