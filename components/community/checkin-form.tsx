@@ -206,6 +206,7 @@ export function CheckinForm({
                   </button>
                   {sopOpen && (
                     <div
+                      className="ch-task-sop-content"
                       style={{
                         marginTop: "var(--space-2)",
                         padding: "var(--space-3)",
@@ -213,11 +214,9 @@ export function CheckinForm({
                         borderRadius: "var(--r-md)",
                         fontSize: "var(--text-sm)",
                         lineHeight: "var(--lh-relaxed)",
-                        whiteSpace: "pre-wrap",
                       }}
-                    >
-                      {task.sopContent}
-                    </div>
+                      dangerouslySetInnerHTML={{ __html: task.sopContent }}
+                    />
                   )}
                 </>
               )}

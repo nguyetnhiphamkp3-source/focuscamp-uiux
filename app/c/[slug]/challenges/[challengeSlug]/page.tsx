@@ -921,10 +921,8 @@ export default async function ChallengeDetailPage({
                             </div>
                             <div
                               className="ch-task-sop-content"
-                              style={{ whiteSpace: "pre-wrap" }}
-                            >
-                              {t.sopContent}
-                            </div>
+                              dangerouslySetInnerHTML={{ __html: t.sopContent }}
+                            />
                           </div>
                         )}
                         {hasEvidenceHint && (
