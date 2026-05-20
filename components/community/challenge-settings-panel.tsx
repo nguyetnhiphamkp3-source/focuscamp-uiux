@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { updateChallengeSettingsAction } from "@/app/actions/challenge-review";
 import { ImageUploadField } from "@/components/shared/image-upload-field";
