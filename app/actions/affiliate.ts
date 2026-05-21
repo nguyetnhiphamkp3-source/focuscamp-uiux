@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import {
   getOrCreateAffiliateLink,
   updateAffiliateConfig,
+  markReferralPayout,
 } from "@/lib/services/affiliate";
 import { logError } from "@/lib/logger";
 
@@ -51,6 +52,32 @@ export async function updateAffiliateConfigAction(input: {
       cookieDays: input.cookieDays,
     });
     revalidatePath(`/c/${input.communitySlug}/settings`);
+    return { ok: true };
+  } catch (err) {
+    logError(err, { userId: s.user.id });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+export async function markReferralPayoutAction(input: {
+  referralId: string;
+  communityId: string;
+  communitySlug: string;
+  status: "PAID" | "REJECTED";
+  note?: string;
+}): Promise<ActionResult> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+  try {
+    await markReferralPayout({
+      referralId: input.referralId,
+      ownerId: s.user.id,
+      communityId: input.communityId,
+      status: input.status,
+      note: input.note,
+    });
+    revalidatePath(`/c/${input.communitySlug}/affiliate`);
     return { ok: true };
   } catch (err) {
     logError(err, { userId: s.user.id });

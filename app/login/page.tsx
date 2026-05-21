@@ -1,6 +1,7 @@
 import { auth, signIn } from "@/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { LoginReferralInput } from "@/components/auth/login-referral-input";
 
 function safeRedirect(value: string | string[] | undefined): string {
   const v = Array.isArray(value) ? value[0] : value;
@@ -185,6 +186,20 @@ export default async function LoginPage({
             Gửi link đăng nhập
           </button>
         </form>
+
+        <div style={{ marginTop: "var(--space-5)" }}>
+          <label
+            style={{
+              display: "block",
+              fontSize: "var(--text-xs)",
+              color: "var(--text-muted)",
+              marginBottom: "var(--space-2)",
+            }}
+          >
+            Mã giới thiệu
+          </label>
+          <LoginReferralInput />
+        </div>
 
         <p
           style={{

@@ -19,9 +19,9 @@ export function AffiliatePanel({
 
   const url =
     code && typeof window !== "undefined"
-      ? `${window.location.origin}/c/${communitySlug}?ref=${code}`
+      ? `${window.location.origin}/api/affiliate/track?ref=${code}&to=/c/${communitySlug}`
       : code
-        ? `https://focus.camp/c/${communitySlug}?ref=${code}`
+        ? `https://focus.camp/api/affiliate/track?ref=${code}&to=/c/${communitySlug}`
         : null;
 
   function generate() {

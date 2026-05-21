@@ -163,6 +163,7 @@ model Community {
   apiKeys       ApiKey[]
   events        Event[]
   featureReadStates FeatureReadState[]
+  affiliateLinks AffiliateLink[]
 
   @@index([featuredOnGlobal, createdAt])
 }
@@ -784,14 +785,18 @@ model Subscription {
 // ============= AFFILIATE =============
 
 model AffiliateLink {
-  id        String   @id @default(cuid())
-  userId    String
-  code      String   @unique
-  clicks    Int      @default(0)
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  userId      String
+  communityId String
+  code        String   @unique
+  clicks      Int      @default(0)
+  createdAt   DateTime @default(now())
 
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  community Community  @relation(fields: [communityId], references: [id], onDelete: Cascade)
   referrals Referral[]
+
+  @@unique([userId, communityId])
 }
 
 model Referral {
@@ -801,6 +806,8 @@ model Referral {
   convertedAt    DateTime?
   commissionVnd  Decimal?  @db.Decimal(15, 2)
   status         String    @default("PENDING")
+  payoutStatus   String    @default("UNPAID")  // UNPAID | PAID | REJECTED
+  payoutNote     String?
   createdAt      DateTime  @default(now())
 
   link         AffiliateLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
