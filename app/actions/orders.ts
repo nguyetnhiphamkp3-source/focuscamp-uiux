@@ -152,10 +152,40 @@ export async function approvePaymentAction(input: {
           });
         }
       } else if (payment.refType === "subscription") {
+        const subscription = await tx.subscription.findUnique({
+          where: { id: payment.refId },
+          select: { userId: true, communityId: true },
+        });
         await tx.subscription.updateMany({
           where: { id: payment.refId },
           data: { status: "ACTIVE", paymentRef: manualRef, startedAt: new Date() },
         });
+        if (subscription) {
+          // Ensure Membership exists so user can access the community.
+          // Bump memberCount only when newly created.
+          const existing = await tx.membership.findUnique({
+            where: {
+              userId_communityId: {
+                userId: subscription.userId,
+                communityId: subscription.communityId,
+              },
+            },
+            select: { id: true },
+          });
+          if (!existing) {
+            await tx.membership.create({
+              data: {
+                userId: subscription.userId,
+                communityId: subscription.communityId,
+                role: "MEMBER",
+              },
+            });
+            await tx.community.update({
+              where: { id: subscription.communityId },
+              data: { memberCount: { increment: 1 } },
+            });
+          }
+        }
       }
     });
   } catch (err) {

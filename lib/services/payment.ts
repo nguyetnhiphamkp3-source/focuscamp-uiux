@@ -219,20 +219,29 @@ export async function matchSePayTransactionToPayment(params: {
         },
       });
       if (subscription) {
-        await tx.membership.upsert({
+        // Ensure Membership exists; bump memberCount only when newly created.
+        const existing = await tx.membership.findUnique({
           where: {
             userId_communityId: {
               userId: subscription.userId,
               communityId: subscription.communityId,
             },
           },
-          create: {
-            userId: subscription.userId,
-            communityId: subscription.communityId,
-            role: "MEMBER",
-          },
-          update: {},
+          select: { id: true },
         });
+        if (!existing) {
+          await tx.membership.create({
+            data: {
+              userId: subscription.userId,
+              communityId: subscription.communityId,
+              role: "MEMBER",
+            },
+          });
+          await tx.community.update({
+            where: { id: subscription.communityId },
+            data: { memberCount: { increment: 1 } },
+          });
+        }
       }
     } else if (payment.refType === "cart") {
       type CartBreakdownItem = { productId: string; amountVnd: number };
