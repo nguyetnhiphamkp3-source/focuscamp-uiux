@@ -35,6 +35,7 @@ const PUBLIC_PREFIXES = [
   "/api/mcp",
   "/api/telegram",
   "/api/affiliate",
+  "/api/cron",
 ];
 
 function isPublic(pathname: string): boolean {
