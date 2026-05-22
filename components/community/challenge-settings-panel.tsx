@@ -169,8 +169,11 @@ export function ChallengeSettingsPanel({
         style={{
           width: "min(600px, 90vw)",
           maxHeight: "85vh",
-          overflowY: "auto",
+          overflow: "hidden",
           position: "relative",
+          display: "flex",
+          flexDirection: "column",
+          padding: 0,
         }}
       >
         <div
@@ -178,7 +181,9 @@ export function ChallengeSettingsPanel({
             display: "flex",
             alignItems: "center",
             gap: 8,
-            marginBottom: 12,
+            padding: "14px 16px",
+            borderBottom: "1px solid var(--border-subtle)",
+            flexShrink: 0,
           }}
         >
           <span style={{ fontSize: "var(--text-base)", fontWeight: 700, color: "var(--header-primary)" }}>
@@ -217,6 +222,10 @@ export function ChallengeSettingsPanel({
             display: "flex",
             flexDirection: "column",
             gap: 10,
+            overflowY: "auto",
+            padding: 14,
+            flex: 1,
+            minHeight: 0,
           }}
         >
           <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -618,14 +627,68 @@ export function ChallengeSettingsPanel({
               tiers={initial.tiers}
             />
           </div>
+        </div>
 
-          <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+        <div
+          style={{
+            flexShrink: 0,
+            borderTop: "1px solid var(--border-subtle)",
+            padding: "12px 16px",
+            display: "flex",
+            gap: 8,
+            alignItems: "center",
+            background: "var(--bg-card)",
+          }}
+        >
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {err && (
+              <div
+                style={{
+                  fontSize: "var(--text-sm)",
+                  color: "var(--danger)",
+                  padding: "6px 10px",
+                  background: "rgba(218,55,60,0.08)",
+                  borderRadius: 6,
+                }}
+              >
+                {err}
+              </div>
+            )}
+            {saved && !err && (
+              <div
+                style={{
+                  fontSize: "var(--text-sm)",
+                  color: "var(--success)",
+                  padding: "6px 10px",
+                  background: "rgba(36,128,70,0.08)",
+                  borderRadius: 6,
+                }}
+              >
+                ✓ Đã lưu
+              </div>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={closeWithoutSave}
+            disabled={pending}
+            style={{
+              padding: "8px 16px",
+              borderRadius: 8,
+              border: "1px solid var(--border-subtle)",
+              background: "transparent",
+              color: "var(--interactive-normal)",
+              fontSize: "var(--text-sm)",
+              cursor: pending ? "not-allowed" : "pointer",
+            }}
+          >
+            Huỷ
+          </button>
             <button
               type="button"
               onClick={save}
               disabled={pending || !title.trim()}
               style={{
-                marginLeft: "auto",
                 padding: "8px 18px",
                 borderRadius: 8,
                 border: "none",
@@ -639,34 +702,6 @@ export function ChallengeSettingsPanel({
             >
               {pending ? "Đang lưu…" : "Lưu"}
             </button>
-          </div>
-
-          {err && (
-            <div
-              style={{
-                fontSize: "var(--text-sm)",
-                color: "var(--danger)",
-                padding: "6px 10px",
-                background: "rgba(218,55,60,0.08)",
-                borderRadius: 6,
-              }}
-            >
-              {err}
-            </div>
-          )}
-          {saved && (
-            <div
-              style={{
-                fontSize: "var(--text-sm)",
-                color: "var(--success)",
-                padding: "6px 10px",
-                background: "rgba(36,128,70,0.08)",
-                borderRadius: 6,
-              }}
-            >
-              ✓ Đã lưu
-            </div>
-          )}
         </div>
       </section>
     </div>
