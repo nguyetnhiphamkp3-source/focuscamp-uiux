@@ -433,10 +433,38 @@ export async function resubmitCheckin(input: {
     );
   }
 
+  const task = checkin.taskId
+    ? await prisma.challengeTask.findFirst({
+        where: { id: checkin.taskId, challengeId: checkin.challengeId },
+        select: { evidenceType: true },
+      })
+    : null;
+  const evidenceType = task?.evidenceType ?? "TEXT";
+  const normalizedContent = input.content.trim();
+  const hasText = normalizedContent.length >= 5;
+  const hasPartialText =
+    normalizedContent.length > 0 && normalizedContent.length < 5;
+  const hasLink = !!input.linkUrl?.trim();
+  const hasImage = !!input.imageUrl?.trim();
+
+  if (hasPartialText) throw new Error("Nội dung tối thiểu 5 ký tự");
+  if (evidenceType === "TEXT" && !hasText) {
+    throw new Error("Vui lòng nhập nội dung bằng chứng");
+  }
+  if (evidenceType === "LINK" && (!hasText || !hasLink)) {
+    throw new Error("Vui lòng nhập nội dung và link bằng chứng");
+  }
+  if (evidenceType === "IMAGE" && (!hasText || !hasImage)) {
+    throw new Error("Vui lòng nhập nội dung và upload ảnh bằng chứng");
+  }
+  if (evidenceType === "TEXT_IMAGE" && !hasText && !hasImage) {
+    throw new Error("Vui lòng nhập text hoặc upload ảnh bằng chứng");
+  }
+
   const updated = await prisma.checkin.update({
     where: { id: input.checkinId },
     data: {
-      content: input.content.trim(),
+      content: normalizedContent || "Đã upload ảnh bằng chứng",
       linkUrl: input.linkUrl?.trim() || null,
       imageUrl: input.imageUrl?.trim() || null,
       status: "PENDING",

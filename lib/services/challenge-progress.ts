@@ -174,6 +174,7 @@ export async function submitCheckin(params: {
 }) {
   const { userId, challengeId, content, taskId, dayNumber, linkUrl, imageUrl } =
     params;
+  const normalizedContent = content.trim();
 
   // Plan gate — refuse checkin if community plan is expired/pending
   const challengeMeta = await prisma.challenge.findUnique({
@@ -189,6 +190,33 @@ export async function submitCheckin(params: {
     where: { userId, challengeId, status: "ACTIVE" },
   });
   if (!member) throw new Error("not_a_member");
+
+  const task = taskId
+    ? await prisma.challengeTask.findFirst({
+        where: { id: taskId, challengeId },
+        select: { evidenceType: true },
+      })
+    : null;
+  const evidenceType = task?.evidenceType ?? "TEXT";
+  const hasText = normalizedContent.length >= 5;
+  const hasPartialText =
+    normalizedContent.length > 0 && normalizedContent.length < 5;
+  const hasLink = !!linkUrl?.trim();
+  const hasImage = !!imageUrl?.trim();
+
+  if (hasPartialText) throw new Error("Nội dung tối thiểu 5 ký tự");
+  if (evidenceType === "TEXT" && !hasText) {
+    throw new Error("Vui lòng nhập nội dung bằng chứng");
+  }
+  if (evidenceType === "LINK" && (!hasText || !hasLink)) {
+    throw new Error("Vui lòng nhập nội dung và link bằng chứng");
+  }
+  if (evidenceType === "IMAGE" && (!hasText || !hasImage)) {
+    throw new Error("Vui lòng nhập nội dung và upload ảnh bằng chứng");
+  }
+  if (evidenceType === "TEXT_IMAGE" && !hasText && !hasImage) {
+    throw new Error("Vui lòng nhập text hoặc upload ảnh bằng chứng");
+  }
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -234,7 +262,7 @@ export async function submitCheckin(params: {
       data: {
         userId,
         challengeId,
-        content,
+        content: normalizedContent || "Đã upload ảnh bằng chứng",
         taskId: taskId ?? null,
         dayNumber: dayNumber ?? null,
         linkUrl: linkUrl ?? null,

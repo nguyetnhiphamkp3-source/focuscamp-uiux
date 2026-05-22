@@ -118,7 +118,7 @@ export const CreateChallengeTaskSchema = z.object({
   description: z.string().trim().max(5000).optional().or(z.literal("")),
   sopContent: z.string().trim().max(10000).optional().or(z.literal("")),
   videoUrl: z.string().url().optional().or(z.literal("")),
-  evidenceType: z.enum(["TEXT", "LINK", "IMAGE"]).optional(),
+  evidenceType: z.enum(["TEXT", "LINK", "IMAGE", "TEXT_IMAGE"]).optional(),
   evidenceLabel: z.string().trim().max(500).optional().or(z.literal("")),
   label: z.string().trim().max(60).optional().or(z.literal("")),
   unlockAfterHours: z.number().int().min(0).max(720).optional().nullable(),
@@ -134,7 +134,7 @@ export const UpdateChallengeTaskSchema = z.object({
   description: z.string().trim().max(5000).optional().or(z.literal("")),
   sopContent: z.string().trim().max(10000).optional().or(z.literal("")),
   videoUrl: z.string().url().optional().or(z.literal("")),
-  evidenceType: z.enum(["TEXT", "LINK", "IMAGE"]).optional(),
+  evidenceType: z.enum(["TEXT", "LINK", "IMAGE", "TEXT_IMAGE"]).optional(),
   evidenceLabel: z.string().trim().max(500).optional().or(z.literal("")),
   label: z.string().trim().max(60).optional().or(z.literal("")),
   unlockAfterHours: z.number().int().min(0).max(720).optional().nullable(),
@@ -156,14 +156,14 @@ export const FlagSubmissionSchema = z.object({
 
 export const ResubmitCheckinSchema = z.object({
   checkinId: z.string().cuid(),
-  content: z.string().trim().min(5).max(1000),
+  content: z.string().trim().max(1000),
   linkUrl: z.string().url().optional().or(z.literal("")),
   imageUrl: z.string().url().optional().or(z.literal("")),
 });
 
 export const ChallengeCheckinSchema = z.object({
   challengeId: z.string().cuid(),
-  content: z.string().trim().min(5).max(1000),
+  content: z.string().trim().max(1000),
   taskId: z.string().cuid().optional(),
   dayNumber: z.number().int().positive().optional(),
   linkUrl: z.string().url().optional().or(z.literal("")),

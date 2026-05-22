@@ -3,12 +3,14 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { resubmitCheckinAction } from "@/app/actions/challenge-resubmit";
+import { ImageUploadField } from "@/components/shared/image-upload-field";
 
 export function ResubmitForm({
   checkinId,
   communitySlug,
   challengeSlug,
   initial,
+  evidenceType,
   rejectCount,
   maxRejects = 2,
 }: {
@@ -16,6 +18,7 @@ export function ResubmitForm({
   communitySlug: string;
   challengeSlug: string;
   initial: { content: string; linkUrl: string | null; imageUrl: string | null };
+  evidenceType: string;
   rejectCount: number;
   maxRejects?: number;
 }) {
@@ -28,6 +31,21 @@ export function ResubmitForm({
   const [err, setErr] = useState<string | null>(null);
 
   const atCap = rejectCount >= maxRejects;
+  const trimmedLen = content.trim().length;
+  const hasText = trimmedLen >= 5;
+  const hasImage = imageUrl.trim().length > 0;
+  const needsLink = evidenceType === "LINK";
+  const needsImage = evidenceType === "IMAGE";
+  const allowsImage = evidenceType === "IMAGE" || evidenceType === "TEXT_IMAGE";
+  const isTextImage = evidenceType === "TEXT_IMAGE";
+  const canSubmit =
+    !pending &&
+    content.length <= 1000 &&
+    (isTextImage
+      ? (trimmedLen === 0 || hasText) && (hasText || hasImage)
+      : hasText) &&
+    (!needsLink || /^https?:\/\//.test(linkUrl.trim())) &&
+    (!needsImage || hasImage);
 
   function submit() {
     setErr(null);
@@ -122,11 +140,11 @@ export function ResubmitForm({
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
           gap: 8,
           marginTop: 6,
         }}
       >
+        {needsLink && (
         <input
           type="url"
           value={linkUrl}
@@ -135,14 +153,17 @@ export function ResubmitForm({
           disabled={pending}
           style={inputStyle}
         />
-        <input
-          type="url"
-          value={imageUrl}
-          onChange={(e) => setImageUrl(e.target.value)}
-          placeholder="URL ảnh (https://…)"
-          disabled={pending}
-          style={inputStyle}
-        />
+        )}
+        {allowsImage && (
+          <ImageUploadField
+            value={imageUrl || null}
+            onChange={(url) => setImageUrl(url ?? "")}
+            context="checkin"
+            shape="banner"
+            disabled={pending}
+            maxSizeNote="Tối đa 10MB"
+          />
+        )}
       </div>
       {err && (
         <div
@@ -182,7 +203,7 @@ export function ResubmitForm({
         <button
           type="button"
           onClick={submit}
-          disabled={pending || content.trim().length < 5}
+          disabled={!canSubmit}
           style={{
             padding: "6px 14px",
             borderRadius: 6,

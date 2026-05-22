@@ -84,7 +84,7 @@ Key: ✅ done · 🟡 partial · ❌ not started · 🚫 deferred (Phase 2+)
 | Admin approve member requests | ✅ | `requiresApproval` flag |
 | UI toggle `requiresApproval` in challenge settings | ✅ | ChallengeSettingsPanel |
 | Daily task unlock by day | ✅ | |
-| User checkin + evidence (text/link/image) | ✅ | |
+| User checkin + evidence (text/link/image/text+image) | ✅ | |
 | Streak calc + per-challenge leaderboard | ✅ | |
 | Admin review submission (approve/reject + note) | ✅ | Phase C |
 | `approveAllPending` bulk | ✅ | |

@@ -83,7 +83,7 @@ export function TaskEditorButton({
         description: description.trim(),
         sopContent: sopContent.trim(),
         videoUrl: videoUrl.trim(),
-        evidenceType: evidenceType as "TEXT" | "LINK" | "IMAGE",
+        evidenceType: evidenceType as "TEXT" | "LINK" | "IMAGE" | "TEXT_IMAGE",
         evidenceLabel: evidenceLabel.trim(),
         label: label.trim(),
         unlockAfterHours: unlockAfterHours.trim() ? parseInt(unlockAfterHours, 10) : null,
@@ -252,6 +252,7 @@ export function TaskEditorButton({
                     <option value="TEXT">TEXT</option>
                     <option value="LINK">LINK</option>
                     <option value="IMAGE">IMAGE</option>
+                    <option value="TEXT_IMAGE">TEXT + IMAGE</option>
                   </select>
                 </Field>
                 <Field label="Yêu cầu cụ thể (evidence label)">

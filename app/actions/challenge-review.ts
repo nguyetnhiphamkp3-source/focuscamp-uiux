@@ -292,7 +292,7 @@ export async function updateTaskAction(input: {
   description?: string;
   sopContent?: string;
   videoUrl?: string;
-  evidenceType?: "TEXT" | "LINK" | "IMAGE";
+  evidenceType?: "TEXT" | "LINK" | "IMAGE" | "TEXT_IMAGE";
   evidenceLabel?: string;
   label?: string;
   unlockAfterHours?: number | null;
@@ -428,7 +428,7 @@ export async function createTaskAction(input: {
   description?: string;
   sopContent?: string;
   videoUrl?: string;
-  evidenceType?: "TEXT" | "LINK" | "IMAGE";
+  evidenceType?: "TEXT" | "LINK" | "IMAGE" | "TEXT_IMAGE";
   evidenceLabel?: string;
   label?: string;
   unlockAfterHours?: number | null;

@@ -13,7 +13,7 @@ interface TodayTask {
   description: string | null;
   sopContent: string | null;
   videoUrl: string | null;
-  evidenceType: string; // TEXT | LINK | IMAGE | FILE
+  evidenceType: string; // TEXT | LINK | IMAGE | TEXT_IMAGE | FILE
   evidenceLabel: string | null;
 }
 
@@ -51,10 +51,17 @@ export function CheckinForm({
   const evType = task?.evidenceType ?? "TEXT";
   const needsLink = evType === "LINK";
   const needsImage = evType === "IMAGE";
+  const allowsImage = evType === "IMAGE" || evType === "TEXT_IMAGE";
+  const isTextImage = evType === "TEXT_IMAGE";
   const len = content.length;
+  const trimmedLen = content.trim().length;
+  const hasText = trimmedLen >= 5;
+  const hasImage = imageUrl.trim().length > 0 && /^https?:\/\//.test(imageUrl);
+  const contentOk = isTextImage ? trimmedLen === 0 || hasText : hasText;
   const linkOk = !needsLink || (linkUrl.trim().length > 0 && /^https?:\/\//.test(linkUrl));
-  const imageOk = !needsImage || (imageUrl.trim().length > 0 && /^https?:\/\//.test(imageUrl));
-  const canSubmit = len >= 5 && len <= 1000 && linkOk && imageOk && !pending;
+  const imageOk = !needsImage || hasImage;
+  const textImageOk = !isTextImage || hasText || hasImage;
+  const canSubmit = contentOk && len <= 1000 && linkOk && imageOk && textImageOk && !pending;
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -286,8 +293,10 @@ export function CheckinForm({
               ✍️ Nộp bài — Bạn đã làm gì hôm nay?
             </label>
             <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", lineHeight: "var(--lh-normal)" }}>
-              {evType === "IMAGE"
-                ? "Chụp ảnh màn hình hoặc ảnh bằng chứng, upload bên dưới và mô tả ngắn kết quả."
+              {evType === "TEXT_IMAGE"
+                ? "Nhập mô tả ngắn, upload ảnh bằng chứng, hoặc gửi cả hai."
+                : evType === "IMAGE"
+                  ? "Chụp ảnh màn hình hoặc ảnh bằng chứng, upload bên dưới và mô tả ngắn kết quả."
                 : evType === "LINK"
                   ? "Dán link bài nộp (Notion, Google Doc, v.v.) và mô tả ngắn những gì bạn đã làm."
                   : "Mô tả ngắn kết quả bạn đạt được hôm nay — bài học, insight, hoặc việc đã hoàn thành."}
@@ -315,7 +324,10 @@ export function CheckinForm({
           <div
             style={{
               fontSize: "var(--text-xs)",
-              color: len < 5 || len > 1000 ? "var(--danger)" : "var(--text-muted)",
+              color:
+                (trimmedLen > 0 && trimmedLen < 5) || len > 1000
+                  ? "var(--danger)"
+                  : "var(--text-muted)",
               marginTop: 4,
               textAlign: "right",
             }}
@@ -362,7 +374,7 @@ export function CheckinForm({
         )}
 
         {/* Evidence: Image upload */}
-        {needsImage && (
+        {allowsImage && (
           <div>
             <label
               style={{
@@ -376,7 +388,7 @@ export function CheckinForm({
               }}
             >
               {task?.evidenceLabel || "Ảnh chứng cứ"}{" "}
-              <span style={{ color: "var(--danger)" }}>*</span>
+              {needsImage && <span style={{ color: "var(--danger)" }}>*</span>}
             </label>
             <ImageUploadField
               value={imageUrl || null}

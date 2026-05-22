@@ -385,7 +385,7 @@ export function buildMcpServer(ctx: McpContext): McpServer {
             description: z.string().max(5000).optional(),
             sopContent: z.string().max(10000).optional(),
             videoUrl: z.string().url().optional(),
-            evidenceType: z.enum(["TEXT", "LINK", "IMAGE", "FILE"]).optional(),
+            evidenceType: z.enum(["TEXT", "LINK", "IMAGE", "TEXT_IMAGE", "FILE"]).optional(),
             evidenceLabel: z.string().max(500).optional(),
           })
         )

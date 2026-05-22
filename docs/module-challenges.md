@@ -78,7 +78,7 @@ Hệ thống thử thách nhóm có quản lý task theo ngày, check-in, review
 | sop_content | text nullable | hướng dẫn SOP |
 | video_url | string nullable | |
 | meeting_at | datetime nullable | giờ họp |
-| evidence_type | string default 'text' | text / screenshot |
+| evidence_type | string default 'text' | text / link / image / text+image |
 | evidence_label | text nullable | yêu cầu bằng chứng |
 | admin_note | text nullable | ghi chú hiện sau khi duyệt |
 | timestamps | | |

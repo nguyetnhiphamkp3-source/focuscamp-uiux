@@ -44,6 +44,7 @@ function diffLabel(d: string) {
 function evidenceTypeLabel(type: string) {
   if (type === "LINK") return "Link";
   if (type === "IMAGE") return "Image";
+  if (type === "TEXT_IMAGE") return "Text + Image";
   return "Text";
 }
 
@@ -170,6 +171,7 @@ export default async function ChallengeDetailPage({
     take: 20,
     include: {
       user: { select: { name: true, email: true, image: true } },
+      task: { select: { evidenceType: true } },
       _count: { select: { votes: true } },
       ...(session?.user?.id
         ? {
@@ -1004,6 +1006,7 @@ export default async function ChallengeDetailPage({
                                       linkUrl: checkinData.linkUrl,
                                       imageUrl: checkinData.imageUrl,
                                     }}
+                                    evidenceType={t.evidenceType}
                                     rejectCount={checkinData.rejectCount}
                                   />
                                 )}
@@ -1266,6 +1269,7 @@ export default async function ChallengeDetailPage({
                                 linkUrl: c.linkUrl,
                                 imageUrl: c.imageUrl,
                               }}
+                              evidenceType={c.task?.evidenceType ?? "TEXT"}
                               rejectCount={c.rejectCount}
                             />
                           )}
