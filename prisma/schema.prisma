@@ -18,6 +18,7 @@ model User {
   handle        String?   @unique
   bio           String?
   location      String?
+  isSuperAdmin  Boolean   @default(false)
   /** Linked Telegram user id — same person can chat AI agent via web or Telegram. */
   telegramUserId   String? @unique
   telegramUsername String?

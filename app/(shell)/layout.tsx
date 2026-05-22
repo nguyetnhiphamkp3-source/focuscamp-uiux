@@ -19,7 +19,7 @@ export default async function ShellLayout({
 
   let myCommunities: { id: string; slug: string; name: string; iconUrl: string | null; isOwner: boolean }[] = [];
   let notifUnread = 0;
-  let freshUser: { id: string; name: string | null; email: string | null; image: string | null; handle: string | null } | null = null;
+  let freshUser: { id: string; name: string | null; email: string | null; image: string | null; handle: string | null; isSuperAdmin: boolean } | null = null;
   if (session?.user?.id) {
     const [mems, n, u] = await Promise.all([
       prisma.membership.findMany({
@@ -30,7 +30,7 @@ export default async function ShellLayout({
       unreadCount(session.user.id),
       prisma.user.findUnique({
         where: { id: session.user.id },
-        select: { id: true, name: true, email: true, image: true, handle: true },
+        select: { id: true, name: true, email: true, image: true, handle: true, isSuperAdmin: true },
       }),
     ]);
     myCommunities = mems.map((m) => ({
@@ -53,7 +53,11 @@ export default async function ShellLayout({
       <div className="left-section">
         <div className="left-section-top">
           <ServerList communities={myCommunities} />
-          <HomeSidebar notifUnread={notifUnread} profileHref={profileHref} />
+          <HomeSidebar
+            notifUnread={notifUnread}
+            profileHref={profileHref}
+            isSuperAdmin={freshUser?.isSuperAdmin ?? false}
+          />
         </div>
         <UserPanel
           user={freshUser ?? session?.user}

@@ -31,6 +31,7 @@ Key: ✅ done · 🟡 partial · ❌ not started · 🚫 deferred (Phase 2+)
 | "Cũng active ở N cộng đồng" (Skool-style, no stats leak) | ✅ | |
 | XP log on profile (last 12 XPLedger events) | ✅ | |
 | Follower / Following counts + Follow button | ✅ | Shown on /u/ and /c/<slug>/profile |
+| Platform super admin flag + platform orders | ✅ | `User.isSuperAdmin`; `/admin/orders` for focus.camp community-plan payments |
 | Time-range filter on stats (All/30d/7d) | ❌ | Phase 2 |
 | Follow system (for Feed "Following" tab) | ✅ | Shipped |
 | Bookmark system | ✅ | 🔖 button + Feed Bookmarked tab |

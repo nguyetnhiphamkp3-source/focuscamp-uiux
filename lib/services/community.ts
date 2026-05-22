@@ -198,7 +198,6 @@ export async function createCommunity(input: {
   // because createPayment loops on uniqueness and is safe to retry.
   const payment = await createPayment({
     userId: input.userId,
-    communityId: community.id,
     purpose: "community_plan",
     refType: "community",
     refId: community.id,
@@ -229,7 +228,6 @@ export async function renewCommunityPlan(input: {
   const plan = PLATFORM_PLANS[tier];
   const payment = await createPayment({
     userId: input.userId,
-    communityId: c.id,
     purpose: "community_plan",
     refType: "community",
     refId: c.id,

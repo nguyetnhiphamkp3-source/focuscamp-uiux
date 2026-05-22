@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 
 export interface OrderRow {
   orderId: string;
-  orderType: "product" | "challenge" | "subscription" | "other";
+  orderType: "product" | "challenge" | "subscription" | "community" | "other";
   status: string;
   createdAt: Date;
   amountVnd: number;
@@ -28,15 +28,15 @@ export async function listCommunityOrders(
 
   const [revenueAgg, pendingCount, total] = await Promise.all([
     prisma.payment.aggregate({
-      where: { communityId, status: "COMPLETED" },
+      where: { communityId, purpose: { not: "community_plan" }, status: "COMPLETED" },
       _sum: { amountVnd: true },
     }),
-    prisma.payment.count({ where: { communityId, status: "PENDING" } }),
-    prisma.payment.count({ where: { communityId, ...statusFilter } }),
+    prisma.payment.count({ where: { communityId, purpose: { not: "community_plan" }, status: "PENDING" } }),
+    prisma.payment.count({ where: { communityId, purpose: { not: "community_plan" }, ...statusFilter } }),
   ]);
 
   const payments = await prisma.payment.findMany({
-    where: { communityId, ...statusFilter },
+    where: { communityId, purpose: { not: "community_plan" }, ...statusFilter },
     orderBy: { createdAt: "desc" },
     take: limit,
     skip: offset,
@@ -113,6 +113,72 @@ export async function listCommunityOrders(
       return { ...base, orderType: "subscription" as const, itemTitle: "Membership", itemSubtype: s?.tier ?? "" };
     }
     return { ...base, orderType: "other" as const, itemTitle: pay.purpose, itemSubtype: pay.refType };
+  });
+
+  return { orders, total, totalRevenue: Number(revenueAgg._sum.amountVnd ?? 0), pendingCount };
+}
+
+export async function listPlatformOrders(
+  opts: { status?: string; limit?: number; offset?: number } = {}
+): Promise<{ orders: OrderRow[]; total: number; totalRevenue: number; pendingCount: number }> {
+  const limit = opts.limit ?? 20;
+  const offset = opts.offset ?? 0;
+  const statusFilter =
+    opts.status && VALID_STATUSES.includes(opts.status) ? { status: opts.status } : {};
+
+  const [revenueAgg, pendingCount, total] = await Promise.all([
+    prisma.payment.aggregate({
+      where: { purpose: "community_plan", status: "COMPLETED" },
+      _sum: { amountVnd: true },
+    }),
+    prisma.payment.count({ where: { purpose: "community_plan", status: "PENDING" } }),
+    prisma.payment.count({ where: { purpose: "community_plan", ...statusFilter } }),
+  ]);
+
+  const payments = await prisma.payment.findMany({
+    where: { purpose: "community_plan", ...statusFilter },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+    skip: offset,
+  });
+
+  if (payments.length === 0) {
+    return { orders: [], total, totalRevenue: Number(revenueAgg._sum.amountVnd ?? 0), pendingCount };
+  }
+
+  const [users, communities] = await Promise.all([
+    prisma.user.findMany({
+      where: { id: { in: [...new Set(payments.map((p) => p.userId))] } },
+      select: { id: true, name: true, image: true, email: true },
+    }),
+    prisma.community.findMany({
+      where: { id: { in: [...new Set(payments.map((p) => p.refId))] } },
+      select: { id: true, name: true, slug: true, planTier: true },
+    }),
+  ]);
+  const userMap = new Map(users.map((u) => [u.id, u]));
+  const communityMap = new Map(communities.map((c) => [c.id, c]));
+
+  const orders: OrderRow[] = payments.map((pay) => {
+    const buyer = userMap.get(pay.userId) ?? {
+      id: pay.userId,
+      name: null,
+      image: null,
+      email: pay.userId,
+    };
+    const community = communityMap.get(pay.refId);
+    return {
+      orderId: pay.id,
+      orderType: "community",
+      status: pay.status,
+      createdAt: pay.createdAt,
+      amountVnd: Number(pay.amountVnd),
+      itemTitle: community ? `${community.name} (${community.slug})` : "Community plan",
+      itemSubtype: community?.planTier ?? pay.refType,
+      buyer,
+      paymentCode: pay.paymentCode,
+      receivedAt: pay.receivedAt,
+    };
   });
 
   return { orders, total, totalRevenue: Number(revenueAgg._sum.amountVnd ?? 0), pendingCount };

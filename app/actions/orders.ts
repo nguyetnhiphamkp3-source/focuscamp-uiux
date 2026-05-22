@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { logError, logger } from "@/lib/logger";
 import { canCommunity, effectiveCommunityRole } from "@/lib/community-permissions";
+import { isSuperAdmin } from "@/lib/platform-admin";
+import { activateCommunityPlan } from "@/lib/services/community";
 
 type ActionResult = { ok: true } | { ok: false; reason: string };
 
@@ -126,6 +128,9 @@ export async function approvePaymentAction(input: {
   if (!payment) return { ok: false, reason: "not_found" };
   if (payment.communityId !== community.id) return { ok: false, reason: "unauthorized" };
   if (payment.status !== "PENDING") return { ok: false, reason: "already_processed" };
+  if (payment.refType === "community" || payment.purpose === "community_plan") {
+    return { ok: false, reason: "platform_order_requires_super_admin" };
+  }
 
   const manualRef = `MANUAL-${Date.now()}`;
 
@@ -187,5 +192,45 @@ export async function approvePaymentAction(input: {
 
   logger.info({ paymentId: payment.id, refType: payment.refType, adminId: s.user.id }, "[orders] payment manually approved");
   revalidatePath(`/c/${input.communitySlug}/orders`);
+  return { ok: true };
+}
+
+export async function approvePlatformPaymentAction(input: {
+  paymentId: string;
+}): Promise<ActionResult> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+  if (!(await isSuperAdmin(s.user.id))) return { ok: false, reason: "unauthorized" };
+
+  const payment = await prisma.payment.findUnique({ where: { id: input.paymentId } });
+  if (!payment) return { ok: false, reason: "not_found" };
+  if (payment.status !== "PENDING") return { ok: false, reason: "already_processed" };
+  if (payment.purpose !== "community_plan" || payment.refType !== "community") {
+    return { ok: false, reason: "not_platform_order" };
+  }
+
+  const manualRef = `MANUAL-${Date.now()}`;
+
+  try {
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: { status: "COMPLETED", receivedAt: new Date(), transactionId: manualRef },
+    });
+    await activateCommunityPlan(payment.refId, {
+      paymentCode: payment.paymentCode,
+      transactionId: manualRef,
+      amountVnd: Number(payment.amountVnd),
+    });
+  } catch (err) {
+    logError(err, { paymentId: payment.id });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+
+  logger.info(
+    { paymentId: payment.id, communityId: payment.refId, adminId: s.user.id },
+    "[orders] platform payment manually approved",
+  );
+  revalidatePath("/admin/orders");
   return { ok: true };
 }

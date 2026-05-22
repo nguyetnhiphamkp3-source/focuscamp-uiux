@@ -5,7 +5,11 @@ import { useState, useTransition } from "react";
 import { rowCard, SectionHeader } from "./editor-shared";
 import { fmtVnd, avatarColorFor, initials, fmtRelativeTime } from "@/lib/brand";
 import type { OrderRow } from "@/lib/services/community-orders";
-import { approveOrderAction, approvePaymentAction } from "@/app/actions/orders";
+import {
+  approveOrderAction,
+  approvePaymentAction,
+  approvePlatformPaymentAction,
+} from "@/app/actions/orders";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 
 interface OrdersPanelProps {
@@ -17,12 +21,16 @@ interface OrdersPanelProps {
   currentPage: number;
   limit: number;
   currentStatus: string;
+  basePath?: string;
+  mode?: "community" | "platform";
+  title?: string;
+  subtitle?: string;
 }
 
 const TABS = [
   { key: "ALL", label: "Tất cả" },
   { key: "COMPLETED", label: "Đã thanh toán" },
-  { key: "PENDING", label: "Chờ TT" },
+  { key: "PENDING", label: "Cho TT" },
   { key: "EXPIRED", label: "Hết hạn" },
 ];
 
@@ -35,28 +43,38 @@ const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
 
 const STATUS_LABELS: Record<string, string> = {
   COMPLETED: "Đã TT",
-  PENDING: "Chờ TT",
+  PENDING: "Cho TT",
   EXPIRED: "Hết hạn",
   REFUNDED: "Hoàn tiền",
 };
 
 const PRODUCT_TYPE_LABELS: Record<string, string> = {
-  TEMPLATE: "Template", TOOL: "Tool", SOP: "SOP",
-  BUNDLE: "Bundle", LICENSE: "License", PROMPT: "Prompt",
+  TEMPLATE: "Template",
+  TOOL: "Tool",
+  SOP: "SOP",
+  BUNDLE: "Bundle",
+  LICENSE: "License",
+  PROMPT: "Prompt",
 };
 
 const DIFFICULTY_LABELS: Record<string, string> = {
-  NORMAL: "Normal", HARD: "Hard", CHAOS: "Chaos",
+  NORMAL: "Normal",
+  HARD: "Hard",
+  CHAOS: "Chaos",
 };
 
 const TIER_LABELS: Record<string, string> = {
-  MONTHLY: "Tháng", QUARTERLY: "Quý", YEARLY: "Năm", LIFETIME: "Vĩnh viễn",
+  MONTHLY: "Tháng",
+  QUARTERLY: "Quý",
+  YEARLY: "Năm",
+  LIFETIME: "Vĩnh viễn",
 };
 
 const ORDER_TYPE_LABELS: Record<string, string> = {
   product: "Sản phẩm",
   challenge: "Challenge",
   subscription: "Membership",
+  community: "Gói community",
   other: "Khác",
 };
 
@@ -64,6 +82,7 @@ const ORDER_TYPE_COLORS: Record<string, string> = {
   product: "var(--brand-green)",
   challenge: "#7c3aed",
   subscription: "#0ea5e9",
+  community: "#0f766e",
   other: "var(--text-muted)",
 };
 
@@ -76,12 +95,20 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function ApproveButton({ order, communitySlug }: { order: OrderRow; communitySlug: string }) {
+function ApproveButton({
+  order,
+  communitySlug,
+  mode,
+}: {
+  order: OrderRow;
+  communitySlug: string;
+  mode: "community" | "platform";
+}) {
   const [pending, startTransition] = useTransition();
   const [done, setDone] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  if (done) return <span style={{ fontSize: "var(--text-xs)", color: "var(--success)", fontWeight: 600 }}>Đã duyệt ✓</span>;
+  if (done) return <span style={{ fontSize: "var(--text-xs)", color: "var(--success)", fontWeight: 600 }}>Đã duyệt</span>;
 
   function confirmApprove() {
     setShowConfirm(false);
@@ -89,6 +116,8 @@ function ApproveButton({ order, communitySlug }: { order: OrderRow; communitySlu
       let res;
       if (order.orderType === "product" && order.purchaseId) {
         res = await approveOrderAction({ purchaseId: order.purchaseId, communitySlug });
+      } else if (mode === "platform") {
+        res = await approvePlatformPaymentAction({ paymentId: order.orderId });
       } else {
         res = await approvePaymentAction({ paymentId: order.orderId, communitySlug });
       }
@@ -112,23 +141,37 @@ function ApproveButton({ order, communitySlug }: { order: OrderRow; communitySlu
         onClick={() => setShowConfirm(true)}
         style={{ fontSize: "var(--text-xs)", fontWeight: 600, padding: "3px 10px", borderRadius: 5, border: "1px solid var(--brand-green)", background: "transparent", color: "var(--brand-green)", cursor: pending ? "not-allowed" : "pointer", opacity: pending ? 0.6 : 1 }}
       >
-        {pending ? "Đang duyệt…" : "Duyệt"}
+        {pending ? "Đang duyệt..." : "Duyệt"}
       </button>
     </>
   );
 }
 
-export function OrdersPanel({ orders, total, totalRevenue, pendingCount, communitySlug, currentPage, limit, currentStatus }: OrdersPanelProps) {
+export function OrdersPanel({
+  orders,
+  total,
+  totalRevenue,
+  pendingCount,
+  communitySlug,
+  currentPage,
+  limit,
+  currentStatus,
+  basePath,
+  mode = "community",
+  title = "Đơn hàng",
+  subtitle = "Tất cả đơn hàng của cộng đồng: sản phẩm, challenge, membership.",
+}: OrdersPanelProps) {
   const totalPages = Math.ceil(total / limit);
-  const tabUrl = (key: string) => key === "ALL" ? `/c/${communitySlug}/orders` : `/c/${communitySlug}/orders?status=${key}`;
+  const rootPath = basePath ?? `/c/${communitySlug}/orders`;
+  const tabUrl = (key: string) => key === "ALL" ? rootPath : `${rootPath}?status=${key}`;
   const pageUrl = (p: number) => {
     const q = currentStatus !== "ALL" ? `status=${currentStatus}&` : "";
-    return `/c/${communitySlug}/orders?${q}${p > 1 ? `page=${p}` : ""}`.replace(/\?$/, "");
+    return `${rootPath}?${q}${p > 1 ? `page=${p}` : ""}`.replace(/\?$/, "");
   };
 
   return (
     <div>
-      <SectionHeader title="Đơn hàng" subtitle="Tất cả đơn hàng của cộng đồng — sản phẩm, challenge, membership." />
+      <SectionHeader title={title} subtitle={subtitle} />
 
       <div style={{ display: "flex", gap: 10, marginBottom: "var(--space-5)", flexWrap: "wrap" }}>
         {[
@@ -182,7 +225,7 @@ export function OrdersPanel({ orders, total, totalRevenue, pendingCount, communi
                       {order.buyer.name ?? order.buyer.email}
                     </div>
                     <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 2, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 200 }}>{order.itemTitle}</span>
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 260 }}>{order.itemTitle}</span>
                       <span style={{ background: "var(--bg-elevated)", borderRadius: 3, padding: "1px 5px", fontWeight: 600, flexShrink: 0, color: ORDER_TYPE_COLORS[order.orderType] }}>
                         {ORDER_TYPE_LABELS[order.orderType]}
                       </span>
@@ -191,6 +234,9 @@ export function OrdersPanel({ orders, total, totalRevenue, pendingCount, communi
                           {subtypeLabel}
                         </span>
                       )}
+                      <span style={{ background: "var(--bg-elevated)", borderRadius: 3, padding: "1px 5px", fontWeight: 600, flexShrink: 0 }}>
+                        {order.paymentCode}
+                      </span>
                     </div>
                   </div>
 
@@ -198,7 +244,7 @@ export function OrdersPanel({ orders, total, totalRevenue, pendingCount, communi
                     <span style={{ fontWeight: 700, color: "var(--success)", fontSize: "var(--text-sm)" }}>{fmtVnd(order.amountVnd)}đ</span>
                     <StatusBadge status={order.status} />
                     <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{fmtRelativeTime(order.createdAt)}</span>
-                    {order.status === "PENDING" && <ApproveButton order={order} communitySlug={communitySlug} />}
+                    {order.status === "PENDING" && <ApproveButton order={order} communitySlug={communitySlug} mode={mode} />}
                   </div>
                 </div>
 
@@ -217,15 +263,15 @@ export function OrdersPanel({ orders, total, totalRevenue, pendingCount, communi
       {totalPages > 1 && (
         <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "center", marginTop: "var(--space-5)" }}>
           {currentPage > 1 ? (
-            <Link href={pageUrl(currentPage - 1)} style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid var(--border-subtle)", fontSize: "var(--text-sm)", textDecoration: "none", color: "var(--text-normal)" }}>← Trước</Link>
+            <Link href={pageUrl(currentPage - 1)} style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid var(--border-subtle)", fontSize: "var(--text-sm)", textDecoration: "none", color: "var(--text-normal)" }}>Trước</Link>
           ) : (
-            <span style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid var(--border-subtle)", fontSize: "var(--text-sm)", color: "var(--text-muted)", cursor: "not-allowed" }}>← Trước</span>
+            <span style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid var(--border-subtle)", fontSize: "var(--text-sm)", color: "var(--text-muted)", cursor: "not-allowed" }}>Trước</span>
           )}
           <span style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>Trang {currentPage} / {totalPages}</span>
           {currentPage < totalPages ? (
-            <Link href={pageUrl(currentPage + 1)} style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid var(--border-subtle)", fontSize: "var(--text-sm)", textDecoration: "none", color: "var(--text-normal)" }}>Sau →</Link>
+            <Link href={pageUrl(currentPage + 1)} style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid var(--border-subtle)", fontSize: "var(--text-sm)", textDecoration: "none", color: "var(--text-normal)" }}>Sau</Link>
           ) : (
-            <span style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid var(--border-subtle)", fontSize: "var(--text-sm)", color: "var(--text-muted)", cursor: "not-allowed" }}>Sau →</span>
+            <span style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid var(--border-subtle)", fontSize: "var(--text-sm)", color: "var(--text-muted)", cursor: "not-allowed" }}>Sau</span>
           )}
         </div>
       )}
