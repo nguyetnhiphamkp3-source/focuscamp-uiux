@@ -161,6 +161,8 @@ export async function listEvents(input: {
   communityId: string;
   viewerUserId?: string;
   scope?: "upcoming" | "past" | "all";
+  page?: number;
+  pageSize?: number;
 }) {
   const now = new Date();
   const where: { communityId: string; status?: string; startsAt?: { gte?: Date; lt?: Date } } = {
@@ -176,20 +178,28 @@ export async function listEvents(input: {
     const fourHoursAgo = new Date(now.getTime() - 4 * 60 * 60 * 1000);
     where.startsAt = { lt: fourHoursAgo };
   }
-  return prisma.event.findMany({
-    where,
-    orderBy: { startsAt: input.scope === "past" ? "desc" : "asc" },
-    include: {
-      _count: { select: { bookings: true } },
-      bookings: input.viewerUserId
-        ? {
-            where: { userId: input.viewerUserId },
-            select: { id: true, status: true, attendedAt: true },
-            take: 1,
-          }
-        : false,
-    },
-  });
+  const pageSize = input.pageSize ?? 10;
+  const page = Math.max(1, input.page ?? 1);
+  const [events, total] = await Promise.all([
+    prisma.event.findMany({
+      where,
+      orderBy: { startsAt: input.scope === "past" ? "desc" : "asc" },
+      take: pageSize,
+      skip: (page - 1) * pageSize,
+      include: {
+        _count: { select: { bookings: true } },
+        bookings: input.viewerUserId
+          ? {
+              where: { userId: input.viewerUserId },
+              select: { id: true, status: true, attendedAt: true },
+              take: 1,
+            }
+          : false,
+      },
+    }),
+    prisma.event.count({ where }),
+  ]);
+  return { events, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
 }
 
 export async function bookEvent(input: {
