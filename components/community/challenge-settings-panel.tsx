@@ -260,7 +260,7 @@ export function ChallengeSettingsPanel({
               style={{ ...inputStyle, resize: "vertical", lineHeight: 1.5, fontFamily: "inherit" }}
             />
             <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 3 }}>
-              Hiển thị cho người chưa tham gia. Hỗ trợ xuống dòng.
+              Hiển thị cho người chưa tham gia. Hỗ trợ markdown: <code>### tiêu đề</code>, <code>**đậm**</code>, <code>*nghiêng*</code>, <code>- danh sách</code>, <code>[link](url)</code>.
             </div>
           </div>
 

@@ -1,5 +1,6 @@
 import type { JSX } from "react";
 import Link from "next/link";
+import { renderMarkdown } from "@/lib/markdown";
 
 type SalesProps = {
   challenge: {
@@ -57,9 +58,11 @@ export function ChallengeSalesIntro({ challenge, effectivePrice, joinButton }: S
           <h3 style={{ fontSize: "var(--text-md)", fontWeight: 800, color: "var(--header-primary)", marginBottom: 12 }}>
             📣 Tại sao tham gia challenge này?
           </h3>
-          <div style={{ color: "var(--text-normal)", lineHeight: 1.75, fontSize: "var(--text-base)", whiteSpace: "pre-line" }}>
-            {challenge.pitch}
-          </div>
+          <div
+            className="md-content"
+            style={{ color: "var(--text-normal)", lineHeight: 1.75, fontSize: "var(--text-base)" }}
+            dangerouslySetInnerHTML={{ __html: renderMarkdown(challenge.pitch) }}
+          />
         </div>
       ) : challenge.description ? (
         <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 14, padding: "20px 24px" }}>
