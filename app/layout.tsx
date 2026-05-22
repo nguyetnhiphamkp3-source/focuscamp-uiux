@@ -51,10 +51,7 @@ export const metadata: Metadata = {
       "Cộng đồng challenge-first với AI Agent. Build, bán, ship.",
     images: ["/og-default.png"],
   },
-  icons: {
-    icon: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
-  },
+  // Icons auto-discovered from app/favicon.ico, app/icon.png, app/apple-icon.png.
 };
 
 export default function RootLayout({
