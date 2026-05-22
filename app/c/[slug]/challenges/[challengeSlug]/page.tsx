@@ -407,7 +407,6 @@ export default async function ChallengeDetailPage({
                 featuredOnGlobal: challenge.featuredOnGlobal,
                 pricingConfig: parsePricingConfig(challenge.pricingConfig),
                 tiers: getTiersConfig(challenge.community.tiersConfig).map((t) => ({ key: t.key, label: t.label })),
-                hideFutureTasks: challenge.hideFutureTasks,
                 taskUnlockMode: challenge.taskUnlockMode,
                 unlockIntervalHours: challenge.unlockIntervalHours,
                 bumpProductId: (challenge as { bumpProductId?: string | null }).bumpProductId ?? null,
@@ -718,9 +717,7 @@ export default async function ChallengeDetailPage({
               <div className="ch-section-title" style={{ marginTop: 24 }}>
                 <span>Daily Tasks</span>
                 <span className="count">
-                  {challenge.hideFutureTasks && myMembership && !permissions.canManageChallenges
-                    ? `Ngày ${dayNow} / ${challenge.tasks.length}`
-                    : `${challenge.tasks.length} tasks`}
+                  {`${challenge.tasks.length} tasks`}
                 </span>
               </div>
               {challenge.tasks.map((t, taskIndex) => {
@@ -740,8 +737,8 @@ export default async function ChallengeDetailPage({
                 // Determine if task is locked based on unlock mode
                 const taskUnlocked = isDone || permissions.canManageChallenges || isTaskUnlocked(t, taskIndex);
                 const isLocked = !taskUnlocked && !isDone && !isRejected && myMembership && !myMembership.completedAt;
-                // When task is locked (by mode or hideFutureTasks), show locked placeholder
-                if ((isLocked || (challenge.hideFutureTasks && isFuture)) && !permissions.canManageChallenges && myMembership && !myMembership.completedAt) {
+                // When task is locked by the unlock mode, show locked placeholder
+                if (isLocked && !permissions.canManageChallenges && myMembership && !myMembership.completedAt) {
                   return (
                     <div key={t.id} className="ch-task" style={{ opacity: 0.5, userSelect: "none" }}>
                       <div className="ch-task-head" style={{ cursor: "default" }}>

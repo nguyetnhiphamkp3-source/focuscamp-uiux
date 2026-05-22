@@ -29,7 +29,6 @@ export function ChallengeSettingsPanel({
     featuredOnGlobal: boolean;
     pricingConfig: PricingConfig | null;
     tiers: { key: string; label: string }[];
-    hideFutureTasks: boolean;
     taskUnlockMode: string;
     unlockIntervalHours: number;
     bumpProductId?: string | null;
@@ -55,7 +54,6 @@ export function ChallengeSettingsPanel({
   const [autoStartHours, setAutoStartHours] = useState<string>(
     String(initial.autoStartAfterHours ?? 24)
   );
-  const [hideFutureTasks, setHideFutureTasks] = useState(initial.hideFutureTasks);
   const [taskUnlockMode, setTaskUnlockMode] = useState(initial.taskUnlockMode);
   const [unlockIntervalHours, setUnlockIntervalHours] = useState(String(initial.unlockIntervalHours));
   const [bannerUrl, setBannerUrl] = useState<string | null>(initial.bannerUrl);
@@ -85,7 +83,6 @@ export function ChallengeSettingsPanel({
     setPitch(initial.pitch ?? "");
     setAutoStartMode(initial.autoStartAfterHours == null ? "manual" : "auto");
     setAutoStartHours(String(initial.autoStartAfterHours ?? 24));
-    setHideFutureTasks(initial.hideFutureTasks);
     setTaskUnlockMode(initial.taskUnlockMode);
     setUnlockIntervalHours(String(initial.unlockIntervalHours));
     setBannerUrl(initial.bannerUrl);
@@ -126,7 +123,6 @@ export function ChallengeSettingsPanel({
       description: description.trim(),
       pitch: pitch || null,
       autoStartAfterHours,
-      hideFutureTasks,
       taskUnlockMode: taskUnlockMode as "ALL" | "DAILY" | "SEQUENTIAL" | "MANUAL",
       unlockIntervalHours: parseInt(unlockIntervalHours, 10) || 24,
       bannerUrl: bannerUrl ?? "",
@@ -376,35 +372,6 @@ export function ChallengeSettingsPanel({
               </div>
             </label>
           </div>
-
-          <label
-            style={{
-              display: "flex",
-              gap: 10,
-              alignItems: "flex-start",
-              cursor: "pointer",
-              padding: "8px 12px",
-              background: "var(--bg-card)",
-              border: "1px solid var(--border-subtle)",
-              borderRadius: 8,
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={hideFutureTasks}
-              onChange={(e) => setHideFutureTasks(e.target.checked)}
-              disabled={pending}
-              style={{ marginTop: 3 }}
-            />
-            <div>
-              <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--header-primary)" }}>
-                Ẩn nhiệm vụ tương lai
-              </div>
-              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 2 }}>
-                Khi bật: thành viên chỉ thấy task đến ngày hiện tại của họ — task tiếp theo ẩn đi đến khi đến ngày.
-              </div>
-            </div>
-          </label>
 
           {/* Task Unlock Mode */}
           <div

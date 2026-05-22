@@ -516,7 +516,6 @@ export async function updateChallengeSettings(input: {
   featuredOnGlobal?: boolean;
   requiredTier?: string | null;
   pricingConfig?: Record<string, unknown> | null;
-  hideFutureTasks?: boolean;
   taskUnlockMode?: string;
   unlockIntervalHours?: number;
   freezeWindows?: Array<{ label?: string; startsAt: string; endsAt: string }> | null;
@@ -543,7 +542,6 @@ export async function updateChallengeSettings(input: {
       ...("pricingConfig" in input
         ? { pricingConfig: input.pricingConfig === null ? Prisma.DbNull : (input.pricingConfig as Prisma.InputJsonValue) }
         : {}),
-      ...(input.hideFutureTasks !== undefined ? { hideFutureTasks: input.hideFutureTasks } : {}),
       ...(input.taskUnlockMode !== undefined ? { taskUnlockMode: input.taskUnlockMode } : {}),
       ...(input.unlockIntervalHours !== undefined ? { unlockIntervalHours: input.unlockIntervalHours } : {}),
       ...("freezeWindows" in input

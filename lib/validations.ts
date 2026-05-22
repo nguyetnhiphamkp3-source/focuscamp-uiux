@@ -77,6 +77,7 @@ export const UpdateChallengeSettingsSchema = z.object({
   featuredOnGlobal: z.boolean().optional(),
   requiredTier: z.string().trim().max(40).optional().nullable().or(z.literal("")),
   pricingConfig: PricingConfigSchema,
+  // Deprecated — checkbox removed from UI; ignored if sent by old clients.
   hideFutureTasks: z.boolean().optional(),
   taskUnlockMode: z.enum(["ALL", "DAILY", "SEQUENTIAL", "MANUAL"]).optional(),
   unlockIntervalHours: z.number().int().positive().max(720).optional(),

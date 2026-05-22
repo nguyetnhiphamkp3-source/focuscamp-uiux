@@ -197,7 +197,6 @@ export async function updateChallengeSettingsAction(input: {
   featuredOnGlobal?: boolean;
   requiredTier?: string | null;
   pricingConfig?: Record<string, unknown> | null;
-  hideFutureTasks?: boolean;
   taskUnlockMode?: "ALL" | "DAILY" | "SEQUENTIAL" | "MANUAL";
   unlockIntervalHours?: number;
   freezeWindows?: Array<{ label?: string; startsAt: string; endsAt: string }> | null;
@@ -220,7 +219,6 @@ export async function updateChallengeSettingsAction(input: {
     featuredOnGlobal: input.featuredOnGlobal,
     requiredTier: input.requiredTier,
     pricingConfig: input.pricingConfig,
-    hideFutureTasks: input.hideFutureTasks,
     taskUnlockMode: input.taskUnlockMode,
     unlockIntervalHours: input.unlockIntervalHours,
     freezeWindows: input.freezeWindows,
@@ -268,7 +266,6 @@ export async function updateChallengeSettingsAction(input: {
       featuredOnGlobal: parsed.data.featuredOnGlobal,
       requiredTier: parsed.data.requiredTier === undefined ? undefined : parsed.data.requiredTier || null,
       pricingConfig: "pricingConfig" in parsed.data ? (parsed.data.pricingConfig as Record<string, unknown> | null) : undefined,
-      hideFutureTasks: parsed.data.hideFutureTasks,
       taskUnlockMode: parsed.data.taskUnlockMode,
       unlockIntervalHours: parsed.data.unlockIntervalHours,
       freezeWindows: parsed.data.freezeWindows === null ? null : (parsed.data.freezeWindows ?? undefined),
