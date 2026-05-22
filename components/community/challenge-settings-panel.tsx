@@ -159,8 +159,8 @@ export function ChallengeSettingsPanel({
         justifyContent: "center",
         background: "rgba(0,0,0,0.5)",
       }}
-      onClick={(e) => { if (e.target === e.currentTarget) closeWithoutSave(); }}
     >
+      {/* Backdrop click intentionally does NOT close — too easy to lose edits by accident. */}
       <section
         id="challenge-settings"
         className="ui-card ui-card-lg"

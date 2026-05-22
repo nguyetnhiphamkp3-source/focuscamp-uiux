@@ -45,6 +45,23 @@ export function CourseSettingsPanel({
 
   const [saving, setSaving] = useState(false);
 
+  // Snap form back to server-provided initial values; called when closing
+  // without an explicit Save so half-edits don't linger.
+  function resetToInitial() {
+    setTitle(initial.title);
+    setDescription(initial.description ?? "");
+    setLevel(initial.level);
+    setIsPublished(initial.isPublished);
+    setThumbnailUrl(initial.thumbnailUrl ?? "");
+    setErr(null);
+    setSaved(false);
+  }
+
+  function closeWithoutSave() {
+    resetToInitial();
+    setOpen(false);
+  }
+
   async function save() {
     setErr(null);
     setSaved(false);
@@ -81,8 +98,8 @@ export function CourseSettingsPanel({
         justifyContent: "center",
         background: "rgba(0,0,0,0.5)",
       }}
-      onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}
     >
+      {/* Backdrop click intentionally does NOT close — too easy to lose edits by accident. */}
       <section
         style={{
           width: "min(600px, 90vw)",
@@ -117,7 +134,7 @@ export function CourseSettingsPanel({
           </span>
           <button
             type="button"
-            onClick={() => setOpen(false)}
+            onClick={closeWithoutSave}
             style={{
               background: "none",
               border: "none",
