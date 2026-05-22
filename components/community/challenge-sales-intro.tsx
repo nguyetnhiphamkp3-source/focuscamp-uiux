@@ -9,7 +9,7 @@ type SalesProps = {
     requiredDays: number;
     difficulty: string;
     bannerUrl: string | null;
-    requiresApproval: boolean;
+    autoStartAfterHours: number | null;
     _count: { members: number };
     tasks: { id: string; dayNumber: number; title: string }[];
     products: { id: string; relevance: string; product: { title: string; isFree: boolean; priceVnd: unknown } }[];
@@ -79,8 +79,8 @@ export function ChallengeSalesIntro({ challenge, effectivePrice, joinButton }: S
             `${challenge.tasks.length} nhiệm vụ có cấu trúc rõ ràng — mỗi ngày 1 bước nhỏ, cộng lại = kết quả lớn`,
             "Cộng đồng check-in hàng ngày — không bị bỏ rơi, không mất momentum",
             "Bảng xếp hạng & streak — gamification giúp bạn duy trì đến ngày cuối",
-            challenge.requiresApproval
-              ? "Review & feedback từ admin — đảm bảo bạn làm đúng hướng"
+            challenge.autoStartAfterHours != null
+              ? `Bắt đầu khi sẵn sàng — có ${challenge.autoStartAfterHours}h chuẩn bị trước khi đồng hồ tự chạy`
               : `Tự chủ tiến độ — bắt đầu ngay khi sẵn sàng, không cần chờ người khác`,
             challenge.products.length > 0
               ? `${challenge.products.length} tài nguyên hỗ trợ từ Marketplace kèm theo`
@@ -138,9 +138,9 @@ export function ChallengeSalesIntro({ challenge, effectivePrice, joinButton }: S
           </div>
         </div>
         {joinButton}
-        {challenge.requiresApproval && (
+        {challenge.autoStartAfterHours != null && (
           <div style={{ marginTop: 10, fontSize: "var(--text-xs)", color: "var(--text-muted)", textAlign: "center" }}>
-            Đơn đăng ký sẽ được admin xét duyệt trước khi bắt đầu.
+            Sau khi tham gia bạn có {challenge.autoStartAfterHours} giờ để bấm &quot;Bắt đầu&quot; — quá hạn challenge sẽ tự chạy.
           </div>
         )}
       </div>

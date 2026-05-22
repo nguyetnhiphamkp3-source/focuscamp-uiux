@@ -27,6 +27,30 @@ export interface ActiveChallenge {
 }
 
 /**
+ * Resolve the effective "Day 1 starts at" timestamp for a challenge member.
+ *
+ * - If member already has personalStartsAt set → return it as-is.
+ * - Else, if the challenge has autoStartAfterHours grace:
+ *     * Inside grace window → return null (still waiting; member may press "Bắt đầu").
+ *     * Past grace → return joinedAt + grace (deterministic; NOT `now`).
+ * - Else (manual mode, no grace) → return null forever (member must press Start).
+ *
+ * Pure function — callers persist the result lazily inside getActiveChallenge.
+ */
+export function effectivePersonalStartsAt(
+  member: { joinedAt: Date; personalStartsAt: Date | null },
+  challenge: { autoStartAfterHours: number | null },
+  now: Date = new Date()
+): Date | null {
+  if (member.personalStartsAt) return member.personalStartsAt;
+  const grace = challenge.autoStartAfterHours;
+  if (grace == null || grace <= 0) return null;
+  const deadline = new Date(member.joinedAt.getTime() + grace * 3600_000);
+  if (now < deadline) return null;
+  return deadline;
+}
+
+/**
  * Compute consecutive-day streak ending at the most recent check-in.
  * Given checkins sorted asc, returns the longest run of consecutive days
  * ending at the last check-in day.
@@ -65,10 +89,21 @@ export async function getActiveChallenge(
       },
     },
   });
-  if (!member || !member.personalStartsAt) return null;
+  if (!member) return null;
 
   const ch = member.challenge;
-  const startDay = new Date(member.personalStartsAt);
+  const effStart = effectivePersonalStartsAt(member, ch);
+  if (!effStart) return null;
+
+  // Lazy-persist auto-start so leaderboard/queries converge on a single source of truth.
+  // Fire-and-forget: the deadline is deterministic so a lost write retries on next visit.
+  if (!member.personalStartsAt) {
+    prisma.challengeMember
+      .update({ where: { id: member.id }, data: { personalStartsAt: effStart } })
+      .catch(() => {});
+  }
+
+  const startDay = new Date(effStart);
   startDay.setHours(0, 0, 0, 0);
   const now = new Date();
   const today = new Date(now);
@@ -107,7 +142,7 @@ export async function getActiveChallenge(
     challengeTitle: ch.title,
     difficulty: ch.difficulty,
     requiredDays: ch.requiredDays,
-    personalStartsAt: member.personalStartsAt,
+    personalStartsAt: effStart,
     currentDay,
     progressPct,
     streak,
@@ -154,7 +189,6 @@ export async function submitCheckin(params: {
     where: { userId, challengeId, status: "ACTIVE" },
   });
   if (!member) throw new Error("not_a_member");
-  if (!member.personalStartsAt) throw new Error("challenge_not_started");
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -173,19 +207,21 @@ export async function submitCheckin(params: {
   // Calculate if this check-in completes the challenge
   const challenge = await prisma.challenge.findUnique({
     where: { id: challengeId },
-    select: { requiredDays: true },
+    select: { requiredDays: true, autoStartAfterHours: true },
   });
+  if (!challenge) throw new Error("challenge_not_found");
+
+  const effStart = effectivePersonalStartsAt(member, challenge);
+  if (!effStart) throw new Error("challenge_not_started");
+
   const elapsedDays = Math.floor(
-    (today.getTime() - member.personalStartsAt.getTime()) /
-      (1000 * 60 * 60 * 24)
+    (today.getTime() - effStart.getTime()) / (1000 * 60 * 60 * 24)
   );
   const currentDay = Math.min(
-    challenge?.requiredDays ?? 999,
+    challenge.requiredDays,
     Math.max(1, elapsedDays + 1)
   );
-  const isFinalDay =
-    challenge?.requiredDays !== undefined &&
-    currentDay >= challenge.requiredDays;
+  const isFinalDay = currentDay >= challenge.requiredDays;
 
   await prisma.$transaction(async (tx) => {
     await tx.checkin.create({

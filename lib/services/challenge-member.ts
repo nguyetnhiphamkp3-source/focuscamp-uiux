@@ -122,7 +122,8 @@ export async function approveChallengeMember(input: {
       status: "ACTIVE",
       approvedAt: new Date(),
       approvedById: input.userId,
-      personalStartsAt: new Date(), // approval = ready to play
+      // Don't set personalStartsAt — member presses "Bắt đầu" themselves
+      // (or it auto-fires via Challenge.autoStartAfterHours grace).
     },
   });
   logger.info(
@@ -465,7 +466,7 @@ export async function createChallenge(input: {
   description?: string;
   difficulty?: string;
   requiredDays?: number;
-  requiresApproval?: boolean;
+  autoStartAfterHours?: number | null;
   bannerUrl?: string;
   taskUnlockMode?: string;
   unlockIntervalHours?: number;
@@ -487,7 +488,7 @@ export async function createChallenge(input: {
       description: input.description?.trim() || null,
       difficulty: input.difficulty || "NORMAL",
       requiredDays: input.requiredDays ?? 21,
-      requiresApproval: input.requiresApproval ?? false,
+      autoStartAfterHours: input.autoStartAfterHours ?? null,
       bannerUrl: input.bannerUrl?.trim() || null,
       leaderId: input.userId,
       status: "OPEN",
@@ -505,7 +506,7 @@ export async function createChallenge(input: {
 export async function updateChallengeSettings(input: {
   userId: string;
   challengeId: string;
-  requiresApproval?: boolean;
+  autoStartAfterHours?: number | null;
   title?: string;
   description?: string;
   freezeFromDay?: number | null;
@@ -526,7 +527,7 @@ export async function updateChallengeSettings(input: {
   const updated = await prisma.challenge.update({
     where: { id: input.challengeId },
     data: {
-      ...(input.requiresApproval !== undefined ? { requiresApproval: input.requiresApproval } : {}),
+      ...("autoStartAfterHours" in input ? { autoStartAfterHours: input.autoStartAfterHours ?? null } : {}),
       ...(input.title !== undefined ? { title: input.title } : {}),
       ...(input.description !== undefined ? { description: input.description || null } : {}),
       ...(input.freezeFromDay !== undefined ? { freezeFromDay: input.freezeFromDay } : {}),
@@ -682,20 +683,20 @@ export async function deleteChallengeTask(input: {
 }
 
 /**
- * Join a challenge — handles both auto-active and approval-required flows.
+ * Join a challenge. Always lands ACTIVE — the previous admin-approval gate is gone.
+ * personalStartsAt stays null; member presses "Bắt đầu" or waits for grace.
  */
 export async function joinChallenge(input: {
   userId: string;
   challengeId: string;
-}): Promise<{ status: "ACTIVE" | "PENDING" }> {
+}): Promise<{ status: "ACTIVE" }> {
   const challenge = await prisma.challenge.findUnique({
     where: { id: input.challengeId },
-    select: { requiresApproval: true, communityId: true },
+    select: { communityId: true },
   });
   if (!challenge) throw new Error("Challenge không tồn tại");
   await assertCommunityCanWrite(challenge.communityId);
 
-  const status = challenge.requiresApproval ? "PENDING" : "ACTIVE";
   await prisma.challengeMember.upsert({
     where: {
       challengeId_userId: {
@@ -707,13 +708,12 @@ export async function joinChallenge(input: {
     create: {
       userId: input.userId,
       challengeId: input.challengeId,
-      status,
-      ...(status === "ACTIVE" ? { personalStartsAt: new Date() } : {}),
+      status: "ACTIVE",
     },
   });
   logger.info(
-    { userId: input.userId, challengeId: input.challengeId, status },
+    { userId: input.userId, challengeId: input.challengeId },
     "[challenge] member joined"
   );
-  return { status };
+  return { status: "ACTIVE" };
 }

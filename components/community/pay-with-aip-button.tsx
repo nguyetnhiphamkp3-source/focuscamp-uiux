@@ -9,7 +9,6 @@ export function PayWithAipButton({
   communityId,
   communitySlug,
   challengeSlug,
-  requiresApproval,
   aipPrice,
   aipBalance,
 }: {
@@ -17,7 +16,6 @@ export function PayWithAipButton({
   communityId: string;
   communitySlug: string;
   challengeSlug: string;
-  requiresApproval: boolean;
   aipPrice: number;
   aipBalance: number;
 }) {
@@ -33,7 +31,6 @@ export function PayWithAipButton({
       communityId,
       communitySlug,
       challengeSlug,
-      requiresApproval,
     });
     if (result.ok) {
       router.refresh();

@@ -137,20 +137,11 @@ export async function approvePaymentAction(input: {
       });
 
       if (payment.refType === "challenge") {
-        const member = await tx.challengeMember.findUnique({
+        // Activate the member; start timing is controlled by Challenge.autoStartAfterHours.
+        await tx.challengeMember.update({
           where: { id: payment.refId },
-          select: { challengeId: true },
+          data: { status: "ACTIVE", approvedAt: new Date() },
         });
-        if (member) {
-          await tx.challengeMember.update({
-            where: { id: payment.refId },
-            data: {
-              status: "ACTIVE",
-              approvedAt: new Date(),
-              personalStartsAt: new Date(),
-            },
-          });
-        }
       } else if (payment.refType === "subscription") {
         const subscription = await tx.subscription.findUnique({
           where: { id: payment.refId },

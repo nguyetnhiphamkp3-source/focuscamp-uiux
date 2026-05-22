@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { CreateChallengeButton } from "@/components/community/create-challenge-button";
 import { getEffectiveOwnership } from "@/lib/preview-mode";
 import { communityPermissionFlags, effectiveCommunityRole } from "@/lib/community-permissions";
+import { effectivePersonalStartsAt } from "@/lib/services/challenge-progress";
 
 export const dynamic = "force-dynamic";
 
@@ -294,6 +295,7 @@ function ActiveTab({
       difficulty: string;
       requiredDays: number;
       bannerUrl: string | null;
+      autoStartAfterHours: number | null;
       _count: { members: number };
     };
   }>;
@@ -343,13 +345,14 @@ function ActiveTab({
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
       {memberships.map((m) => {
         const isPending = m.status === "PAYMENT_PENDING";
-        const day = m.personalStartsAt
+        const effStart = effectivePersonalStartsAt(m, m.challenge);
+        const day = effStart
           ? Math.min(
               m.challenge.requiredDays,
               Math.max(
                 1,
                 Math.floor(
-                  (Date.now() - m.personalStartsAt.getTime()) /
+                  (Date.now() - effStart.getTime()) /
                     (1000 * 60 * 60 * 24)
                 ) + 1
               )

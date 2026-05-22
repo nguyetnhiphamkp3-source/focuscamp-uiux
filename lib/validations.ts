@@ -65,7 +65,9 @@ const PricingConfigSchema = z.object({
 
 export const UpdateChallengeSettingsSchema = z.object({
   challengeId: z.string().cuid(),
+  // Deprecated — kept optional so old clients don't break. New code ignores it.
   requiresApproval: z.boolean().optional(),
+  autoStartAfterHours: z.number().int().min(1).max(8760).nullable().optional(),
   title: z.string().trim().min(1).max(120).optional(),
   description: z.string().trim().max(5000).optional().or(z.literal("")),
   freezeFromDay: z.number().int().positive().optional().nullable(),
@@ -99,7 +101,9 @@ export const CreateChallengeSchema = z.object({
   description: z.string().trim().max(5000).optional().or(z.literal("")),
   difficulty: z.enum(["NORMAL", "HARD", "CHAOS"]).optional(),
   requiredDays: z.number().int().positive().max(365).optional(),
+  // Deprecated — kept for back-compat.
   requiresApproval: z.boolean().optional(),
+  autoStartAfterHours: z.number().int().min(1).max(8760).nullable().optional(),
   bannerUrl: z.string().url().max(500).optional().or(z.literal("")),
   taskUnlockMode: z.enum(["ALL", "DAILY", "SEQUENTIAL", "MANUAL"]).optional(),
   unlockIntervalHours: z.number().int().positive().max(720).optional(),

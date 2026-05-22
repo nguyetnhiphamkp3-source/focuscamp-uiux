@@ -23,7 +23,8 @@ export function CreateChallengeButton({
     "NORMAL"
   );
   const [requiredDays, setRequiredDays] = useState("21");
-  const [requiresApproval, setRequiresApproval] = useState(false);
+  const [autoStartMode, setAutoStartMode] = useState<"manual" | "auto">("manual");
+  const [autoStartHours, setAutoStartHours] = useState("24");
   const [taskUnlockMode, setTaskUnlockMode] = useState<"ALL" | "DAILY" | "SEQUENTIAL" | "MANUAL">("DAILY");
   const [unlockIntervalHours, setUnlockIntervalHours] = useState("24");
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
@@ -48,7 +49,10 @@ export function CreateChallengeButton({
         description: description.trim() || undefined,
         difficulty,
         requiredDays: parseInt(requiredDays, 10) || 21,
-        requiresApproval,
+        autoStartAfterHours:
+          autoStartMode === "auto"
+            ? Math.min(Math.max(parseInt(autoStartHours, 10) || 24, 1), 8760)
+            : null,
         bannerUrl: bannerUrl || undefined,
         taskUnlockMode,
         unlockIntervalHours: parseInt(unlockIntervalHours, 10) || 24,
@@ -255,29 +259,78 @@ export function CreateChallengeButton({
                 </Field>
               </div>
 
-              <label
+              <div
                 style={{
-                  display: "flex",
-                  gap: 10,
-                  alignItems: "flex-start",
-                  cursor: "pointer",
-                  padding: "8px 12px",
+                  padding: "12px",
                   background: "var(--bg-card)",
                   border: "1px solid var(--border-subtle)",
                   borderRadius: 8,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
                 }}
               >
-                <input
-                  type="checkbox"
-                  checked={requiresApproval}
-                  onChange={(e) => setRequiresApproval(e.target.checked)}
-                  disabled={pending}
-                  style={{ marginTop: 3 }}
-                />
-                <div style={{ fontSize: "var(--text-base)" }}>
-                  <strong>Yêu cầu duyệt</strong> khi có người xin tham gia
+                <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--header-primary)" }}>
+                  ⏱ Cách bắt đầu
                 </div>
-              </label>
+                <label style={{ display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer" }}>
+                  <input
+                    type="radio"
+                    name="newChallengeAutoStart"
+                    checked={autoStartMode === "manual"}
+                    onChange={() => setAutoStartMode("manual")}
+                    disabled={pending}
+                    style={{ marginTop: 3 }}
+                  />
+                  <div>
+                    <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--header-primary)" }}>
+                      Thủ công — member tự nhấn &quot;🚀 Bắt đầu&quot;
+                    </div>
+                    <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 2 }}>
+                      Mặc định. Không nhấn = không chạy.
+                    </div>
+                  </div>
+                </label>
+                <label style={{ display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer" }}>
+                  <input
+                    type="radio"
+                    name="newChallengeAutoStart"
+                    checked={autoStartMode === "auto"}
+                    onChange={() => setAutoStartMode("auto")}
+                    disabled={pending}
+                    style={{ marginTop: 3 }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div
+                      style={{
+                        fontSize: "var(--text-sm)",
+                        fontWeight: 600,
+                        color: "var(--header-primary)",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      Tự động bắt đầu sau
+                      <input
+                        type="number"
+                        min={1}
+                        max={8760}
+                        value={autoStartHours}
+                        onChange={(e) => setAutoStartHours(e.target.value)}
+                        onFocus={() => setAutoStartMode("auto")}
+                        disabled={pending}
+                        style={{ ...inputStyle, width: 80, padding: "4px 8px" }}
+                      />
+                      giờ kể từ lúc join
+                    </div>
+                    <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 2 }}>
+                      Bấm Start trong grace → chạy ngay. Hết grace → tự chạy lúc joinedAt + N giờ.
+                    </div>
+                  </div>
+                </label>
+              </div>
             </div>
 
             {err && (

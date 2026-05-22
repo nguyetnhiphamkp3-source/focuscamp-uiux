@@ -6,7 +6,7 @@ import { joinChallengeAction, startChallengeAction } from "@/app/actions/challen
 import { CheckinForm } from "@/components/community/checkin-form";
 import { SubmissionReviewPanel } from "@/components/community/submission-review-panel";
 import type { SubmissionRow } from "@/components/community/submission-review-panel";
-import { PendingMembersPanel } from "@/components/community/pending-members-panel";
+import { effectivePersonalStartsAt } from "@/lib/services/challenge-progress";
 import { ChallengeSettingsPanel } from "@/components/community/challenge-settings-panel";
 import { ChallengeEditButton } from "@/components/community/challenge-edit-button";
 import { CheckinVoteButton } from "@/components/community/checkin-vote-button";
@@ -21,7 +21,6 @@ import {
   getActiveChallenge,
   getChallengeLeaderboard,
   listChallengeSubmissions,
-  listPendingMembers,
 } from "@/lib/services/challenge";
 import { ChallengeSalesIntro } from "@/components/community/challenge-sales-intro";
 import { RenewPaymentButton } from "@/components/community/renew-payment-button";
@@ -129,7 +128,6 @@ export default async function ChallengeDetailPage({
     total: number;
     pendingCount: number;
   } | null = null;
-  const pendingMembers = permissions.canReviewChallengeMembers ? await listPendingMembers(challenge.id) : [];
   const communityProducts = permissions.canManageChallenges
     ? await prisma.product.findMany({
         where: { communityId: challenge.community.id },
@@ -254,12 +252,20 @@ export default async function ChallengeDetailPage({
     ? await getActiveChallenge(session.user.id, challenge.community.id)
     : null;
 
+  // Effective Day-1 start: real personalStartsAt, or joinedAt + grace if expired, else null.
+  const effStart = myMembership
+    ? effectivePersonalStartsAt(myMembership, challenge)
+    : null;
+  const autoStartDeadline =
+    myMembership && challenge.autoStartAfterHours != null
+      ? new Date(myMembership.joinedAt.getTime() + challenge.autoStartAfterHours * 3600_000)
+      : null;
+
   const joinAction = joinChallengeAction.bind(null, {
     challengeId: challenge.id,
     communityId: challenge.community.id,
     communitySlug: slug,
     challengeSlug,
-    requiresApproval: challenge.requiresApproval,
   });
 
   // Effective price for current user — fall back to priceVnd if no pricingConfig
@@ -288,8 +294,8 @@ export default async function ChallengeDetailPage({
 
   const dayNow = (() => {
     if (myMembership?.completedAt) return challenge.requiredDays;
-    if (!myMembership?.personalStartsAt) return 0;
-    const startDay = new Date(myMembership.personalStartsAt);
+    if (!effStart) return 0;
+    const startDay = new Date(effStart);
     startDay.setHours(0, 0, 0, 0);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -297,8 +303,8 @@ export default async function ChallengeDetailPage({
     return Math.min(challenge.requiredDays, Math.max(1, elapsedDays + 1));
   })();
 
-  const currentTaskDeadlineLabel = myMembership?.personalStartsAt && dayNow > 0
-    ? new Date(myMembership.personalStartsAt.getTime() + dayNow * 24 * 60 * 60 * 1000).toLocaleString("vi-VN", {
+  const currentTaskDeadlineLabel = effStart && dayNow > 0
+    ? new Date(effStart.getTime() + dayNow * 24 * 60 * 60 * 1000).toLocaleString("vi-VN", {
         timeZone: "Asia/Ho_Chi_Minh", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false,
       })
     : undefined;
@@ -306,12 +312,12 @@ export default async function ChallengeDetailPage({
   // Compute per-task unlock status based on taskUnlockMode
   const unlockMode = challenge.taskUnlockMode ?? "DAILY";
   const defaultInterval = challenge.unlockIntervalHours ?? 24;
-  const personalStart = myMembership?.personalStartsAt?.getTime() ?? 0;
+  const personalStart = effStart?.getTime() ?? 0;
 
   const tasks = challenge.tasks;
   function isTaskUnlocked(task: { dayNumber: number; unlockAfterHours: number | null }, taskIndex: number): boolean {
-    if (!myMembership?.personalStartsAt) return false;
-    if (myMembership.completedAt) return true;
+    if (!effStart) return false;
+    if (myMembership?.completedAt) return true;
 
     switch (unlockMode) {
       case "ALL":
@@ -395,7 +401,7 @@ export default async function ChallengeDetailPage({
                 title: challenge.title,
                 description: challenge.description,
                 pitch: challenge.pitch ?? null,
-                requiresApproval: challenge.requiresApproval,
+                autoStartAfterHours: challenge.autoStartAfterHours,
                 freezeWindows: (challenge.freezeWindows as Array<{ label?: string; startsAt: string; endsAt: string }> | null) ?? null,
                 bannerUrl: challenge.bannerUrl,
                 featuredOnGlobal: challenge.featuredOnGlobal,
@@ -407,19 +413,6 @@ export default async function ChallengeDetailPage({
                 bumpProductId: (challenge as { bumpProductId?: string | null }).bumpProductId ?? null,
               }}
               communityProducts={communityProducts}
-            />
-          )}
-
-          {/* Admin-only pending member requests panel */}
-          {permissions.canReviewChallengeMembers && pendingMembers.length > 0 && (
-            <PendingMembersPanel
-              communitySlug={slug}
-              challengeSlug={challengeSlug}
-              members={pendingMembers.map((m) => ({
-                id: m.id,
-                joinedAt: m.joinedAt,
-                user: m.user,
-              }))}
             />
           )}
 
@@ -517,14 +510,26 @@ export default async function ChallengeDetailPage({
                 </div>
               }
             />
-          ) : myMembership?.status === "PENDING" ? (
-            <div style={{ marginTop: "var(--space-5)", padding: "16px 20px", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.3)", borderRadius: 12, fontSize: "var(--text-sm)", color: "var(--warning)" }}>
-              ⏳ Yêu cầu tham gia của bạn đang chờ admin duyệt. Bạn sẽ nhận thông báo khi được chấp thuận.
-            </div>
-          ) : myMembership?.status === "ACTIVE" && !myMembership.personalStartsAt ? (
+          ) : myMembership?.status === "ACTIVE" && !effStart ? (
             <div style={{ marginTop: "var(--space-5)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
               <div style={{ padding: "14px 18px", background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 12, fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>
                 Bạn đã tham gia challenge. Nhấn <strong>Bắt đầu</strong> khi sẵn sàng — đồng hồ đếm ngày sẽ chạy từ lúc này.
+                {autoStartDeadline && (
+                  <div style={{ marginTop: 6, fontSize: "var(--text-xs)", color: "var(--warning)" }}>
+                    ⏱ Nếu không bấm, challenge sẽ tự bắt đầu lúc{" "}
+                    <strong>
+                      {autoStartDeadline.toLocaleString("vi-VN", {
+                        timeZone: "Asia/Ho_Chi_Minh",
+                        day: "2-digit",
+                        month: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false,
+                      })}
+                    </strong>
+                    .
+                  </div>
+                )}
               </div>
               <form action={startChallengeAction.bind(null, { challengeId: challenge.id, communitySlug: slug, challengeSlug })}>
                 <button type="submit" className="ui-btn ui-btn-primary ui-btn-lg" style={{ width: "100%" }}>
@@ -621,7 +626,6 @@ export default async function ChallengeDetailPage({
                       communityId={challenge.community.id}
                       communitySlug={slug}
                       challengeSlug={challengeSlug}
-                      requiresApproval={challenge.requiresApproval}
                       aipPrice={effectivePrice.aipPrice}
                       aipBalance={effectivePrice.aipBalance}
                     />
@@ -728,8 +732,8 @@ export default async function ChallengeDetailPage({
                 const isCurrent = !isDone && !isRejected && t.dayNumber === dayNow;
                 const isFuture = t.dayNumber > dayNow && !isDone && !isRejected;
                 const isOverdue = !isDone && !isRejected && !isCurrent && t.dayNumber < dayNow;
-                const dayDeadline = myMembership?.personalStartsAt
-                  ? new Date(myMembership.personalStartsAt.getTime() + t.dayNumber * 24 * 60 * 60 * 1000)
+                const dayDeadline = effStart
+                  ? new Date(effStart.getTime() + t.dayNumber * 24 * 60 * 60 * 1000)
                   : null;
                 const isLate = !!(isDone && checkinData && dayDeadline && checkinData.createdAt.getTime() > dayDeadline.getTime());
                 const hasBody = !!(t.description || t.sopContent || t.videoUrl || hasEvidenceHint || checkinData || isCurrent || isOverdue);

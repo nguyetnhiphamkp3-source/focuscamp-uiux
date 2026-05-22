@@ -23,7 +23,7 @@ export function ChallengeSettingsPanel({
     title: string;
     description: string | null;
     pitch?: string | null;
-    requiresApproval: boolean;
+    autoStartAfterHours: number | null;
     freezeWindows?: Array<{ label?: string; startsAt: string; endsAt: string }> | null;
     bannerUrl: string | null;
     featuredOnGlobal: boolean;
@@ -49,7 +49,12 @@ export function ChallengeSettingsPanel({
   const [title, setTitle] = useState(initial.title);
   const [description, setDescription] = useState(initial.description ?? "");
   const [pitch, setPitch] = useState(initial.pitch ?? "");
-  const [requiresApproval, setRequiresApproval] = useState(initial.requiresApproval);
+  const [autoStartMode, setAutoStartMode] = useState<"manual" | "auto">(
+    initial.autoStartAfterHours == null ? "manual" : "auto"
+  );
+  const [autoStartHours, setAutoStartHours] = useState<string>(
+    String(initial.autoStartAfterHours ?? 24)
+  );
   const [hideFutureTasks, setHideFutureTasks] = useState(initial.hideFutureTasks);
   const [taskUnlockMode, setTaskUnlockMode] = useState(initial.taskUnlockMode);
   const [unlockIntervalHours, setUnlockIntervalHours] = useState(String(initial.unlockIntervalHours));
@@ -74,12 +79,17 @@ export function ChallengeSettingsPanel({
     setErr(null);
     setSaved(false);
     setPending(true);
+    const parsedHours = parseInt(autoStartHours, 10);
+    const autoStartAfterHours =
+      autoStartMode === "auto" && Number.isFinite(parsedHours) && parsedHours >= 1
+        ? Math.min(parsedHours, 8760)
+        : null;
     const res = await updateChallengeSettingsAction({
       challengeId,
       title: title.trim(),
       description: description.trim(),
       pitch: pitch || null,
-      requiresApproval,
+      autoStartAfterHours,
       hideFutureTasks,
       taskUnlockMode: taskUnlockMode as "ALL" | "DAILY" | "SEQUENTIAL" | "MANUAL",
       unlockIntervalHours: parseInt(unlockIntervalHours, 10) || 24,
@@ -140,11 +150,13 @@ export function ChallengeSettingsPanel({
             style={{
               marginLeft: "auto",
               fontSize: "var(--text-xs)",
-              color: requiresApproval ? "var(--warning)" : "var(--text-muted)",
+              color: autoStartMode === "auto" ? "var(--brand-green)" : "var(--text-muted)",
               fontWeight: 500,
             }}
           >
-            {requiresApproval ? "Yêu cầu duyệt" : "Tự động ACTIVE"}
+            {autoStartMode === "auto"
+              ? `Tự bắt đầu sau ${autoStartHours}h`
+              : "Bắt đầu thủ công"}
           </span>
           <button
             type="button"
@@ -248,47 +260,86 @@ export function ChallengeSettingsPanel({
             />
           </div>
 
-          <label
+          {/* Cách bắt đầu — manual vs auto-start grace period */}
+          <div
             style={{
-              display: "flex",
-              gap: 10,
-              alignItems: "flex-start",
-              cursor: "pointer",
-              padding: "8px 12px",
+              padding: "12px",
               background: "var(--bg-card)",
               border: "1px solid var(--border-subtle)",
               borderRadius: 8,
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
             }}
           >
-            <input
-              type="checkbox"
-              checked={requiresApproval}
-              onChange={(e) => setRequiresApproval(e.target.checked)}
-              disabled={pending}
-              style={{ marginTop: 3 }}
-            />
-            <div>
-              <div
-                style={{
-                  fontSize: "var(--text-sm)",
-                  fontWeight: 600,
-                  color: "var(--header-primary)",
-                }}
-              >
-                Yêu cầu admin duyệt
-              </div>
-              <div
-                style={{
-                  fontSize: "var(--text-xs)",
-                  color: "var(--text-muted)",
-                  marginTop: 2,
-                }}
-              >
-                Khi bật: người tham gia phải chờ admin duyệt trước khi được vào challenge.
-                Khi tắt (mặc định): tự động vào challenge, thành viên tự nhấn Bắt đầu khi sẵn sàng.
-              </div>
+            <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--header-primary)" }}>
+              ⏱ Cách bắt đầu challenge
             </div>
-          </label>
+            <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+              Quyết định khi nào đồng hồ &quot;Ngày 1&quot; chạy cho mỗi thành viên sau khi join/mua.
+            </div>
+
+            <label style={{ display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer" }}>
+              <input
+                type="radio"
+                name="autoStartMode"
+                value="manual"
+                checked={autoStartMode === "manual"}
+                onChange={() => setAutoStartMode("manual")}
+                disabled={pending}
+                style={{ marginTop: 3 }}
+              />
+              <div>
+                <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--header-primary)" }}>
+                  Thủ công — thành viên tự nhấn &quot;🚀 Bắt đầu ngay&quot;
+                </div>
+                <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 2 }}>
+                  Mặc định. Nếu không nhấn, challenge sẽ không chạy.
+                </div>
+              </div>
+            </label>
+
+            <label style={{ display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer" }}>
+              <input
+                type="radio"
+                name="autoStartMode"
+                value="auto"
+                checked={autoStartMode === "auto"}
+                onChange={() => setAutoStartMode("auto")}
+                disabled={pending}
+                style={{ marginTop: 3 }}
+              />
+              <div style={{ flex: 1 }}>
+                <div
+                  style={{
+                    fontSize: "var(--text-sm)",
+                    fontWeight: 600,
+                    color: "var(--header-primary)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  Tự động bắt đầu sau
+                  <input
+                    type="number"
+                    min={1}
+                    max={8760}
+                    value={autoStartHours}
+                    onChange={(e) => setAutoStartHours(e.target.value)}
+                    onFocus={() => setAutoStartMode("auto")}
+                    disabled={pending}
+                    style={{ ...inputStyle, width: 80, padding: "4px 8px" }}
+                  />
+                  giờ kể từ lúc join
+                </div>
+                <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 2 }}>
+                  Member bấm &quot;Bắt đầu&quot; trong grace → đồng hồ chạy từ lúc bấm. Hết grace mà chưa bấm → tự bắt đầu lúc <code>joinedAt + N giờ</code>.
+                </div>
+              </div>
+            </label>
+          </div>
 
           <label
             style={{

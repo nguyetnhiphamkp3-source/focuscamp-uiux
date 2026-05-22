@@ -375,7 +375,7 @@ export function buildMcpServer(ctx: McpContext): McpServer {
       description: z.string().max(5000).optional(),
       difficulty: z.enum(["NORMAL", "HARD", "CHAOS"]).optional(),
       requiredDays: z.number().int().min(1).max(365).optional(),
-      requiresApproval: z.boolean().optional(),
+      autoStartAfterHours: z.number().int().min(1).max(8760).nullable().optional(),
       bannerUrl: z.string().url().optional(),
       tasks: z
         .array(
@@ -407,7 +407,7 @@ export function buildMcpServer(ctx: McpContext): McpServer {
             description: args.description,
             difficulty: args.difficulty,
             requiredDays: args.requiredDays,
-            requiresApproval: args.requiresApproval,
+            autoStartAfterHours: args.autoStartAfterHours ?? null,
             bannerUrl: args.bannerUrl,
           });
           if (args.tasks && args.tasks.length > 0) {
@@ -430,12 +430,12 @@ export function buildMcpServer(ctx: McpContext): McpServer {
 
   server.tool(
     "challenges_update",
-    "Update challenge settings (title/description/approval/freeze/banner).",
+    "Update challenge settings (title/description/auto-start/freeze/banner).",
     {
       challengeId: z.string().cuid(),
       title: z.string().min(1).max(120).optional(),
       description: z.string().max(5000).optional(),
-      requiresApproval: z.boolean().optional(),
+      autoStartAfterHours: z.number().int().min(1).max(8760).nullable().optional(),
       bannerUrl: z.string().url().nullable().optional(),
       freezeFromDay: z.number().int().positive().nullable().optional(),
       freezeStartsAt: z.string().datetime().nullable().optional(),
@@ -452,7 +452,8 @@ export function buildMcpServer(ctx: McpContext): McpServer {
             challengeId: args.challengeId,
             title: args.title,
             description: args.description,
-            requiresApproval: args.requiresApproval,
+            autoStartAfterHours:
+              "autoStartAfterHours" in args ? args.autoStartAfterHours ?? null : undefined,
             bannerUrl: args.bannerUrl ?? undefined,
             freezeFromDay: args.freezeFromDay ?? undefined,
             freezeStartsAt: args.freezeStartsAt ?? null,

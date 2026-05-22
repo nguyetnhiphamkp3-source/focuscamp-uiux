@@ -187,7 +187,7 @@ export async function rejectMemberAction(input: {
 
 export async function updateChallengeSettingsAction(input: {
   challengeId: string;
-  requiresApproval?: boolean;
+  autoStartAfterHours?: number | null;
   title?: string;
   description?: string;
   freezeFromDay?: number | null;
@@ -210,7 +210,7 @@ export async function updateChallengeSettingsAction(input: {
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
   const parsed = UpdateChallengeSettingsSchema.safeParse({
     challengeId: input.challengeId,
-    requiresApproval: input.requiresApproval,
+    autoStartAfterHours: input.autoStartAfterHours,
     title: input.title,
     description: input.description,
     freezeFromDay: input.freezeFromDay,
@@ -257,7 +257,8 @@ export async function updateChallengeSettingsAction(input: {
     await updateChallengeSettings({
       userId: s.user.id,
       challengeId: parsed.data.challengeId,
-      requiresApproval: parsed.data.requiresApproval,
+      autoStartAfterHours:
+        "autoStartAfterHours" in parsed.data ? parsed.data.autoStartAfterHours ?? null : undefined,
       title: parsed.data.title,
       description: parsed.data.description ?? undefined,
       freezeFromDay: parsed.data.freezeFromDay ?? undefined,
@@ -372,7 +373,7 @@ export async function createChallengeAction(input: {
   description?: string;
   difficulty?: "NORMAL" | "HARD" | "CHAOS";
   requiredDays?: number;
-  requiresApproval?: boolean;
+  autoStartAfterHours?: number | null;
   bannerUrl?: string;
   taskUnlockMode?: "ALL" | "DAILY" | "SEQUENTIAL" | "MANUAL";
   unlockIntervalHours?: number;
@@ -389,7 +390,7 @@ export async function createChallengeAction(input: {
     description: input.description,
     difficulty: input.difficulty,
     requiredDays: input.requiredDays,
-    requiresApproval: input.requiresApproval,
+    autoStartAfterHours: input.autoStartAfterHours,
     bannerUrl: input.bannerUrl,
     taskUnlockMode: input.taskUnlockMode,
     unlockIntervalHours: input.unlockIntervalHours,
@@ -406,7 +407,7 @@ export async function createChallengeAction(input: {
       description: parsed.data.description ?? undefined,
       difficulty: parsed.data.difficulty,
       requiredDays: parsed.data.requiredDays,
-      requiresApproval: parsed.data.requiresApproval,
+      autoStartAfterHours: parsed.data.autoStartAfterHours ?? null,
       bannerUrl: parsed.data.bannerUrl || undefined,
       taskUnlockMode: parsed.data.taskUnlockMode,
       unlockIntervalHours: parsed.data.unlockIntervalHours,
@@ -502,7 +503,6 @@ export async function joinChallengeAction(input: {
   communityId: string;
   communitySlug: string;
   challengeSlug: string;
-  requiresApproval: boolean;
 }) {
   const s = await auth();
   const returnUrl = `/c/${input.communitySlug}/challenges/${input.challengeSlug}`;
@@ -553,7 +553,6 @@ export async function payWithAipForChallengeAction(input: {
   communityId: string;
   communitySlug: string;
   challengeSlug: string;
-  requiresApproval: boolean;
 }): Promise<{ ok: boolean; reason?: string }> {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
@@ -583,8 +582,8 @@ export async function payWithAipForChallengeAction(input: {
     }),
     prisma.challengeMember.upsert({
       where: { challengeId_userId: { challengeId: input.challengeId, userId: s.user.id } },
-      update: { status: input.requiresApproval ? "PENDING" : "ACTIVE" },
-      create: { challengeId: input.challengeId, userId: s.user.id, status: input.requiresApproval ? "PENDING" : "ACTIVE" },
+      update: { status: "ACTIVE" },
+      create: { challengeId: input.challengeId, userId: s.user.id, status: "ACTIVE" },
     }),
   ]);
 

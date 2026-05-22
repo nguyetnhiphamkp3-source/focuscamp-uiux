@@ -173,22 +173,12 @@ export async function matchSePayTransactionToPayment(params: {
         });
       }
     } else if (payment.refType === "challenge") {
-      const member = await tx.challengeMember.findUnique({
+      // Always activate on successful payment. Start timing is controlled by
+      // Challenge.autoStartAfterHours grace logic, not by this flow.
+      await tx.challengeMember.update({
         where: { id: payment.refId },
-        select: { challengeId: true },
+        data: { status: "ACTIVE", approvedAt: new Date() },
       });
-      if (member) {
-        const challenge = await tx.challenge.findUnique({
-          where: { id: member.challengeId },
-          select: { requiresApproval: true },
-        });
-        await tx.challengeMember.update({
-          where: { id: payment.refId },
-          data: challenge?.requiresApproval
-            ? { status: "PENDING" }
-            : { status: "ACTIVE", approvedAt: new Date() },
-        });
-      }
       const meta = (payment.metadata ?? {}) as Record<string, unknown>;
       if (meta.bumpProductId && !meta.bumpFulfilled) {
         await tx.purchase.create({
