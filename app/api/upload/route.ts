@@ -47,6 +47,7 @@ const MAX_FILE_SIZES: Record<string, number> = {
   community: 5 * 1024 * 1024,
   post: 10 * 1024 * 1024,
   checkin: 10 * 1024 * 1024,
+  product: 3 * 1024 * 1024,
   "product-file": 200 * 1024 * 1024,
 };
 
@@ -55,6 +56,7 @@ type UploadContext =
   | "community"
   | "post"
   | "checkin"
+  | "product"
   | "product-file";
 
 export async function POST(req: Request) {

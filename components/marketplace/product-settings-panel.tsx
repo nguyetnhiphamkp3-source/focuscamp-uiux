@@ -3,7 +3,10 @@
 import { useState, useTransition, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { updateProductSettingsAction } from "@/app/actions/marketplace";
+import { updateProductSettingsAction, deleteProductAction } from "@/app/actions/marketplace";
+import { ImageUploadField } from "@/components/shared/image-upload-field";
+import { FileUploadField } from "@/components/shared/file-upload-field";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -45,6 +48,12 @@ export function ProductSettingsPanel({
     showInCartBump: boolean;
     bumpProductId: string | null;
     upsellProductId: string | null;
+    type: string;
+    pillar: string | null;
+    thumbnailUrl: string | null;
+    fileUrl: string | null;
+    externalUrl: string | null;
+    licenseKeyTemplate: string | null;
   };
   communityProducts: { id: string; title: string; isVisible: boolean }[];
   /** When true, button is always visible (not hover-only). Use on detail pages. */
@@ -52,6 +61,7 @@ export function ProductSettingsPanel({
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [title, setTitle] = useState(initial.title);
   const [description, setDescription] = useState(initial.description ?? "");
   const [priceVnd, setPriceVnd] = useState(initial.priceVnd);
@@ -60,6 +70,12 @@ export function ProductSettingsPanel({
   const [showInCartBump, setShowInCartBump] = useState(initial.showInCartBump);
   const [bumpProductId, setBumpProductId] = useState(initial.bumpProductId ?? "");
   const [upsellProductId, setUpsellProductId] = useState(initial.upsellProductId ?? "");
+  const [type, setType] = useState(initial.type || "TEMPLATE");
+  const [pillar, setPillar] = useState(initial.pillar ?? "");
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(initial.thumbnailUrl);
+  const [fileUrl, setFileUrl] = useState<string | null>(initial.fileUrl);
+  const [externalUrl, setExternalUrl] = useState(initial.externalUrl ?? "");
+  const [licenseKeyTemplate, setLicenseKeyTemplate] = useState(initial.licenseKeyTemplate ?? "FC-{XXXX}-{XXXX}");
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -86,12 +102,35 @@ export function ProductSettingsPanel({
         showInCartBump,
         bumpProductId: bumpProductId || null,
         upsellProductId: upsellProductId || null,
+        type,
+        pillar: pillar.trim() || null,
+        thumbnailUrl: thumbnailUrl || null,
+        fileUrl: fileUrl || null,
+        externalUrl: externalUrl.trim() || null,
+        licenseKeyTemplate: type === "LICENSE" ? (licenseKeyTemplate.trim() || null) : null,
       });
       if (res.ok) {
         setOpen(false);
         setSaved(true);
       } else {
         setErr(res.reason);
+      }
+    });
+  }
+
+  function handleDelete() {
+    setErr(null);
+    start(async () => {
+      const res = await deleteProductAction({ productId, communitySlug });
+      if (res.ok) {
+        setConfirmDelete(false);
+        setOpen(false);
+        // Navigate away from the (now-gone) detail page or refresh list
+        router.push(`/c/${communitySlug}/marketplace`);
+        router.refresh();
+      } else {
+        setErr(res.reason);
+        setConfirmDelete(false);
       }
     });
   }
@@ -120,8 +159,8 @@ export function ProductSettingsPanel({
           alignItems: "center",
           justifyContent: "center",
           zIndex: 2,
-          opacity: standalone ? 1 : 0,
-          transition: "opacity 0.15s",
+          opacity: 1,
+          boxShadow: standalone ? "none" : "0 2px 6px rgba(0,0,0,0.3)",
         }}
         className="product-settings-btn"
       >
@@ -171,6 +210,33 @@ export function ProductSettingsPanel({
                 <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} maxLength={5000} disabled={pending} style={{ ...inputStyle, resize: "vertical", fontFamily: "inherit" }} />
               </Field>
 
+              <Field label="Ảnh thumbnail">
+                <ImageUploadField
+                  value={thumbnailUrl}
+                  onChange={setThumbnailUrl}
+                  context="product"
+                  shape="banner"
+                  disabled={pending}
+                  maxSizeNote="Tối đa 3MB. Tỉ lệ 16:10 cho đẹp."
+                />
+              </Field>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <Field label="Loại">
+                  <select value={type} onChange={(e) => setType(e.target.value)} disabled={pending} style={inputStyle}>
+                    <option value="TEMPLATE">📝 Template</option>
+                    <option value="TOOL">🛠️ Tool</option>
+                    <option value="SOP">📋 SOP</option>
+                    <option value="BUNDLE">📦 Bundle</option>
+                    <option value="PROMPT">💬 Prompt</option>
+                    <option value="LICENSE">🔑 License</option>
+                  </select>
+                </Field>
+                <Field label="Pillar">
+                  <input type="text" value={pillar} onChange={(e) => setPillar(e.target.value)} maxLength={40} disabled={pending} placeholder="marketing, mindset…" style={inputStyle} />
+                </Field>
+              </div>
+
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <Field label="Giá (VND)">
                   <input type="number" value={priceVnd} onChange={(e) => setPriceVnd(Number(e.target.value))} step={1000} min={0} disabled={pending} style={inputStyle} />
@@ -179,6 +245,27 @@ export function ProductSettingsPanel({
                   <input type="number" value={priceOldVnd} onChange={(e) => setPriceOldVnd(e.target.value === "" ? "" : Number(e.target.value))} step={1000} min={0} disabled={pending} placeholder="Để trống nếu không có" style={inputStyle} />
                 </Field>
               </div>
+
+              <Field label="Link sản phẩm (Notion/Drive — tuỳ chọn)">
+                <input type="url" value={externalUrl} onChange={(e) => setExternalUrl(e.target.value)} disabled={pending} placeholder="https://notion.so/..." style={inputStyle} />
+              </Field>
+
+              <Field label="File delivery (PDF/ZIP/video — tuỳ chọn)">
+                <FileUploadField
+                  value={fileUrl}
+                  onChange={setFileUrl}
+                  context="product-file"
+                  disabled={pending}
+                  accept=".pdf,.zip,.docx,.xlsx,.pptx,.mp4,.mov,.mp3,.txt,.csv,.md,application/pdf,application/zip,video/*,audio/*"
+                  maxSizeNote="Tối đa 200MB. File chỉ deliver sau khi user mua."
+                />
+              </Field>
+
+              {type === "LICENSE" && (
+                <Field label="License key template">
+                  <input type="text" value={licenseKeyTemplate} onChange={(e) => setLicenseKeyTemplate(e.target.value)} maxLength={80} disabled={pending} placeholder="FC-{XXXX}-{XXXX}" style={inputStyle} />
+                </Field>
+              )}
 
               <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
                 <input type="checkbox" checked={isVisible} onChange={(e) => setIsVisible(e.target.checked)} disabled={pending} />
@@ -215,7 +302,10 @@ export function ProductSettingsPanel({
               </div>
             )}
 
-            <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border-subtle)", display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border-subtle)", display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
+              <button type="button" onClick={() => !pending && setConfirmDelete(true)} disabled={pending} style={{ padding: "10px 18px", borderRadius: 8, border: "1px solid var(--danger)", background: "transparent", color: "var(--danger)", cursor: "pointer", fontSize: "var(--text-sm)", fontWeight: 600, marginRight: "auto" }}>
+                🗑 Xóa
+              </button>
               <button type="button" onClick={() => !pending && setOpen(false)} disabled={pending} style={{ padding: "10px 18px", borderRadius: 8, border: "1px solid var(--border-subtle)", background: "transparent", color: "var(--interactive-normal)", cursor: "pointer", fontSize: "var(--text-sm)" }}>
                 Huỷ
               </button>
@@ -227,6 +317,17 @@ export function ProductSettingsPanel({
         </div>,
         document.body
       )}
+
+      <ConfirmModal
+        open={confirmDelete}
+        title="Xóa sản phẩm?"
+        message={`"${initial.title}" sẽ bị xóa vĩnh viễn cùng tất cả đơn hàng đang chờ thanh toán của nó. Hành động không thể hoàn tác.\n\nNếu đã có người mua (đơn hàng đã thanh toán), thao tác sẽ bị chặn — hãy ẩn sản phẩm thay vì xóa.`}
+        confirmLabel="Xóa vĩnh viễn"
+        cancelLabel="Huỷ"
+        danger
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </>
   );
 }

@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
-import { createProduct, setProductFeaturedGlobal, updateProductSettings } from "@/lib/services/marketplace";
+import { createProduct, deleteProduct, setProductFeaturedGlobal, updateProductSettings } from "@/lib/services/marketplace";
 import { CreateProductSchema, UpdateProductSettingsSchema } from "@/lib/validations";
 import { logError } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
@@ -123,6 +123,12 @@ export async function updateProductSettingsAction(input: {
   bumpProductId?: string | null;
   upsellProductId?: string | null;
   showInCartBump?: boolean;
+  type?: string;
+  pillar?: string | null;
+  thumbnailUrl?: string | null;
+  fileUrl?: string | null;
+  externalUrl?: string | null;
+  licenseKeyTemplate?: string | null;
 }): Promise<ActionResult> {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
@@ -152,6 +158,24 @@ export async function updateProductSettingsAction(input: {
     revalidatePath(`/c/${input.communitySlug}/marketplace`);
     revalidatePath(`/c/${input.communitySlug}/marketplace/${input.productSlug}`);
     revalidatePath("/cart");
+    return { ok: true };
+  } catch (err) {
+    logError(err, { userId: s.user.id, productId: input.productId });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+export async function deleteProductAction(input: {
+  productId: string;
+  communitySlug: string;
+}): Promise<ActionResult> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+  try {
+    await deleteProduct({ userId: s.user.id, productId: input.productId });
+    revalidatePath(`/c/${input.communitySlug}/marketplace`);
+    revalidatePath("/marketplace");
     return { ok: true };
   } catch (err) {
     logError(err, { userId: s.user.id, productId: input.productId });

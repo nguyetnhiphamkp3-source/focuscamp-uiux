@@ -496,14 +496,21 @@ export const CreateProductSchema = z.object({
 /* ========== Product settings ========== */
 export const UpdateProductSettingsSchema = z.object({
   productId: z.string().cuid(),
-  title: z.string().min(1).max(120).optional(),
-  description: z.string().max(2000).optional().nullable(),
+  title: z.string().min(1).max(160).optional(),
+  description: z.string().max(5000).optional().nullable(),
   priceVnd: z.number().nonnegative().optional(),
   priceOldVnd: z.number().nonnegative().optional().nullable(),
   isVisible: z.boolean().optional(),
   bumpProductId: z.string().cuid().optional().nullable(),
   upsellProductId: z.string().cuid().optional().nullable(),
   showInCartBump: z.boolean().optional(),
+  // Extended fields (parity with create flow)
+  type: z.string().max(40).optional(),
+  pillar: z.string().max(40).optional().nullable().or(z.literal("")),
+  thumbnailUrl: z.string().url().optional().nullable().or(z.literal("")),
+  fileUrl: z.string().url().optional().nullable().or(z.literal("")),
+  externalUrl: z.string().url().optional().nullable().or(z.literal("")),
+  licenseKeyTemplate: z.string().trim().max(80).optional().nullable().or(z.literal("")),
 });
 
 /* ========== Coupon ========== */

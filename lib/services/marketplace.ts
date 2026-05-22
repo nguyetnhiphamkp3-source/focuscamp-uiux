@@ -76,6 +76,12 @@ export async function updateProductSettings(input: {
   bumpProductId?: string | null;
   upsellProductId?: string | null;
   showInCartBump?: boolean;
+  type?: string;
+  pillar?: string | null;
+  thumbnailUrl?: string | null;
+  fileUrl?: string | null;
+  externalUrl?: string | null;
+  licenseKeyTemplate?: string | null;
 }): Promise<void> {
   // 1. Load product + community to check ownership
   const product = await prisma.product.findUnique({
@@ -108,9 +114,56 @@ export async function updateProductSettings(input: {
       ...(input.bumpProductId !== undefined && { bumpProductId: input.bumpProductId }),
       ...(input.upsellProductId !== undefined && { upsellProductId: input.upsellProductId }),
       ...(input.showInCartBump !== undefined && { showInCartBump: input.showInCartBump }),
+      ...(input.type !== undefined && { type: input.type }),
+      ...(input.pillar !== undefined && { pillar: input.pillar || null }),
+      ...(input.thumbnailUrl !== undefined && { thumbnailUrl: input.thumbnailUrl || null }),
+      ...(input.fileUrl !== undefined && { fileUrl: input.fileUrl || null }),
+      ...(input.externalUrl !== undefined && { externalUrl: input.externalUrl || null }),
+      ...(input.licenseKeyTemplate !== undefined && { licenseKeyTemplate: input.licenseKeyTemplate || null }),
     },
   });
   logger.info({ productId: input.productId, by: input.userId }, "[product] settings updated");
+}
+
+/**
+ * Delete a product. Refuses if any COMPLETED purchases exist (paying customers
+ * would lose access). PENDING/EXPIRED purchases get hard-deleted alongside.
+ */
+export async function deleteProduct(input: {
+  userId: string;
+  productId: string;
+}): Promise<{ communityId: string }> {
+  const product = await prisma.product.findUnique({
+    where: { id: input.productId },
+    select: { communityId: true, community: { select: { ownerId: true } } },
+  });
+  if (!product) throw new Error("Sản phẩm không tồn tại");
+  if (product.community.ownerId !== input.userId) {
+    throw new Error("Chỉ admin cộng đồng mới xóa sản phẩm");
+  }
+  const completed = await prisma.purchase.count({
+    where: { productId: input.productId, status: "COMPLETED" },
+  });
+  if (completed > 0) {
+    throw new Error(
+      `Không thể xóa: đã có ${completed} đơn hàng đã thanh toán. Hãy ẩn sản phẩm thay vì xóa.`,
+    );
+  }
+  await prisma.$transaction(async (tx) => {
+    // Drop bump/upsell references from other products before deleting
+    await tx.product.updateMany({
+      where: { bumpProductId: input.productId },
+      data: { bumpProductId: null },
+    });
+    await tx.product.updateMany({
+      where: { upsellProductId: input.productId },
+      data: { upsellProductId: null },
+    });
+    await tx.purchase.deleteMany({ where: { productId: input.productId } });
+    await tx.product.delete({ where: { id: input.productId } });
+  });
+  logger.info({ productId: input.productId, by: input.userId }, "[product] deleted");
+  return { communityId: product.communityId };
 }
 
 /**

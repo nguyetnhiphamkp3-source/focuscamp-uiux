@@ -22,6 +22,7 @@ export type ProductLike = {
   title: string;
   pillar: string | null;
   type: string;
+  thumbnailUrl?: string | null;
   priceVnd: unknown;
   priceOldVnd: unknown;
   isFree: boolean;
@@ -42,6 +43,12 @@ export type ProductSettingsData = {
     showInCartBump: boolean;
     bumpProductId: string | null;
     upsellProductId: string | null;
+    type: string;
+    pillar: string | null;
+    thumbnailUrl: string | null;
+    fileUrl: string | null;
+    externalUrl: string | null;
+    licenseKeyTemplate: string | null;
   };
   communityProducts: { id: string; title: string; isVisible: boolean }[];
 };
@@ -73,8 +80,19 @@ export function ProductCard({
       className="mk-card"
       style={{ textDecoration: "none", color: "inherit" }}
     >
-      <div className={`mk-card-thumb ${t.cls}`}>
-        <span className="mk-icon">{t.icon}</span>
+      <div
+        className={`mk-card-thumb ${t.cls}`}
+        style={
+          product.thumbnailUrl
+            ? {
+                backgroundImage: `url("${product.thumbnailUrl}")`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }
+            : undefined
+        }
+      >
+        {!product.thumbnailUrl && <span className="mk-icon">{t.icon}</span>}
         <span className="mk-card-type">{t.label}</span>
         {sale && <span className="mk-card-sale">-{sale}%</span>}
         <span className="mk-card-id">

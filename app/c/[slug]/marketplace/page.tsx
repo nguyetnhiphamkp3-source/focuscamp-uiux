@@ -197,6 +197,12 @@ export default async function MarketplacePage({
                         showInCartBump: (p as Record<string, unknown>).showInCartBump as boolean ?? false,
                         bumpProductId: (p as Record<string, unknown>).bumpProductId as string | null ?? null,
                         upsellProductId: (p as Record<string, unknown>).upsellProductId as string | null ?? null,
+                        type: p.type,
+                        pillar: p.pillar ?? null,
+                        thumbnailUrl: (p as Record<string, unknown>).thumbnailUrl as string | null ?? null,
+                        fileUrl: (p as Record<string, unknown>).fileUrl as string | null ?? null,
+                        externalUrl: (p as Record<string, unknown>).externalUrl as string | null ?? null,
+                        licenseKeyTemplate: (p as Record<string, unknown>).licenseKeyTemplate as string | null ?? null,
                       },
                       communityProducts: allProducts
                         .filter((ap) => ap.id !== p.id)

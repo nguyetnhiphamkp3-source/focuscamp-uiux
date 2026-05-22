@@ -149,6 +149,12 @@ export default async function ProductDetailPage({
                   showInCartBump: (product as Record<string, unknown>).showInCartBump as boolean ?? false,
                   bumpProductId: (product as Record<string, unknown>).bumpProductId as string | null ?? null,
                   upsellProductId: (product as Record<string, unknown>).upsellProductId as string | null ?? null,
+                  type: product.type,
+                  pillar: product.pillar ?? null,
+                  thumbnailUrl: (product as Record<string, unknown>).thumbnailUrl as string | null ?? null,
+                  fileUrl: (product as Record<string, unknown>).fileUrl as string | null ?? null,
+                  externalUrl: (product as Record<string, unknown>).externalUrl as string | null ?? null,
+                  licenseKeyTemplate: (product as Record<string, unknown>).licenseKeyTemplate as string | null ?? null,
                 }}
                 communityProducts={communityProducts.map((cp) => ({
                   id: cp.id,
@@ -176,9 +182,16 @@ export default async function ProductDetailPage({
                 height: 120,
                 borderRadius: "var(--r-lg)",
                 flexShrink: 0,
+                ...(product.thumbnailUrl
+                  ? {
+                      backgroundImage: `url("${product.thumbnailUrl}")`,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                    }
+                  : {}),
               }}
             >
-              <span className="mk-icon">{t.icon}</span>
+              {!product.thumbnailUrl && <span className="mk-icon">{t.icon}</span>}
               <span className="mk-card-type">{t.label}</span>
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>

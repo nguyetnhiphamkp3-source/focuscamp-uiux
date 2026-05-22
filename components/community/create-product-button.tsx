@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createProductAction } from "@/app/actions/marketplace";
 import { toSlug } from "@/lib/brand";
 import { FileUploadField } from "@/components/shared/file-upload-field";
+import { ImageUploadField } from "@/components/shared/image-upload-field";
 
 export function CreateProductButton({
   communityId,
@@ -20,6 +21,8 @@ export function CreateProductButton({
   const [slugTouched, setSlugTouched] = useState(false);
   const [description, setDescription] = useState("");
   const [type, setType] = useState("TEMPLATE");
+  const [pillar, setPillar] = useState("");
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
   const [priceVnd, setPriceVnd] = useState("");
   const [externalUrl, setExternalUrl] = useState("");
   const [fileUrl, setFileUrl] = useState<string | null>(null);
@@ -45,6 +48,8 @@ export function CreateProductButton({
         title: title.trim(),
         description: description.trim() || undefined,
         type,
+        pillar: pillar.trim() || undefined,
+        thumbnailUrl: thumbnailUrl || undefined,
         priceVnd: price,
         isFree: price === 0,
         externalUrl: externalUrl.trim() || undefined,
@@ -173,6 +178,17 @@ export function CreateProductButton({
                 />
               </Field>
 
+              <Field label="Ảnh thumbnail (tuỳ chọn)">
+                <ImageUploadField
+                  value={thumbnailUrl}
+                  onChange={setThumbnailUrl}
+                  context="product"
+                  shape="banner"
+                  disabled={pending}
+                  maxSizeNote="Tối đa 3MB. Tỉ lệ 16:10 cho đẹp."
+                />
+              </Field>
+
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <Field label="Loại">
                   <select
@@ -202,6 +218,18 @@ export function CreateProductButton({
                   />
                 </Field>
               </div>
+
+              <Field label="Pillar (label phân loại — tuỳ chọn)" hint="VD: marketing, finance, mindset...">
+                <input
+                  type="text"
+                  value={pillar}
+                  onChange={(e) => setPillar(e.target.value)}
+                  maxLength={40}
+                  disabled={pending}
+                  style={inputStyle}
+                  placeholder=""
+                />
+              </Field>
 
               <Field label="Link sản phẩm (Notion / Drive / external — tuỳ chọn)">
                 <input
