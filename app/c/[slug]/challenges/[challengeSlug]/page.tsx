@@ -24,6 +24,7 @@ import {
 } from "@/lib/services/challenge";
 import { ChallengeSalesIntro } from "@/components/community/challenge-sales-intro";
 import { RenewPaymentButton } from "@/components/community/renew-payment-button";
+import { JoinChallengeWithCoupon } from "@/components/challenges/join-with-coupon";
 import { getEffectiveOwnership } from "@/lib/preview-mode";
 import { communityPermissionFlags, effectiveCommunityRole } from "@/lib/community-permissions";
 import { toEmbedUrl } from "@/lib/brand";
@@ -615,13 +616,20 @@ export default async function ChallengeDetailPage({
               communitySlug={slug}
               joinButton={
                 <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-                  <form action={joinAction}>
-                    <button type="submit" className="ui-btn ui-btn-primary ui-btn-lg" style={{ width: "100%" }}>
-                      {effectivePrice && effectivePrice.vnd > 0
-                        ? `🚀 Đăng ký ngay — ${Number(effectivePrice.vnd).toLocaleString("vi-VN")}đ`
-                        : "🚀 Tham gia challenge — Miễn phí"}
-                    </button>
-                  </form>
+                  {effectivePrice && effectivePrice.vnd > 0 ? (
+                    <JoinChallengeWithCoupon
+                      communityId={challenge.community.id}
+                      priceVnd={effectivePrice.vnd}
+                      buyLabel={`🚀 Đăng ký ngay — ${Number(effectivePrice.vnd).toLocaleString("vi-VN")}đ`}
+                      action={joinAction}
+                    />
+                  ) : (
+                    <form action={joinAction}>
+                      <button type="submit" className="ui-btn ui-btn-primary ui-btn-lg" style={{ width: "100%" }}>
+                        🚀 Tham gia challenge — Miễn phí
+                      </button>
+                    </form>
+                  )}
                   {effectivePrice?.canPayAip && (
                     <PayWithAipButton
                       challengeId={challenge.id}

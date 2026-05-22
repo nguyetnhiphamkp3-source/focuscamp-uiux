@@ -23,7 +23,8 @@ export type CommunityPermission =
   | "publish_signals"
   | "manage_events"
   | "manage_marketplace"
-  | "manage_orders";
+  | "manage_orders"
+  | "manage_coupons";
 
 const ROLE_PERMISSIONS: Record<CommunityRole, ReadonlySet<CommunityPermission>> = {
   OWNER: new Set([
@@ -42,6 +43,7 @@ const ROLE_PERMISSIONS: Record<CommunityRole, ReadonlySet<CommunityPermission>> 
     "manage_events",
     "manage_marketplace",
     "manage_orders",
+    "manage_coupons",
   ]),
   ADMIN: new Set([
     "manage_settings",
@@ -59,6 +61,7 @@ const ROLE_PERMISSIONS: Record<CommunityRole, ReadonlySet<CommunityPermission>> 
     "manage_events",
     "manage_marketplace",
     "manage_orders",
+    "manage_coupons",
   ]),
   MOD: new Set(["review_submissions", "moderate_content"]),
   MEMBER: new Set(),
@@ -97,5 +100,6 @@ export function communityPermissionFlags(role: CommunityRole) {
     canManageEvents: canCommunity(role, "manage_events"),
     canManageMarketplace: canCommunity(role, "manage_marketplace"),
     canManageOrders: canCommunity(role, "manage_orders"),
+    canManageCoupons: canCommunity(role, "manage_coupons"),
   };
 }

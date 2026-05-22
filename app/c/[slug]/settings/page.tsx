@@ -289,6 +289,45 @@ export default async function SettingsPage({
                 </div>
               )}
 
+              {perms.canManageCoupons && (
+                <div
+                  className="ui-card"
+                  style={{
+                    marginBottom: "var(--space-4)",
+                    padding: "var(--space-4) var(--space-5)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "var(--space-4)",
+                  }}
+                >
+                  <div>
+                    <div style={{ fontWeight: 700, color: "var(--header-primary)", fontSize: "var(--text-base)" }}>
+                      Mã giảm giá
+                    </div>
+                    <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 2 }}>
+                      Tạo và quản lý coupon cho sản phẩm, challenge, sự kiện
+                    </div>
+                  </div>
+                  <Link
+                    href={`/c/${slug}/settings/coupons`}
+                    style={{
+                      padding: "8px 16px",
+                      borderRadius: 8,
+                      border: "none",
+                      background: "var(--brand-green)",
+                      color: "#fff",
+                      fontWeight: 600,
+                      fontSize: "var(--text-sm)",
+                      textDecoration: "none",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    Quản lý coupon →
+                  </Link>
+                </div>
+              )}
+
               {perms.canManageSettings && (
                 <>
                   <div

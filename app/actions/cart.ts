@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { createPayment } from "@/lib/sepay";
 import { getPaymentConfig } from "@/lib/community-config";
 import { parseCart, serializeCart, addItem, removeItem } from "@/lib/cart";
+import { validateCoupon, redeemCouponInTx } from "@/lib/services/coupon";
 
 const CART_COOKIE = "fc_cart";
 const COOKIE_OPTS = { path: "/", maxAge: 60 * 60 * 24 * 30, httpOnly: false } as const;
@@ -48,7 +49,8 @@ export async function clearCartAction(): Promise<void> {
  * Returns paymentCode for redirect to /pay/[code].
  */
 export async function checkoutCartAction(
-  productIdsOverride?: string[]
+  productIdsOverride?: string[],
+  options?: { couponCode?: string }
 ): Promise<{ ok: true; paymentCode: string } | { ok: false; reason: string }> {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
@@ -85,6 +87,32 @@ export async function checkoutCartAction(
   if (totalVnd <= 0) return { ok: false, reason: "total_zero" };
 
   const communityId = communityIds[0] ?? undefined;
+
+  // Re-validate coupon server-side (never trust client-passed discount).
+  let coupon: {
+    couponId: string;
+    couponCode: string;
+    discountVnd: number;
+    finalAmountVnd: number;
+  } | null = null;
+  if (options?.couponCode && communityId) {
+    const res = await validateCoupon({
+      code: options.couponCode,
+      communityId,
+      userId: s.user.id,
+      refType: "cart",
+      orderAmountVnd: totalVnd,
+    });
+    if (!res.ok) return { ok: false, reason: `coupon_invalid:${res.reason}` };
+    coupon = {
+      couponId: res.coupon.id,
+      couponCode: res.coupon.code,
+      discountVnd: res.discountVnd,
+      finalAmountVnd: res.finalAmountVnd,
+    };
+  }
+  const finalAmountVnd = coupon ? coupon.finalAmountVnd : totalVnd;
+
   let bankCfg: import("@/lib/community-config").PaymentConfig | null = null;
   if (communityId) {
     const community = await prisma.community.findUnique({
@@ -94,19 +122,41 @@ export async function checkoutCartAction(
     if (community) bankCfg = getPaymentConfig(community);
   }
   if (!bankCfg) return { ok: false, reason: "payment_not_configured" };
-  const payment = await createPayment({
-    userId: s.user.id,
-    communityId,
-    purpose: "product",
-    refType: "cart",
-    refId: "cart",
-    amountVnd: totalVnd,
-    ttlMinutes: 1440,
-    metadata: { productIds, breakdown },
-    bankCode: bankCfg.bankCode,
-    bankAccount: bankCfg.bankAccount,
-    bankHolder: bankCfg.bankHolder,
-    bankName: bankCfg.bankName,
+  const payment = await prisma.$transaction(async (tx) => {
+    const pmt = await createPayment(
+      {
+        userId: s.user!.id!,
+        communityId,
+        purpose: "product",
+        refType: "cart",
+        refId: "cart",
+        amountVnd: finalAmountVnd,
+        ttlMinutes: 1440,
+        metadata: { productIds, breakdown },
+        bankCode: bankCfg.bankCode,
+        bankAccount: bankCfg.bankAccount,
+        bankHolder: bankCfg.bankHolder,
+        bankName: bankCfg.bankName,
+        coupon: coupon
+          ? {
+              couponId: coupon.couponId,
+              couponCode: coupon.couponCode,
+              originalAmountVnd: totalVnd,
+              discountVnd: coupon.discountVnd,
+            }
+          : undefined,
+      },
+      tx,
+    );
+    if (coupon) {
+      await redeemCouponInTx(tx, {
+        couponId: coupon.couponId,
+        userId: s.user!.id!,
+        paymentId: pmt.id,
+        discountVnd: coupon.discountVnd,
+      });
+    }
+    return pmt;
   });
 
   // Clear cookie after checkout

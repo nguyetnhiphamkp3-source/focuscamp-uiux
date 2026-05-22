@@ -506,6 +506,65 @@ export const UpdateProductSettingsSchema = z.object({
   showInCartBump: z.boolean().optional(),
 });
 
+/* ========== Coupon ========== */
+export const CouponCodeSchema = z
+  .string()
+  .trim()
+  .min(3, "Mã coupon tối thiểu 3 ký tự")
+  .max(32, "Mã coupon tối đa 32 ký tự")
+  .transform((s) => s.toUpperCase())
+  .pipe(z.string().regex(/^[A-Z0-9]+$/, "Mã chỉ chứa A-Z, 0-9"));
+
+export const CouponRefTypeSchema = z.enum([
+  "product",
+  "challenge",
+  "cart",
+  "event",
+]);
+
+export const CouponDiscountTypeSchema = z.enum(["PERCENTAGE", "FIXED"]);
+
+const baseCouponSchema = z.object({
+  code: CouponCodeSchema,
+  discountType: CouponDiscountTypeSchema,
+  percentageBps: z.coerce.number().int().min(1).max(10000).optional().nullable(),
+  maxDiscountVnd: z.coerce.number().int().nonnegative().optional().nullable(),
+  fixedAmountVnd: z.coerce.number().int().positive().optional().nullable(),
+  minOrderVnd: z.coerce.number().int().nonnegative().optional().nullable(),
+  validFrom: z.coerce.date().optional().nullable(),
+  validUntil: z.coerce.date().optional().nullable(),
+  maxRedemptions: z.coerce.number().int().positive().optional().nullable(),
+  perUserLimit: z.coerce.number().int().positive().default(1),
+  allowedRefTypes: z.array(CouponRefTypeSchema).min(1, "Chọn ít nhất 1 loại checkout"),
+  isActive: z.coerce.boolean().default(true),
+});
+
+export const CreateCouponSchema = baseCouponSchema.refine(
+  (v) => {
+    if (v.discountType === "PERCENTAGE") return v.percentageBps != null;
+    return v.fixedAmountVnd != null;
+  },
+  {
+    message: "PERCENTAGE cần percentageBps; FIXED cần fixedAmountVnd",
+    path: ["discountType"],
+  },
+).refine(
+  (v) => !v.validFrom || !v.validUntil || v.validFrom <= v.validUntil,
+  { message: "validFrom phải trước validUntil", path: ["validUntil"] },
+);
+
+export const UpdateCouponSchema = baseCouponSchema.partial().refine(
+  (v) => !v.validFrom || !v.validUntil || v.validFrom <= v.validUntil,
+  { message: "validFrom phải trước validUntil", path: ["validUntil"] },
+);
+
+export const ApplyCouponInputSchema = z.object({
+  code: CouponCodeSchema,
+  communityId: z.string().cuid(),
+  refType: CouponRefTypeSchema,
+  orderAmountVnd: z.coerce.number().int().positive(),
+});
+
 /* ========== Helper ========== */
 /** Parse FormData against a schema; throws with readable error if invalid. */
 export function parseFormData<T extends z.ZodTypeAny>(

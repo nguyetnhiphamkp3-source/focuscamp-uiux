@@ -6,6 +6,7 @@ import { startProductPurchase } from "@/lib/services/payment";
 import { fmtVnd, TYPE_THUMB } from "@/components/marketplace/product-card";
 import { ProductSettingsPanel } from "@/components/marketplace/product-settings-panel";
 import { AddToCartButton } from "@/components/marketplace/add-to-cart-button";
+import { BuyWithCoupon } from "@/components/marketplace/buy-with-coupon";
 import { logError } from "@/lib/logger";
 import { getEffectiveOwnership } from "@/lib/preview-mode";
 
@@ -75,22 +76,34 @@ export default async function ProductDetailPage({
   const canDownload =
     !!product.fileUrl && (hasPurchased || (product.isFree && isMember));
 
-  async function buy() {
+  async function buy(formData: FormData) {
     "use server";
     const s = await auth();
     if (!s?.user?.id) redirect("/login");
+
+    const rawCouponCode = formData.get("couponCode");
+    const couponCode =
+      typeof rawCouponCode === "string" && rawCouponCode.trim()
+        ? rawCouponCode.trim().toUpperCase()
+        : undefined;
 
     let paymentCode: string;
     try {
       const result = await startProductPurchase({
         userId: s.user!.id!,
         productId: product!.id,
+        couponCode,
       });
       paymentCode = result.payment.paymentCode;
     } catch (err) {
       if (err instanceof Error) {
         if (err.message === "not_a_member") redirect(`/c/${communitySlug}`);
         if (err.message === "product_not_found") redirect(`/c/${communitySlug}/marketplace`);
+        if (err.message.startsWith("coupon_invalid:")) {
+          redirect(
+            `/c/${communitySlug}/marketplace/${productSlug}?couponError=${encodeURIComponent(err.message.slice("coupon_invalid:".length))}`
+          );
+        }
       }
       logError(err, { productId: product!.id, userId: s.user!.id! });
       throw err;
@@ -391,20 +404,17 @@ export default async function ProductDetailPage({
                   </div>
                 ) : (
                   <>
-                    <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "stretch" }}>
-                      <form action={buy} style={{ flex: 1 }}>
-                        <button
-                          type="submit"
-                          className="ui-btn ui-btn-primary ui-btn-lg"
-                          style={{ width: "100%" }}
-                        >
-                          {product.isSubscription ? "Subscribe ngay" : "Mua ngay"}
-                        </button>
-                      </form>
-                      {!product.isSubscription && (
-                        <AddToCartButton productId={product.id} />
-                      )}
-                    </div>
+                    <BuyWithCoupon
+                      communityId={product.community.id}
+                      priceVnd={price}
+                      buyLabel={product.isSubscription ? "Subscribe ngay" : "Mua ngay"}
+                      action={buy}
+                      addToCart={
+                        !product.isSubscription ? (
+                          <AddToCartButton productId={product.id} />
+                        ) : undefined
+                      }
+                    />
                     <div
                       style={{
                         fontSize: "var(--text-xs)",

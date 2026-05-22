@@ -57,6 +57,7 @@ model User {
   apiKeys          ApiKey[]
   ownedEvents      Event[]
   eventBookings    EventBooking[]
+  couponRedemptions CouponRedemption[]
 }
 
 model Account {
@@ -164,6 +165,7 @@ model Community {
   events        Event[]
   featureReadStates FeatureReadState[]
   affiliateLinks AffiliateLink[]
+  coupons       Coupon[]
 
   @@index([featuredOnGlobal, createdAt])
 }
@@ -661,6 +663,13 @@ model Payment {
   refType       String   // subscription | product | challenge
   refId         String   // ID của subscription/product/challenge
   amountVnd     Decimal  @db.Decimal(15, 2)
+  /** Pre-discount total. Null when no coupon applied. */
+  originalAmountVnd Decimal? @db.Decimal(15, 2)
+  /** Discount applied via coupon. Null when no coupon. */
+  discountVnd   Decimal? @db.Decimal(15, 2)
+  /** Coupon used at checkout (denormalized for queries). */
+  couponId      String?
+  couponCode    String?
   status        String   @default("PENDING") // PENDING, COMPLETED, EXPIRED, REFUNDED
   provider      String   @default("SEPAY_STANDARD") // SEPAY_STANDARD | SEPAY_BANKHUB
   bankName      String?
@@ -671,8 +680,11 @@ model Payment {
   expiresAt     DateTime
   createdAt     DateTime @default(now())
 
+  couponRedemption CouponRedemption?
+
   @@index([userId, status])
   @@index([refType, refId])
+  @@index([couponId])
 }
 
 model SePayTransaction {
@@ -945,4 +957,60 @@ model AgentToolCall {
   @@index([communityId, createdAt])
   @@index([toolName, createdAt])
   @@index([apiKeyId, createdAt])
+}
+
+// ============= COUPON =============
+
+model Coupon {
+  id              String    @id @default(cuid())
+  communityId     String
+  /** Human-readable code; stored uppercase. Unique within community. */
+  code            String
+  /** "PERCENTAGE" | "FIXED" */
+  discountType    String
+  /** Basis points (2000 = 20.00%). Required when discountType = PERCENTAGE. */
+  percentageBps   Int?
+  /** Optional cap (VND) applied to PERCENTAGE discounts. */
+  maxDiscountVnd  Decimal?  @db.Decimal(15, 2)
+  /** Required when discountType = FIXED. */
+  fixedAmountVnd  Decimal?  @db.Decimal(15, 2)
+  /** Minimum order amount (VND) required to use this coupon. */
+  minOrderVnd     Decimal?  @db.Decimal(15, 2)
+  validFrom       DateTime?
+  validUntil      DateTime?
+  /** Null = unlimited total redemptions. */
+  maxRedemptions  Int?
+  /** Per-user limit; default 1. */
+  perUserLimit    Int       @default(1)
+  /** Allowed checkout refTypes: subset of ["product","challenge","cart","event"]. */
+  allowedRefTypes String[]
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  community   Community          @relation(fields: [communityId], references: [id])
+  redemptions CouponRedemption[]
+
+  @@unique([communityId, code])
+  @@index([communityId, isActive])
+}
+
+model CouponRedemption {
+  id          String    @id @default(cuid())
+  couponId    String
+  userId      String
+  /** 1 payment can have at most 1 redemption. */
+  paymentId   String    @unique
+  discountVnd Decimal   @db.Decimal(15, 2)
+  /** PENDING → COMPLETED on webhook match, CANCELLED on payment expire/cancel. */
+  status      String    @default("PENDING")
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  coupon  Coupon  @relation(fields: [couponId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+  payment Payment @relation(fields: [paymentId], references: [id])
+
+  @@index([couponId, status])
+  @@index([userId, couponId])
 }

@@ -7,54 +7,126 @@ import { createPayment } from "@/lib/sepay";
 import { logger } from "@/lib/logger";
 import { activateCommunityPlan } from "@/lib/services/community";
 import { getPaymentConfig } from "@/lib/community-config";
+import { validateCoupon, redeemCouponInTx } from "@/lib/services/coupon";
 import type { Prisma } from "@prisma/client";
+
+/**
+ * Server-side coupon resolution. Re-validates against DB before applying
+ * (never trust client-supplied discount values). Returns null on failure;
+ * caller is expected to surface an error via the surrounding action result.
+ */
+async function resolveCoupon(input: {
+  couponCode: string | undefined;
+  communityId: string;
+  userId: string;
+  refType: "product" | "challenge" | "cart" | "event";
+  orderAmountVnd: number;
+}) {
+  if (!input.couponCode) return null;
+  const res = await validateCoupon({
+    code: input.couponCode,
+    communityId: input.communityId,
+    userId: input.userId,
+    refType: input.refType,
+    orderAmountVnd: input.orderAmountVnd,
+  });
+  if (!res.ok) {
+    const err = new Error(`coupon_invalid:${res.reason}`);
+    (err as Error & { reason?: string }).reason = res.reason;
+    throw err;
+  }
+  return {
+    couponId: res.coupon.id,
+    couponCode: res.coupon.code,
+    originalAmountVnd: input.orderAmountVnd,
+    discountVnd: res.discountVnd,
+    finalAmountVnd: res.finalAmountVnd,
+  };
+}
 
 export async function startProductPurchase(params: {
   userId: string;
   productId: string;
   effectiveAmountVnd?: number; // override from pricingConfig; defaults to product.priceVnd
+  couponCode?: string;
 }) {
   const { userId, productId } = params;
-  return prisma.$transaction(async (tx) => {
-    const product = await tx.product.findUnique({
-      where: { id: productId },
-      select: { id: true, communityId: true, priceVnd: true, isFree: true },
-    });
-    if (!product) throw new Error("product_not_found");
-    if (product.isFree) throw new Error("product_is_free");
 
-    const amountVnd = params.effectiveAmountVnd ?? Number(product.priceVnd);
-    if (amountVnd <= 0) throw new Error("product_is_free");
-
-    const purchase = await tx.purchase.create({
-      data: { userId, productId: product.id, amountVnd, status: "PENDING" },
-    });
-    return { purchase, productCommunityId: product.communityId, amountVnd };
-  }).then(async (ctx) => {
-    const community = await prisma.community.findUnique({
-      where: { id: ctx.productCommunityId },
-      select: { billingModel: true },
-    });
-    const bankCfg = community ? getPaymentConfig(community) : null;
-    if (!bankCfg) throw new Error("payment_not_configured");
-    const payment = await createPayment({
-      userId,
-      communityId: ctx.productCommunityId,
-      purpose: "product",
-      refType: "product",
-      refId: ctx.purchase.id,
-      amountVnd: ctx.amountVnd,
-      bankCode: bankCfg.bankCode,
-      bankAccount: bankCfg.bankAccount,
-      bankHolder: bankCfg.bankHolder,
-      bankName: bankCfg.bankName,
-    });
-    logger.info(
-      { userId, productId, paymentCode: payment.paymentCode },
-      "[payment] product purchase started"
-    );
-    return { purchase: ctx.purchase, payment };
+  // Coupon validation is read-only side-effect-free; safe to resolve outside the tx.
+  // (We re-validate after Purchase row exists to catch race vs other concurrent checkouts.)
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
+    select: { id: true, communityId: true, priceVnd: true, isFree: true },
   });
+  if (!product) throw new Error("product_not_found");
+  if (product.isFree) throw new Error("product_is_free");
+  const originalAmountVnd = params.effectiveAmountVnd ?? Number(product.priceVnd);
+  if (originalAmountVnd <= 0) throw new Error("product_is_free");
+
+  const coupon = await resolveCoupon({
+    couponCode: params.couponCode,
+    communityId: product.communityId,
+    userId,
+    refType: "product",
+    orderAmountVnd: originalAmountVnd,
+  });
+  const finalAmountVnd = coupon ? coupon.finalAmountVnd : originalAmountVnd;
+
+  const community = await prisma.community.findUnique({
+    where: { id: product.communityId },
+    select: { billingModel: true },
+  });
+  const bankCfg = community ? getPaymentConfig(community) : null;
+  if (!bankCfg) throw new Error("payment_not_configured");
+
+  const { purchase, payment } = await prisma.$transaction(async (tx) => {
+    const purchase = await tx.purchase.create({
+      data: {
+        userId,
+        productId: product.id,
+        amountVnd: originalAmountVnd,
+        status: "PENDING",
+      },
+    });
+    const payment = await createPayment(
+      {
+        userId,
+        communityId: product.communityId,
+        purpose: "product",
+        refType: "product",
+        refId: purchase.id,
+        amountVnd: finalAmountVnd,
+        bankCode: bankCfg.bankCode,
+        bankAccount: bankCfg.bankAccount,
+        bankHolder: bankCfg.bankHolder,
+        bankName: bankCfg.bankName,
+        coupon: coupon
+          ? {
+              couponId: coupon.couponId,
+              couponCode: coupon.couponCode,
+              originalAmountVnd: coupon.originalAmountVnd,
+              discountVnd: coupon.discountVnd,
+            }
+          : undefined,
+      },
+      tx,
+    );
+    if (coupon) {
+      await redeemCouponInTx(tx, {
+        couponId: coupon.couponId,
+        userId,
+        paymentId: payment.id,
+        discountVnd: coupon.discountVnd,
+      });
+    }
+    return { purchase, payment };
+  });
+
+  logger.info(
+    { userId, productId, paymentCode: payment.paymentCode, couponCode: coupon?.couponCode },
+    "[payment] product purchase started"
+  );
+  return { purchase, payment };
 }
 
 export async function startChallengePurchase(params: {
@@ -62,39 +134,72 @@ export async function startChallengePurchase(params: {
   challengeId: string;
   communityId: string;
   amountVnd: number;
+  couponCode?: string;
 }) {
   const { userId, challengeId, communityId, amountVnd } = params;
-  const member = await prisma.challengeMember.upsert({
-    where: { challengeId_userId: { challengeId, userId } },
-    update: { status: "PAYMENT_PENDING" },
-    create: { challengeId, userId, status: "PAYMENT_PENDING" },
+  const coupon = await resolveCoupon({
+    couponCode: params.couponCode,
+    communityId,
+    userId,
+    refType: "challenge",
+    orderAmountVnd: amountVnd,
   });
+  const finalAmountVnd = coupon ? coupon.finalAmountVnd : amountVnd;
   const community = await prisma.community.findUnique({
     where: { id: communityId },
     select: { billingModel: true },
   });
   const bankCfg = community ? getPaymentConfig(community) : null;
   if (!bankCfg) throw new Error("payment_not_configured");
-  const payment = await createPayment({
-    userId,
-    communityId,
-    purpose: "challenge_entry",
-    refType: "challenge",
-    refId: member.id,
-    amountVnd,
-    bankCode: bankCfg.bankCode,
-    bankAccount: bankCfg.bankAccount,
-    bankHolder: bankCfg.bankHolder,
-    bankName: bankCfg.bankName,
+
+  const { member, payment } = await prisma.$transaction(async (tx) => {
+    const member = await tx.challengeMember.upsert({
+      where: { challengeId_userId: { challengeId, userId } },
+      update: { status: "PAYMENT_PENDING" },
+      create: { challengeId, userId, status: "PAYMENT_PENDING" },
+    });
+    const payment = await createPayment(
+      {
+        userId,
+        communityId,
+        purpose: "challenge_entry",
+        refType: "challenge",
+        refId: member.id,
+        amountVnd: finalAmountVnd,
+        bankCode: bankCfg.bankCode,
+        bankAccount: bankCfg.bankAccount,
+        bankHolder: bankCfg.bankHolder,
+        bankName: bankCfg.bankName,
+        coupon: coupon
+          ? {
+              couponId: coupon.couponId,
+              couponCode: coupon.couponCode,
+              originalAmountVnd: coupon.originalAmountVnd,
+              discountVnd: coupon.discountVnd,
+            }
+          : undefined,
+      },
+      tx,
+    );
+    if (coupon) {
+      await redeemCouponInTx(tx, {
+        couponId: coupon.couponId,
+        userId,
+        paymentId: payment.id,
+        discountVnd: coupon.discountVnd,
+      });
+    }
+    return { member, payment };
   });
-  logger.info({ userId, challengeId, paymentCode: payment.paymentCode }, "[payment] challenge entry started");
+
+  logger.info({ userId, challengeId, paymentCode: payment.paymentCode, couponCode: coupon?.couponCode }, "[payment] challenge entry started");
   return { member, payment };
 }
 
 export async function getPaymentStatus(paymentCode: string) {
   const payment = await prisma.payment.findUnique({
     where: { paymentCode },
-    select: { status: true, receivedAt: true, expiresAt: true },
+    select: { id: true, status: true, receivedAt: true, expiresAt: true, couponId: true },
   });
   if (!payment) return null;
   let status = payment.status;
@@ -103,6 +208,12 @@ export async function getPaymentStatus(paymentCode: string) {
       where: { paymentCode },
       data: { status: "EXPIRED" },
     });
+    if (payment.couponId) {
+      await prisma.couponRedemption.updateMany({
+        where: { paymentId: payment.id, status: "PENDING" },
+        data: { status: "CANCELLED" },
+      });
+    }
     status = "EXPIRED";
   }
   return { status, receivedAt: payment.receivedAt };
@@ -151,6 +262,12 @@ export async function matchSePayTransactionToPayment(params: {
       where: { id: rawTxId },
       data: { matchedPaymentId: payment.id },
     });
+    if (payment.couponId) {
+      await tx.couponRedemption.updateMany({
+        where: { paymentId: payment.id, status: "PENDING" },
+        data: { status: "COMPLETED", completedAt: new Date() },
+      });
+    }
     if (payment.refType === "product") {
       await tx.purchase.updateMany({
         where: { id: payment.refId },

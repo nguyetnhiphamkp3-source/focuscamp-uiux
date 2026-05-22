@@ -498,15 +498,24 @@ export async function deleteTaskAction(input: {
   }
 }
 
-export async function joinChallengeAction(input: {
-  challengeId: string;
-  communityId: string;
-  communitySlug: string;
-  challengeSlug: string;
-}) {
+export async function joinChallengeAction(
+  input: {
+    challengeId: string;
+    communityId: string;
+    communitySlug: string;
+    challengeSlug: string;
+  },
+  formData?: FormData,
+) {
   const s = await auth();
   const returnUrl = `/c/${input.communitySlug}/challenges/${input.challengeSlug}`;
   if (!s?.user?.id) redirect(`/login?redirectTo=${encodeURIComponent(returnUrl)}`);
+
+  const rawCouponCode = formData?.get("couponCode");
+  const couponCode =
+    typeof rawCouponCode === "string" && rawCouponCode.trim()
+      ? rawCouponCode.trim().toUpperCase()
+      : undefined;
 
   const challenge = await prisma.challenge.findUnique({
     where: { id: input.challengeId },
@@ -530,13 +539,23 @@ export async function joinChallengeAction(input: {
     });
 
     if (price.vnd > 0) {
-      const { payment } = await startChallengePurchase({
-        userId: s.user.id,
-        challengeId: input.challengeId,
-        communityId: input.communityId,
-        amountVnd: price.vnd,
-      });
-      redirect(`/pay/${payment.paymentCode}?return=${encodeURIComponent(returnUrl)}`);
+      try {
+        const { payment } = await startChallengePurchase({
+          userId: s.user.id,
+          challengeId: input.challengeId,
+          communityId: input.communityId,
+          amountVnd: price.vnd,
+          couponCode,
+        });
+        redirect(`/pay/${payment.paymentCode}?return=${encodeURIComponent(returnUrl)}`);
+      } catch (err) {
+        if (err instanceof Error && err.message.startsWith("coupon_invalid:")) {
+          redirect(
+            `${returnUrl}?couponError=${encodeURIComponent(err.message.slice("coupon_invalid:".length))}`,
+          );
+        }
+        throw err;
+      }
     }
   }
 

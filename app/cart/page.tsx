@@ -92,7 +92,7 @@ export default async function CartPage() {
           </span>
         </div>
 
-        <CartCheckoutButton />
+        <CartCheckoutButton communityId={communityId} totalVnd={totalVnd} />
       </div>
     </main>
   );

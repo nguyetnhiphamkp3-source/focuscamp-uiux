@@ -10,6 +10,7 @@
 
 import { randomBytes } from "crypto";
 import { prisma } from "./prisma";
+import type { Prisma } from "@prisma/client";
 
 /**
  * Generate a unique payment code with crypto-grade randomness.
@@ -51,30 +52,44 @@ export function buildVietQRUrl(params: {
  * Create a Payment record with a unique code.
  * Expires in 30 minutes by default.
  */
-export async function createPayment(params: {
-  userId: string;
-  communityId?: string;
-  purpose:
-    | "subscription"
-    | "product"
-    | "challenge_deposit"
-    | "challenge_entry"
-    | "community_plan"
-    | "event";
-  refType: "subscription" | "product" | "challenge" | "community" | "event" | "cart";
-  refId: string;
-  amountVnd: number;
-  ttlMinutes?: number;
-  metadata?: Record<string, unknown>;
-  bankCode?: string;
-  bankAccount?: string;
-  bankHolder?: string;
-  bankName?: string;
-}) {
+export async function createPayment(
+  params: {
+    userId: string;
+    communityId?: string;
+    purpose:
+      | "subscription"
+      | "product"
+      | "challenge_deposit"
+      | "challenge_entry"
+      | "community_plan"
+      | "event";
+    refType: "subscription" | "product" | "challenge" | "community" | "event" | "cart";
+    refId: string;
+    amountVnd: number;
+    ttlMinutes?: number;
+    metadata?: Record<string, unknown>;
+    bankCode?: string;
+    bankAccount?: string;
+    bankHolder?: string;
+    bankName?: string;
+    /** Discount details — set when a coupon was applied. amountVnd above must already be the discounted final amount. */
+    coupon?: {
+      couponId: string;
+      couponCode: string;
+      originalAmountVnd: number;
+      discountVnd: number;
+    };
+  },
+  /** Optional transaction client. When provided, the Payment row is created
+   * inside the caller's transaction so callers can atomically chain other
+   * writes (e.g., CouponRedemption) without orphaning state on failure. */
+  tx?: Prisma.TransactionClient,
+) {
+  const db = tx ?? prisma;
   const ttl = params.ttlMinutes ?? 30;
   let paymentCode = generatePaymentCode();
   // Ensure unique (extremely unlikely collision, but safe)
-  while (await prisma.payment.findUnique({ where: { paymentCode } })) {
+  while (await db.payment.findUnique({ where: { paymentCode } })) {
     paymentCode = generatePaymentCode();
   }
 
@@ -85,7 +100,7 @@ export async function createPayment(params: {
   };
   const hasMetadata = Object.keys(meta).length > 0;
 
-  return prisma.payment.create({
+  return db.payment.create({
     data: {
       paymentCode,
       userId: params.userId,
@@ -94,6 +109,12 @@ export async function createPayment(params: {
       refType: params.refType,
       refId: params.refId,
       amountVnd: params.amountVnd,
+      ...(params.coupon && {
+        originalAmountVnd: params.coupon.originalAmountVnd,
+        discountVnd: params.coupon.discountVnd,
+        couponId: params.coupon.couponId,
+        couponCode: params.coupon.couponCode,
+      }),
       status: "PENDING",
       provider: "SEPAY_STANDARD",
       bankName: params.bankName ?? process.env.SEPAY_BANK_NAME,
