@@ -13,10 +13,14 @@ export const dynamic = "force-dynamic";
 
 export default async function EventsListPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
   const { slug } = await params;
+  const { tab } = await searchParams;
+  const activeTab: "upcoming" | "past" = tab === "past" ? "past" : "upcoming";
   const session = await auth();
   const community = await prisma.community.findUnique({
     where: { slug },
@@ -42,21 +46,33 @@ export default async function EventsListPage({
   });
   const canCreateEvent = canCommunity(role, "manage_events");
 
-  const events = await listEvents({ communityId: community.id, scope: "upcoming" });
+  const events = await listEvents({ communityId: community.id, scope: activeTab });
 
   return (
     <>
       <header className="view-header">
         <span className="view-title">Events</span>
-        <span className="view-subtitle">Sự kiện sắp tới của {community.name}</span>
+        <span className="view-subtitle">Sự kiện của {community.name}</span>
       </header>
       <div style={{ flex: 1, overflowY: "auto", padding: "var(--space-5) var(--space-6)" }}>
         <div style={{ maxWidth: 880, margin: "0 auto" }}>
-          {canCreateEvent && (
-            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
-              <CreateEventButton communityId={community.id} communitySlug={slug} />
-            </div>
-          )}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              marginBottom: 16,
+              flexWrap: "wrap",
+            }}
+          >
+            <TabLink slug={slug} tab="upcoming" active={activeTab === "upcoming"} label="Sắp tới" />
+            <TabLink slug={slug} tab="past" active={activeTab === "past"} label="Đã kết thúc" />
+            {canCreateEvent && (
+              <div style={{ marginLeft: "auto" }}>
+                <CreateEventButton communityId={community.id} communitySlug={slug} />
+              </div>
+            )}
+          </div>
 
           {events.length === 0 ? (
             <div
@@ -70,7 +86,7 @@ export default async function EventsListPage({
             >
               <div style={{ fontSize: 48, marginBottom: 12 }}>📅</div>
               <div style={{ fontWeight: 700, color: "var(--header-primary)" }}>
-                Chưa có event nào sắp tới
+                {activeTab === "upcoming" ? "Chưa có event nào sắp tới" : "Chưa có event nào đã kết thúc"}
               </div>
             </div>
           ) : (
@@ -79,6 +95,7 @@ export default async function EventsListPage({
                 const free = e.isFree || e.priceVnd === 0;
                 const startsAt = new Date(e.startsAt);
                 const full = e._count.bookings >= e.capacity;
+                const isPast = activeTab === "past";
                 return (
                   <div
                     key={e.id}
@@ -91,15 +108,18 @@ export default async function EventsListPage({
                       gap: 14,
                       alignItems: "center",
                       flexWrap: "wrap",
+                      opacity: isPast ? 0.75 : 1,
                     }}
                   >
-                    {/* Clickable content area — Link wraps only the text block */}
                     <Link
                       href={`/c/${slug}/events/${e.id}`}
                       style={{ flex: 1, minWidth: 200, textDecoration: "none", color: "inherit" }}
                     >
                       <div
                         style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
                           fontSize: "var(--text-xs)",
                           color: "var(--text-muted)",
                           textTransform: "uppercase",
@@ -108,11 +128,27 @@ export default async function EventsListPage({
                           marginBottom: 4,
                         }}
                       >
-                        {e.type === "ONE_ON_ONE"
-                          ? "👤 1-on-1"
-                          : e.type === "WORKSHOP"
-                            ? "🎓 Workshop"
-                            : "🎤 Live"}
+                        <span>
+                          {e.type === "ONE_ON_ONE"
+                            ? "👤 1-on-1"
+                            : e.type === "WORKSHOP"
+                              ? "🎓 Workshop"
+                              : "🎤 Live"}
+                        </span>
+                        {isPast && (
+                          <span
+                            style={{
+                              padding: "2px 8px",
+                              borderRadius: 6,
+                              background: "var(--bg-elevated)",
+                              color: "var(--text-muted)",
+                              letterSpacing: 0,
+                              textTransform: "none",
+                            }}
+                          >
+                            Đã kết thúc
+                          </span>
+                        )}
                       </div>
                       <div
                         style={{
@@ -151,24 +187,62 @@ export default async function EventsListPage({
                       )}
                     </Link>
 
-                    {/* Price + RSVP — outside Link, no overlap */}
                     <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end", flexShrink: 0 }}>
-                      <div
-                        style={{
-                          fontWeight: 700,
-                          fontSize: "var(--text-md)",
-                          color: free ? "var(--success)" : "var(--brand-green)",
-                        }}
-                      >
-                        {free ? "Miễn phí" : `${fmtVnd(e.priceVnd)}đ`}
-                      </div>
-                      <EventRsvpButton
-                        eventId={e.id}
-                        communitySlug={slug}
-                        isFree={free}
-                        priceVnd={e.priceVnd ?? 0}
-                        full={full}
-                      />
+                      {!isPast && (
+                        <div
+                          style={{
+                            fontWeight: 700,
+                            fontSize: "var(--text-md)",
+                            color: free ? "var(--success)" : "var(--brand-green)",
+                          }}
+                        >
+                          {free ? "Miễn phí" : `${fmtVnd(e.priceVnd)}đ`}
+                        </div>
+                      )}
+                      {isPast ? (
+                        e.meetRecordingUrl ? (
+                          <a
+                            href={e.meetRecordingUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{
+                              padding: "8px 14px",
+                              borderRadius: 8,
+                              background: "var(--bg-elevated)",
+                              color: "var(--text-link)",
+                              fontWeight: 600,
+                              fontSize: "var(--text-sm)",
+                              textDecoration: "none",
+                            }}
+                          >
+                            🎬 Xem recording
+                          </a>
+                        ) : (
+                          <Link
+                            href={`/c/${slug}/events/${e.id}`}
+                            style={{
+                              padding: "8px 14px",
+                              borderRadius: 8,
+                              background: "transparent",
+                              border: "1px solid var(--border-subtle)",
+                              color: "var(--interactive-normal)",
+                              fontWeight: 600,
+                              fontSize: "var(--text-sm)",
+                              textDecoration: "none",
+                            }}
+                          >
+                            Xem chi tiết
+                          </Link>
+                        )
+                      ) : (
+                        <EventRsvpButton
+                          eventId={e.id}
+                          communitySlug={slug}
+                          isFree={free}
+                          priceVnd={e.priceVnd ?? 0}
+                          full={full}
+                        />
+                      )}
                     </div>
                   </div>
                 );
@@ -178,5 +252,35 @@ export default async function EventsListPage({
         </div>
       </div>
     </>
+  );
+}
+
+function TabLink({
+  slug,
+  tab,
+  active,
+  label,
+}: {
+  slug: string;
+  tab: "upcoming" | "past";
+  active: boolean;
+  label: string;
+}) {
+  return (
+    <Link
+      href={tab === "upcoming" ? `/c/${slug}/events` : `/c/${slug}/events?tab=past`}
+      style={{
+        padding: "8px 14px",
+        borderRadius: 8,
+        fontSize: "var(--text-sm)",
+        fontWeight: 600,
+        textDecoration: "none",
+        background: active ? "var(--brand-green)" : "transparent",
+        color: active ? "#fff" : "var(--interactive-normal)",
+        border: active ? "1px solid var(--brand-green)" : "1px solid var(--border-subtle)",
+      }}
+    >
+      {label}
+    </Link>
   );
 }

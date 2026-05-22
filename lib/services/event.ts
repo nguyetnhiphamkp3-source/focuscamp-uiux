@@ -90,6 +90,73 @@ export async function createEvent(input: {
   return ev;
 }
 
+function isEventLive(event: { startsAt: Date; durationMin: number }) {
+  const now = new Date();
+  const endTime = new Date(event.startsAt.getTime() + event.durationMin * 60_000);
+  return now >= event.startsAt && now <= endTime;
+}
+
+export async function updateEvent(input: {
+  userId: string;
+  eventId: string;
+  data: {
+    type?: "ONE_ON_ONE" | "GROUP_LIVE" | "WORKSHOP";
+    title?: string;
+    description?: string | null;
+    startsAt?: Date;
+    durationMin?: number;
+    capacity?: number;
+    priceVnd?: number;
+    meetingUrl?: string | null;
+    bannerUrl?: string | null;
+  };
+}) {
+  const event = await prisma.event.findUnique({
+    where: { id: input.eventId },
+    select: { communityId: true, startsAt: true, durationMin: true },
+  });
+  if (!event) throw new Error("Không tìm thấy event");
+  await assertCommunityOwner(input.userId, event.communityId);
+  if (isEventLive(event)) {
+    throw new Error("Event đang diễn ra — không thể sửa lúc này");
+  }
+  const data: Record<string, unknown> = {};
+  const d = input.data;
+  if (d.type !== undefined) data.type = d.type;
+  if (d.title !== undefined) data.title = d.title.trim();
+  if (d.description !== undefined) data.description = d.description?.toString().trim() || null;
+  if (d.startsAt !== undefined) data.startsAt = d.startsAt;
+  if (d.durationMin !== undefined) data.durationMin = d.durationMin;
+  if (d.capacity !== undefined) data.capacity = d.capacity;
+  if (d.priceVnd !== undefined) {
+    data.priceVnd = d.priceVnd;
+    data.isFree = !d.priceVnd || d.priceVnd === 0;
+  }
+  if (d.meetingUrl !== undefined) data.meetingUrl = d.meetingUrl?.toString().trim() || null;
+  if (d.bannerUrl !== undefined) data.bannerUrl = d.bannerUrl?.toString().trim() || null;
+  const updated = await prisma.event.update({
+    where: { id: input.eventId },
+    data,
+  });
+  logger.info({ eventId: input.eventId, by: input.userId }, "[event] updated");
+  return updated;
+}
+
+export async function deleteEvent(input: { userId: string; eventId: string }) {
+  const event = await prisma.event.findUnique({
+    where: { id: input.eventId },
+    select: { communityId: true, startsAt: true, durationMin: true },
+  });
+  if (!event) throw new Error("Không tìm thấy event");
+  await assertCommunityOwner(input.userId, event.communityId);
+  if (isEventLive(event)) {
+    throw new Error("Event đang diễn ra — không thể xóa lúc này");
+  }
+  await prisma.event.delete({ where: { id: input.eventId } });
+  logger.info({ eventId: input.eventId, by: input.userId }, "[event] deleted");
+  return { communityId: event.communityId };
+}
+
 export async function listEvents(input: {
   communityId: string;
   viewerUserId?: string;
@@ -105,7 +172,9 @@ export async function listEvents(input: {
     where.startsAt = { gte: fourHoursAgo };
     where.status = "OPEN";
   } else if (input.scope === "past") {
-    where.startsAt = { lt: now };
+    // Mirror the 4h buffer used by "upcoming" so live events don't appear in both
+    const fourHoursAgo = new Date(now.getTime() - 4 * 60 * 60 * 1000);
+    where.startsAt = { lt: fourHoursAgo };
   }
   return prisma.event.findMany({
     where,

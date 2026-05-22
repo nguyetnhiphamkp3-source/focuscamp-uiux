@@ -5,6 +5,7 @@ import { fmtVnd } from "@/lib/brand";
 import { fetchPostMeetingData } from "@/lib/services/event";
 import { EventRsvpButton } from "@/components/community/event-rsvp-button";
 import { EventMeetingUrlEditor } from "@/components/community/event-meeting-url-editor";
+import { EventAdminActions } from "@/components/community/event-admin-actions";
 import { getEffectiveOwnership } from "@/lib/preview-mode";
 import { canCommunity, effectiveCommunityRole } from "@/lib/community-permissions";
 
@@ -59,6 +60,7 @@ export default async function EventDetailPage({
   const endTime = new Date(event.startsAt.getTime() + event.durationMin * 60_000);
   const isEnded = now > endTime;
   const isUpcoming = now < new Date(event.startsAt);
+  const isLive = !isUpcoming && !isEnded;
 
   // Lazy-fetch post-meeting data after event ends (owner's token)
   let postMeeting: { recordingUrl: string | null; transcriptUrl: string | null } | null = null;
@@ -86,9 +88,34 @@ export default async function EventDetailPage({
 
   return (
     <>
-      <header className="view-header">
-        <span className="view-title">{event.title}</span>
-        <span className="view-subtitle">{typeLabel} · {event.durationMin}p</span>
+      <header className="view-header" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <span className="view-title">{event.title}</span>
+          <span className="view-subtitle">{typeLabel} · {event.durationMin}p</span>
+        </div>
+        {canManageEvent && (
+          isLive ? (
+            <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+              Đang diễn ra — không thể sửa
+            </span>
+          ) : (
+            <EventAdminActions
+              communitySlug={slug}
+              event={{
+                id: event.id,
+                type: event.type as "ONE_ON_ONE" | "GROUP_LIVE" | "WORKSHOP",
+                title: event.title,
+                description: event.description,
+                startsAt: event.startsAt.toISOString(),
+                durationMin: event.durationMin,
+                capacity: event.capacity,
+                priceVnd: event.priceVnd,
+                meetingUrl: event.meetingUrl,
+                bannerUrl: event.bannerUrl,
+              }}
+            />
+          )
+        )}
       </header>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "var(--space-5) var(--space-6)" }}>
