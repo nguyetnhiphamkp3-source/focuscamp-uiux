@@ -1,11 +1,35 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { updateChallengeSettingsAction } from "@/app/actions/challenge-review";
 import { ImageUploadField } from "@/components/shared/image-upload-field";
 import { ChallengePricingEditor } from "@/components/community/challenge-pricing-editor";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
 import type { PricingConfig } from "@/lib/services/pricing";
+
+type UnlockMode = "ALL" | "DAILY" | "SEQUENTIAL" | "MANUAL";
+
+/**
+ * Whether switching from `from` to `to` is a "restrictive" change —
+ * i.e. tasks that are currently visible to members may become locked again.
+ */
+function isRestrictiveModeChange(from: string, to: string): boolean {
+  // MANUAL is the most restrictive — switching TO it from anything else is restrictive
+  if (to === "MANUAL" && from !== "MANUAL") return true;
+  // SEQUENTIAL is more restrictive than DAILY or ALL
+  if (to === "SEQUENTIAL" && (from === "DAILY" || from === "ALL")) return true;
+  // DAILY is more restrictive than ALL
+  if (to === "DAILY" && from === "ALL") return true;
+  return false;
+}
+
+const MODE_LABELS: Record<string, string> = {
+  ALL: "Mở tất cả",
+  DAILY: "Theo thời gian",
+  SEQUENTIAL: "Tuần tự",
+  MANUAL: "Thủ công",
+};
 
 type FreezeWindow = { label: string; startsAt: string; endsAt: string };
 
@@ -78,6 +102,17 @@ export function ChallengeSettingsPanel({
   const [saved, setSaved] = useState(false);
   // Bumped on reset to force-remount nested editors (which keep their own state).
   const [editorKey, setEditorKey] = useState(0);
+  // Mode-change confirmation
+  const [pendingMode, setPendingMode] = useState<string | null>(null);
+  const isRestrictive = taskUnlockMode !== initial.taskUnlockMode && isRestrictiveModeChange(initial.taskUnlockMode, taskUnlockMode);
+
+  const handleModeChange = useCallback((newMode: string) => {
+    if (isRestrictiveModeChange(initial.taskUnlockMode, newMode)) {
+      setPendingMode(newMode);
+    } else {
+      setTaskUnlockMode(newMode);
+    }
+  }, [initial.taskUnlockMode]);
 
   // Discard any in-flight edits and snap state back to the props from the server.
   // Called when the modal closes without an explicit Save click.
@@ -424,7 +459,7 @@ export function ChallengeSettingsPanel({
             </div>
             <select
               value={taskUnlockMode}
-              onChange={(e) => setTaskUnlockMode(e.target.value)}
+              onChange={(e) => handleModeChange(e.target.value)}
               disabled={pending}
               style={inputStyle}
             >
@@ -433,6 +468,19 @@ export function ChallengeSettingsPanel({
               <option value="SEQUENTIAL">Tuần tự — Hoàn thành task trước mới mở task sau</option>
               <option value="MANUAL">Thủ công — Admin mở khóa từng task</option>
             </select>
+            {isRestrictive && (
+              <div style={{
+                padding: "10px 12px",
+                background: "rgba(218,55,60,0.08)",
+                border: "1px solid rgba(218,55,60,0.3)",
+                borderRadius: 8,
+                fontSize: "var(--text-sm)",
+                color: "#b91c1c",
+                lineHeight: 1.5,
+              }}>
+                ⚠️ <strong>Cảnh báo:</strong> Chuyển từ "{MODE_LABELS[initial.taskUnlockMode]}" sang "{MODE_LABELS[taskUnlockMode]}" sẽ khóa lại các task mà thành viên đang xem được. Những người đang tham gia có thể bị mất quyền truy cập task đã mở. Hành động này áp dụng ngay lập tức cho tất cả thành viên.
+              </div>
+            )}
             {taskUnlockMode === "DAILY" && (
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
@@ -704,6 +752,21 @@ export function ChallengeSettingsPanel({
             </button>
         </div>
       </section>
+
+      {/* Mode-change confirmation modal */}
+      <ConfirmModal
+        open={!!pendingMode}
+        title="Xác nhận đổi chế độ mở khóa"
+        message={`Chuyển từ "${MODE_LABELS[initial.taskUnlockMode]}" sang "${MODE_LABELS[pendingMode ?? ""]}" sẽ khóa lại các task mà thành viên đang xem được. Những người đang tham gia có thể bị mất quyền truy cập task đã mở.\n\nHành động này áp dụng ngay lập tức cho tất cả thành viên khi bạn nhấn Lưu.`}
+        confirmLabel="Đồng ý, đổi chế độ"
+        cancelLabel="Giữ nguyên"
+        danger
+        onConfirm={() => {
+          if (pendingMode) setTaskUnlockMode(pendingMode);
+          setPendingMode(null);
+        }}
+        onCancel={() => setPendingMode(null)}
+      />
     </div>
   );
 }
