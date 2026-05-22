@@ -74,6 +74,42 @@ export function ChallengeSettingsPanel({
   const [pending, setPending] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  // Bumped on reset to force-remount nested editors (which keep their own state).
+  const [editorKey, setEditorKey] = useState(0);
+
+  // Discard any in-flight edits and snap state back to the props from the server.
+  // Called when the modal closes without an explicit Save click.
+  function resetToInitial() {
+    setTitle(initial.title);
+    setDescription(initial.description ?? "");
+    setPitch(initial.pitch ?? "");
+    setAutoStartMode(initial.autoStartAfterHours == null ? "manual" : "auto");
+    setAutoStartHours(String(initial.autoStartAfterHours ?? 24));
+    setHideFutureTasks(initial.hideFutureTasks);
+    setTaskUnlockMode(initial.taskUnlockMode);
+    setUnlockIntervalHours(String(initial.unlockIntervalHours));
+    setBannerUrl(initial.bannerUrl);
+    setFeaturedOnGlobal(initial.featuredOnGlobal);
+    setPricingConfig(initial.pricingConfig);
+    setFreezeWindows(
+      initial.freezeWindows
+        ? initial.freezeWindows.map((w) => ({
+            label: w.label ?? "",
+            startsAt: w.startsAt,
+            endsAt: w.endsAt,
+          }))
+        : []
+    );
+    setBumpProductId(initial.bumpProductId ?? "");
+    setErr(null);
+    setSaved(false);
+    setEditorKey((k) => k + 1);
+  }
+
+  function closeWithoutSave() {
+    resetToInitial();
+    setOpen(false);
+  }
 
   async function save() {
     setErr(null);
@@ -123,7 +159,7 @@ export function ChallengeSettingsPanel({
         justifyContent: "center",
         background: "rgba(0,0,0,0.5)",
       }}
-      onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}
+      onClick={(e) => { if (e.target === e.currentTarget) closeWithoutSave(); }}
     >
       <section
         id="challenge-settings"
@@ -160,7 +196,7 @@ export function ChallengeSettingsPanel({
           </span>
           <button
             type="button"
-            onClick={() => setOpen(false)}
+            onClick={closeWithoutSave}
             style={{
               background: "none",
               border: "none",
@@ -587,6 +623,7 @@ export function ChallengeSettingsPanel({
               Giá tham gia
             </div>
             <ChallengePricingEditor
+              key={editorKey}
               value={pricingConfig}
               onChange={setPricingConfig}
               tiers={initial.tiers}
