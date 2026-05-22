@@ -214,14 +214,20 @@ export async function submitCheckin(params: {
   const effStart = effectivePersonalStartsAt(member, challenge);
   if (!effStart) throw new Error("challenge_not_started");
 
-  const elapsedDays = Math.floor(
-    (today.getTime() - effStart.getTime()) / (1000 * 60 * 60 * 24)
-  );
-  const currentDay = Math.min(
-    challenge.requiredDays,
-    Math.max(1, elapsedDays + 1)
-  );
-  const isFinalDay = currentDay >= challenge.requiredDays;
+  // "Completed" means the user has actually checked in for `requiredDays`
+  // distinct days — not just wall-clock-expired. Counting distinct dayNumbers
+  // prevents marking COMPLETED when a late checkin happens past the deadline.
+  const existingDayCheckins = await prisma.checkin.findMany({
+    where: { userId, challengeId, dayNumber: { not: null } },
+    select: { dayNumber: true },
+    distinct: ["dayNumber"],
+  });
+  const existingDayCount = existingDayCheckins.length;
+  const thisAddsNewDay =
+    dayNumber != null &&
+    !existingDayCheckins.some((c) => c.dayNumber === dayNumber);
+  const totalCheckedDays = existingDayCount + (thisAddsNewDay ? 1 : 0);
+  const isFinalDay = totalCheckedDays >= challenge.requiredDays;
 
   await prisma.$transaction(async (tx) => {
     await tx.checkin.create({

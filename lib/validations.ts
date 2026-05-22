@@ -68,6 +68,7 @@ export const UpdateChallengeSettingsSchema = z.object({
   // Deprecated — kept optional so old clients don't break. New code ignores it.
   requiresApproval: z.boolean().optional(),
   autoStartAfterHours: z.number().int().min(1).max(8760).nullable().optional(),
+  difficulty: z.enum(["NORMAL", "HARD", "CHAOS"]).optional(),
   title: z.string().trim().min(1).max(120).optional(),
   description: z.string().trim().max(5000).optional().or(z.literal("")),
   freezeFromDay: z.number().int().positive().optional().nullable(),

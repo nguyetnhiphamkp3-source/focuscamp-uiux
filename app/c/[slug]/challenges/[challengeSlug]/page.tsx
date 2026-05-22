@@ -401,6 +401,7 @@ export default async function ChallengeDetailPage({
                 title: challenge.title,
                 description: challenge.description,
                 pitch: challenge.pitch ?? null,
+                difficulty: challenge.difficulty,
                 autoStartAfterHours: challenge.autoStartAfterHours,
                 freezeWindows: (challenge.freezeWindows as Array<{ label?: string; startsAt: string; endsAt: string }> | null) ?? null,
                 bannerUrl: challenge.bannerUrl,

@@ -23,6 +23,7 @@ export function ChallengeSettingsPanel({
     title: string;
     description: string | null;
     pitch?: string | null;
+    difficulty: string;
     autoStartAfterHours: number | null;
     freezeWindows?: Array<{ label?: string; startsAt: string; endsAt: string }> | null;
     bannerUrl: string | null;
@@ -48,6 +49,9 @@ export function ChallengeSettingsPanel({
   const [title, setTitle] = useState(initial.title);
   const [description, setDescription] = useState(initial.description ?? "");
   const [pitch, setPitch] = useState(initial.pitch ?? "");
+  const [difficulty, setDifficulty] = useState<"NORMAL" | "HARD" | "CHAOS">(
+    (initial.difficulty as "NORMAL" | "HARD" | "CHAOS") || "NORMAL"
+  );
   const [autoStartMode, setAutoStartMode] = useState<"manual" | "auto">(
     initial.autoStartAfterHours == null ? "manual" : "auto"
   );
@@ -81,6 +85,7 @@ export function ChallengeSettingsPanel({
     setTitle(initial.title);
     setDescription(initial.description ?? "");
     setPitch(initial.pitch ?? "");
+    setDifficulty((initial.difficulty as "NORMAL" | "HARD" | "CHAOS") || "NORMAL");
     setAutoStartMode(initial.autoStartAfterHours == null ? "manual" : "auto");
     setAutoStartHours(String(initial.autoStartAfterHours ?? 24));
     setTaskUnlockMode(initial.taskUnlockMode);
@@ -122,6 +127,7 @@ export function ChallengeSettingsPanel({
       title: title.trim(),
       description: description.trim(),
       pitch: pitch || null,
+      difficulty,
       autoStartAfterHours,
       taskUnlockMode: taskUnlockMode as "ALL" | "DAILY" | "SEQUENTIAL" | "MANUAL",
       unlockIntervalHours: parseInt(unlockIntervalHours, 10) || 24,
@@ -291,6 +297,22 @@ export function ChallengeSettingsPanel({
               placeholder="Chưa có banner — dùng gradient"
             />
           </div>
+
+          <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+              Độ khó
+            </span>
+            <select
+              value={difficulty}
+              onChange={(e) => setDifficulty(e.target.value as "NORMAL" | "HARD" | "CHAOS")}
+              disabled={pending}
+              style={inputStyle}
+            >
+              <option value="NORMAL">🛡️ Normal</option>
+              <option value="HARD">⚔️ Hard</option>
+              <option value="CHAOS">🔥 Chaos</option>
+            </select>
+          </label>
 
           {/* Cách bắt đầu — manual vs auto-start grace period */}
           <div

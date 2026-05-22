@@ -507,6 +507,7 @@ export async function updateChallengeSettings(input: {
   userId: string;
   challengeId: string;
   autoStartAfterHours?: number | null;
+  difficulty?: string;
   title?: string;
   description?: string;
   freezeFromDay?: number | null;
@@ -527,6 +528,7 @@ export async function updateChallengeSettings(input: {
     where: { id: input.challengeId },
     data: {
       ...("autoStartAfterHours" in input ? { autoStartAfterHours: input.autoStartAfterHours ?? null } : {}),
+      ...(input.difficulty !== undefined ? { difficulty: input.difficulty } : {}),
       ...(input.title !== undefined ? { title: input.title } : {}),
       ...(input.description !== undefined ? { description: input.description || null } : {}),
       ...(input.freezeFromDay !== undefined ? { freezeFromDay: input.freezeFromDay } : {}),

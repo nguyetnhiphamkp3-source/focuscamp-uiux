@@ -188,6 +188,7 @@ export async function rejectMemberAction(input: {
 export async function updateChallengeSettingsAction(input: {
   challengeId: string;
   autoStartAfterHours?: number | null;
+  difficulty?: "NORMAL" | "HARD" | "CHAOS";
   title?: string;
   description?: string;
   freezeFromDay?: number | null;
@@ -210,6 +211,7 @@ export async function updateChallengeSettingsAction(input: {
   const parsed = UpdateChallengeSettingsSchema.safeParse({
     challengeId: input.challengeId,
     autoStartAfterHours: input.autoStartAfterHours,
+    difficulty: input.difficulty,
     title: input.title,
     description: input.description,
     freezeFromDay: input.freezeFromDay,
@@ -257,6 +259,7 @@ export async function updateChallengeSettingsAction(input: {
       challengeId: parsed.data.challengeId,
       autoStartAfterHours:
         "autoStartAfterHours" in parsed.data ? parsed.data.autoStartAfterHours ?? null : undefined,
+      difficulty: parsed.data.difficulty,
       title: parsed.data.title,
       description: parsed.data.description ?? undefined,
       freezeFromDay: parsed.data.freezeFromDay ?? undefined,
