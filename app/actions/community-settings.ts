@@ -35,13 +35,9 @@ import type {
 type ActionResult = { ok: true } | { ok: false; reason: string };
 
 function bump(slug: string) {
-  // Any page that reads community config should revalidate.
-  revalidatePath(`/c/${slug}`);
-  revalidatePath(`/c/${slug}/feed`);
-  revalidatePath(`/c/${slug}/cot`);
-  revalidatePath(`/c/${slug}/qa`);
-  revalidatePath(`/c/${slug}/signals`);
-  revalidatePath(`/c/${slug}/settings`);
+  // Single layout-scoped revalidate invalidates every route under /c/[slug]
+  // (feed, cot, qa, signals, settings, courses, marketplace, …) in one call.
+  revalidatePath(`/c/${slug}`, "layout");
 }
 
 export async function updatePillarsAction(input: {
