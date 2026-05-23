@@ -87,6 +87,8 @@ model Session {
   expires      DateTime
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expires])
 }
 
 model VerificationToken {
@@ -95,6 +97,7 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+  @@index([expires])
 }
 
 // ============= COMMUNITY =============
@@ -685,7 +688,8 @@ model Payment {
 
   @@index([userId, status])
   @@index([refType, refId])
-  @@index([couponId])
+  @@index([couponId, status])
+  @@index([status, createdAt])
 }
 
 model SePayTransaction {
