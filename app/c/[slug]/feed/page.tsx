@@ -25,12 +25,10 @@ export default async function FeedPage({
   const pillarFilter = sp.pillar;
   const sort: "latest" | "popular" =
     sp.sort === "popular" ? "popular" : "latest";
-  const scope: "all" | "following" | "bookmarked" =
-    sp.scope === "following"
-      ? "following"
-      : sp.scope === "bookmarked"
-        ? "bookmarked"
-        : "all";
+  // Bookmarked has moved to /c/<slug>/profile — silently treat legacy
+  // ?scope=bookmarked URLs as "all" so old browser bookmarks don't 404.
+  const scope: "all" | "following" =
+    sp.scope === "following" ? "following" : "all";
 
   const community = await prisma.community.findUnique({
     where: { slug },
@@ -69,15 +67,8 @@ export default async function FeedPage({
 
   // Scope-specific precomputed lists
   let followedIds: string[] | undefined;
-  let bookmarkedIds: string[] | undefined;
   if (userId && scope === "following") {
     followedIds = await followedUserIds(userId);
-  } else if (userId && scope === "bookmarked") {
-    const rows = await prisma.bookmark.findMany({
-      where: { userId, post: { communityId: community.id } },
-      select: { postId: true },
-    });
-    bookmarkedIds = rows.map((r) => r.postId);
   }
 
   const posts = await listFeed({
@@ -88,7 +79,6 @@ export default async function FeedPage({
     sort,
     scope,
     followedUserIds: followedIds,
-    bookmarkedPostIds: bookmarkedIds,
     limit: PAGE_SIZE,
   });
 
@@ -174,14 +164,6 @@ export default async function FeedPage({
                 >
                   Following
                 </Link>
-                <Link
-                  href={urlFor({ scope: "bookmarked" })}
-                  scroll={false}
-                  className={`feed-tab ${scope === "bookmarked" ? "active" : ""}`}
-                  style={{ textDecoration: "none" }}
-                >
-                  Bookmarked
-                </Link>
               </>
             ) : (
               <>
@@ -191,13 +173,6 @@ export default async function FeedPage({
                   style={{ opacity: 0.4, cursor: "not-allowed" }}
                 >
                   Following
-                </div>
-                <div
-                  className="feed-tab"
-                  title="Đăng nhập để bookmark bài"
-                  style={{ opacity: 0.4, cursor: "not-allowed" }}
-                >
-                  Bookmarked
                 </div>
               </>
             )}
@@ -252,7 +227,6 @@ export default async function FeedPage({
                 sort,
                 scope,
                 followedUserIds: followedIds,
-                bookmarkedPostIds: bookmarkedIds,
               }}
             />
           )}
