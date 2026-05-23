@@ -17,6 +17,7 @@ export function ChallengeMarketCard({
     difficulty: string;
     requiredDays: number;
     bannerUrl: string | null;
+    bannerMediaType?: string | null;
     pricingConfig: unknown;
     _count: { members: number };
   };
@@ -47,6 +48,9 @@ export function ChallengeMarketCard({
           padding: "10px 14px",
         }}
       >
+        {challenge.bannerMediaType === "VIDEO" && (
+          <span className="ch-card-play-badge" aria-hidden="true">▶</span>
+        )}
         <span
           style={{
             fontSize: 11,

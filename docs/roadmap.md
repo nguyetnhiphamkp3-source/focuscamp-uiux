@@ -81,6 +81,7 @@ Key: ✅ done · 🟡 partial · ❌ not started · 🚫 deferred (Phase 2+)
 | Item | Status | Notes |
 |---|---|---|
 | CRUD expedition/challenge (admin) | ✅ | Create challenge + tasks (edit/delete) all via UI |
+| Challenge hero media: image or YouTube/Vimeo/Wistia video | ✅ | ChallengeSettingsPanel supports video URL + poster thumbnail upload/auto-fetch |
 | User join (direct ACTIVE) | ✅ | |
 | Admin approve member requests | ✅ | `requiresApproval` flag |
 | UI toggle `requiresApproval` in challenge settings | ✅ | ChallengeSettingsPanel |

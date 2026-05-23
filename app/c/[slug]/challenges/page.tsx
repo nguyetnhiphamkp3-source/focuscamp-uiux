@@ -128,6 +128,7 @@ export default async function QuestLogPage({
             difficulty: true,
             requiredDays: true,
             bannerUrl: true,
+            bannerMediaType: true,
             _count: { select: { members: true } },
           },
         })
@@ -705,6 +706,7 @@ function ChallengeCard({
     difficulty: string;
     requiredDays: number;
     bannerUrl?: string | null;
+    bannerMediaType?: string | null;
     _count: { members: number };
   };
   cta?: string;
@@ -728,6 +730,9 @@ function ChallengeCard({
         }
       >
         <span className="ch-diff-badge">{diffLabel(challenge.difficulty)}</span>
+        {challenge.bannerMediaType === "VIDEO" && (
+          <span className="ch-card-play-badge" aria-hidden="true">▶</span>
+        )}
         {!challenge.bannerUrl && <div className="ch-card-banner-title">{challenge.title}</div>}
       </div>
       <div className="ch-card-body">

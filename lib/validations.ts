@@ -4,6 +4,7 @@
  */
 import { z } from "zod";
 import { COMMUNITY_CATEGORIES } from "@/lib/community-categories";
+import { parseChallengeVideoUrl } from "@/lib/challenge-video";
 
 /* ========== Shared primitives (used by multiple schemas below) ========== */
 export const SlugSchema = z
@@ -75,6 +76,8 @@ export const UpdateChallengeSettingsSchema = z.object({
   freezeStartsAt: z.string().datetime().optional().nullable().or(z.literal("")),
   freezeEndsAt: z.string().datetime().optional().nullable().or(z.literal("")),
   bannerUrl: z.string().url().max(500).optional().nullable().or(z.literal("")),
+  bannerMediaType: z.enum(["IMAGE", "VIDEO"]).optional(),
+  bannerVideoUrl: z.string().url().max(1000).optional().nullable().or(z.literal("")),
   featuredOnGlobal: z.boolean().optional(),
   requiredTier: z.string().trim().max(40).optional().nullable().or(z.literal("")),
   pricingConfig: PricingConfigSchema,
@@ -94,6 +97,22 @@ export const UpdateChallengeSettingsSchema = z.object({
     .nullable(),
   pitch: z.string().trim().max(20000).optional().nullable(),
   bumpProductId: z.string().cuid().optional().nullable(),
+}).superRefine((data, ctx) => {
+  if (!data.bannerVideoUrl) return;
+  if (parseChallengeVideoUrl(data.bannerVideoUrl)) return;
+  ctx.addIssue({
+    code: "custom",
+    path: ["bannerVideoUrl"],
+    message: "Chỉ hỗ trợ video YouTube, Vimeo hoặc Wistia",
+  });
+}).superRefine((data, ctx) => {
+  if (data.bannerMediaType !== "VIDEO") return;
+  if (data.bannerVideoUrl && parseChallengeVideoUrl(data.bannerVideoUrl)) return;
+  ctx.addIssue({
+    code: "custom",
+    path: ["bannerVideoUrl"],
+    message: "Video thumbnail cần URL YouTube, Vimeo hoặc Wistia",
+  });
 });
 
 export const CreateChallengeSchema = z.object({

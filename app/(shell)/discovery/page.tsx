@@ -361,6 +361,9 @@ export default async function DiscoveryPage({
                       style={ch.bannerUrl ? { background: `url(${ch.bannerUrl}) center/cover no-repeat` } : undefined}
                     >
                       <span className="ch-diff-badge">{diffLabel}</span>
+                      {ch.bannerMediaType === "VIDEO" && (
+                        <span className="ch-card-play-badge" aria-hidden="true">▶</span>
+                      )}
                       <span className={`ch-status-badge ${statusClass}`}>
                         {ch.status}
                       </span>

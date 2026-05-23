@@ -241,8 +241,12 @@ export default async function GlobalMarketplacePage({
                       fontWeight: 700,
                       textShadow: "0 1px 3px rgba(0,0,0,0.4)",
                       fontSize: "var(--text-md)",
+                      position: "relative",
                     }}
                   >
+                    {c.bannerMediaType === "VIDEO" && (
+                      <span className="ch-card-play-badge" aria-hidden="true">▶</span>
+                    )}
                     {c.title}
                   </div>
                   <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 6 }}>

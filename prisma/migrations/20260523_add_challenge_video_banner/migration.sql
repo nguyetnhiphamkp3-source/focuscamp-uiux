@@ -1,0 +1,3 @@
+ALTER TABLE "Challenge"
+ADD COLUMN "bannerMediaType" TEXT NOT NULL DEFAULT 'IMAGE',
+ADD COLUMN "bannerVideoUrl" TEXT;

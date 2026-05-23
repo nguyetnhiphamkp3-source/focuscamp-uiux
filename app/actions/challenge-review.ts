@@ -8,6 +8,7 @@ import {
   approveAllPending,
   approveChallengeMember,
   rejectChallengeMember,
+  assertChallengeAdmin,
   updateChallengeSettings,
   updateChallengeTask,
   toggleCheckinVote,
@@ -36,6 +37,7 @@ import {
 } from "@/lib/validations";
 import { z } from "zod";
 import { logError } from "@/lib/logger";
+import { resolveChallengeVideoUrl } from "@/lib/challenge-video";
 
 type ActionResult = { ok: true } | { ok: false; reason: string };
 
@@ -195,6 +197,8 @@ export async function updateChallengeSettingsAction(input: {
   freezeStartsAt?: string | null;
   freezeEndsAt?: string | null;
   bannerUrl?: string | null;
+  bannerMediaType?: "IMAGE" | "VIDEO";
+  bannerVideoUrl?: string | null;
   featuredOnGlobal?: boolean;
   requiredTier?: string | null;
   pricingConfig?: Record<string, unknown> | null;
@@ -218,6 +222,8 @@ export async function updateChallengeSettingsAction(input: {
     freezeStartsAt: input.freezeStartsAt,
     freezeEndsAt: input.freezeEndsAt,
     bannerUrl: input.bannerUrl,
+    bannerMediaType: input.bannerMediaType,
+    bannerVideoUrl: input.bannerVideoUrl,
     featuredOnGlobal: input.featuredOnGlobal,
     requiredTier: input.requiredTier,
     pricingConfig: input.pricingConfig,
@@ -229,6 +235,24 @@ export async function updateChallengeSettingsAction(input: {
   });
   if (!parsed.success) {
     return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
+  }
+
+  let bannerUrl =
+    parsed.data.bannerUrl === undefined ? undefined : parsed.data.bannerUrl || null;
+  let bannerVideoUrl =
+    parsed.data.bannerVideoUrl === undefined ? undefined : parsed.data.bannerVideoUrl || null;
+
+  if (parsed.data.bannerMediaType === "VIDEO") {
+    const resolved = await resolveChallengeVideoUrl(parsed.data.bannerVideoUrl);
+    if (!resolved) {
+      return { ok: false, reason: "Chỉ hỗ trợ video YouTube, Vimeo hoặc Wistia." };
+    }
+    bannerVideoUrl = resolved.embedUrl;
+    if (!bannerUrl && resolved.thumbnailUrl) {
+      bannerUrl = resolved.thumbnailUrl;
+    }
+  } else if (parsed.data.bannerMediaType === "IMAGE") {
+    bannerVideoUrl = null;
   }
 
   // Block setting paid pricing if community has no SePay config
@@ -265,7 +289,9 @@ export async function updateChallengeSettingsAction(input: {
       freezeFromDay: parsed.data.freezeFromDay ?? undefined,
       freezeStartsAt: parsed.data.freezeStartsAt || null,
       freezeEndsAt: parsed.data.freezeEndsAt || null,
-      bannerUrl: parsed.data.bannerUrl === undefined ? undefined : parsed.data.bannerUrl || null,
+      bannerUrl,
+      bannerMediaType: parsed.data.bannerMediaType,
+      bannerVideoUrl,
       featuredOnGlobal: parsed.data.featuredOnGlobal,
       requiredTier: parsed.data.requiredTier === undefined ? undefined : parsed.data.requiredTier || null,
       pricingConfig: "pricingConfig" in parsed.data ? (parsed.data.pricingConfig as Record<string, unknown> | null) : undefined,
@@ -279,6 +305,43 @@ export async function updateChallengeSettingsAction(input: {
     revalidatePath(`/marketplace`);
     revalidatePath("/discovery");
     return { ok: true };
+  } catch (err) {
+    logError(err, { userId: s.user.id, challengeId: input.challengeId });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+export async function resolveChallengeVideoThumbnailAction(input: {
+  challengeId: string;
+  url: string;
+}): Promise<
+  | { ok: true; provider: "youtube" | "vimeo" | "wistia"; embedUrl: string; thumbnailUrl: string | null }
+  | { ok: false; reason: string }
+> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+
+  const parsed = z.object({
+    challengeId: z.string().cuid(),
+    url: z.string().url().max(1000),
+  }).safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
+  }
+
+  try {
+    await assertChallengeAdmin(s.user.id, parsed.data.challengeId);
+    const resolved = await resolveChallengeVideoUrl(parsed.data.url);
+    if (!resolved) {
+      return { ok: false, reason: "Chỉ hỗ trợ video YouTube, Vimeo hoặc Wistia." };
+    }
+    return {
+      ok: true,
+      provider: resolved.provider,
+      embedUrl: resolved.embedUrl,
+      thumbnailUrl: resolved.thumbnailUrl,
+    };
   } catch (err) {
     logError(err, { userId: s.user.id, challengeId: input.challengeId });
     if (err instanceof Error) return { ok: false, reason: err.message };

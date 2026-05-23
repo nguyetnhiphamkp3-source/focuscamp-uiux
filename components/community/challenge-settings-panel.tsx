@@ -2,11 +2,15 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { updateChallengeSettingsAction } from "@/app/actions/challenge-review";
+import {
+  resolveChallengeVideoThumbnailAction,
+  updateChallengeSettingsAction,
+} from "@/app/actions/challenge-review";
 import { ImageUploadField } from "@/components/shared/image-upload-field";
 import { ChallengePricingEditor } from "@/components/community/challenge-pricing-editor";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import type { PricingConfig } from "@/lib/services/pricing";
+import { parseChallengeVideoUrl, type ChallengeBannerMediaType } from "@/lib/challenge-video";
 
 type UnlockMode = "ALL" | "DAILY" | "SEQUENTIAL" | "MANUAL";
 
@@ -51,6 +55,8 @@ export function ChallengeSettingsPanel({
     autoStartAfterHours: number | null;
     freezeWindows?: Array<{ label?: string; startsAt: string; endsAt: string }> | null;
     bannerUrl: string | null;
+    bannerMediaType?: string | null;
+    bannerVideoUrl?: string | null;
     featuredOnGlobal: boolean;
     pricingConfig: PricingConfig | null;
     tiers: { key: string; label: string }[];
@@ -85,6 +91,11 @@ export function ChallengeSettingsPanel({
   const [taskUnlockMode, setTaskUnlockMode] = useState(initial.taskUnlockMode);
   const [unlockIntervalHours, setUnlockIntervalHours] = useState(String(initial.unlockIntervalHours));
   const [bannerUrl, setBannerUrl] = useState<string | null>(initial.bannerUrl);
+  const [bannerMediaType, setBannerMediaType] = useState<ChallengeBannerMediaType>(
+    initial.bannerMediaType === "VIDEO" ? "VIDEO" : "IMAGE"
+  );
+  const [bannerVideoUrl, setBannerVideoUrl] = useState(initial.bannerVideoUrl ?? "");
+  const [thumbnailPending, setThumbnailPending] = useState(false);
   const [featuredOnGlobal, setFeaturedOnGlobal] = useState(initial.featuredOnGlobal);
   const [pricingConfig, setPricingConfig] = useState<PricingConfig | null>(initial.pricingConfig);
   const [freezeWindows, setFreezeWindows] = useState<FreezeWindow[]>(
@@ -126,6 +137,9 @@ export function ChallengeSettingsPanel({
     setTaskUnlockMode(initial.taskUnlockMode);
     setUnlockIntervalHours(String(initial.unlockIntervalHours));
     setBannerUrl(initial.bannerUrl);
+    setBannerMediaType(initial.bannerMediaType === "VIDEO" ? "VIDEO" : "IMAGE");
+    setBannerVideoUrl(initial.bannerVideoUrl ?? "");
+    setThumbnailPending(false);
     setFeaturedOnGlobal(initial.featuredOnGlobal);
     setPricingConfig(initial.pricingConfig);
     setFreezeWindows(
@@ -148,6 +162,32 @@ export function ChallengeSettingsPanel({
     setOpen(false);
   }
 
+  async function fetchVideoThumbnail() {
+    const rawUrl = bannerVideoUrl.trim();
+    if (!rawUrl) {
+      setErr("Nhập URL YouTube/Vimeo/Wistia trước khi lấy thumbnail.");
+      return;
+    }
+    setErr(null);
+    setSaved(false);
+    setThumbnailPending(true);
+    const res = await resolveChallengeVideoThumbnailAction({
+      challengeId,
+      url: rawUrl,
+    });
+    setThumbnailPending(false);
+    if (!res.ok) {
+      setErr(res.reason);
+      return;
+    }
+    setBannerVideoUrl(res.embedUrl);
+    if (res.thumbnailUrl) {
+      setBannerUrl(res.thumbnailUrl);
+    } else {
+      setErr("Không lấy được thumbnail tự động. Bạn có thể upload poster thủ công.");
+    }
+  }
+
   async function save() {
     setErr(null);
     setSaved(false);
@@ -167,6 +207,8 @@ export function ChallengeSettingsPanel({
       taskUnlockMode: taskUnlockMode as "ALL" | "DAILY" | "SEQUENTIAL" | "MANUAL",
       unlockIntervalHours: parseInt(unlockIntervalHours, 10) || 24,
       bannerUrl: bannerUrl ?? "",
+      bannerMediaType,
+      bannerVideoUrl: bannerMediaType === "VIDEO" ? bannerVideoUrl.trim() : null,
       featuredOnGlobal,
       pricingConfig: pricingConfig as Record<string, unknown> | null,
       freezeWindows: freezeWindows.length > 0 ? freezeWindows : null,
@@ -182,6 +224,9 @@ export function ChallengeSettingsPanel({
       setErr(res.reason);
     }
   }
+
+  const videoPreview =
+    bannerMediaType === "VIDEO" ? parseChallengeVideoUrl(bannerVideoUrl) : null;
 
   if (!open) return null;
 
@@ -327,19 +372,111 @@ export function ChallengeSettingsPanel({
             </label>
           )}
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
-              Banner
-            </span>
-            <ImageUploadField
-              value={bannerUrl}
-              onChange={setBannerUrl}
-              context="community"
-              shape="banner"
-              disabled={pending}
-              maxSizeNote="Tối đa 5MB"
-              placeholder="Chưa có banner — dùng gradient"
-            />
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+                Media chính
+              </span>
+              <select
+                value={bannerMediaType}
+                onChange={(e) => setBannerMediaType(e.target.value as ChallengeBannerMediaType)}
+                disabled={pending}
+                style={inputStyle}
+              >
+                <option value="IMAGE">Ảnh banner</option>
+                <option value="VIDEO">Video YouTube/Vimeo/Wistia</option>
+              </select>
+            </label>
+
+            {bannerMediaType === "VIDEO" ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+                    URL video
+                  </span>
+                  <input
+                    type="url"
+                    value={bannerVideoUrl}
+                    onChange={(e) => setBannerVideoUrl(e.target.value)}
+                    disabled={pending}
+                    placeholder="https://www.youtube.com/watch?v=... hoặc https://vimeo.com/... hoặc https://team.wistia.com/medias/..."
+                    style={inputStyle}
+                  />
+                </label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    onClick={fetchVideoThumbnail}
+                    disabled={pending || thumbnailPending || !bannerVideoUrl.trim()}
+                    style={{
+                      padding: "6px 10px",
+                      borderRadius: 6,
+                      border: "1px solid var(--border-subtle)",
+                      background: "var(--bg-card)",
+                      color: "var(--interactive-normal)",
+                      fontSize: "var(--text-sm)",
+                      cursor: thumbnailPending ? "not-allowed" : "pointer",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {thumbnailPending ? "Đang lấy thumbnail…" : "Tự lấy thumbnail"}
+                  </button>
+                  <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+                    Hỗ trợ YouTube, Vimeo và Wistia media/iframe URL.
+                  </span>
+                </div>
+                {videoPreview && (
+                  <div
+                    style={{
+                      aspectRatio: "16 / 9",
+                      width: "100%",
+                      maxWidth: 280,
+                      borderRadius: 8,
+                      overflow: "hidden",
+                      border: "1px solid var(--border-subtle)",
+                      background: "#000",
+                    }}
+                  >
+                    <iframe
+                      src={videoPreview.embedUrl}
+                      title="Video preview"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                      style={{ width: "100%", height: "100%", border: 0 }}
+                    />
+                  </div>
+                )}
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+                    Thumbnail/poster video
+                  </span>
+                  <ImageUploadField
+                    value={bannerUrl}
+                    onChange={setBannerUrl}
+                    context="community"
+                    shape="banner"
+                    disabled={pending || thumbnailPending}
+                    maxSizeNote="Tối đa 5MB"
+                    placeholder="Tự lấy từ video hoặc upload poster"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+                  Banner
+                </span>
+                <ImageUploadField
+                  value={bannerUrl}
+                  onChange={setBannerUrl}
+                  context="community"
+                  shape="banner"
+                  disabled={pending}
+                  maxSizeNote="Tối đa 5MB"
+                  placeholder="Chưa có banner — dùng gradient"
+                />
+              </div>
+            )}
           </div>
 
           <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -735,7 +872,7 @@ export function ChallengeSettingsPanel({
             <button
               type="button"
               onClick={save}
-              disabled={pending || !title.trim()}
+              disabled={pending || thumbnailPending || !title.trim() || (bannerMediaType === "VIDEO" && !bannerVideoUrl.trim())}
               style={{
                 padding: "8px 18px",
                 borderRadius: 8,

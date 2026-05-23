@@ -311,6 +311,9 @@ model Challenge {
   title          String
   description    String?   @db.Text
   bannerUrl      String?
+  /** IMAGE = bannerUrl is the hero image. VIDEO = bannerVideoUrl is embedded and bannerUrl is the poster/thumbnail. */
+  bannerMediaType String   @default("IMAGE")
+  bannerVideoUrl  String?
   difficulty     String    @default("NORMAL")
   requiredDays   Int       @default(21)
   maxMembers     Int       @default(999)

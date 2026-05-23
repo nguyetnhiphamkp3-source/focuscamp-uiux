@@ -542,6 +542,8 @@ export async function updateChallengeSettings(input: {
   freezeStartsAt?: string | null;
   freezeEndsAt?: string | null;
   bannerUrl?: string | null;
+  bannerMediaType?: string;
+  bannerVideoUrl?: string | null;
   featuredOnGlobal?: boolean;
   requiredTier?: string | null;
   pricingConfig?: Record<string, unknown> | null;
@@ -567,6 +569,8 @@ export async function updateChallengeSettings(input: {
         ? { freezeEndsAt: input.freezeEndsAt ? new Date(input.freezeEndsAt) : null }
         : {}),
       ...(input.bannerUrl !== undefined ? { bannerUrl: input.bannerUrl?.trim() || null } : {}),
+      ...(input.bannerMediaType !== undefined ? { bannerMediaType: input.bannerMediaType } : {}),
+      ...(input.bannerVideoUrl !== undefined ? { bannerVideoUrl: input.bannerVideoUrl?.trim() || null } : {}),
       ...(input.featuredOnGlobal !== undefined ? { featuredOnGlobal: input.featuredOnGlobal } : {}),
       ...(input.requiredTier !== undefined ? { requiredTier: input.requiredTier?.trim() || null } : {}),
       ...("pricingConfig" in input

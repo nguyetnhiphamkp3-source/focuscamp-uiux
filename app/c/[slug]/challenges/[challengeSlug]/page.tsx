@@ -28,6 +28,7 @@ import { JoinChallengeWithCoupon } from "@/components/challenges/join-with-coupo
 import { getEffectiveOwnership } from "@/lib/preview-mode";
 import { communityPermissionFlags, effectiveCommunityRole } from "@/lib/community-permissions";
 import { toEmbedUrl } from "@/lib/brand";
+import { parseChallengeVideoUrl } from "@/lib/challenge-video";
 
 export const dynamic = "force-dynamic";
 
@@ -94,6 +95,10 @@ export default async function ChallengeDetailPage({
       : null,
   });
   const permissions = communityPermissionFlags(role);
+  const bannerVideo =
+    challenge.bannerMediaType === "VIDEO"
+      ? parseChallengeVideoUrl(challenge.bannerVideoUrl)
+      : null;
 
   // Tier gate check — non-owners must have sufficient tier for this difficulty
   let tierGateBlock: { message: string; requiredTier: string } | null = null;
@@ -408,6 +413,8 @@ export default async function ChallengeDetailPage({
                 autoStartAfterHours: challenge.autoStartAfterHours,
                 freezeWindows: (challenge.freezeWindows as Array<{ label?: string; startsAt: string; endsAt: string }> | null) ?? null,
                 bannerUrl: challenge.bannerUrl,
+                bannerMediaType: challenge.bannerMediaType,
+                bannerVideoUrl: challenge.bannerVideoUrl,
                 featuredOnGlobal: challenge.featuredOnGlobal,
                 pricingConfig: parsePricingConfig(challenge.pricingConfig),
                 tiers: getTiersConfig(challenge.community.tiersConfig).map((t) => ({ key: t.key, label: t.label })),
@@ -423,21 +430,33 @@ export default async function ChallengeDetailPage({
             <div
               className={`ch-detail-banner ${diffClass(challenge.difficulty)}`}
               style={
-                challenge.bannerUrl
+                !bannerVideo && challenge.bannerUrl
                   ? ({ ["--bg-img" as string]: `url("${challenge.bannerUrl}")` } as React.CSSProperties)
                   : undefined
               }
             >
+              {bannerVideo && (
+                <>
+                  <iframe
+                    className="ch-detail-banner-video"
+                    src={bannerVideo.embedUrl}
+                    title={`${challenge.title} video`}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  />
+                  <div className="ch-detail-banner-video-shade" />
+                </>
+              )}
               <div
                 className="ch-diff-badge"
-                style={{ position: "absolute", top: 14, left: 14 }}
+                style={{ position: "absolute", top: 14, left: 14, zIndex: 2 }}
               >
                 {diffLabel(challenge.difficulty)}
               </div>
               {challenge.status !== "COMPLETED" && (
                 <div
                   className={`ch-status-badge ${challenge.status === "ACTIVE" ? "active" : "open"}`}
-                  style={{ position: "absolute", top: 14, right: 14 }}
+                  style={{ position: "absolute", top: 14, right: 14, zIndex: 2 }}
                 >
                   {challenge.status}
                 </div>

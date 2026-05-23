@@ -96,7 +96,7 @@ export default function middleware(req: NextRequest) {
       "img-src 'self' data: https:",
       "font-src 'self' https://fonts.gstatic.com",
       "connect-src 'self' https://*.r2.cloudflarestorage.com https://*.r2.dev https://*.ingest.sentry.io https://o.ingest.sentry.io",
-      "frame-src 'self' https://www.youtube.com",
+      "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://fast.wistia.com https://fast.wistia.net",
     ].join("; ") + ";"
   );
 
