@@ -10,6 +10,7 @@ import { ProfileLevelCard } from "./profile-stats";
 import { ProfileOverviewCard } from "./profile-overview-card";
 import { ProfileCommunityList } from "./profile-community-list";
 import { ProfileRecentPosts } from "./profile-recent-posts";
+import { ProfileBookmarks, type BookmarkedPost } from "./profile-bookmarks";
 import { toSlug } from "@/lib/brand";
 
 type Community = { name: string; slug: string };
@@ -76,6 +77,7 @@ export function ProfileView({
   levelTiers,
   otherCommunities = [],
   ownedCommunities = [],
+  bookmarks = null,
   latestActivityAt = null,
   heatmap = [],
   recentXp = [],
@@ -108,6 +110,8 @@ export function ProfileView({
   otherCommunities?: OtherCommunity[];
   /** Communities this user owns — badge signal. */
   ownedCommunities?: OtherCommunity[];
+  /** Cross-community bookmarks. Pass null for non-self viewers (bookmarks are private). */
+  bookmarks?: BookmarkedPost[] | null;
   /** Most recent activity timestamp in this community (null if no activity). */
   latestActivityAt?: Date | null;
   /** Per-day activity counts for the past 365 days. */
@@ -170,6 +174,10 @@ export function ProfileView({
             viewingUserId={viewingUserId}
             isSelf={isSelf}
           />
+
+          {isSelf && bookmarks !== null && (
+            <ProfileBookmarks bookmarks={bookmarks} />
+          )}
 
           <ProfileRecentPosts
             recentPosts={recentPosts}

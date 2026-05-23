@@ -71,8 +71,7 @@ export function BookmarkButton({
             pointerEvents: "none",
           }}
         >
-          Đã lưu → xem tại{" "}
-          <strong>Bảng tin &gt; Bookmarked</strong>
+          Đã lưu → xem tại <strong>Trang cá nhân</strong>
         </span>
       )}
     </span>

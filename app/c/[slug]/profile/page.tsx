@@ -10,6 +10,7 @@ import {
 } from "@/lib/community-config";
 import { ProfileView } from "@/components/profile/profile-view";
 import { followCounts } from "@/lib/services/follow";
+import { listBookmarks } from "@/lib/services/bookmark";
 
 export const dynamic = "force-dynamic";
 
@@ -25,14 +26,29 @@ export default async function ProfilePage({
   const community = await prisma.community.findUnique({ where: { slug } });
   if (!community) notFound();
 
-  const [data, counts] = await Promise.all([
+  const [data, counts, rawBookmarks] = await Promise.all([
     getCommunityProfile({
       userId: session.user.id,
       communityId: community.id,
     }),
     followCounts(session.user.id),
+    // Cross-community bookmarks — bookmarks are private, only fetched for self.
+    listBookmarks({ userId: session.user.id, limit: 30 }),
   ]);
   if (!data) notFound();
+
+  const bookmarks = rawBookmarks.map((b) => ({
+    id: b.post.id,
+    type: b.post.type,
+    title: b.post.title,
+    body: b.post.body,
+    isCot: b.post.isCot,
+    createdAt: b.post.createdAt,
+    commentCount: b.post._count.comments,
+    reactionCount: b.post._count.reactions,
+    community: { slug: b.post.community.slug, name: b.post.community.name },
+    bookmarkedAt: b.createdAt,
+  }));
 
   return (
     <ProfileView
@@ -55,6 +71,7 @@ export default async function ProfilePage({
       viewerId={session.user.id}
       followerCount={counts.followers}
       followingCount={counts.following}
+      bookmarks={bookmarks}
     />
   );
 }
