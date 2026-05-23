@@ -17,6 +17,7 @@ export function BookmarkButton({
   const [bookmarked, setBookmarked] = useState(initialBookmarked);
   const [pending, start] = useTransition();
   const [showHint, setShowHint] = useState(false);
+  const [limitReached, setLimitReached] = useState(false);
 
   function toggle() {
     const prev = bookmarked;
@@ -33,6 +34,10 @@ export function BookmarkButton({
         router.refresh();
       } else {
         setBookmarked(prev);
+        setShowHint(false);
+        if (!res.ok && res.reason === "bookmark_limit_reached") {
+          setLimitReached(true);
+        }
       }
     });
   }
@@ -73,6 +78,93 @@ export function BookmarkButton({
         >
           Đã lưu → xem tại <strong>Trang cá nhân</strong>
         </span>
+      )}
+
+      {limitReached && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setLimitReached(false);
+          }}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.6)",
+            zIndex: 1000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+          }}
+        >
+          <div
+            style={{
+              background: "var(--bg-floating)",
+              borderRadius: 14,
+              border: "1px solid var(--border-subtle)",
+              maxWidth: 420,
+              width: "100%",
+              padding: 24,
+              display: "flex",
+              flexDirection: "column",
+              gap: 14,
+            }}
+          >
+            <div
+              style={{
+                fontSize: "var(--text-lg)",
+                fontWeight: 700,
+                color: "var(--header-primary)",
+              }}
+            >
+              🔖 Bookmark đã đầy (24/24)
+            </div>
+            <div
+              style={{
+                fontSize: "var(--text-base)",
+                color: "var(--text-normal)",
+                lineHeight: 1.5,
+              }}
+            >
+              Bạn đã lưu tối đa 24 bài. Hãy vào{" "}
+              <strong>Trang cá nhân</strong> và bỏ bookmark vài bài cũ
+              trước khi lưu bài mới.
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={() => setLimitReached(false)}
+                style={{
+                  padding: "9px 18px",
+                  borderRadius: 8,
+                  border: "1px solid var(--border-subtle)",
+                  background: "transparent",
+                  color: "var(--interactive-normal)",
+                  cursor: "pointer",
+                  fontSize: "var(--text-sm)",
+                  fontWeight: 500,
+                }}
+              >
+                Để sau
+              </button>
+              <a
+                href={`/c/${communitySlug}/profile`}
+                style={{
+                  padding: "9px 18px",
+                  borderRadius: 8,
+                  background: "var(--brand-green)",
+                  color: "#fff",
+                  textDecoration: "none",
+                  fontSize: "var(--text-sm)",
+                  fontWeight: 600,
+                }}
+              >
+                Xem bookmarks
+              </a>
+            </div>
+          </div>
+        </div>
       )}
     </span>
   );

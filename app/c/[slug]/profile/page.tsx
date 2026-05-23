@@ -33,7 +33,8 @@ export default async function ProfilePage({
     }),
     followCounts(session.user.id),
     // Cross-community bookmarks — bookmarks are private, only fetched for self.
-    listBookmarks({ userId: session.user.id, limit: 30 }),
+    // Cap to MAX_BOOKMARKS (24) matching what the service auto-trims to.
+    listBookmarks({ userId: session.user.id, limit: 24 }),
   ]);
   if (!data) notFound();
 
