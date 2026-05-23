@@ -1,16 +1,18 @@
 /**
  * Bookmark service — user saves posts to revisit later.
- * Scoped globally (a bookmark is per-user-per-post, across communities).
+ * Bookmarks are PER-COMMUNITY: the cap applies separately in each
+ * community the user is part of, so saving in one community doesn't
+ * eat the budget for another.
  *
- * Cap: each user keeps at most MAX_BOOKMARKS rows. When the user is already
- * at the cap and tries to add another, the add is REFUSED — the client should
- * show a "full, please remove one" message. We don't silently drop the oldest
- * because that would lose data the user intended to keep.
+ * Cap: at most MAX_BOOKMARKS per user per community. When the cap is hit,
+ * adding another is REFUSED — the client shows a 'full, please remove
+ * one' modal. We don't silently drop the oldest because the user
+ * explicitly intended to keep each saved post.
  */
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 
-export const MAX_BOOKMARKS = 24;
+export const MAX_BOOKMARKS = 14;
 
 export class BookmarkLimitReachedError extends Error {
   constructor(public readonly limit: number) {
@@ -31,8 +33,19 @@ export async function toggleBookmark(input: {
     return { bookmarked: false };
   }
 
-  // Refuse if user is already at the cap. They must un-bookmark something first.
-  const total = await prisma.bookmark.count({ where: { userId: input.userId } });
+  // Look up post's community so we can count + cap per-community.
+  const post = await prisma.post.findUnique({
+    where: { id: input.postId },
+    select: { communityId: true },
+  });
+  if (!post) throw new Error("post_not_found");
+
+  const total = await prisma.bookmark.count({
+    where: {
+      userId: input.userId,
+      post: { communityId: post.communityId },
+    },
+  });
   if (total >= MAX_BOOKMARKS) {
     throw new BookmarkLimitReachedError(MAX_BOOKMARKS);
   }
@@ -41,7 +54,7 @@ export async function toggleBookmark(input: {
     data: { userId: input.userId, postId: input.postId },
   });
   logger.info(
-    { userId: input.userId, postId: input.postId },
+    { userId: input.userId, postId: input.postId, communityId: post.communityId },
     "[bookmark] added"
   );
   return { bookmarked: true };

@@ -13,11 +13,12 @@ export type BookmarkedPost = {
   createdAt: Date;
   commentCount: number;
   reactionCount: number;
-  community: { slug: string; name: string };
+  communitySlug: string;
   bookmarkedAt: Date;
 };
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 7;
+const MAX_BOOKMARKS = 14;
 
 export function ProfileBookmarks({
   bookmarks,
@@ -36,7 +37,7 @@ export function ProfileBookmarks({
         <h3 style={{ flex: 1, margin: 0 }}>🔖 Đã lưu</h3>
         {bookmarks.length > 0 && (
           <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
-            {bookmarks.length}/24
+            {bookmarks.length}/{MAX_BOOKMARKS}
           </span>
         )}
       </div>
@@ -51,7 +52,7 @@ export function ProfileBookmarks({
             marginTop: 8,
           }}
         >
-          Bạn chưa lưu bài nào. Bấm 🔖 trên một bài viết bất kỳ (bảng tin, hỏi đáp, tín hiệu) để lưu lại đọc sau. Tối đa 24 bài — bài cũ nhất sẽ tự bỏ khi bạn lưu bài mới quá hạn mức.
+          Bạn chưa lưu bài nào trong cộng đồng này. Bấm 🔖 trên một bài viết bất kỳ (bảng tin, hỏi đáp, tín hiệu) để lưu lại đọc sau. Tối đa {MAX_BOOKMARKS} bài / cộng đồng.
         </div>
       ) : (
         <>
@@ -66,7 +67,7 @@ export function ProfileBookmarks({
               return (
                 <Link
                   key={p.id}
-                  href={`/c/${p.community.slug}/p/${p.id}`}
+                  href={`/c/${p.communitySlug}/p/${p.id}`}
                   style={{
                     display: "flex",
                     gap: 10,
@@ -104,18 +105,7 @@ export function ProfileBookmarks({
                         flexWrap: "wrap",
                       }}
                     >
-                      <span
-                        style={{
-                          background: "var(--bg-elevated)",
-                          padding: "2px 7px",
-                          borderRadius: 4,
-                          fontWeight: 600,
-                          color: "var(--brand-green)",
-                        }}
-                      >
-                        {p.community.name}
-                      </span>
-                      <span>· lưu {fmtRelativeTime(p.bookmarkedAt)}</span>
+                      <span>lưu {fmtRelativeTime(p.bookmarkedAt)}</span>
                       {p.isCot && (
                         <span style={{ color: "var(--premium-gold)" }}>
                           · ⭐ CỐT

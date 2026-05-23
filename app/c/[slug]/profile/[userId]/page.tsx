@@ -39,6 +39,7 @@ export default async function UserProfilePage({
     getCommunityProfile({
       userId,
       communityId: community.id,
+      postsLimit: 14,
     }),
     followCounts(userId),
     session.user.id ? isFollowing(session.user.id, userId) : Promise.resolve(false),

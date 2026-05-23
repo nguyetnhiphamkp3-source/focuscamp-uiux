@@ -30,11 +30,11 @@ export default async function ProfilePage({
     getCommunityProfile({
       userId: session.user.id,
       communityId: community.id,
+      postsLimit: 14,
     }),
     followCounts(session.user.id),
-    // Cross-community bookmarks — bookmarks are private, only fetched for self.
-    // Cap to MAX_BOOKMARKS (24) matching what the service auto-trims to.
-    listBookmarks({ userId: session.user.id, limit: 24 }),
+    // Per-community bookmarks — scoped to this community, max 14.
+    listBookmarks({ userId: session.user.id, communityId: community.id, limit: 14 }),
   ]);
   if (!data) notFound();
 
@@ -47,7 +47,7 @@ export default async function ProfilePage({
     createdAt: b.post.createdAt,
     commentCount: b.post._count.comments,
     reactionCount: b.post._count.reactions,
-    community: { slug: b.post.community.slug, name: b.post.community.name },
+    communitySlug: b.post.community.slug,
     bookmarkedAt: b.createdAt,
   }));
 

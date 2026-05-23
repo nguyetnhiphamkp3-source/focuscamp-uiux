@@ -118,7 +118,7 @@ export function BookmarkButton({
                 color: "var(--header-primary)",
               }}
             >
-              🔖 Bookmark đã đầy (24/24)
+              🔖 Bookmark đã đầy (14/14)
             </div>
             <div
               style={{
@@ -127,9 +127,9 @@ export function BookmarkButton({
                 lineHeight: 1.5,
               }}
             >
-              Bạn đã lưu tối đa 24 bài. Hãy vào{" "}
-              <strong>Trang cá nhân</strong> và bỏ bookmark vài bài cũ
-              trước khi lưu bài mới.
+              Bạn đã lưu tối đa 14 bài trong cộng đồng này. Hãy vào{" "}
+              <strong>Trang cá nhân</strong> của community và bỏ bookmark
+              vài bài cũ trước khi lưu bài mới.
             </div>
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
               <button
