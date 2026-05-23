@@ -32,6 +32,9 @@ for i in $(seq 1 30); do
   sleep 2
 done
 docker image prune -f >/dev/null 2>&1 || true
+# Keep only the most recent 2 GB of buildx cache so it doesn't snowball
+# past disk capacity (25 GB cache filled the VPS on 2026-05-23).
+docker buildx prune -af --keep-storage 2GB >/dev/null 2>&1 || true
 
 echo "=== DONE ==="
 docker compose ps --format 'table {{.Name}}\t{{.Status}}'
