@@ -9,6 +9,7 @@ import { AddToCartButton } from "@/components/marketplace/add-to-cart-button";
 import { BuyWithCoupon } from "@/components/marketplace/buy-with-coupon";
 import { logError } from "@/lib/logger";
 import { getEffectiveOwnership } from "@/lib/preview-mode";
+import { canCommunity, effectiveCommunityRole } from "@/lib/community-permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +39,17 @@ export default async function ProductDetailPage({
   const realIsOwner = session?.user?.id === product.community.ownerId;
   const { effectiveIsOwner: isOwner } = await getEffectiveOwnership(realIsOwner);
 
-  const communityProducts = isOwner
+  // ADMIN role members can manage marketplace too (same as OWNER)
+  const membership = session?.user?.id
+    ? await prisma.membership.findUnique({
+        where: { userId_communityId: { userId: session.user.id, communityId: product.communityId } },
+        select: { role: true },
+      })
+    : null;
+  const role = effectiveCommunityRole({ isOwner: realIsOwner, membershipRole: membership?.role });
+  const canManageMarketplace = canCommunity(role, "manage_marketplace");
+
+  const communityProducts = canManageMarketplace
     ? await prisma.product.findMany({
         where: { communityId: product.communityId },
         select: { id: true, title: true, isVisible: true },
@@ -132,8 +143,8 @@ export default async function ProductDetailPage({
         }}
       >
         <div style={{ maxWidth: 760 }}>
-          {/* Owner settings panel */}
-          {isOwner && (
+          {/* Admin/Owner settings panel */}
+          {canManageMarketplace && (
             <div style={{ marginBottom: "var(--space-4)" }}>
               <ProductSettingsPanel
                 productId={product.id}

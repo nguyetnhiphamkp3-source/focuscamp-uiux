@@ -1,18 +1,27 @@
 /**
  * Marketplace product admin CRUD.
- * Community owner only.
+ * Permitted for community OWNER + ADMIN (manage_marketplace permission).
  */
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { canCommunity, effectiveCommunityRole } from "@/lib/community-permissions";
 
-async function assertCommunityOwner(userId: string, communityId: string) {
+async function assertCanManageMarketplace(userId: string, communityId: string) {
   const c = await prisma.community.findUnique({
     where: { id: communityId },
-    select: { ownerId: true },
+    select: {
+      ownerId: true,
+      memberships: { where: { userId }, select: { role: true } },
+    },
   });
   if (!c) throw new Error("Cộng đồng không tồn tại");
-  if (c.ownerId !== userId)
-    throw new Error("Chỉ admin cộng đồng mới quản lý sản phẩm");
+  const role = effectiveCommunityRole({
+    isOwner: c.ownerId === userId,
+    membershipRole: c.memberships[0]?.role,
+  });
+  if (!canCommunity(role, "manage_marketplace")) {
+    throw new Error("Cần quyền ADMIN để quản lý marketplace");
+  }
 }
 
 export async function createProduct(input: {
@@ -30,7 +39,7 @@ export async function createProduct(input: {
   thumbnailUrl?: string;
   licenseKeyTemplate?: string;
 }) {
-  await assertCommunityOwner(input.userId, input.communityId);
+  await assertCanManageMarketplace(input.userId, input.communityId);
   const existing = await prisma.product.findFirst({
     where: { communityId: input.communityId, slug: input.slug },
     select: { id: true },
@@ -86,10 +95,10 @@ export async function updateProductSettings(input: {
   // 1. Load product + community to check ownership
   const product = await prisma.product.findUnique({
     where: { id: input.productId },
-    include: { community: { select: { ownerId: true, id: true } } },
+    select: { communityId: true },
   });
   if (!product) throw new Error("product_not_found");
-  if (product.community.ownerId !== input.userId) throw new Error("unauthorized");
+  await assertCanManageMarketplace(input.userId, product.communityId);
 
   // 2. Validate bump/upsell products belong to same community and not self-reference
   for (const refId of [input.bumpProductId, input.upsellProductId]) {
@@ -135,12 +144,10 @@ export async function deleteProduct(input: {
 }): Promise<{ communityId: string }> {
   const product = await prisma.product.findUnique({
     where: { id: input.productId },
-    select: { communityId: true, community: { select: { ownerId: true } } },
+    select: { communityId: true },
   });
   if (!product) throw new Error("Sản phẩm không tồn tại");
-  if (product.community.ownerId !== input.userId) {
-    throw new Error("Chỉ admin cộng đồng mới xóa sản phẩm");
-  }
+  await assertCanManageMarketplace(input.userId, product.communityId);
   const completed = await prisma.purchase.count({
     where: { productId: input.productId, status: "COMPLETED" },
   });
@@ -179,7 +186,7 @@ export async function setProductFeaturedGlobal(input: {
     select: { communityId: true },
   });
   if (!product) throw new Error("Sản phẩm không tồn tại");
-  await assertCommunityOwner(input.userId, product.communityId);
+  await assertCanManageMarketplace(input.userId, product.communityId);
   await prisma.product.update({
     where: { id: input.productId },
     data: { featuredOnGlobal: input.featured },

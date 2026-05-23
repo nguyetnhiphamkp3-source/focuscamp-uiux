@@ -10,7 +10,7 @@ import { CreateProductButton } from "@/components/community/create-product-butto
 import { FeaturedGlobalToggle } from "@/components/marketplace/featured-global-toggle";
 import { MarketplaceFilters } from "@/components/community/marketplace-filters";
 import { getEffectiveOwnership } from "@/lib/preview-mode";
-import { effectiveCommunityRole } from "@/lib/community-permissions";
+import { canCommunity, effectiveCommunityRole } from "@/lib/community-permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -42,9 +42,10 @@ export default async function MarketplacePage({
     : null;
   const role = effectiveCommunityRole({ isOwner: realIsOwner, membershipRole: membership?.role });
   const canSeeStats = isOwner || role === "ADMIN";
+  const canManageMarketplace = canCommunity(role, "manage_marketplace");
 
   const productWhere: Record<string, unknown> = { communityId: community.id };
-  if (!isOwner) productWhere.isVisible = true;
+  if (!canManageMarketplace) productWhere.isVisible = true;
   if (type === "FREE") productWhere.isFree = true;
   else if (type) productWhere.type = type;
   if (q) productWhere.title = { contains: q, mode: "insensitive" };
@@ -89,7 +90,7 @@ export default async function MarketplacePage({
 
       <div className="mk-view">
         <div className="mk-inner">
-          {isOwner && (
+          {canManageMarketplace && (
             <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "var(--space-4)" }}>
               <CreateProductButton communityId={community.id} communitySlug={slug} />
             </div>
@@ -180,7 +181,7 @@ export default async function MarketplacePage({
             // Build the bump/upsell picker list ONCE for the whole page.
             // Each settings modal filters out its own product client-side, so
             // we don't need to materialise N copies of the same list in the HTML.
-            const communityProductsList = isOwner
+            const communityProductsList = canManageMarketplace
               ? allProducts.map((ap) => ({
                   id: ap.id,
                   title: ap.title,
@@ -195,7 +196,7 @@ export default async function MarketplacePage({
                       product={p}
                       communitySlug={slug}
                       idx={idx}
-                      settingsData={isOwner ? {
+                      settingsData={canManageMarketplace ? {
                         productId: p.id,
                         communitySlug: slug,
                         productSlug: p.slug,
@@ -218,7 +219,7 @@ export default async function MarketplacePage({
                         communityProducts: communityProductsList,
                       } : undefined}
                     />
-                    {isOwner && (
+                    {canManageMarketplace && (
                       <FeaturedGlobalToggle kind="product" resourceId={p.id} communitySlug={slug} initial={p.featuredOnGlobal} />
                     )}
                   </div>
