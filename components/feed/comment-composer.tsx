@@ -33,7 +33,9 @@ export function CommentComposer({
       });
       if (res.ok) {
         setBody("");
-        router.refresh();
+        // router.refresh() unreliable on prod — hard reload to guarantee
+        // the new comment shows up.
+        window.location.reload();
       } else {
         setErr(res.reason);
       }

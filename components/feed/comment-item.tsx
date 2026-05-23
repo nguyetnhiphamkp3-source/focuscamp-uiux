@@ -79,7 +79,7 @@ export function CommentItem({
         postId,
         communitySlug,
       });
-      if (res.ok) router.refresh();
+      if (res.ok) window.location.reload();
       else setErr(res.reason);
     });
   }
@@ -99,7 +99,7 @@ export function CommentItem({
         postId,
         communitySlug,
       });
-      if (res.ok) router.refresh();
+      if (res.ok) window.location.reload();
       else setErr(res.reason);
     });
   }
@@ -141,7 +141,7 @@ export function CommentItem({
       if (res.ok) {
         setReplyBody("");
         setReplying(false);
-        router.refresh();
+        window.location.reload();
       } else {
         setErr(res.reason);
       }

@@ -102,7 +102,10 @@ export function PostComposer({
       });
       if (res.ok) {
         reset();
-        router.refresh();
+        // router.refresh() is unreliable on Next 16.2.3 prod (Server Action
+        // id rotation across builds breaks RSC refetch). Hard reload is
+        // bulletproof: brief flash but the new post is guaranteed visible.
+        window.location.reload();
       } else {
         setError(res.reason);
       }
