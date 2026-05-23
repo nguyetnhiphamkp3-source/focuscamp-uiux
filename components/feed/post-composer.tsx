@@ -85,19 +85,6 @@ export function PostComposer({
     }
   }
 
-  // Set after a successful submit; consumed by the effect below to reset the
-  // form only AFTER router.refresh() finishes (otherwise the composer collapses
-  // while the feed is still loading, leaving the user with no feedback).
-  const [justSubmitted, setJustSubmitted] = useState(false);
-
-  useEffect(() => {
-    if (!pending && justSubmitted) {
-      reset();
-      setJustSubmitted(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pending, justSubmitted]);
-
   function submit(e: { preventDefault: () => void }) {
     e.preventDefault();
     setError(null);
@@ -114,7 +101,7 @@ export function PostComposer({
         imageUrl: imageUrl || undefined,
       });
       if (res.ok) {
-        setJustSubmitted(true);
+        reset();
         router.refresh();
       } else {
         setError(res.reason);

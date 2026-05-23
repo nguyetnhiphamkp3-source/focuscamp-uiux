@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createCommentAction } from "@/app/actions/comments";
 import { avatarColorFor, initials } from "@/lib/brand";
@@ -20,16 +20,6 @@ export function CommentComposer({
   const [body, setBody] = useState("");
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
-  // Clear the textarea only AFTER router.refresh() finishes so the user
-  // sees "Đang gửi…" feedback for the full duration of the refresh.
-  const [justSubmitted, setJustSubmitted] = useState(false);
-
-  useEffect(() => {
-    if (!pending && justSubmitted) {
-      setBody("");
-      setJustSubmitted(false);
-    }
-  }, [pending, justSubmitted]);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -42,7 +32,7 @@ export function CommentComposer({
         communitySlug,
       });
       if (res.ok) {
-        setJustSubmitted(true);
+        setBody("");
         router.refresh();
       } else {
         setErr(res.reason);
