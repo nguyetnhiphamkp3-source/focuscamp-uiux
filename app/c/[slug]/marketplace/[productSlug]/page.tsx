@@ -110,6 +110,9 @@ export default async function ProductDetailPage({
       if (err instanceof Error) {
         if (err.message === "not_a_member") redirect(`/c/${communitySlug}`);
         if (err.message === "product_not_found") redirect(`/c/${communitySlug}/marketplace`);
+        if (err.message === "already_purchased") {
+          redirect(`/c/${communitySlug}/marketplace/${productSlug}`);
+        }
         if (err.message.startsWith("coupon_invalid:")) {
           redirect(
             `/c/${communitySlug}/marketplace/${productSlug}?couponError=${encodeURIComponent(err.message.slice("coupon_invalid:".length))}`
@@ -425,6 +428,27 @@ export default async function ProductDetailPage({
                     >
                       Vào community
                     </Link>
+                  </div>
+                ) : hasPurchased && !product.isSubscription ? (
+                  <div style={{ textAlign: "center" }}>
+                    <div
+                      style={{
+                        fontSize: "var(--text-md)",
+                        fontWeight: "var(--fw-semibold)",
+                        color: "var(--brand-green)",
+                        marginBottom: "var(--space-2)",
+                      }}
+                    >
+                      ✓ Bạn đã sở hữu sản phẩm này
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "var(--text-sm)",
+                        color: "var(--text-muted)",
+                      }}
+                    >
+                      Truy cập file/license ở phần trên.
+                    </div>
                   </div>
                 ) : (
                   <>

@@ -68,7 +68,7 @@ export async function checkoutCartAction(
 
   const products = await prisma.product.findMany({
     where: { id: { in: productIds } },
-    select: { id: true, title: true, priceVnd: true, communityId: true, isFree: true },
+    select: { id: true, title: true, priceVnd: true, communityId: true, isFree: true, isSubscription: true },
   });
 
   if (products.length !== productIds.length)
@@ -78,11 +78,22 @@ export async function checkoutCartAction(
   if (communityIds.length > 1)
     return { ok: false, reason: "mixed_communities" };
 
-  const breakdown = products.map((p) => ({
+  // Filter out non-subscription products the user already owns. Subscriptions
+  // are renewable so we keep them. If everything gets filtered out, reject.
+  const owned = await prisma.purchase.findMany({
+    where: { userId: s.user.id, productId: { in: productIds }, status: "COMPLETED" },
+    select: { productId: true },
+  });
+  const ownedIds = new Set(owned.map((o) => o.productId));
+  const eligible = products.filter((p) => p.isSubscription || !ownedIds.has(p.id));
+  if (eligible.length === 0) return { ok: false, reason: "already_owned" };
+
+  const breakdown = eligible.map((p) => ({
     productId: p.id,
     title: p.title,
     amountVnd: Number(p.priceVnd),
   }));
+  productIds = eligible.map((p) => p.id);
   const totalVnd = breakdown.reduce((sum, item) => sum + item.amountVnd, 0);
   if (totalVnd <= 0) return { ok: false, reason: "total_zero" };
 

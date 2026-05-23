@@ -7,7 +7,7 @@ import { CreateProductSchema, UpdateProductSettingsSchema } from "@/lib/validati
 import { logError } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { createPayment } from "@/lib/sepay";
-import { startProductPurchase } from "@/lib/services/payment";
+import { startProductPurchase, fulfillBumpInTx } from "@/lib/services/payment";
 import { getPaymentConfig } from "@/lib/community-config";
 
 type ActionResult<T = unknown> =
@@ -198,9 +198,17 @@ export async function addBumpToPaymentAction(input: {
     if (meta.bumpProductId) return { ok: false, reason: "bump_already_added" };
     const bump = await prisma.product.findUnique({
       where: { id: input.bumpProductId },
-      select: { id: true, priceVnd: true, communityId: true },
+      select: { id: true, priceVnd: true, communityId: true, isSubscription: true },
     });
     if (!bump) return { ok: false, reason: "invalid_bump" };
+    // Block adding a bump the user already owns (non-subscription only).
+    if (!bump.isSubscription) {
+      const owned = await prisma.purchase.findFirst({
+        where: { userId: s.user.id, productId: bump.id, status: "COMPLETED" },
+        select: { id: true },
+      });
+      if (owned) return { ok: false, reason: "already_owned" };
+    }
     const communityId = payment.communityId ?? bump.communityId;
     const community = communityId ? await prisma.community.findUnique({
       where: { id: communityId },
@@ -324,18 +332,13 @@ export async function simulatePaymentCompletedAction(
     }
 
     if (meta.bumpProductId && !meta.bumpFulfilled) {
-      await tx.purchase.create({
-        data: {
-          userId: payment.userId!,
-          productId: String(meta.bumpProductId),
-          amountVnd: Number(meta.bumpPriceVnd ?? 0),
-          status: "COMPLETED",
-          paymentRef: fakeTransactionId,
-        },
-      });
-      await tx.payment.update({
-        where: { id: payment.id },
-        data: { metadata: { ...meta, bumpFulfilled: true } },
+      await fulfillBumpInTx(tx, {
+        userId: payment.userId,
+        paymentId: payment.id,
+        bumpProductId: String(meta.bumpProductId),
+        bumpPriceVnd: Number(meta.bumpPriceVnd ?? 0),
+        transactionId: fakeTransactionId,
+        meta,
       });
     }
   });

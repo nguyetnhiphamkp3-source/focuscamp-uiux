@@ -31,7 +31,7 @@ export default async function CartPage() {
   const productIds = cartItems.map((i) => i.productId);
   const products = await prisma.product.findMany({
     where: { id: { in: productIds } },
-    select: { id: true, title: true, priceVnd: true, slug: true, community: { select: { id: true, slug: true } } },
+    select: { id: true, title: true, priceVnd: true, slug: true, isSubscription: true, community: { select: { id: true, slug: true } } },
   });
 
   const productsById = new Map(products.map((p) => [p.id, p]));
@@ -39,26 +39,41 @@ export default async function CartPage() {
     .map((id) => productsById.get(id))
     .filter((p): p is NonNullable<typeof p> => Boolean(p));
 
-  const communityId = orderedProducts[0]?.community?.id;
+  // Drop items the user already owns (non-subscription only). Keep displayed
+  // total aligned with what checkout will actually charge.
+  const ownedNonSubRows = await prisma.purchase.findMany({
+    where: {
+      userId: session.user.id,
+      status: "COMPLETED",
+      product: { isSubscription: false },
+    },
+    select: { productId: true },
+  });
+  const ownedIds = new Set(ownedNonSubRows.map((r) => r.productId));
+  const eligibleProducts = orderedProducts.filter((p) => p.isSubscription || !ownedIds.has(p.id));
+  const skippedCount = orderedProducts.length - eligibleProducts.length;
+
+  const communityId = eligibleProducts[0]?.community?.id ?? orderedProducts[0]?.community?.id;
+  const excludedIds = Array.from(new Set([...productIds, ...ownedNonSubRows.map((r) => r.productId)]));
   const bumpCandidate = communityId
     ? await prisma.product.findFirst({
         where: {
           communityId,
           showInCartBump: true,
-          id: { notIn: productIds },
+          id: { notIn: excludedIds },
         },
         select: { id: true, title: true, priceVnd: true, description: true },
       })
     : null;
 
-  const totalVnd = orderedProducts.reduce((sum, p) => sum + Number(p.priceVnd), 0);
+  const totalVnd = eligibleProducts.reduce((sum, p) => sum + Number(p.priceVnd), 0);
 
   return (
     <main style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: "var(--bg-body)" }}>
       <div style={{ width: "100%", maxWidth: 520, background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 20, boxShadow: "0 1px 3px rgba(60,45,20,0.08)", padding: 28 }}>
         <Link href="/" style={{ display: "inline-block", fontSize: 28, marginBottom: 8, textDecoration: "none" }}>🔥🏕️</Link>
         <h1 style={{ fontSize: "var(--text-xl)", fontWeight: 800, color: "var(--text-heading)", margin: "4px 0 12px" }}>
-          Giỏ hàng ({orderedProducts.length} sản phẩm)
+          Giỏ hàng ({eligibleProducts.length} sản phẩm)
         </h1>
         {orderedProducts[0]?.community?.slug && (
           <Link
@@ -69,8 +84,14 @@ export default async function CartPage() {
           </Link>
         )}
 
+        {skippedCount > 0 && (
+          <div style={{ background: "var(--bg-elevated)", border: "1px solid var(--border-subtle)", borderRadius: 8, padding: "10px 12px", marginBottom: 14, fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+            Đã bỏ {skippedCount} sản phẩm bạn đã sở hữu khỏi đơn này.
+          </div>
+        )}
+
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
-          {orderedProducts.map((product) => (
+          {eligibleProducts.map((product) => (
             <CartLineItem
               key={product.id}
               productId={product.id}

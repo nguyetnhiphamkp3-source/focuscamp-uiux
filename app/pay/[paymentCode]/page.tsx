@@ -40,6 +40,22 @@ export default async function PaymentPage({
   let upsellProduct: { id: string; title: string; priceVnd: number; description: string | null } | null = null;
   const meta = (payment.metadata ?? {}) as Record<string, unknown>;
 
+  // Helper: skip showing bump/upsell for products the current user already owns
+  // (subscriptions are renewable so we keep them).
+  async function userOwnsNonSubscription(productId: string): Promise<boolean> {
+    if (!session?.user?.id) return false;
+    const prod = await prisma.product.findUnique({
+      where: { id: productId },
+      select: { isSubscription: true },
+    });
+    if (!prod || prod.isSubscription) return false;
+    const owned = await prisma.purchase.findFirst({
+      where: { userId: session.user.id, productId, status: "COMPLETED" },
+      select: { id: true },
+    });
+    return !!owned;
+  }
+
   // Load main item title, bump offer (PENDING), and upsell offer (COMPLETED)
   let mainItemTitle: string | null = null;
   if (payment.refType === "product") {
@@ -55,7 +71,12 @@ export default async function PaymentPage({
       },
     });
     mainItemTitle = purchase?.product.title ?? null;
-    if (payment.status === "PENDING" && !meta.bumpProductId && purchase?.product.bumpProduct) {
+    if (
+      payment.status === "PENDING" &&
+      !meta.bumpProductId &&
+      purchase?.product.bumpProduct &&
+      !(await userOwnsNonSubscription(purchase.product.bumpProduct.id))
+    ) {
       bumpProduct = {
         id: purchase.product.bumpProduct.id,
         title: purchase.product.bumpProduct.title,
@@ -63,7 +84,11 @@ export default async function PaymentPage({
         description: purchase.product.bumpProduct.description,
       };
     }
-    if (payment.status === "COMPLETED" && purchase?.product.upsellProduct) {
+    if (
+      payment.status === "COMPLETED" &&
+      purchase?.product.upsellProduct &&
+      !(await userOwnsNonSubscription(purchase.product.upsellProduct.id))
+    ) {
       upsellProduct = {
         id: purchase.product.upsellProduct.id,
         title: purchase.product.upsellProduct.title,
@@ -82,7 +107,12 @@ export default async function PaymentPage({
         include: { bumpProduct: { select: { id: true, title: true, priceVnd: true, description: true } } },
       });
       mainItemTitle = ch?.title ?? null;
-      if (payment.status === "PENDING" && !meta.bumpProductId && ch?.bumpProduct) {
+      if (
+        payment.status === "PENDING" &&
+        !meta.bumpProductId &&
+        ch?.bumpProduct &&
+        !(await userOwnsNonSubscription(ch.bumpProduct.id))
+      ) {
         bumpProduct = {
           id: ch.bumpProduct.id,
           title: ch.bumpProduct.title,

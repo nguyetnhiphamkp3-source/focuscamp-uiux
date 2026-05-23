@@ -44,6 +44,50 @@ async function resolveCoupon(input: {
   };
 }
 
+/**
+ * Fulfill a bump product attached to a payment. Idempotent: skips re-creating
+ * Purchase if user already owns the bump (non-subscription); still marks the
+ * payment.metadata.bumpFulfilled=true to prevent retries.
+ */
+export async function fulfillBumpInTx(
+  tx: Prisma.TransactionClient,
+  params: {
+    userId: string;
+    paymentId: string;
+    bumpProductId: string;
+    bumpPriceVnd: number;
+    transactionId: string;
+    meta: Record<string, unknown>;
+  },
+) {
+  const { userId, paymentId, bumpProductId, bumpPriceVnd, transactionId, meta } = params;
+  const bumpProd = await tx.product.findUnique({
+    where: { id: bumpProductId },
+    select: { isSubscription: true },
+  });
+  const alreadyOwned = !bumpProd?.isSubscription
+    ? !!(await tx.purchase.findFirst({
+        where: { userId, productId: bumpProductId, status: "COMPLETED" },
+        select: { id: true },
+      }))
+    : false;
+  if (!alreadyOwned) {
+    await tx.purchase.create({
+      data: {
+        userId,
+        productId: bumpProductId,
+        amountVnd: bumpPriceVnd,
+        status: "COMPLETED",
+        paymentRef: transactionId,
+      },
+    });
+  }
+  await tx.payment.update({
+    where: { id: paymentId },
+    data: { metadata: { ...meta, bumpFulfilled: true, bumpSkipped: alreadyOwned || undefined } },
+  });
+}
+
 export async function startProductPurchase(params: {
   userId: string;
   productId: string;
@@ -56,12 +100,22 @@ export async function startProductPurchase(params: {
   // (We re-validate after Purchase row exists to catch race vs other concurrent checkouts.)
   const product = await prisma.product.findUnique({
     where: { id: productId },
-    select: { id: true, communityId: true, priceVnd: true, isFree: true },
+    select: { id: true, communityId: true, priceVnd: true, isFree: true, isSubscription: true },
   });
   if (!product) throw new Error("product_not_found");
   if (product.isFree) throw new Error("product_is_free");
   const originalAmountVnd = params.effectiveAmountVnd ?? Number(product.priceVnd);
   if (originalAmountVnd <= 0) throw new Error("product_is_free");
+
+  // Block re-purchase of non-subscription products user already owns.
+  // Subscriptions can be re-bought (renew). Defense-in-depth alongside UI hide.
+  if (!product.isSubscription) {
+    const owned = await prisma.purchase.findFirst({
+      where: { userId, productId: product.id, status: "COMPLETED" },
+      select: { id: true },
+    });
+    if (owned) throw new Error("already_purchased");
+  }
 
   const coupon = await resolveCoupon({
     couponCode: params.couponCode,
@@ -275,18 +329,13 @@ export async function matchSePayTransactionToPayment(params: {
       });
       const meta = (payment.metadata ?? {}) as Record<string, unknown>;
       if (meta.bumpProductId && !meta.bumpFulfilled) {
-        await tx.purchase.create({
-          data: {
-            userId: payment.userId,
-            productId: String(meta.bumpProductId),
-            amountVnd: Number(meta.bumpPriceVnd ?? 0),
-            status: "COMPLETED",
-            paymentRef: transactionId,
-          },
-        });
-        await tx.payment.update({
-          where: { id: payment.id },
-          data: { metadata: { ...meta, bumpFulfilled: true } },
+        await fulfillBumpInTx(tx, {
+          userId: payment.userId,
+          paymentId: payment.id,
+          bumpProductId: String(meta.bumpProductId),
+          bumpPriceVnd: Number(meta.bumpPriceVnd ?? 0),
+          transactionId,
+          meta,
         });
       }
     } else if (payment.refType === "challenge") {
@@ -298,18 +347,13 @@ export async function matchSePayTransactionToPayment(params: {
       });
       const meta = (payment.metadata ?? {}) as Record<string, unknown>;
       if (meta.bumpProductId && !meta.bumpFulfilled) {
-        await tx.purchase.create({
-          data: {
-            userId: payment.userId!,
-            productId: String(meta.bumpProductId),
-            amountVnd: Number(meta.bumpPriceVnd ?? 0),
-            status: "COMPLETED",
-            paymentRef: transactionId,
-          },
-        });
-        await tx.payment.update({
-          where: { id: payment.id },
-          data: { metadata: { ...meta, bumpFulfilled: true } },
+        await fulfillBumpInTx(tx, {
+          userId: payment.userId,
+          paymentId: payment.id,
+          bumpProductId: String(meta.bumpProductId),
+          bumpPriceVnd: Number(meta.bumpPriceVnd ?? 0),
+          transactionId,
+          meta,
         });
       }
     } else if (payment.refType === "subscription") {
@@ -353,11 +397,25 @@ export async function matchSePayTransactionToPayment(params: {
     } else if (payment.refType === "cart") {
       type CartBreakdownItem = { productId: string; amountVnd: number };
       const meta = (payment.metadata ?? {}) as { breakdown?: CartBreakdownItem[] };
-      if (Array.isArray(meta.breakdown)) {
+      if (Array.isArray(meta.breakdown) && payment.userId) {
+        // Defense-in-depth: a Payment created from the cart filter may sit pending
+        // while the user buys the same product standalone in another tab. Skip any
+        // non-subscription product the user already owns at fulfillment time.
         for (const item of meta.breakdown) {
+          const prod = await tx.product.findUnique({
+            where: { id: item.productId },
+            select: { isSubscription: true },
+          });
+          const owned = !prod?.isSubscription
+            ? !!(await tx.purchase.findFirst({
+                where: { userId: payment.userId, productId: item.productId, status: "COMPLETED" },
+                select: { id: true },
+              }))
+            : false;
+          if (owned) continue;
           await tx.purchase.create({
             data: {
-              userId: payment.userId!,
+              userId: payment.userId,
               productId: item.productId,
               amountVnd: item.amountVnd,
               status: "COMPLETED",
