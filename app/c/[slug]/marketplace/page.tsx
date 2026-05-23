@@ -176,50 +176,56 @@ export default async function MarketplacePage({
               title={q ? `Không tìm thấy "${q}"` : "Chưa có sản phẩm nào"}
               description={q ? "Thử từ khóa khác." : "Chủ community có thể thêm product đầu tiên."}
             />
-          ) : (
-            <div className="mk-grid">
-              {products.map((p, idx) => (
-                <div key={p.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <ProductCard
-                    product={p}
-                    communitySlug={slug}
-                    idx={idx}
-                    settingsData={isOwner ? {
-                      productId: p.id,
-                      communitySlug: slug,
-                      productSlug: p.slug,
-                      initial: {
-                        title: p.title,
-                        description: p.description ?? null,
-                        priceVnd: Number(p.priceVnd),
-                        priceOldVnd: p.priceOldVnd ? Number(p.priceOldVnd) : null,
-                        isVisible: (p as Record<string, unknown>).isVisible as boolean ?? true,
-                        showInCartBump: (p as Record<string, unknown>).showInCartBump as boolean ?? false,
-                        bumpProductId: (p as Record<string, unknown>).bumpProductId as string | null ?? null,
-                        upsellProductId: (p as Record<string, unknown>).upsellProductId as string | null ?? null,
-                        type: p.type,
-                        pillar: p.pillar ?? null,
-                        thumbnailUrl: (p as Record<string, unknown>).thumbnailUrl as string | null ?? null,
-                        fileUrl: (p as Record<string, unknown>).fileUrl as string | null ?? null,
-                        externalUrl: (p as Record<string, unknown>).externalUrl as string | null ?? null,
-                        licenseKeyTemplate: (p as Record<string, unknown>).licenseKeyTemplate as string | null ?? null,
-                      },
-                      communityProducts: allProducts
-                        .filter((ap) => ap.id !== p.id)
-                        .map((ap) => ({
-                          id: ap.id,
-                          title: ap.title,
-                          isVisible: (ap as Record<string, unknown>).isVisible as boolean ?? true,
-                        })),
-                    } : undefined}
-                  />
-                  {isOwner && (
-                    <FeaturedGlobalToggle kind="product" resourceId={p.id} communitySlug={slug} initial={p.featuredOnGlobal} />
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+          ) : (() => {
+            // Build the bump/upsell picker list ONCE for the whole page.
+            // Each settings modal filters out its own product client-side, so
+            // we don't need to materialise N copies of the same list in the HTML.
+            const communityProductsList = isOwner
+              ? allProducts.map((ap) => ({
+                  id: ap.id,
+                  title: ap.title,
+                  isVisible: (ap as Record<string, unknown>).isVisible as boolean ?? true,
+                }))
+              : [];
+            return (
+              <div className="mk-grid">
+                {products.map((p, idx) => (
+                  <div key={p.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <ProductCard
+                      product={p}
+                      communitySlug={slug}
+                      idx={idx}
+                      settingsData={isOwner ? {
+                        productId: p.id,
+                        communitySlug: slug,
+                        productSlug: p.slug,
+                        initial: {
+                          title: p.title,
+                          description: p.description ?? null,
+                          priceVnd: Number(p.priceVnd),
+                          priceOldVnd: p.priceOldVnd ? Number(p.priceOldVnd) : null,
+                          isVisible: (p as Record<string, unknown>).isVisible as boolean ?? true,
+                          showInCartBump: (p as Record<string, unknown>).showInCartBump as boolean ?? false,
+                          bumpProductId: (p as Record<string, unknown>).bumpProductId as string | null ?? null,
+                          upsellProductId: (p as Record<string, unknown>).upsellProductId as string | null ?? null,
+                          type: p.type,
+                          pillar: p.pillar ?? null,
+                          thumbnailUrl: (p as Record<string, unknown>).thumbnailUrl as string | null ?? null,
+                          fileUrl: (p as Record<string, unknown>).fileUrl as string | null ?? null,
+                          externalUrl: (p as Record<string, unknown>).externalUrl as string | null ?? null,
+                          licenseKeyTemplate: (p as Record<string, unknown>).licenseKeyTemplate as string | null ?? null,
+                        },
+                        communityProducts: communityProductsList,
+                      } : undefined}
+                    />
+                    {isOwner && (
+                      <FeaturedGlobalToggle kind="product" resourceId={p.id} communitySlug={slug} initial={p.featuredOnGlobal} />
+                    )}
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
         </div>
       </div>
     </>
