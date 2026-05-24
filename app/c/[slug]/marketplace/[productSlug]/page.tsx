@@ -20,32 +20,54 @@ export default async function ProductDetailPage({
 }) {
   const { slug: communitySlug, productSlug } = await params;
 
-  const product = await prisma.product.findFirst({
-    where: { community: { slug: communitySlug }, slug: productSlug },
-    include: {
-      community: { select: { id: true, name: true, slug: true, ownerId: true } },
-      challenges: {
-        include: {
-          challenge: {
-            select: { slug: true, title: true, difficulty: true },
+  // Parallel: session + product fetch are independent
+  const [session, product] = await Promise.all([
+    auth(),
+    prisma.product.findFirst({
+      where: { community: { slug: communitySlug }, slug: productSlug },
+      include: {
+        community: { select: { id: true, name: true, slug: true, ownerId: true } },
+        challenges: {
+          include: {
+            challenge: {
+              select: { slug: true, title: true, difficulty: true },
+            },
           },
         },
       },
-    },
-  });
+    }),
+  ]);
   if (!product) notFound();
 
-  const session = await auth();
   const realIsOwner = session?.user?.id === product.community.ownerId;
   const { effectiveIsOwner: isOwner } = await getEffectiveOwnership(realIsOwner);
 
+  // Parallel: combined membership (role + presence) + purchase status.
+  // Membership row carries both role (for permission gate) AND id (presence flag) —
+  // was 2 separate queries on the same row before.
+  const [membership, purchase] = await Promise.all([
+    session?.user?.id
+      ? prisma.membership.findUnique({
+          where: { userId_communityId: { userId: session.user.id, communityId: product.communityId } },
+          select: { id: true, role: true },
+        })
+      : Promise.resolve(null),
+    session?.user?.id
+      ? prisma.purchase.findFirst({
+          where: {
+            userId: session.user.id,
+            productId: product.id,
+            status: "COMPLETED",
+          },
+          select: { id: true, licenseKey: true },
+        })
+      : Promise.resolve(null),
+  ]);
+  const isMember = !!membership;
+  const hasPurchased = !!purchase;
+  const licenseKey = purchase?.licenseKey ?? null;
+
   // ADMIN role members can manage marketplace too (same as OWNER)
-  const membership = session?.user?.id
-    ? await prisma.membership.findUnique({
-        where: { userId_communityId: { userId: session.user.id, communityId: product.communityId } },
-        select: { role: true },
-      })
-    : null;
   const role = effectiveCommunityRole({ isOwner: realIsOwner, membershipRole: membership?.role });
   const canManageMarketplace = canCommunity(role, "manage_marketplace");
 
@@ -55,34 +77,6 @@ export default async function ProductDetailPage({
         select: { id: true, title: true, isVisible: true },
       })
     : [];
-
-  let isMember = false;
-  let hasPurchased = false;
-  let licenseKey: string | null = null;
-  if (session?.user?.id) {
-    const [m, p] = await Promise.all([
-      prisma.membership.findUnique({
-        where: {
-          userId_communityId: {
-            userId: session.user.id,
-            communityId: product.communityId,
-          },
-        },
-        select: { id: true },
-      }),
-      prisma.purchase.findFirst({
-        where: {
-          userId: session.user.id,
-          productId: product.id,
-          status: "COMPLETED",
-        },
-        select: { id: true, licenseKey: true },
-      }),
-    ]);
-    isMember = !!m;
-    hasPurchased = !!p;
-    licenseKey = p?.licenseKey ?? null;
-  }
   // Free products available to any member
   const canDownload =
     !!product.fileUrl && (hasPurchased || (product.isFree && isMember));

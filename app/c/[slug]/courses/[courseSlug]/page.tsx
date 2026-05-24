@@ -54,31 +54,39 @@ export default async function CourseDetailPage({
 
   if (!course.isPublished && !permissions.canManageCourses) notFound();
 
-  // Tier gate for non-BASIC courses (always bypass for real owner)
-  let courseGateBlock: { message: string; requiredTier: string } | null = null;
-  if (
-    session?.user?.id &&
-    !realIsOwner &&
-    course.level !== "BASIC"
-  ) {
-    const communityFull = await prisma.community.findUnique({
-      where: { id: course.community.id },
-      select: { tiersConfig: true },
-    });
-    const tiersConfig = getTiersConfig(communityFull?.tiersConfig);
-    const gateResult = await checkGate({
-      userId: session.user.id,
-      communityId: course.community.id,
-      tiersConfig,
-      check: { type: "course_level", level: course.level },
-    });
-    if (!gateResult.allowed) {
-      courseGateBlock = {
-        message: gateResult.message,
-        requiredTier: gateResult.requiredTier,
-      };
-    }
-  }
+  // Parallel: tier-gate check + lesson completion lookup.
+  // Note: when gated, completedSet is wasted, but the gate query is rare and
+  // the speedup on the common path is worth the speculative fetch.
+  const [courseGateBlock, completedSet] = await Promise.all([
+    // Tier gate for non-BASIC courses (always bypass for real owner)
+    (async (): Promise<{ message: string; requiredTier: string } | null> => {
+      if (!session?.user?.id || realIsOwner || course.level === "BASIC") return null;
+      const communityFull = await prisma.community.findUnique({
+        where: { id: course.community.id },
+        select: { tiersConfig: true },
+      });
+      const tiersConfig = getTiersConfig(communityFull?.tiersConfig);
+      const gateResult = await checkGate({
+        userId: session.user.id,
+        communityId: course.community.id,
+        tiersConfig,
+        check: { type: "course_level", level: course.level },
+      });
+      if (gateResult.allowed) return null;
+      return { message: gateResult.message, requiredTier: gateResult.requiredTier };
+    })(),
+    // Completion lookup for ALL lessons (needed for sequential locking)
+    session?.user?.id && course.lessons.length > 0
+      ? prisma.courseProgress.findMany({
+          where: {
+            userId: session.user.id,
+            lessonId: { in: course.lessons.map((l) => l.id) },
+            completed: true,
+          },
+          select: { lessonId: true },
+        }).then((rows) => new Set(rows.map((r) => r.lessonId)))
+      : Promise.resolve(new Set<string>()),
+  ]);
 
   // If gated, show upgrade prompt instead of content
   if (courseGateBlock) {
@@ -105,20 +113,6 @@ export default async function CourseDetailPage({
   const totalText = totalDuration
     ? `${Math.floor(totalDuration / 60)} phút`
     : null;
-
-  // Query completion for ALL lessons (needed for sequential locking)
-  const completedSet = new Set<string>();
-  if (session?.user?.id && course.lessons.length > 0) {
-    const rows = await prisma.courseProgress.findMany({
-      where: {
-        userId: session.user.id,
-        lessonId: { in: course.lessons.map((l) => l.id) },
-        completed: true,
-      },
-      select: { lessonId: true },
-    });
-    for (const r of rows) completedSet.add(r.lessonId);
-  }
 
   const activeLessonCompleted = activeLesson ? completedSet.has(activeLesson.id) : false;
 

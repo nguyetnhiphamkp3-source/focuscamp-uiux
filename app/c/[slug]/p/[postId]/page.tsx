@@ -64,22 +64,35 @@ export default async function PostDetailPage({
 }) {
   const { slug, postId } = await params;
 
-  const community = await prisma.community.findUnique({
-    where: { slug },
-    select: {
-      id: true,
-      name: true,
-      ownerId: true,
-      pillarsConfig: true,
-      gemsConfig: true,
-    },
-  });
+  // Parallel: community lookup + session are independent
+  const [community, session] = await Promise.all([
+    prisma.community.findUnique({
+      where: { slug },
+      select: {
+        id: true,
+        name: true,
+        ownerId: true,
+        pillarsConfig: true,
+        gemsConfig: true,
+      },
+    }),
+    auth(),
+  ]);
   if (!community) notFound();
-
-  const session = await auth();
   const userId = session?.user?.id;
 
-  const data = await getPostWithComments(postId, userId);
+  // Parallel: post+comments fetch and membership lookup are independent given userId
+  const [data, membership] = await Promise.all([
+    getPostWithComments(postId, userId),
+    userId
+      ? prisma.membership.findUnique({
+          where: {
+            userId_communityId: { userId, communityId: community.id },
+          },
+          select: { role: true },
+        })
+      : Promise.resolve(null),
+  ]);
   if (!data || data.post.community.id !== community.id) notFound();
 
   const { post, comments } = data;
@@ -90,14 +103,6 @@ export default async function PostDetailPage({
   const realIsOwner = userId === community.ownerId;
   const { effectiveIsOwner: isOwner } = await getEffectiveOwnership(realIsOwner);
   const isAuthor = userId === post.user.id;
-  const membership = userId
-    ? await prisma.membership.findUnique({
-        where: {
-          userId_communityId: { userId, communityId: community.id },
-        },
-        select: { role: true },
-      })
-    : null;
   const isMember = !!membership;
   const role = effectiveCommunityRole({ isOwner, membershipRole: membership?.role });
   const permissions = communityPermissionFlags(role);

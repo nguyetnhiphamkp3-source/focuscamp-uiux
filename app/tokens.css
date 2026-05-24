@@ -219,17 +219,6 @@ h6 { font-size: var(--text-sm); font-weight: var(--fw-bold); line-height: var(--
 .ui-empty-icon { font-size: 40px; margin-bottom: var(--space-2); }
 .ui-empty-title { color: var(--text-heading); font-weight: var(--fw-bold); margin-bottom: var(--space-1); }
 
-/* Loading skeleton */
-@keyframes ui-skeleton-pulse {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 0.8; }
-}
-.ui-skeleton {
-  background: var(--bg-elevated);
-  border-radius: var(--r-md);
-  animation: ui-skeleton-pulse 1.5s ease-in-out infinite;
-}
-
 /* Touch-target safety for all interactive items ≥ 40px */
 @media (hover: none) and (pointer: coarse) {
   .feature-item,
