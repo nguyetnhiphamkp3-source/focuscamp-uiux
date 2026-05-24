@@ -531,6 +531,8 @@ export async function createChallenge(input: {
   return ch;
 }
 
+export type ChallengeEditorType = "USER" | "INTERNAL_AGENT" | "EXTERNAL_API";
+
 export async function updateChallengeSettings(input: {
   userId: string;
   challengeId: string;
@@ -551,9 +553,23 @@ export async function updateChallengeSettings(input: {
   unlockIntervalHours?: number;
   freezeWindows?: Array<{ label?: string; startsAt: string; endsAt: string }> | null;
   pitch?: string | null;
+  benefits?: Array<{ icon?: string; text: string }> | null;
   bumpProductId?: string | null;
+  /** Audit: who performed this edit. Defaults to USER. Pass INTERNAL_AGENT / EXTERNAL_API from agent paths. */
+  actorType?: ChallengeEditorType;
+  /** Audit: actor id (user id, or api key id for external). Defaults to input.userId. */
+  actorId?: string;
 }) {
   const ch = await assertChallengeAdmin(input.userId, input.challengeId);
+  const actorType: ChallengeEditorType = input.actorType ?? "USER";
+  const actorId = input.actorId ?? input.userId;
+  // Empty benefits array = "reset to defaults" — store null so render falls back.
+  const benefitsValue =
+    input.benefits === undefined
+      ? undefined
+      : input.benefits === null || input.benefits.length === 0
+        ? Prisma.DbNull
+        : (input.benefits as unknown as Prisma.InputJsonValue);
   const updated = await prisma.challenge.update({
     where: { id: input.challengeId },
     data: {
@@ -582,7 +598,11 @@ export async function updateChallengeSettings(input: {
         ? { freezeWindows: input.freezeWindows === null ? Prisma.DbNull : (input.freezeWindows as Prisma.InputJsonValue) }
         : {}),
       ...(input.pitch !== undefined ? { pitch: input.pitch } : {}),
+      ...(benefitsValue !== undefined ? { benefits: benefitsValue } : {}),
       ...(input.bumpProductId !== undefined ? { bumpProductId: input.bumpProductId } : {}),
+      lastEditedBy: actorId,
+      lastEditedByType: actorType,
+      lastEditedAt: new Date(),
     },
   });
   await deleteReplacedMediaUrl(ch.bannerUrl, updated.bannerUrl, {

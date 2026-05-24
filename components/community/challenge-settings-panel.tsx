@@ -36,6 +36,10 @@ const MODE_LABELS: Record<string, string> = {
 };
 
 type FreezeWindow = { label: string; startsAt: string; endsAt: string };
+type BenefitItem = { icon: string; text: string };
+const BENEFIT_MAX_ITEMS = 6;
+const BENEFIT_TEXT_MAX = 150;
+const BENEFIT_ICON_MAX = 8;
 
 export function ChallengeSettingsPanel({
   challengeId,
@@ -51,6 +55,7 @@ export function ChallengeSettingsPanel({
     title: string;
     description: string | null;
     pitch?: string | null;
+    benefits?: Array<{ icon?: string; text: string }> | null;
     difficulty: string;
     autoStartAfterHours: number | null;
     freezeWindows?: Array<{ label?: string; startsAt: string; endsAt: string }> | null;
@@ -79,6 +84,11 @@ export function ChallengeSettingsPanel({
   const [title, setTitle] = useState(initial.title);
   const [description, setDescription] = useState(initial.description ?? "");
   const [pitch, setPitch] = useState(initial.pitch ?? "");
+  const [benefits, setBenefits] = useState<BenefitItem[]>(
+    initial.benefits
+      ? initial.benefits.map((b) => ({ icon: b.icon ?? "", text: b.text }))
+      : []
+  );
   const [difficulty, setDifficulty] = useState<"NORMAL" | "HARD" | "CHAOS">(
     (initial.difficulty as "NORMAL" | "HARD" | "CHAOS") || "NORMAL"
   );
@@ -131,6 +141,11 @@ export function ChallengeSettingsPanel({
     setTitle(initial.title);
     setDescription(initial.description ?? "");
     setPitch(initial.pitch ?? "");
+    setBenefits(
+      initial.benefits
+        ? initial.benefits.map((b) => ({ icon: b.icon ?? "", text: b.text }))
+        : []
+    );
     setDifficulty((initial.difficulty as "NORMAL" | "HARD" | "CHAOS") || "NORMAL");
     setAutoStartMode(initial.autoStartAfterHours == null ? "manual" : "auto");
     setAutoStartHours(String(initial.autoStartAfterHours ?? 24));
@@ -197,11 +212,16 @@ export function ChallengeSettingsPanel({
       autoStartMode === "auto" && Number.isFinite(parsedHours) && parsedHours >= 1
         ? Math.min(parsedHours, 8760)
         : null;
+    // Trim + drop empty rows; empty array → null (renders fallback defaults)
+    const cleanedBenefits = benefits
+      .map((b) => ({ icon: b.icon.trim(), text: b.text.trim() }))
+      .filter((b) => b.text.length > 0);
     const res = await updateChallengeSettingsAction({
       challengeId,
       title: title.trim(),
       description: description.trim(),
       pitch: pitch || null,
+      benefits: cleanedBenefits.length > 0 ? cleanedBenefits : null,
       difficulty,
       autoStartAfterHours,
       taskUnlockMode: taskUnlockMode as "ALL" | "DAILY" | "SEQUENTIAL" | "MANUAL",
@@ -220,6 +240,8 @@ export function ChallengeSettingsPanel({
     if (res.ok) {
       setSaved(true);
       router.refresh();
+      // Close so next open re-derives state from fresh server props (prevents drift after Reset/edit).
+      setOpen(false);
     } else {
       setErr(res.reason);
     }
@@ -351,6 +373,129 @@ export function ChallengeSettingsPanel({
             <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 3 }}>
               Hiển thị cho người chưa tham gia. Hỗ trợ markdown: <code>### tiêu đề</code>, <code>**đậm**</code>, <code>*nghiêng*</code>, <code>- danh sách</code>, <code>[link](url)</code>.
             </div>
+          </div>
+
+          {/* Benefits — overrides default "Bạn sẽ có được gì?" bullets on sales view */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <label style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+                🎯 Bạn sẽ có được gì? <span style={{ color: "var(--text-faint)" }}>(tuỳ chỉnh bullets cho sales view)</span>
+              </label>
+              <div style={{ display: "flex", gap: 6 }}>
+                {benefits.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setBenefits([])}
+                    disabled={pending}
+                    style={{
+                      fontSize: "var(--text-xs)",
+                      padding: "3px 10px",
+                      borderRadius: 5,
+                      border: "1px solid var(--border-subtle)",
+                      background: "transparent",
+                      cursor: "pointer",
+                      color: "var(--text-muted)",
+                    }}
+                  >
+                    Reset về mặc định
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setBenefits((prev) => [...prev, { icon: "", text: "" }])}
+                  disabled={pending || benefits.length >= BENEFIT_MAX_ITEMS}
+                  style={{
+                    fontSize: "var(--text-xs)",
+                    padding: "3px 10px",
+                    borderRadius: 5,
+                    border: "1px solid var(--border-subtle)",
+                    background: "var(--bg-elevated)",
+                    cursor: benefits.length >= BENEFIT_MAX_ITEMS ? "not-allowed" : "pointer",
+                    color: "var(--text-normal)",
+                    opacity: benefits.length >= BENEFIT_MAX_ITEMS ? 0.5 : 1,
+                  }}
+                >
+                  + Thêm
+                </button>
+              </div>
+            </div>
+            {benefits.length === 0 ? (
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", padding: "8px 0", lineHeight: 1.5 }}>
+                Đang dùng bullets mặc định (số tasks, cộng đồng, leaderboard, v.v.). Nhấn <strong>+ Thêm</strong> để viết bullets riêng — tối đa {BENEFIT_MAX_ITEMS} dòng.
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {benefits.map((b, i) => (
+                  <div key={i} style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    <input
+                      type="text"
+                      value={b.icon}
+                      onChange={(e) => {
+                        const next = [...benefits];
+                        next[i] = { ...next[i], icon: e.target.value };
+                        setBenefits(next);
+                      }}
+                      maxLength={BENEFIT_ICON_MAX}
+                      disabled={pending}
+                      placeholder="🎯"
+                      style={{ ...inputStyle, width: 56, textAlign: "center", padding: "8px 4px" }}
+                    />
+                    <input
+                      type="text"
+                      value={b.text}
+                      onChange={(e) => {
+                        const next = [...benefits];
+                        next[i] = { ...next[i], text: e.target.value };
+                        setBenefits(next);
+                      }}
+                      maxLength={BENEFIT_TEXT_MAX}
+                      disabled={pending}
+                      placeholder="Vd: 7 video AI Automation thực chiến (3 triệu)"
+                      style={{ ...inputStyle, flex: 1 }}
+                    />
+                    <div style={{ display: "flex", gap: 2 }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (i === 0) return;
+                          const next = [...benefits];
+                          [next[i - 1], next[i]] = [next[i], next[i - 1]];
+                          setBenefits(next);
+                        }}
+                        disabled={pending || i === 0}
+                        title="Lên"
+                        style={iconBtnStyle(i === 0 || pending)}
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (i === benefits.length - 1) return;
+                          const next = [...benefits];
+                          [next[i], next[i + 1]] = [next[i + 1], next[i]];
+                          setBenefits(next);
+                        }}
+                        disabled={pending || i === benefits.length - 1}
+                        title="Xuống"
+                        style={iconBtnStyle(i === benefits.length - 1 || pending)}
+                      >
+                        ↓
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBenefits((prev) => prev.filter((_, j) => j !== i))}
+                        disabled={pending}
+                        title="Xoá dòng"
+                        style={{ ...iconBtnStyle(pending), color: "var(--danger)" }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {communityProducts.length > 0 && (
@@ -918,6 +1063,23 @@ const inputStyle: React.CSSProperties = {
   fontSize: "var(--text-sm)",
   outline: "none",
 };
+
+function iconBtnStyle(disabled: boolean): React.CSSProperties {
+  return {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    border: "1px solid var(--border-subtle)",
+    background: "var(--bg-elevated)",
+    color: "var(--text-normal)",
+    cursor: disabled ? "not-allowed" : "pointer",
+    fontSize: "var(--text-sm)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    opacity: disabled ? 0.4 : 1,
+  };
+}
 
 /** Date → `YYYY-MM-DDTHH:MM` for <input type="datetime-local">. */
 function toLocalInput(d: Date): string {

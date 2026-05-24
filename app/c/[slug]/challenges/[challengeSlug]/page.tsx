@@ -28,6 +28,7 @@ import { getEffectiveOwnership } from "@/lib/preview-mode";
 import { communityPermissionFlags, effectiveCommunityRole } from "@/lib/community-permissions";
 import { toEmbedUrl } from "@/lib/brand";
 import { parseChallengeVideoUrl } from "@/lib/challenge-video";
+import { parseChallengeBenefits } from "@/lib/challenge-benefits";
 
 export const dynamic = "force-dynamic";
 
@@ -402,6 +403,7 @@ export default async function ChallengeDetailPage({
                 title: challenge.title,
                 description: challenge.description,
                 pitch: challenge.pitch ?? null,
+                benefits: parseChallengeBenefits(challenge.benefits),
                 difficulty: challenge.difficulty,
                 autoStartAfterHours: challenge.autoStartAfterHours,
                 freezeWindows: (challenge.freezeWindows as Array<{ label?: string; startsAt: string; endsAt: string }> | null) ?? null,
@@ -491,6 +493,7 @@ export default async function ChallengeDetailPage({
               challenge={{
                 ...challenge,
                 pitch: challenge.pitch ?? null,
+                benefits: parseChallengeBenefits(challenge.benefits),
                 tasks: challenge.tasks as { id: string; dayNumber: number; title: string }[],
                 products: challenge.products.map((l) => ({
                   id: l.product.id,
@@ -617,6 +620,7 @@ export default async function ChallengeDetailPage({
               challenge={{
                 ...challenge,
                 pitch: challenge.pitch ?? null,
+                benefits: parseChallengeBenefits(challenge.benefits),
                 tasks: challenge.tasks as { id: string; dayNumber: number; title: string }[],
                 products: challenge.products.map((l) => ({
                   id: l.product.id,

@@ -64,6 +64,18 @@ const PricingConfigSchema = z.object({
   aipEnabled: z.boolean().optional(),
 }).nullable().optional();
 
+/**
+ * "Bạn sẽ có được gì?" bullets — structured override of the derived defaults
+ * shown on the challenge sales view. Null/missing = fallback to defaults.
+ * Empty array also treated as fallback at render time (admin "Reset").
+ */
+export const ChallengeBenefitsSchema = z.array(
+  z.object({
+    icon: z.string().trim().max(8).optional().or(z.literal("")),
+    text: z.string().trim().min(1, "Nội dung không được trống").max(150, "Mỗi dòng tối đa 150 ký tự"),
+  })
+).max(6, "Tối đa 6 dòng").nullable();
+
 export const UpdateChallengeSettingsSchema = z.object({
   challengeId: z.string().cuid(),
   // Deprecated — kept optional so old clients don't break. New code ignores it.
@@ -96,6 +108,7 @@ export const UpdateChallengeSettingsSchema = z.object({
     .optional()
     .nullable(),
   pitch: z.string().trim().max(20000).optional().nullable(),
+  benefits: ChallengeBenefitsSchema.optional(),
   bumpProductId: z.string().cuid().optional().nullable(),
 }).superRefine((data, ctx) => {
   if (!data.bannerVideoUrl) return;

@@ -7,6 +7,8 @@ type SalesProps = {
     title: string;
     description: string | null;
     pitch: string | null;
+    /** Admin-customised "Bạn sẽ có được gì?" bullets. Null/empty → derived defaults. */
+    benefits?: Array<{ icon?: string; text: string }> | null;
     requiredDays: number;
     difficulty: string;
     bannerUrl: string | null;
@@ -73,31 +75,43 @@ export function ChallengeSalesIntro({ challenge, effectivePrice, joinButton }: S
       ) : null}
 
       {/* ── What you'll get ── */}
-      <div style={{ background: "var(--bg-card)", border: `1px solid ${accent}33`, borderRadius: 14, padding: "20px 24px" }}>
-        <h3 style={{ fontSize: "var(--text-md)", fontWeight: 800, color: "var(--header-primary)", marginBottom: 14 }}>
-          🎯 Bạn sẽ có được gì?
-        </h3>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {[
-            `${challenge.tasks.length} nhiệm vụ có cấu trúc rõ ràng — mỗi ngày 1 bước nhỏ, cộng lại = kết quả lớn`,
-            "Cộng đồng check-in hàng ngày — không bị bỏ rơi, không mất momentum",
-            "Bảng xếp hạng & streak — gamification giúp bạn duy trì đến ngày cuối",
-            challenge.autoStartAfterHours != null
-              ? `Bắt đầu khi sẵn sàng — có ${challenge.autoStartAfterHours}h chuẩn bị trước khi đồng hồ tự chạy`
-              : `Tự chủ tiến độ — bắt đầu ngay khi sẵn sàng, không cần chờ người khác`,
-            challenge.products.length > 0
-              ? `${challenge.products.length} tài nguyên hỗ trợ từ Marketplace kèm theo`
-              : null,
-          ].filter(Boolean).map((item, i) => (
-            <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-              <span style={{ flexShrink: 0, marginTop: 2, width: 18, height: 18, background: `${accent}22`, border: `1px solid ${accent}55`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <span style={{ color: accent, fontSize: 10, fontWeight: 900 }}>✓</span>
-              </span>
-              <span style={{ fontSize: "var(--text-sm)", color: "var(--text-normal)", lineHeight: 1.6 }}>{item}</span>
+      {(() => {
+        // Admin override (non-empty array) wins; otherwise derive defaults from data.
+        type BenefitRow = { icon?: string | null; text: string };
+        const customBenefits = challenge.benefits && challenge.benefits.length > 0 ? challenge.benefits : null;
+        const items: BenefitRow[] = customBenefits
+          ? customBenefits.map((b) => ({ icon: b.icon ?? null, text: b.text }))
+          : ([
+              { text: `${challenge.tasks.length} nhiệm vụ có cấu trúc rõ ràng — mỗi ngày 1 bước nhỏ, cộng lại = kết quả lớn` },
+              { text: "Cộng đồng check-in hàng ngày — không bị bỏ rơi, không mất momentum" },
+              { text: "Bảng xếp hạng & streak — gamification giúp bạn duy trì đến ngày cuối" },
+              {
+                text: challenge.autoStartAfterHours != null
+                  ? `Bắt đầu khi sẵn sàng — có ${challenge.autoStartAfterHours}h chuẩn bị trước khi đồng hồ tự chạy`
+                  : `Tự chủ tiến độ — bắt đầu ngay khi sẵn sàng, không cần chờ người khác`,
+              },
+              challenge.products.length > 0
+                ? { text: `${challenge.products.length} tài nguyên hỗ trợ từ Marketplace kèm theo` }
+                : null,
+            ].filter((x): x is BenefitRow => x !== null));
+        return (
+          <div style={{ background: "var(--bg-card)", border: `1px solid ${accent}33`, borderRadius: 14, padding: "20px 24px" }}>
+            <h3 style={{ fontSize: "var(--text-md)", fontWeight: 800, color: "var(--header-primary)", marginBottom: 14 }}>
+              🎯 Bạn sẽ có được gì?
+            </h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {items.map((item, i) => (
+                <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                  <span style={{ flexShrink: 0, marginTop: 2, width: 18, height: 18, background: `${accent}22`, border: `1px solid ${accent}55`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ color: accent, fontSize: 10, fontWeight: 900 }}>{item.icon || "✓"}</span>
+                  </span>
+                  <span style={{ fontSize: "var(--text-sm)", color: "var(--text-normal)", lineHeight: 1.6 }}>{item.text}</span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
+        );
+      })()}
 
       {/* ── Task preview (first 3, locked) ── */}
       {challenge.tasks.length > 0 && (

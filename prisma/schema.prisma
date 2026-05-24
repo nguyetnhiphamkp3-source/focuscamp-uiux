@@ -346,6 +346,14 @@ model Challenge {
   freezeWindows  Json?
   /** Long-form sales pitch shown on challenge page to non-members. Markdown supported. */
   pitch          String?   @db.Text
+  /** Structured "Bạn sẽ có được gì?" bullets shown on sales view. Null/empty = fallback to derived defaults. Shape: Array<{ icon?: string, text: string }> — max 6 items. */
+  benefits       Json?
+  /** Last editor user/key id (audit for both admin edits and future agent/API edits). */
+  lastEditedBy     String?
+  /** Last editor type: USER | INTERNAL_AGENT | EXTERNAL_API. */
+  lastEditedByType String?
+  /** Last edit timestamp. */
+  lastEditedAt     DateTime?
   bumpProductId  String?
   createdAt      DateTime  @default(now())
 

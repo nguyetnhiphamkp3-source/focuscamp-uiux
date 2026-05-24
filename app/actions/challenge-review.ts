@@ -206,6 +206,7 @@ export async function updateChallengeSettingsAction(input: {
   unlockIntervalHours?: number;
   freezeWindows?: Array<{ label?: string; startsAt: string; endsAt: string }> | null;
   pitch?: string | null;
+  benefits?: Array<{ icon?: string; text: string }> | null;
   bumpProductId?: string | null;
   communitySlug: string;
   challengeSlug: string;
@@ -231,6 +232,7 @@ export async function updateChallengeSettingsAction(input: {
     unlockIntervalHours: input.unlockIntervalHours,
     freezeWindows: input.freezeWindows,
     pitch: input.pitch,
+    benefits: input.benefits,
     bumpProductId: input.bumpProductId,
   });
   if (!parsed.success) {
@@ -299,6 +301,14 @@ export async function updateChallengeSettingsAction(input: {
       unlockIntervalHours: parsed.data.unlockIntervalHours,
       freezeWindows: parsed.data.freezeWindows === null ? null : (parsed.data.freezeWindows ?? undefined),
       pitch: parsed.data.pitch ?? undefined,
+      benefits: parsed.data.benefits === undefined
+        ? undefined
+        : parsed.data.benefits === null
+          ? null
+          : parsed.data.benefits.map((b) => ({
+              ...(b.icon ? { icon: b.icon } : {}),
+              text: b.text,
+            })),
       bumpProductId: parsed.data.bumpProductId !== undefined ? (parsed.data.bumpProductId ?? null) : undefined,
     });
     bumpChallenge(input.communitySlug, input.challengeSlug);

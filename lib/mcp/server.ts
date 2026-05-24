@@ -458,6 +458,8 @@ export function buildMcpServer(ctx: McpContext): McpServer {
             freezeFromDay: args.freezeFromDay ?? undefined,
             freezeStartsAt: args.freezeStartsAt ?? null,
             freezeEndsAt: args.freezeEndsAt ?? null,
+            actorType: "EXTERNAL_API",
+            actorId: ctx.apiKeyId,
           });
           return ok({ updated: true, id: args.challengeId });
         },
