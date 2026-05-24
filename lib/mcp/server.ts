@@ -430,11 +430,24 @@ export function buildMcpServer(ctx: McpContext): McpServer {
 
   server.tool(
     "challenges_update",
-    "Update challenge settings (title/description/auto-start/freeze/banner).",
+    "Update challenge settings (title/description/auto-start/freeze/banner/benefits). " +
+      "`benefits` overrides the default \"Bạn sẽ có được gì?\" bullets on the sales view: " +
+      "pass an array (max 6 items, each { icon?: emoji ≤ 8 chars, text: string ≤ 150 chars }) " +
+      "to set custom bullets; pass null or omit to keep the derived defaults.",
     {
       challengeId: z.string().cuid(),
       title: z.string().min(1).max(120).optional(),
       description: z.string().max(5000).optional(),
+      benefits: z
+        .array(
+          z.object({
+            icon: z.string().max(8).optional(),
+            text: z.string().min(1).max(150),
+          })
+        )
+        .max(6)
+        .nullable()
+        .optional(),
       autoStartAfterHours: z.number().int().min(1).max(8760).nullable().optional(),
       bannerUrl: z.string().url().nullable().optional(),
       freezeFromDay: z.number().int().positive().nullable().optional(),
@@ -458,6 +471,7 @@ export function buildMcpServer(ctx: McpContext): McpServer {
             freezeFromDay: args.freezeFromDay ?? undefined,
             freezeStartsAt: args.freezeStartsAt ?? null,
             freezeEndsAt: args.freezeEndsAt ?? null,
+            benefits: "benefits" in args ? args.benefits ?? null : undefined,
             actorType: "EXTERNAL_API",
             actorId: ctx.apiKeyId,
           });
