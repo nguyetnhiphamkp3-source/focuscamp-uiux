@@ -1058,11 +1058,18 @@ body[data-theme="luxury"] .settings-panel-title {
   font-size: var(--text-md);
   font-weight: 700;
   color: var(--header-primary);
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .view-header .view-subtitle {
   font-size: var(--text-sm);
   color: var(--text-muted);
   margin-left: 6px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 /* ==========================================

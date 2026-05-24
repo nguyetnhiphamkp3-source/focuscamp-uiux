@@ -366,8 +366,7 @@ export default async function ChallengeDetailPage({
   return (
     <>
       <header className="view-header">
-        <span className="view-title">{challenge.title}</span>
-        <span className="view-subtitle">{diffLabel(challenge.difficulty)} · {challenge.requiredDays} ngày</span>
+        <span className="view-title" title={challenge.title}>{challenge.title}</span>
         {permissions.canManageChallenges && <ChallengeEditButton />}
       </header>
 
