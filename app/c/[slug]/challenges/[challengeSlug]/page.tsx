@@ -9,7 +9,6 @@ import type { SubmissionRow } from "@/components/community/submission-review-pan
 import { effectivePersonalStartsAt } from "@/lib/services/challenge-progress";
 import { ChallengeSettingsPanel } from "@/components/community/challenge-settings-panel";
 import { ChallengeEditButton } from "@/components/community/challenge-edit-button";
-import { CheckinVoteButton } from "@/components/community/checkin-vote-button";
 import { ResubmitForm } from "@/components/community/resubmit-form";
 import { TaskEditorButton } from "@/components/community/task-editor";
 import { CreateTaskButton } from "@/components/community/create-task-button";
@@ -100,29 +99,7 @@ export default async function ChallengeDetailPage({
       ? parseChallengeVideoUrl(challenge.bannerVideoUrl)
       : null;
 
-  // Tier gate check — non-owners must have sufficient tier for this difficulty
-  let tierGateBlock: { message: string; requiredTier: string } | null = null;
-  if (session?.user?.id && !realIsOwner && challenge.difficulty !== "NORMAL") {
-    const communityFull = await prisma.community.findUnique({
-      where: { id: challenge.community.id },
-      select: { tiersConfig: true },
-    });
-    const tiersConfig = getTiersConfig(communityFull?.tiersConfig);
-    const gateResult = await checkGate({
-      userId: session.user.id,
-      communityId: challenge.community.id,
-      tiersConfig,
-      check: { type: "challenge_difficulty", difficulty: challenge.difficulty },
-    });
-    if (!gateResult.allowed) {
-      tierGateBlock = {
-        message: gateResult.message,
-        requiredTier: gateResult.requiredTier,
-      };
-    }
-  }
-
-  // Phase C — operator review panel data
+  // reviewTab needed by parallel batch below
   type ReviewTab = "ALL" | "PENDING" | "APPROVED" | "REJECTED";
   const reviewTab = ((): ReviewTab => {
     const t = (sp.review || "").toUpperCase();
@@ -130,73 +107,116 @@ export default async function ChallengeDetailPage({
       return t as ReviewTab;
     return "PENDING"; // default shows what needs attention
   })();
-  let submissionData: {
-    rows: SubmissionRow[];
-    total: number;
-    pendingCount: number;
-  } | null = null;
-  const communityProducts = permissions.canManageChallenges
-    ? await prisma.product.findMany({
-        where: { communityId: challenge.community.id },
-        select: { id: true, title: true },
-        orderBy: { createdAt: "desc" },
-      })
-    : [];
-  if (permissions.canReviewSubmissions) {
-    const res = await listChallengeSubmissions({
-      challengeId: challenge.id,
-      status: reviewTab,
-      limit: 50,
-    });
-    submissionData = {
-      rows: res.rows.map((r) => ({
-        id: r.id,
-        content: r.content,
-        linkUrl: r.linkUrl,
-        imageUrl: r.imageUrl,
-        status: r.status,
-        reviewNote: r.reviewNote,
-        reviewedAt: r.reviewedAt,
-        createdAt: r.createdAt,
-        dayNumber: r.dayNumber,
-        user: r.user,
-        task: r.task
-          ? { dayNumber: r.task.dayNumber, title: r.task.title, label: r.task.label }
-          : null,
-        reviewedBy: r.reviewedBy,
-      })),
-      total: res.total,
-      pendingCount: res.pendingCount,
-    };
-  }
 
-  // Recent social check-ins (temporarily hidden in UI; kept intact for re-enable)
-  const recentCheckins = await prisma.checkin.findMany({
-    where: { challengeId: challenge.id },
-    orderBy: { createdAt: "desc" },
-    take: 20,
-    include: {
-      user: { select: { name: true, email: true, image: true } },
-      task: { select: { evidenceType: true } },
-      _count: { select: { votes: true } },
-      ...(session?.user?.id
-        ? {
-            votes: {
-              where: { userId: session.user.id },
-              select: { id: true },
-            },
-          }
-        : {}),
-    },
-  });
+  // Parallel batch — all queries below are independent of each other.
+  // Was sequential (10+ awaits in a row), now ~1 round-trip max.
+  const [
+    tierGateBlock,
+    communityProducts,
+    submissionData,
+    myCheckins,
+    leaderboard,
+    myMembership,
+    activeChallenge,
+    communityMembership,
+  ] = await Promise.all([
+    // Tier gate — non-owners must have sufficient tier for this difficulty
+    (async (): Promise<{ message: string; requiredTier: string } | null> => {
+      if (!session?.user?.id || realIsOwner || challenge.difficulty === "NORMAL") return null;
+      const communityFull = await prisma.community.findUnique({
+        where: { id: challenge.community.id },
+        select: { tiersConfig: true },
+      });
+      const tiersConfig = getTiersConfig(communityFull?.tiersConfig);
+      const gateResult = await checkGate({
+        userId: session.user.id,
+        communityId: challenge.community.id,
+        tiersConfig,
+        check: { type: "challenge_difficulty", difficulty: challenge.difficulty },
+      });
+      if (gateResult.allowed) return null;
+      return { message: gateResult.message, requiredTier: gateResult.requiredTier };
+    })(),
 
-  // My check-ins for this challenge (to mark tasks done)
-  const myCheckins = session?.user?.id
-    ? await prisma.checkin.findMany({
-        where: { challengeId: challenge.id, userId: session.user.id },
-        select: { id: true, taskId: true, dayNumber: true, createdAt: true, updatedAt: true, content: true, linkUrl: true, imageUrl: true, status: true, reviewedAt: true, reviewNote: true, rejectCount: true },
-      })
-    : [];
+    // Admin-only: products list for settings panel
+    permissions.canManageChallenges
+      ? prisma.product.findMany({
+          where: { communityId: challenge.community.id },
+          select: { id: true, title: true },
+          orderBy: { createdAt: "desc" },
+        })
+      : Promise.resolve([] as { id: string; title: string }[]),
+
+    // Operator review panel data
+    permissions.canReviewSubmissions
+      ? (async (): Promise<{ rows: SubmissionRow[]; total: number; pendingCount: number } | null> => {
+          const res = await listChallengeSubmissions({
+            challengeId: challenge.id,
+            status: reviewTab,
+            limit: 50,
+          });
+          return {
+            rows: res.rows.map((r) => ({
+              id: r.id,
+              content: r.content,
+              linkUrl: r.linkUrl,
+              imageUrl: r.imageUrl,
+              status: r.status,
+              reviewNote: r.reviewNote,
+              reviewedAt: r.reviewedAt,
+              createdAt: r.createdAt,
+              dayNumber: r.dayNumber,
+              user: r.user,
+              task: r.task
+                ? { dayNumber: r.task.dayNumber, title: r.task.title, label: r.task.label }
+                : null,
+              reviewedBy: r.reviewedBy,
+            })),
+            total: res.total,
+            pendingCount: res.pendingCount,
+          };
+        })()
+      : Promise.resolve(null),
+
+    // My check-ins for this challenge (to mark tasks done)
+    session?.user?.id
+      ? prisma.checkin.findMany({
+          where: { challengeId: challenge.id, userId: session.user.id },
+          select: { id: true, taskId: true, dayNumber: true, createdAt: true, updatedAt: true, content: true, linkUrl: true, imageUrl: true, status: true, reviewedAt: true, reviewNote: true, rejectCount: true },
+        })
+      : Promise.resolve([]),
+
+    // Leaderboard
+    getChallengeLeaderboard(challenge.id, 10),
+
+    // My membership
+    session?.user?.id
+      ? prisma.challengeMember.findFirst({
+          where: { challengeId: challenge.id, userId: session.user.id },
+          select: {
+            id: true,
+            status: true,
+            personalStartsAt: true,
+            completedAt: true,
+            joinedAt: true,
+          },
+        })
+      : Promise.resolve(null),
+
+    // Active challenge across community (for sidebar context)
+    session?.user?.id
+      ? getActiveChallenge(session.user.id, challenge.community.id)
+      : Promise.resolve(null),
+
+    // Community membership (for AIP balance + pricing)
+    session?.user?.id
+      ? prisma.membership.findUnique({
+          where: { userId_communityId: { userId: session.user.id, communityId: challenge.community.id } },
+          select: { aip: true },
+        })
+      : Promise.resolve(null),
+  ]);
+
   // Only count non-rejected checkins as done
   const doneDayNumbers = new Set(
     myCheckins
@@ -210,55 +230,33 @@ export default async function ChallengeDetailPage({
       .map((c) => [c.dayNumber!, c] as const)
   );
 
-  // Leaderboard for this challenge
-  const leaderboard = await getChallengeLeaderboard(challenge.id, 10);
-
-  let myMembership:
-    | { id: string; status: string; personalStartsAt: Date | null; completedAt: Date | null; joinedAt: Date }
-    | null = null;
+  // Sequential — depends on myMembership.status
   let pendingPaymentCode: string | null = null;
   let renewalInfo: { originalAmountVnd: number; hasLateFee: boolean } | null = null;
-  if (session?.user?.id) {
-    const m = await prisma.challengeMember.findFirst({
-      where: { challengeId: challenge.id, userId: session.user.id },
-      select: {
-        id: true,
-        status: true,
-        personalStartsAt: true,
-        completedAt: true,
-        joinedAt: true,
-      },
+  if (myMembership?.status === "PAYMENT_PENDING") {
+    const now = new Date();
+    // Find a still-valid PENDING payment (not expired)
+    const validPayment = await prisma.payment.findFirst({
+      where: { refType: "challenge", refId: myMembership.id, status: "PENDING", expiresAt: { gt: now } },
+      select: { paymentCode: true },
+      orderBy: { createdAt: "desc" },
     });
-    myMembership = m;
-    if (m?.status === "PAYMENT_PENDING") {
-      const now = new Date();
-      // Find a still-valid PENDING payment (not expired)
-      const validPayment = await prisma.payment.findFirst({
-        where: { refType: "challenge", refId: m.id, status: "PENDING", expiresAt: { gt: now } },
-        select: { paymentCode: true },
-        orderBy: { createdAt: "desc" },
-      });
-      pendingPaymentCode = validPayment?.paymentCode ?? null;
+    pendingPaymentCode = validPayment?.paymentCode ?? null;
 
-      if (!pendingPaymentCode) {
-        // Payment expired — fetch original amount for renewal UI
-        const originalPayment = await prisma.payment.findFirst({
-          where: { refType: "challenge", refId: m.id },
-          orderBy: { createdAt: "asc" },
-          select: { amountVnd: true },
-        });
-        const minutesSinceJoin = (Date.now() - m.joinedAt.getTime()) / 60000;
-        renewalInfo = {
-          originalAmountVnd: Number(originalPayment?.amountVnd ?? 0),
-          hasLateFee: minutesSinceJoin > 30,
-        };
-      }
+    if (!pendingPaymentCode) {
+      // Payment expired — fetch original amount for renewal UI
+      const originalPayment = await prisma.payment.findFirst({
+        where: { refType: "challenge", refId: myMembership.id },
+        orderBy: { createdAt: "asc" },
+        select: { amountVnd: true },
+      });
+      const minutesSinceJoin = (Date.now() - myMembership.joinedAt.getTime()) / 60000;
+      renewalInfo = {
+        originalAmountVnd: Number(originalPayment?.amountVnd ?? 0),
+        hasLateFee: minutesSinceJoin > 30,
+      };
     }
   }
-
-  const activeChallenge = session?.user?.id
-    ? await getActiveChallenge(session.user.id, challenge.community.id)
-    : null;
 
   // Effective Day-1 start: real personalStartsAt, or joinedAt + grace if expired, else null.
   const effStart = myMembership
@@ -283,10 +281,6 @@ export default async function ChallengeDetailPage({
       : null);
   let effectivePrice: { vnd: number; canPayAip: boolean; aipPrice: number; aipBalance: number } | null = null;
   if (pricingConfig && session?.user?.id) {
-    const communityMembership = await prisma.membership.findUnique({
-      where: { userId_communityId: { userId: session.user.id, communityId: challenge.community.id } },
-      select: { aip: true },
-    });
     const { tierKey } = communityMembership
       ? await getUserTier({ userId: session.user.id, communityId: challenge.community.id })
       : { tierKey: null };
@@ -1084,227 +1078,6 @@ export default async function ChallengeDetailPage({
                   : 1
               }
             />
-          )}
-
-          {/* Social feed — recent check-ins from everyone */}
-          {recentCheckins.length > 0 && (
-            <div style={{ display: "none", marginTop: "var(--space-8)" }}>
-              <h2 style={{ marginBottom: "var(--space-3)" }}>
-                🔥 Check-in gần đây ({recentCheckins.length})
-              </h2>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "var(--space-3)",
-                }}
-              >
-                {recentCheckins.map((c) => {
-                  const name = c.user.name || c.user.email || "Member";
-                  return (
-                    <div
-                      key={c.id}
-                      className="ui-card"
-                      style={{
-                        display: "flex",
-                        gap: "var(--space-3)",
-                        alignItems: "flex-start",
-                      }}
-                    >
-                      {c.user.image ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={c.user.image}
-                          alt={name}
-                          referrerPolicy="no-referrer"
-                          style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: "50%",
-                            flexShrink: 0,
-                          }}
-                        />
-                      ) : (
-                        <div
-                          style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: "50%",
-                            background: "var(--bg-elevated)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontWeight: "var(--fw-bold)",
-                            flexShrink: 0,
-                          }}
-                        >
-                          {name[0]?.toUpperCase()}
-                        </div>
-                      )}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "baseline",
-                            gap: "var(--space-2)",
-                            marginBottom: "var(--space-1)",
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontSize: "var(--text-sm)",
-                              fontWeight: "var(--fw-bold)",
-                              color: "var(--text-heading)",
-                            }}
-                          >
-                            {name}
-                          </span>
-                          {c.dayNumber && (
-                            <span
-                              style={{
-                                fontSize: "var(--text-xs)",
-                                color: "var(--brand-green)",
-                                fontWeight: "var(--fw-bold)",
-                              }}
-                            >
-                              Day {c.dayNumber}
-                            </span>
-                          )}
-                          <span
-                            style={{
-                              fontSize: "var(--text-xs)",
-                              color: "var(--text-muted)",
-                              marginLeft: "auto",
-                            }}
-                          >
-                            {c.createdAt.toLocaleDateString("vi-VN", {
-                              day: "2-digit",
-                              month: "2-digit",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                        </div>
-                        <div
-                          style={{
-                            fontSize: "var(--text-sm)",
-                            color: "var(--text-normal)",
-                            lineHeight: "var(--lh-relaxed)",
-                          }}
-                        >
-                          {c.content}
-                        </div>
-                        {c.imageUrl && (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={c.imageUrl}
-                            alt=""
-                            style={{
-                              marginTop: "var(--space-2)",
-                              maxWidth: "100%",
-                              maxHeight: 240,
-                              borderRadius: "var(--r-md)",
-                              border: "1px solid var(--border-subtle)",
-                            }}
-                          />
-                        )}
-                        {c.linkUrl && (
-                          <a
-                            href={c.linkUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{
-                              display: "inline-block",
-                              marginTop: "var(--space-2)",
-                              fontSize: "var(--text-xs)",
-                              color: "var(--text-link)",
-                              fontWeight: "var(--fw-semibold)",
-                            }}
-                          >
-                            🔗 {c.linkUrl.replace(/^https?:\/\//, "").slice(0, 60)}
-                          </a>
-                        )}
-                        {/* Status badge — visible to all, critical feedback for submitter */}
-                        {c.status !== "APPROVED" && (
-                          <div
-                            style={{
-                              marginTop: "var(--space-2)",
-                              display: "inline-flex",
-                              gap: 6,
-                              alignItems: "center",
-                              fontSize: "var(--text-xs)",
-                              padding: "3px 10px",
-                              borderRadius: 10,
-                              background:
-                                c.status === "PENDING"
-                                  ? "rgba(240,178,50,0.14)"
-                                  : "rgba(218,55,60,0.1)",
-                              color:
-                                c.status === "PENDING"
-                                  ? "var(--warning)"
-                                  : "var(--danger)",
-                              fontWeight: 700,
-                            }}
-                          >
-                            {c.status === "PENDING"
-                              ? "⏳ Đang chờ duyệt"
-                              : "✕ Bị từ chối"}
-                          </div>
-                        )}
-                        {c.reviewNote && c.status === "REJECTED" && (
-                          <div
-                            style={{
-                              marginTop: "var(--space-2)",
-                              padding: "var(--space-2) var(--space-3)",
-                              fontSize: "var(--text-xs)",
-                              background: "rgba(218,55,60,0.06)",
-                              border: "1px solid rgba(218,55,60,0.2)",
-                              borderRadius: "var(--r-sm)",
-                              color: "var(--text-normal)",
-                            }}
-                          >
-                            <strong>Admin ghi chú:</strong> {c.reviewNote}
-                          </div>
-                        )}
-                        {/* Vote button — available to all community members */}
-                        {c.status !== "REJECTED" && (
-                          <div style={{ marginTop: "var(--space-2)" }}>
-                            <CheckinVoteButton
-                              checkinId={c.id}
-                              communitySlug={slug}
-                              challengeSlug={challengeSlug}
-                              initialCount={c._count?.votes ?? 0}
-                              initialVoted={
-                                "votes" in c && Array.isArray(c.votes)
-                                  ? c.votes.length > 0
-                                  : false
-                              }
-                              disabled={!session?.user?.id}
-                            />
-                          </div>
-                        )}
-                        {/* Resubmit form — only for own rejected submissions */}
-                        {c.status === "REJECTED" &&
-                          session?.user?.id === c.userId && (
-                            <ResubmitForm
-                              checkinId={c.id}
-                              communitySlug={slug}
-                              challengeSlug={challengeSlug}
-                              initial={{
-                                content: c.content,
-                                linkUrl: c.linkUrl,
-                                imageUrl: c.imageUrl,
-                              }}
-                              evidenceType={c.task?.evidenceType ?? "TEXT"}
-                              rejectCount={c.rejectCount}
-                            />
-                          )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
           )}
 
           {/* Leaderboard */}
