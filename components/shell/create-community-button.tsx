@@ -8,6 +8,11 @@ import { toSlug, fmtVnd } from "@/lib/brand";
 import { COMMUNITY_CATEGORIES } from "@/lib/community-categories";
 import { PLATFORM_PLANS } from "@/lib/platform-plans";
 
+// Tạm thời disable luồng tạo community public. Flip về false để bật lại modal full.
+const CREATION_DISABLED = true;
+const DISABLED_AVATAR_URL =
+  "https://pub-8cc0aba616ff4e23a1298f6aa8b318d8.r2.dev/community/cmnzkjmx10000cb7zui6cjdrc/1778573696488-80b7ce.png";
+
 type PaidTier = "SOLO" | "PRO" | "AGENCY";
 
 /**
@@ -114,7 +119,12 @@ export function CreateCommunityButton({
     <>
       {trigger}
 
-      {open && typeof document !== "undefined" && createPortal(
+      {open && CREATION_DISABLED && typeof document !== "undefined" && createPortal(
+        <DisabledNotice onClose={() => setOpen(false)} />,
+        document.body
+      )}
+
+      {open && !CREATION_DISABLED && typeof document !== "undefined" && createPortal(
         <div
           role="dialog"
           aria-modal="true"
@@ -420,6 +430,111 @@ export function CreateCommunityButton({
         document.body
       )}
     </>
+  );
+}
+
+function DisabledNotice({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.6)",
+        zIndex: 1000,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "var(--space-4)",
+      }}
+    >
+      <div
+        style={{
+          background: "var(--bg-floating)",
+          borderRadius: "var(--r-xl)",
+          border: "1px solid var(--border-subtle)",
+          maxWidth: 420,
+          width: "100%",
+          padding: "var(--space-6)",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "var(--space-4)",
+          textAlign: "center",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 12, width: "100%", justifyContent: "center" }}>
+          <img
+            src={DISABLED_AVATAR_URL}
+            alt="Lửng Mật"
+            width={88}
+            height={88}
+            style={{
+              width: 88,
+              height: 88,
+              borderRadius: "50%",
+              objectFit: "cover",
+              flexShrink: 0,
+              border: "2px solid var(--border-subtle)",
+            }}
+          />
+          <div
+            style={{
+              position: "relative",
+              background: "var(--bg-card)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: 16,
+              padding: "12px 16px",
+              fontSize: "var(--text-base)",
+              color: "var(--text-normal)",
+              lineHeight: 1.4,
+              maxWidth: 240,
+              textAlign: "left",
+            }}
+          >
+            Liên hệ <strong>Dương Trọng Nghĩa</strong> để đồng hành cùng nhau nhé!
+            <span
+              aria-hidden
+              style={{
+                position: "absolute",
+                left: -8,
+                bottom: 14,
+                width: 0,
+                height: 0,
+                borderTop: "8px solid transparent",
+                borderBottom: "8px solid transparent",
+                borderRight: "8px solid var(--bg-card)",
+              }}
+            />
+          </div>
+        </div>
+        <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>
+          Tính năng tạo cộng đồng đang được hoàn thiện. Tạm thời mở qua kênh trực tiếp.
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            padding: "11px 24px",
+            borderRadius: 8,
+            border: "none",
+            background: "var(--brand-green)",
+            color: "#fff",
+            fontWeight: 600,
+            fontSize: "var(--text-base)",
+            minHeight: 44,
+            cursor: "pointer",
+          }}
+        >
+          Đã hiểu
+        </button>
+      </div>
+    </div>
   );
 }
 
