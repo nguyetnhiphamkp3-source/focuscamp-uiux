@@ -299,6 +299,13 @@ export async function simulatePaymentCompletedAction(
   const payment = await prisma.payment.findUnique({ where: { paymentCode } });
   if (!payment || payment.status !== "PENDING") return { ok: false, reason: "payment_invalid" };
 
+  // Community plan orders are sold by focus.camp; only super admin can mark
+  // them completed via /admin/orders. Block self-simulate to close the
+  // owner-self-approve loophole.
+  if (payment.refType === "community" || payment.purpose === "community_plan") {
+    return { ok: false, reason: "platform_order_requires_super_admin" };
+  }
+
   if (payment.communityId) {
     const community = await prisma.community.findUnique({
       where: { id: payment.communityId },

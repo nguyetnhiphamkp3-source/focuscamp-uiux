@@ -371,7 +371,7 @@ export default async function PaymentPage({
             </div>
 
             <PaymentStatusPoller paymentCode={payment.paymentCode} />
-            {isOwner && (
+            {isOwner && payment.refType !== "community" && (
               <SimulatePaymentButton paymentCode={payment.paymentCode} />
             )}
           </>
