@@ -29,6 +29,7 @@ import { communityPermissionFlags, effectiveCommunityRole } from "@/lib/communit
 import { toEmbedUrl } from "@/lib/brand";
 import { parseChallengeVideoUrl } from "@/lib/challenge-video";
 import { parseChallengeBenefits } from "@/lib/challenge-benefits";
+import { SopContent } from "@/components/community/sop-content";
 
 export const dynamic = "force-dynamic";
 
@@ -947,10 +948,7 @@ export default async function ChallengeDetailPage({
                             <div className="ch-task-sop-label">
                               📋 SOP — Các bước
                             </div>
-                            <div
-                              className="ch-task-sop-content"
-                              dangerouslySetInnerHTML={{ __html: t.sopContent }}
-                            />
+                            <SopContent content={t.sopContent} />
                           </div>
                         )}
                         {hasEvidenceHint && (
