@@ -513,9 +513,6 @@ function DisabledNotice({ onClose }: { onClose: () => void }) {
             />
           </div>
         </div>
-        <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>
-          Tính năng tạo cộng đồng đang được hoàn thiện. Tạm thời mở qua kênh trực tiếp.
-        </div>
         <button
           type="button"
           onClick={onClose}
