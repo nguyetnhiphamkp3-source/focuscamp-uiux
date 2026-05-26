@@ -176,8 +176,8 @@ export async function attributeReferralOnSignup(input: {
 
 /**
  * Called from payment match: when a user makes a successful purchase, find
- * any pending referral attributed to them and convert it. Commission is
- * computed from the COMMUNITY's affiliateConfig where the product lives.
+ * a pending referral attributed to them in the purchased product's community
+ * and convert it. Commission is computed from that community's affiliateConfig.
  *
  * SUSPICIOUS referrals are skipped here — owner must manually approve them
  * via the affiliate dashboard before commission is awarded.
@@ -186,14 +186,6 @@ export async function convertReferralFromPurchase(
   purchaseId: string,
   buyerUserId: string,
 ) {
-  const ref = await prisma.referral.findFirst({
-    where: {
-      referredUserId: buyerUserId,
-      status: "PENDING", // SUSPICIOUS deliberately excluded
-    },
-    include: { link: true },
-  });
-  if (!ref) return null;
   const purchase = await prisma.purchase.findUnique({
     where: { id: purchaseId },
     select: {
@@ -202,6 +194,16 @@ export async function convertReferralFromPurchase(
     },
   });
   if (!purchase) return null;
+
+  const ref = await prisma.referral.findFirst({
+    where: {
+      referredUserId: buyerUserId,
+      status: "PENDING", // SUSPICIOUS deliberately excluded
+      link: { communityId: purchase.product.communityId },
+    },
+  });
+  if (!ref) return null;
+
   const community = await prisma.community.findUnique({
     where: { id: purchase.product.communityId },
     select: { affiliateConfig: true },
