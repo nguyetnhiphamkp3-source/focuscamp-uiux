@@ -251,6 +251,7 @@ export default async function PostDetailPage({
                   canEdit={isAuthor}
                   canDelete={isAuthor || permissions.canModerateContent}
                   canManagePostActions={permissions.canModerateContent}
+                  canReport={!!userId && !isAuthor && isMember}
                   initialIsPinned={post.isPinned}
                   initialIsCot={post.isCot}
                   redirectOnDelete={true}

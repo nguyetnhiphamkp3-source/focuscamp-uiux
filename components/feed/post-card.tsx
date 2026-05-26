@@ -166,6 +166,7 @@ export function PostCard({
             !!currentUserId && (currentUserId === post.user.id || isOwner)
           }
           canManagePostActions={canEditCot}
+          canReport={!!currentUserId && currentUserId !== post.user.id}
           initialIsPinned={post.isPinned}
           initialIsCot={post.isCot}
           initial={{

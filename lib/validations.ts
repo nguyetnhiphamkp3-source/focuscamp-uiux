@@ -604,6 +604,24 @@ export const ApplyCouponInputSchema = z.object({
   orderAmountVnd: z.coerce.number().int().positive(),
 });
 
+/* ========== Content Report ========== */
+export const CreateReportSchema = z.object({
+  targetType: z.enum(["POST", "COMMENT"]),
+  postId: z.string().cuid().optional(),
+  commentId: z.string().cuid().optional(),
+  reason: z.enum(["SPAM", "HARASSMENT", "SENSITIVE", "RULE_VIOLATION", "OTHER"]),
+  detail: z.string().trim().max(500).optional(),
+}).refine(
+  (d) => (d.targetType === "POST" ? !!d.postId : !!d.commentId),
+  { message: "Missing target ID" },
+);
+
+export const ResolveReportSchema = z.object({
+  reportId: z.string().cuid(),
+  action: z.enum(["DISMISS", "DELETE_CONTENT"]),
+  note: z.string().trim().max(500).optional(),
+});
+
 /* ========== Helper ========== */
 /** Parse FormData against a schema; throws with readable error if invalid. */
 export function parseFormData<T extends z.ZodTypeAny>(

@@ -11,6 +11,7 @@ import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { CotToggleButton } from "./cot-toggle-button";
 import { PinToggleButton } from "./pin-toggle-button";
 import { ShareButton } from "./share-button";
+import { ReportModal } from "./report-modal";
 import type { PillarConfig } from "@/lib/community-config";
 
 /**
@@ -26,6 +27,7 @@ export function PostMenu({
   canEdit,
   canDelete,
   canManagePostActions = false,
+  canReport = false,
   initialIsPinned = false,
   initialIsCot = false,
   showShare = true,
@@ -38,6 +40,7 @@ export function PostMenu({
   canEdit: boolean;
   canDelete: boolean;
   canManagePostActions?: boolean;
+  canReport?: boolean;
   initialIsPinned?: boolean;
   initialIsCot?: boolean;
   showShare?: boolean;
@@ -73,6 +76,7 @@ export function PostMenu({
   }, [open]);
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   function onDelete() {
     setShowDeleteConfirm(true);
@@ -112,7 +116,7 @@ export function PostMenu({
     });
   }
 
-  if (!showShare && !canManagePostActions && !canEdit && !canDelete) return null;
+  if (!showShare && !canManagePostActions && !canEdit && !canDelete && !canReport) return null;
 
   return (
     <>
@@ -152,6 +156,15 @@ export function PostMenu({
                 variant="menu"
                 onDone={() => setOpen(false)}
               />
+            )}
+            {canReport && (
+              <button
+                type="button"
+                onClick={() => { setOpen(false); setShowReportModal(true); }}
+                style={menuItemStyle("var(--text-normal)")}
+              >
+                ⚑ Báo cáo
+              </button>
             )}
             {canManagePostActions && (
               <>
@@ -224,6 +237,14 @@ export function PostMenu({
         danger
         onConfirm={confirmDelete}
         onCancel={() => setShowDeleteConfirm(false)}
+      />
+
+      <ReportModal
+        open={showReportModal}
+        targetType="POST"
+        postId={postId}
+        communitySlug={communitySlug}
+        onClose={() => setShowReportModal(false)}
       />
 
       {editing && (

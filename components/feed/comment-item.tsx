@@ -10,6 +10,7 @@ import {
   fmtRelativeTime,
 } from "@/lib/brand";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { ReportModal } from "./report-modal";
 import {
   markBestAnswerAction,
   deleteCommentAction,
@@ -65,6 +66,8 @@ export function CommentItem({
   const canDelete =
     !!currentUser && (currentUser.id === comment.user.id || isOwner);
   const canReply = !!currentUser && depth < 3; // cap nesting depth
+  const canReport = !!currentUser && currentUser.id !== comment.user.id;
+  const [showReportModal, setShowReportModal] = useState(false);
 
   useEffect(() => {
     setDisplayBody(comment.body);
@@ -384,6 +387,15 @@ export function CommentItem({
                   Xoá
                 </button>
               )}
+              {canReport && (
+                <button
+                  type="button"
+                  onClick={() => setShowReportModal(true)}
+                  style={actionBtnStyle("var(--text-muted)")}
+                >
+                  ⚑ Báo cáo
+                </button>
+              )}
             </div>
           )}
 
@@ -483,6 +495,14 @@ export function CommentItem({
         danger
         onConfirm={confirmDelete}
         onCancel={() => setShowDeleteConfirm(false)}
+      />
+
+      <ReportModal
+        open={showReportModal}
+        targetType="COMMENT"
+        commentId={comment.id}
+        communitySlug={communitySlug}
+        onClose={() => setShowReportModal(false)}
       />
 
       {replies.length > 0 && (

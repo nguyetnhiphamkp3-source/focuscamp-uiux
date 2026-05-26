@@ -28,7 +28,8 @@ export type NotificationType =
   | "SUBMISSION_REJECTED"
   | "FOLLOW"
   | "UNFOLLOW"
-  | "AGENT_BROADCAST";
+  | "AGENT_BROADCAST"
+  | "CONTENT_REPORT";
 
 function daysAgo(days: number): Date {
   return new Date(Date.now() - days * 24 * 60 * 60 * 1000);

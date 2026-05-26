@@ -59,6 +59,8 @@ model User {
   ownedEvents      Event[]
   eventBookings    EventBooking[]
   couponRedemptions CouponRedemption[]
+  reportsFiled      ContentReport[]    @relation("ReportReporter")
+  reportsResolved   ContentReport[]    @relation("ReportResolver")
 }
 
 model Account {
@@ -174,6 +176,7 @@ model Community {
   featureReadStates FeatureReadState[]
   affiliateLinks AffiliateLink[]
   coupons       Coupon[]
+  contentReports ContentReport[]
 
   @@index([featuredOnGlobal, createdAt])
 }
@@ -532,6 +535,7 @@ model Post {
   reactions Reaction[]
   votes     Vote[]
   bookmarks Bookmark[]
+  reports   ContentReport[]
 
   @@index([communityId, type, createdAt])
   @@index([communityId, isPinned, createdAt])
@@ -551,6 +555,7 @@ model Comment {
   user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   parent  Comment?  @relation("CommentReply", fields: [parentId], references: [id])
   replies Comment[] @relation("CommentReply")
+  reports ContentReport[]
 
   @@index([postId, createdAt])
 }
@@ -606,6 +611,31 @@ model Vote {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId])
+}
+
+model ContentReport {
+  id            String    @id @default(cuid())
+  communityId   String
+  reporterId    String
+  targetType    String
+  postId        String?
+  commentId     String?
+  reason        String
+  detail        String?   @db.Text
+  status        String    @default("PENDING")
+  resolvedById  String?
+  resolvedAt    DateTime?
+  resolveNote   String?
+  createdAt     DateTime  @default(now())
+
+  community  Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  reporter   User      @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  post       Post?     @relation(fields: [postId], references: [id], onDelete: SetNull)
+  comment    Comment?  @relation(fields: [commentId], references: [id], onDelete: SetNull)
+  resolvedBy User?     @relation("ReportResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  @@unique([reporterId, targetType, postId, commentId])
+  @@index([communityId, status, createdAt])
 }
 
 // ============= MARKETPLACE =============
