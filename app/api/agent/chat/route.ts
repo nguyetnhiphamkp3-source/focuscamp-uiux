@@ -26,6 +26,41 @@ interface ChatRequestBody {
   messages: UIMessage[];
 }
 
+const MAX_CONTEXT_MESSAGES = 12;
+const MAX_CONTEXT_TEXT_CHARS = 16_000;
+
+const OUTPUT_FORMAT_INSTRUCTIONS = `
+Format câu trả lời bằng Markdown gọn, dễ quét:
+- Dùng bullet/numbered list khi có nhiều ý.
+- Dùng **bold** cho nhãn quan trọng.
+- Dùng \`inline code\`, code block, hoặc bảng Markdown khi phù hợp.
+- Không bọc toàn bộ câu trả lời trong code block nếu user không yêu cầu.`;
+
+function getMessageText(message: UIMessage): string {
+  return message.parts
+    .filter((p): p is { type: "text"; text: string } => p.type === "text")
+    .map((p) => p.text)
+    .join("");
+}
+
+function trimContextMessages(messages: UIMessage[]): UIMessage[] {
+  const selected: UIMessage[] = [];
+  let textChars = 0;
+
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (selected.length >= MAX_CONTEXT_MESSAGES) break;
+
+    const message = messages[i];
+    const nextTextChars = textChars + getMessageText(message).length;
+    if (selected.length > 0 && nextTextChars > MAX_CONTEXT_TEXT_CHARS) break;
+
+    selected.unshift(message);
+    textChars = nextTextChars;
+  }
+
+  return selected.length > 0 ? selected : messages.slice(-1);
+}
+
 export async function POST(req: Request) {
   const s = await auth();
   if (!s?.user?.id) {
@@ -105,7 +140,7 @@ export async function POST(req: Request) {
     content: lastUserText,
   });
 
-  const systemPrompt = await getSystemPrompt(body.communityId);
+  const systemPrompt = `${await getSystemPrompt(body.communityId)}\n\n${OUTPUT_FORMAT_INSTRUCTIONS}`;
 
   const apiKey = await getAgentApiKey(body.communityId);
   if (!apiKey) {
@@ -120,7 +155,8 @@ export async function POST(req: Request) {
   const modelId = storedModel ?? DEFAULT_MODELS[provider] ?? DEFAULT_MODELS.anthropic;
 
   const model = buildModel(provider, apiKey, modelId);
-  const modelMessages = await convertToModelMessages(body.messages);
+  const contextMessages = trimContextMessages(body.messages);
+  const modelMessages = await convertToModelMessages(contextMessages);
   const tools = buildChatAgentTools(body.communityId, s.user.id, role);
 
   const result = streamText({

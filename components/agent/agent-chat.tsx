@@ -3,6 +3,7 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useState, useRef, useEffect, useMemo } from "react";
+import { renderMarkdown } from "@/lib/markdown";
 
 interface InitialMessage {
   id: string;
@@ -134,7 +135,6 @@ export function AgentChat({
                 borderRadius: 12,
                 background: isUser ? "var(--brand-green)" : "var(--bg-card)",
                 color: isUser ? "#fff" : "var(--text-normal)",
-                whiteSpace: "pre-wrap",
                 fontSize: "var(--text-base)",
                 lineHeight: 1.5,
                 boxShadow: isUser
@@ -142,7 +142,13 @@ export function AgentChat({
                   : "0 1px 4px rgba(0,0,0,0.04)",
               }}
             >
-              {text || (isStreaming && !isUser ? "▍" : "")}
+              {isUser ? (
+                <span style={{ whiteSpace: "pre-wrap" }}>{text}</span>
+              ) : text ? (
+                <AgentMarkdown content={text} />
+              ) : (
+                isStreaming ? "▍" : ""
+              )}
             </div>
           );
         })}
@@ -210,5 +216,15 @@ export function AgentChat({
         </button>
       </form>
     </div>
+  );
+}
+
+function AgentMarkdown({ content }: { content: string }) {
+  const html = useMemo(() => renderMarkdown(content), [content]);
+  return (
+    <div
+      className="md-content agent-md"
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
   );
 }

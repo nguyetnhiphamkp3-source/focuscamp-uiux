@@ -89,3 +89,23 @@ select {
   border-top: 1px solid var(--border-subtle);
   margin: 1em 0;
 }
+.agent-md > :first-child { margin-top: 0; }
+.agent-md > :last-child { margin-bottom: 0; }
+.agent-md table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 0.85em;
+  font-size: var(--text-sm);
+}
+.agent-md th,
+.agent-md td {
+  border: 1px solid var(--border-subtle);
+  padding: 6px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+.agent-md th {
+  background: var(--bg-card);
+  color: var(--header-primary);
+  font-weight: 700;
+}
