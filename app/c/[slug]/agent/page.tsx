@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { listConversations, listMessages, hasAgentApiKey } from "@/lib/services/agent";
 import { AgentChat } from "@/components/agent/agent-chat";
+import { canCommunity, effectiveCommunityRole } from "@/lib/community-permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -20,9 +21,11 @@ export default async function AgentPage({
 
   const community = await prisma.community.findUnique({
     where: { slug },
-    select: { id: true, name: true },
+    select: { id: true, name: true, ownerId: true },
   });
   if (!community) notFound();
+
+  const isOwner = community.ownerId === session.user.id;
 
   const membership = await prisma.membership.findUnique({
     where: {
@@ -33,7 +36,7 @@ export default async function AgentPage({
     },
     select: { id: true, role: true },
   });
-  if (!membership) {
+  if (!membership && !isOwner) {
     return (
       <div
         style={{
@@ -48,9 +51,37 @@ export default async function AgentPage({
     );
   }
 
+  const role = effectiveCommunityRole({
+    isOwner,
+    membershipRole: membership?.role,
+  });
+  const canChatWithAgent = canCommunity(role, "manage_ai_agent");
+
+  if (!canChatWithAgent) {
+    return (
+      <>
+        <header className="view-header">
+          <span className="view-title">AI Agent</span>
+          <span className="view-subtitle">{community.name}</span>
+        </header>
+        <div
+          style={{
+            margin: "auto",
+            padding: 40,
+            textAlign: "center",
+            color: "var(--text-muted)",
+            maxWidth: 460,
+            lineHeight: 1.6,
+          }}
+        >
+          AI Agent chat chỉ dành cho quản trị viên cộng đồng.
+        </div>
+      </>
+    );
+  }
+
   const hasKey = await hasAgentApiKey(community.id);
   if (!hasKey) {
-    const isAdmin = membership.role === "OWNER" || membership.role === "ADMIN";
     return (
       <>
         <header className="view-header">
@@ -86,11 +117,11 @@ export default async function AgentPage({
               maxWidth: 400,
             }}
           >
-            {isAdmin
+            {canChatWithAgent
               ? "Bạn cần nhập Anthropic API Key trong Cài đặt → AI Agent để kích hoạt tính năng này."
               : "Chủ cộng đồng chưa cấu hình AI Agent. Vui lòng liên hệ admin."}
           </div>
-          {isAdmin && (
+          {canChatWithAgent && (
             <a
               href={`/c/${slug}/settings`}
               style={{
@@ -146,18 +177,18 @@ export default async function AgentPage({
             fontSize: "var(--text-xs)",
             padding: "3px 8px",
             borderRadius: 6,
-            background: membership.role === "OWNER" || membership.role === "ADMIN"
+            background: canChatWithAgent
               ? "rgba(27,158,117,0.12)"
               : "var(--bg-modifier-hover)",
-            color: membership.role === "OWNER" || membership.role === "ADMIN"
+            color: canChatWithAgent
               ? "var(--brand-green)"
               : "var(--text-muted)",
             fontWeight: 600,
           }}
         >
-          {membership.role === "OWNER" || membership.role === "ADMIN"
+          {canChatWithAgent
             ? "🛡 Quản trị viên"
-            : membership.role === "MOD"
+            : role === "MOD"
               ? "Điều hành viên"
               : "Thành viên"}
         </span>
@@ -165,7 +196,6 @@ export default async function AgentPage({
       <AgentChat
         communityId={community.id}
         conversationId={conversationId}
-        memberRole={membership.role as "OWNER" | "ADMIN" | "MOD" | "MEMBER"}
         initialMessages={initialMessages.map((m) => ({
           id: m.id,
           role: m.role as "user" | "assistant" | "system",

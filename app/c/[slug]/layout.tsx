@@ -92,6 +92,8 @@ export default async function CommunityLayout({
     isFeatureVisible(ui, k, isOwner, previewAsMember);
   const anyVisible = (...keys: FeatureKey[]) => keys.some(visible);
   const showFeatureBadges = !!membership && !!session?.user?.id;
+  const showAgentFeature =
+    visible("agent") && permissions.canManageAiAgent && !previewAsMember;
 
   return (
     <div className="community-shell">
@@ -219,7 +221,7 @@ export default async function CommunityLayout({
                 </FeatureLink>
               )}
 
-              {anyVisible("marketplace", "agent") && (
+              {(visible("marketplace") || showAgentFeature) && (
                 <div className="features-section-title">Khác</div>
               )}
               {visible("marketplace") && (
@@ -228,7 +230,7 @@ export default async function CommunityLayout({
                   <span className="feature-name">Marketplace</span>
                 </FeatureLink>
               )}
-              {visible("agent") && (
+              {showAgentFeature && (
                 <FeatureLink href={`/c/${slug}/agent`}>
                   <span className="feature-icon"><svg viewBox="0 0 24 24"><path d="M12 2C9.24 2 7 4.24 7 7c0 2.85 2.92 7.21 4.5 9.5.24.35.76.35 1 0C14.08 14.21 17 9.85 17 7c0-2.76-2.24-5-5-5zm0 7c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm0 9.15L6 15l-1.45 1.45C2.85 17.15 1 18.4 1 20.5 1 21.88 2.12 23 3.5 23h17c1.38 0 2.5-1.12 2.5-2.5 0-2.1-1.85-3.35-3.55-4.05L18 15l-6 3.15z"/></svg></span>
                   <span className="feature-name">AI Agent</span>

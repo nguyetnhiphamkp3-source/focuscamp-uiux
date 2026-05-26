@@ -5,7 +5,6 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import {
   appendMessage,
-  checkQuota,
   getAgentApiKey,
   getAgentProvider,
   getAgentModel,
@@ -13,7 +12,7 @@ import {
   getSystemPrompt,
 } from "@/lib/services/agent";
 import { buildChatAgentTools } from "@/lib/agent-tools";
-import { effectiveCommunityRole } from "@/lib/community-permissions";
+import { canCommunity, effectiveCommunityRole } from "@/lib/community-permissions";
 import { rateLimit } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 
@@ -87,32 +86,36 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "missing_fields" }, { status: 400 });
   }
 
+  const community = await prisma.community.findUnique({
+    where: { id: body.communityId },
+    select: { ownerId: true },
+  });
+  if (!community) {
+    return NextResponse.json({ error: "community_not_found" }, { status: 404 });
+  }
+
   // Membership check
   const membership = await prisma.membership.findUnique({
     where: {
       userId_communityId: { userId: s.user.id, communityId: body.communityId },
     },
-    select: { tier: true, role: true },
+    select: { role: true },
   });
-  if (!membership) {
+  if (!membership && community.ownerId !== s.user.id) {
     return NextResponse.json({ error: "not_a_member" }, { status: 403 });
   }
 
-  const isPaid = membership.tier !== "EXPLORER";
-
-  const community = await prisma.community.findUnique({
-    where: { id: body.communityId },
-    select: { ownerId: true },
-  });
   const role = effectiveCommunityRole({
-    isOwner: community?.ownerId === s.user.id,
-    membershipRole: membership.role,
+    isOwner: community.ownerId === s.user.id,
+    membershipRole: membership?.role,
   });
-  const quota = await checkQuota(s.user.id, isPaid);
-  if (!quota.ok) {
+  if (!canCommunity(role, "manage_ai_agent")) {
     return NextResponse.json(
-      { error: "quota_exceeded", message: quota.reason },
-      { status: 429 },
+      {
+        error: "admin_only",
+        message: "AI Agent chat chỉ dành cho quản trị viên cộng đồng.",
+      },
+      { status: 403 },
     );
   }
 

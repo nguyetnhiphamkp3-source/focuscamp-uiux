@@ -14,12 +14,10 @@ interface InitialMessage {
 export function AgentChat({
   communityId,
   conversationId: initialConvId,
-  memberRole,
   initialMessages,
 }: {
   communityId: string;
   conversationId: string | null;
-  memberRole: "OWNER" | "ADMIN" | "MOD" | "MEMBER";
   initialMessages: InitialMessage[];
 }) {
   const [conversationId, setConversationId] = useState<string | null>(initialConvId);

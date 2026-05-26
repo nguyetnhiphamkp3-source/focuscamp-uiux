@@ -12,6 +12,7 @@ import { logger } from "@/lib/logger";
 import { assertCommunityPermission } from "@/lib/services/community-settings";
 
 const DAILY_QUOTA_FREE = 50;
+const MAX_MESSAGES_PER_CONVERSATION = 100;
 
 /**
  * Count messages this user sent in last 24h across all conversations.
@@ -90,14 +91,37 @@ export async function appendMessage(input: {
     where: { id: input.conversationId },
     data: { updatedAt: new Date() },
   });
+  try {
+    await pruneConversationMessages(input.conversationId);
+  } catch (err) {
+    logger.warn(
+      { err, conversationId: input.conversationId },
+      "[agent] prune old messages failed",
+    );
+  }
 }
 
 export async function listMessages(conversationId: string, limit = 50) {
-  return prisma.agentMessage.findMany({
+  const messages = await prisma.agentMessage.findMany({
     where: { conversationId },
-    orderBy: { createdAt: "asc" },
+    orderBy: { createdAt: "desc" },
     take: limit,
     select: { id: true, role: true, content: true, createdAt: true },
+  });
+  return messages.reverse();
+}
+
+async function pruneConversationMessages(conversationId: string) {
+  const overflow = await prisma.agentMessage.findMany({
+    where: { conversationId },
+    orderBy: { createdAt: "desc" },
+    skip: MAX_MESSAGES_PER_CONVERSATION,
+    select: { id: true },
+  });
+  if (overflow.length === 0) return;
+
+  await prisma.agentMessage.deleteMany({
+    where: { id: { in: overflow.map((m) => m.id) } },
   });
 }
 
