@@ -7,10 +7,68 @@ import {
   setAgentApiKey,
   setAgentProvider,
   setAgentModel,
+  updateAgentProfile,
 } from "@/lib/services/agent";
+import { setCommunityAgentBrains } from "@/lib/services/ai-provider";
 import { logError } from "@/lib/logger";
 
 type ActionResult = { ok: true } | { ok: false; reason: string };
+
+export async function updateAgentProfileAction(input: {
+  communityId: string;
+  communitySlug: string;
+  name: string;
+  avatarUrl?: string | null;
+  tagline?: string | null;
+}): Promise<ActionResult> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+  try {
+    await updateAgentProfile({
+      userId: s.user.id,
+      communityId: input.communityId,
+      name: input.name,
+      avatarUrl: input.avatarUrl,
+      tagline: input.tagline,
+    });
+    revalidatePath(`/c/${input.communitySlug}/settings`);
+    revalidatePath(`/c/${input.communitySlug}/agent`);
+    return { ok: true };
+  } catch (err) {
+    logError(err, { userId: s.user.id, communityId: input.communityId });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+export async function updateAgentBrainsAction(input: {
+  communityId: string;
+  communitySlug: string;
+  chatProviderId?: string | null;
+  chatModel?: string | null;
+  reviewProviderId?: string | null;
+  reviewModel?: string | null;
+}): Promise<ActionResult> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+  try {
+    await setCommunityAgentBrains({
+      userId: s.user.id,
+      communityId: input.communityId,
+      chatProviderId: input.chatProviderId,
+      chatModel: input.chatModel,
+      reviewProviderId: input.reviewProviderId,
+      reviewModel: input.reviewModel,
+    });
+    revalidatePath(`/c/${input.communitySlug}/settings`);
+    revalidatePath(`/c/${input.communitySlug}/agent`);
+    return { ok: true };
+  } catch (err) {
+    logError(err, { userId: s.user.id, communityId: input.communityId });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
 
 export async function updateAgentSystemPromptAction(input: {
   communityId: string;

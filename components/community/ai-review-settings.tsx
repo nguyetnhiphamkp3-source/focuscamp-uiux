@@ -1,93 +1,49 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
-
-type Provider = "anthropic" | "openai" | "groq" | "xai" | "google";
-
-const PROVIDERS: { value: Provider; label: string }[] = [
-  { value: "anthropic", label: "Anthropic (Claude)" },
-  { value: "openai", label: "OpenAI (GPT)" },
-  { value: "groq", label: "Groq (Fast Inference)" },
-  { value: "xai", label: "xAI (Grok)" },
-  { value: "google", label: "Google (Gemini)" },
-];
-
-const MODELS_BY_PROVIDER: Record<Provider, { value: string; label: string }[]> = {
-  anthropic: [
-    { value: "claude-haiku-4-5", label: "Claude Haiku 4.5 — nhanh, rẻ" },
-    { value: "claude-sonnet-4-5", label: "Claude Sonnet 4.5" },
-    { value: "claude-sonnet-4-6", label: "Claude Sonnet 4.6" },
-    { value: "claude-opus-4-5", label: "Claude Opus 4.5" },
-    { value: "claude-opus-4-6", label: "Claude Opus 4.6" },
-    { value: "claude-opus-4-7", label: "Claude Opus 4.7 — mạnh nhất" },
-  ],
-  openai: [
-    { value: "gpt-4o-mini", label: "GPT-4o Mini — nhanh, rẻ" },
-    { value: "gpt-4o", label: "GPT-4o" },
-    { value: "gpt-4.1-nano", label: "GPT-4.1 Nano — rẻ nhất" },
-    { value: "gpt-4.1-mini", label: "GPT-4.1 Mini" },
-    { value: "gpt-4.1", label: "GPT-4.1" },
-  ],
-  groq: [
-    { value: "llama-3.1-8b-instant", label: "Llama 3.1 8B Instant — cực nhanh" },
-    { value: "llama-3.3-70b-versatile", label: "Llama 3.3 70B Versatile" },
-    { value: "meta-llama/llama-4-scout-17b-16e-instruct", label: "Llama 4 Scout 17B" },
-    { value: "qwen/qwen3-32b", label: "Qwen3 32B" },
-  ],
-  xai: [
-    { value: "grok-3-mini", label: "Grok 3 Mini — nhanh" },
-    { value: "grok-3", label: "Grok 3" },
-    { value: "grok-4", label: "Grok 4 — mạnh nhất" },
-  ],
-  google: [
-    { value: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite — rẻ nhất" },
-    { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash" },
-    { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
-    { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro — mạnh nhất" },
-  ],
-};
+import {
+  PROVIDER_MODELS,
+  defaultModelForProvider,
+  type AIProviderType,
+} from "@/lib/constants/ai-providers";
+import type { AIProviderClient } from "@/lib/services/ai-provider";
 
 interface AIReviewSettingsProps {
   enabled: boolean;
   threshold: number;
   fallback: string;
-  provider: string | null;
+  providers: AIProviderClient[];
+  providerId: string | null;
   model: string | null;
   pendingCount: number;
   onChange: (fields: {
     aiReviewEnabled?: boolean;
     aiReviewThreshold?: number;
     aiReviewFallback?: string;
-    aiReviewProvider?: string | null;
+    aiReviewProviderId?: string | null;
     aiReviewModel?: string | null;
   }) => void;
 }
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "8px 10px",
-  borderRadius: 6,
-  border: "1px solid var(--border-subtle)",
-  background: "var(--bg-chat)",
-  color: "var(--text-normal)",
-  fontSize: "var(--text-sm)",
-  outline: "none",
-};
 
 export function AIReviewSettings({
   enabled,
   threshold,
   fallback,
-  provider,
+  providers,
+  providerId,
   model,
   pendingCount,
   onChange,
 }: AIReviewSettingsProps) {
   const [showConfirm, setShowConfirm] = useState(false);
-
-  const currentProvider = (provider as Provider | null) ?? "anthropic";
-  const currentModel = model ?? MODELS_BY_PROVIDER[currentProvider][0].value;
+  const enabledProviders = providers.filter((provider) => provider.enabled);
+  const currentProvider = enabledProviders.find((provider) => provider.id === providerId);
+  const hasOverride = !!providerId;
+  const currentModel =
+    model ??
+    (currentProvider ? defaultModelForProvider(currentProvider.providerType) : null) ??
+    "";
 
   function handleToggle(checked: boolean) {
     if (checked && pendingCount > 0) {
@@ -102,106 +58,75 @@ export function AIReviewSettings({
     onChange({ aiReviewEnabled: true });
   }
 
-  function handleProviderChange(newProvider: Provider) {
+  function chooseProvider(nextProviderId: string) {
+    const provider = enabledProviders.find((item) => item.id === nextProviderId);
     onChange({
-      aiReviewProvider: newProvider,
-      aiReviewModel: MODELS_BY_PROVIDER[newProvider][0].value,
+      aiReviewProviderId: nextProviderId || null,
+      aiReviewModel: provider ? defaultModelForProvider(provider.providerType) : null,
     });
   }
 
-  function handleModelChange(newModel: string) {
-    onChange({ aiReviewModel: newModel });
+  function addOverride() {
+    const provider = enabledProviders[0];
+    if (!provider) return;
+    onChange({
+      aiReviewProviderId: provider.id,
+      aiReviewModel: defaultModelForProvider(provider.providerType),
+    });
   }
 
   function clearOverride() {
-    onChange({ aiReviewProvider: null, aiReviewModel: null });
+    onChange({ aiReviewProviderId: null, aiReviewModel: null });
   }
-
-  const availableModels = MODELS_BY_PROVIDER[currentProvider];
-  const hasOverride = provider !== null;
 
   return (
     <>
       <ConfirmModal
         open={showConfirm}
-        title="Bật AI Review?"
-        message={`Hiện có **${pendingCount} bài chưa duyệt**. AI sẽ tự động quét các bài này và tiêu hao token tương ứng.\n\nBài nộp mới từ giờ trở đi cũng sẽ được AI duyệt tự động.`}
-        confirmLabel="Bật AI Review"
-        cancelLabel="Hủy"
+        title="Bat AI Review?"
+        message={`Hien co **${pendingCount} bai chua duyet**. AI se tu dong quet cac bai nay va tieu hao token tuong ung.\n\nBai nop moi tu bay gio cung se duoc AI duyet tu dong.`}
+        confirmLabel="Bat AI Review"
+        cancelLabel="Huy"
         onConfirm={confirmEnable}
         onCancel={() => setShowConfirm(false)}
       />
 
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 12,
-        }}
-      >
-        <div
-          style={{
-            fontSize: "var(--text-sm)",
-            fontWeight: 700,
-            marginBottom: 0,
-            color: "var(--header-primary)",
-          }}
-        >
-          🤖 AI Review
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--header-primary)" }}>
+          AI Review
         </div>
 
-        {/* Toggle */}
-        <label
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            cursor: "pointer",
-          }}
-        >
+        <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
           <input
             type="checkbox"
             checked={enabled}
             onChange={(e) => handleToggle(e.target.checked)}
           />
           <span style={{ fontSize: "var(--text-sm)", color: "var(--text-normal)" }}>
-            Bật AI tự động duyệt submission
+            Bat AI tu dong duyet submission
           </span>
         </label>
 
         {enabled && (
           <>
-            {/* Threshold */}
-            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
-                Ngưỡng tin cậy
-              </span>
+            <label style={labelStyle}>
+              Nguong tin cay
               <select
                 value={threshold}
                 onChange={(e) => onChange({ aiReviewThreshold: parseFloat(e.target.value) })}
                 style={inputStyle}
               >
-                <option value="0.6">60% - Rất thoải mái</option>
-                <option value="0.7">70% - Thoải mái</option>
-                <option value="0.8">80% - Cân bằng</option>
-                <option value="0.9">90% - Nghiêm ngặt</option>
+                <option value="0.6">60% - Rat thoai mai</option>
+                <option value="0.7">70% - Thoai mai</option>
+                <option value="0.8">80% - Can bang</option>
+                <option value="0.9">90% - Nghiem ngat</option>
               </select>
             </label>
 
-            {/* Fallback */}
-            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
-                Khi AI không chắc chắn
-              </span>
+            <label style={labelStyle}>
+              Khi AI khong chac chan
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <label
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    cursor: "pointer",
-                  }}
-                >
+                <label style={radioStyle}>
                   <input
                     type="radio"
                     name="fallback"
@@ -209,18 +134,9 @@ export function AIReviewSettings({
                     checked={fallback === "FLAG"}
                     onChange={(e) => onChange({ aiReviewFallback: e.target.value })}
                   />
-                  <span style={{ fontSize: "var(--text-sm)", color: "var(--text-normal)" }}>
-                    Flag cho admin
-                  </span>
+                  Flag cho admin
                 </label>
-                <label
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    cursor: "pointer",
-                  }}
-                >
+                <label style={radioStyle}>
                   <input
                     type="radio"
                     name="fallback"
@@ -228,119 +144,69 @@ export function AIReviewSettings({
                     checked={fallback === "REJECT"}
                     onChange={(e) => onChange({ aiReviewFallback: e.target.value })}
                   />
-                  <span style={{ fontSize: "var(--text-sm)", color: "var(--text-normal)" }}>
-                    Auto-reject
-                  </span>
+                  Auto-reject
                 </label>
               </div>
             </label>
 
-            {/* Model override */}
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 8,
-                padding: 12,
-                background: "var(--bg-card)",
-                border: "1px solid var(--border-subtle)",
-                borderRadius: 8,
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
+            <div style={cardStyle}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
-                  Model AI Review (để trống = dùng model cộng đồng)
+                  Provider override (empty = community Agent review default)
                 </span>
                 {hasOverride && (
-                  <button
-                    type="button"
-                    onClick={clearOverride}
-                    style={{
-                      fontSize: "var(--text-xs)",
-                      padding: "3px 10px",
-                      borderRadius: 5,
-                      border: "1px solid var(--border-subtle)",
-                      background: "transparent",
-                      cursor: "pointer",
-                      color: "var(--text-muted)",
-                    }}
-                  >
-                    Xóa override
+                  <button type="button" onClick={clearOverride} style={smallButtonStyle}>
+                    Clear
                   </button>
                 )}
               </div>
 
               {!hasOverride ? (
-                <div
-                  style={{
-                    fontSize: "var(--text-sm)",
-                    color: "var(--text-muted)",
-                    fontStyle: "italic",
-                  }}
-                >
-                  Đang dùng model cộng đồng
-                </div>
+                <>
+                  <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", fontStyle: "italic" }}>
+                    Dang dung review brain mac dinh cua community Agent.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addOverride}
+                    disabled={enabledProviders.length === 0}
+                    style={{ ...smallButtonStyle, width: "fit-content", opacity: enabledProviders.length === 0 ? 0.5 : 1 }}
+                  >
+                    + Them override
+                  </button>
+                  {enabledProviders.length === 0 && (
+                    <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+                      Chua co AI Provider nao trong Community Settings.
+                    </div>
+                  )}
+                </>
               ) : (
                 <>
-                  <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
-                      Provider
-                    </span>
+                  <label style={labelStyle}>
+                    Provider
                     <select
-                      value={currentProvider}
-                      onChange={(e) => handleProviderChange(e.target.value as Provider)}
+                      value={providerId ?? ""}
+                      onChange={(e) => chooseProvider(e.target.value)}
                       style={inputStyle}
                     >
-                      {PROVIDERS.map((p) => (
-                        <option key={p.value} value={p.value}>
-                          {p.label}
+                      {enabledProviders.map((provider) => (
+                        <option key={provider.id} value={provider.id}>
+                          {provider.displayName} ({provider.providerLabel})
                         </option>
                       ))}
                     </select>
                   </label>
-
-                  <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+                  {currentProvider && (
+                    <label style={labelStyle}>
                       Model
-                    </span>
-                    <select
-                      value={currentModel}
-                      onChange={(e) => handleModelChange(e.target.value)}
-                      style={inputStyle}
-                    >
-                      {availableModels.map((m) => (
-                        <option key={m.value} value={m.value}>
-                          {m.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                      <ModelInput
+                        providerType={currentProvider.providerType}
+                        value={currentModel}
+                        onChange={(nextModel) => onChange({ aiReviewModel: nextModel })}
+                      />
+                    </label>
+                  )}
                 </>
-              )}
-
-              {!hasOverride && (
-                <button
-                  type="button"
-                  onClick={() => handleProviderChange(currentProvider)}
-                  style={{
-                    fontSize: "var(--text-xs)",
-                    padding: "6px 12px",
-                    borderRadius: 6,
-                    border: "1px solid var(--border-subtle)",
-                    background: "var(--bg-elevated)",
-                    cursor: "pointer",
-                    color: "var(--text-normal)",
-                    marginTop: 4,
-                  }}
-                >
-                  + Thêm override
-                </button>
               )}
             </div>
           </>
@@ -349,3 +215,81 @@ export function AIReviewSettings({
     </>
   );
 }
+
+function ModelInput({
+  providerType,
+  value,
+  onChange,
+}: {
+  providerType: AIProviderType;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  if (providerType === "openaiCompatible") {
+    return (
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="krr/claude-haiku-4-5-20251001"
+        style={inputStyle}
+      />
+    );
+  }
+  return (
+    <select value={value} onChange={(e) => onChange(e.target.value)} style={inputStyle}>
+      {PROVIDER_MODELS[providerType].map((model) => (
+        <option key={model.value} value={model.value}>
+          {model.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+const inputStyle: CSSProperties = {
+  width: "100%",
+  padding: "8px 10px",
+  borderRadius: 6,
+  border: "1px solid var(--border-subtle)",
+  background: "var(--bg-chat)",
+  color: "var(--text-normal)",
+  fontSize: "var(--text-sm)",
+  outline: "none",
+};
+
+const labelStyle: CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 4,
+  fontSize: "var(--text-xs)",
+  color: "var(--text-muted)",
+};
+
+const radioStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  cursor: "pointer",
+  fontSize: "var(--text-sm)",
+  color: "var(--text-normal)",
+};
+
+const cardStyle: CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 8,
+  padding: 12,
+  background: "var(--bg-card)",
+  border: "1px solid var(--border-subtle)",
+  borderRadius: 8,
+};
+
+const smallButtonStyle: CSSProperties = {
+  fontSize: "var(--text-xs)",
+  padding: "4px 10px",
+  borderRadius: 5,
+  border: "1px solid var(--border-subtle)",
+  background: "var(--bg-elevated)",
+  cursor: "pointer",
+  color: "var(--text-normal)",
+};

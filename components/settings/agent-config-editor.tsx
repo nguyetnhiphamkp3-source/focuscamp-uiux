@@ -1,95 +1,79 @@
 "use client";
 
-import { useState, useTransition, useCallback } from "react";
+import { useMemo, useState, useTransition, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import {
+  updateAgentBrainsAction,
+  updateAgentProfileAction,
   updateAgentSystemPromptAction,
-  updateAgentApiKeyAction,
-  updateAgentProviderAction,
-  updateAgentModelAction,
 } from "@/app/actions/agent";
+import { ImageUploadField } from "@/components/shared/image-upload-field";
+import {
+  AI_PROVIDER_TYPES,
+  AI_PROVIDER_TYPE_KEYS,
+  PROVIDER_MODELS,
+  defaultModelForProvider,
+  type AIProviderType,
+} from "@/lib/constants/ai-providers";
+import type { AIProviderClient } from "@/lib/services/ai-provider";
 import {
   inputStyle,
   btnPrimary,
+  btnSecondary,
+  btnDanger,
   ErrorBox,
   SuccessBox,
   SectionHeader,
 } from "./editor-shared";
 
-type Provider = "anthropic" | "openai" | "groq" | "xai" | "google";
+type LegacyProvider = "anthropic" | "openai" | "groq" | "xai" | "google";
 
-const PROVIDERS: { value: Provider; label: string }[] = [
-  { value: "anthropic", label: "Anthropic (Claude)" },
-  { value: "openai", label: "OpenAI (GPT)" },
-  { value: "groq", label: "Groq (Fast Inference)" },
-  { value: "xai", label: "xAI (Grok)" },
-  { value: "google", label: "Google (Gemini)" },
-];
-
-const MODELS_BY_PROVIDER: Record<Provider, { value: string; label: string }[]> = {
-  anthropic: [
-    { value: "claude-haiku-4-5", label: "Claude Haiku 4.5 — nhanh, rẻ" },
-    { value: "claude-sonnet-4-5", label: "Claude Sonnet 4.5" },
-    { value: "claude-sonnet-4-6", label: "Claude Sonnet 4.6" },
-    { value: "claude-opus-4-5", label: "Claude Opus 4.5" },
-    { value: "claude-opus-4-6", label: "Claude Opus 4.6" },
-    { value: "claude-opus-4-7", label: "Claude Opus 4.7 — mạnh nhất" },
-  ],
-  openai: [
-    { value: "gpt-4o-mini", label: "GPT-4o Mini — nhanh, rẻ" },
-    { value: "gpt-4o", label: "GPT-4o" },
-    { value: "gpt-4.1-nano", label: "GPT-4.1 Nano — rẻ nhất" },
-    { value: "gpt-4.1-mini", label: "GPT-4.1 Mini" },
-    { value: "gpt-4.1", label: "GPT-4.1" },
-  ],
-  groq: [
-    { value: "llama-3.1-8b-instant", label: "Llama 3.1 8B Instant — cực nhanh" },
-    { value: "llama-3.3-70b-versatile", label: "Llama 3.3 70B Versatile" },
-    { value: "meta-llama/llama-4-scout-17b-16e-instruct", label: "Llama 4 Scout 17B" },
-    { value: "qwen/qwen3-32b", label: "Qwen3 32B" },
-  ],
-  xai: [
-    { value: "grok-3-mini", label: "Grok 3 Mini — nhanh" },
-    { value: "grok-3", label: "Grok 3" },
-    { value: "grok-4", label: "Grok 4 — mạnh nhất" },
-  ],
-  google: [
-    { value: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite — rẻ nhất" },
-    { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash" },
-    { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
-    { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro — mạnh nhất" },
-  ],
+type ProviderForm = {
+  id: string | null;
+  name: string;
+  displayName: string;
+  providerType: AIProviderType;
+  baseUrl: string;
+  apiKey: string;
+  enabled: boolean;
+  testModelId: string;
 };
 
-const API_KEY_PLACEHOLDER: Record<Provider, string> = {
-  anthropic: "sk-ant-api03-...",
-  openai: "sk-proj-...",
-  groq: "gsk_...",
-  xai: "xai-...",
-  google: "AIza...",
-};
-
-const API_KEY_DOCS: Record<Provider, string> = {
-  anthropic: "console.anthropic.com",
-  openai: "platform.openai.com/api-keys",
-  groq: "console.groq.com/keys",
-  xai: "console.x.ai",
-  google: "aistudio.google.com/apikey",
-};
-
-const selectStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "8px 12px",
-  background: "var(--input-background)",
-  border: "1px solid var(--input-border)",
-  borderRadius: 4,
-  color: "var(--text-normal)",
-  fontSize: "var(--text-base)",
-  outline: "none",
+const selectStyle: CSSProperties = {
+  ...inputStyle,
   cursor: "pointer",
 };
 
-type ValidateStatus = "idle" | "checking" | "valid" | "error";
+function emptyProviderForm(type: AIProviderType = "anthropic"): ProviderForm {
+  return {
+    id: null,
+    name: "",
+    displayName: "",
+    providerType: type,
+    baseUrl: AI_PROVIDER_TYPES[type].defaultBaseUrl,
+    apiKey: "",
+    enabled: true,
+    testModelId: defaultModelForProvider(type) ?? "",
+  };
+}
+
+function formFromProvider(provider: AIProviderClient): ProviderForm {
+  return {
+    id: provider.id,
+    name: provider.name,
+    displayName: provider.displayName,
+    providerType: provider.providerType,
+    baseUrl: provider.baseUrl ?? AI_PROVIDER_TYPES[provider.providerType].defaultBaseUrl,
+    apiKey: "",
+    enabled: provider.enabled,
+    testModelId: defaultModelForProvider(provider.providerType) ?? "",
+  };
+}
+
+function modelOptionsFor(providerType: AIProviderType) {
+  if (providerType === "openaiCompatible") return [];
+  return PROVIDER_MODELS[providerType];
+}
 
 export function AgentConfigEditor({
   communityId,
@@ -101,98 +85,223 @@ export function AgentConfigEditor({
   initial: {
     prompt: string;
     hasApiKey: boolean;
-    provider: Provider;
+    provider: LegacyProvider;
     model: string | null;
+    communityName: string;
+    agentName: string | null;
+    agentAvatarUrl: string | null;
+    agentTagline: string | null;
+    chatProviderId: string | null;
+    reviewProviderId: string | null;
+    reviewModel: string | null;
+    providers: AIProviderClient[];
   };
 }) {
   const router = useRouter();
-  const [prompt, setPrompt] = useState(initial.prompt);
-  const [apiKey, setApiKey] = useState("");
-  const [provider, setProvider] = useState<Provider>(initial.provider);
-  const [model, setModel] = useState<string>(
-    initial.model ?? MODELS_BY_PROVIDER[initial.provider][0].value,
+  const [providers, setProviders] = useState(initial.providers);
+
+  const [agentName, setAgentName] = useState(
+    initial.agentName ?? `${initial.communityName} Agent`,
+  );
+  const [agentAvatarUrl, setAgentAvatarUrl] = useState<string | null>(
+    initial.agentAvatarUrl,
+  );
+  const [agentTagline, setAgentTagline] = useState(initial.agentTagline ?? "");
+
+  const [chatProviderId, setChatProviderId] = useState(initial.chatProviderId ?? "");
+  const [chatModel, setChatModel] = useState(
+    initial.model ?? defaultModelForProvider(initial.provider) ?? "",
+  );
+  const [reviewProviderId, setReviewProviderId] = useState(
+    initial.reviewProviderId ?? "",
+  );
+  const [reviewModel, setReviewModel] = useState(
+    initial.reviewModel ?? initial.model ?? "",
   );
 
-  // Prompt save state
+  const [providerForm, setProviderForm] = useState<ProviderForm>(
+    emptyProviderForm("anthropic"),
+  );
+  const [providerErr, setProviderErr] = useState<string | null>(null);
+  const [providerSaved, setProviderSaved] = useState(false);
+  const [providerPending, startProvider] = useTransition();
+  const [testStatus, setTestStatus] = useState<
+    "idle" | "checking" | "valid" | "error"
+  >("idle");
+  const [testErr, setTestErr] = useState<string | null>(null);
+
+  const [profileErr, setProfileErr] = useState<string | null>(null);
+  const [profileSaved, setProfileSaved] = useState(false);
+  const [profilePending, startProfile] = useTransition();
+
+  const [brainErr, setBrainErr] = useState<string | null>(null);
+  const [brainSaved, setBrainSaved] = useState(false);
+  const [brainPending, startBrain] = useTransition();
+
+  const [prompt, setPrompt] = useState(initial.prompt);
   const [promptPending, startPrompt] = useTransition();
   const [promptErr, setPromptErr] = useState<string | null>(null);
   const [promptSaved, setPromptSaved] = useState(false);
 
-  // Config save state (provider + model + API key)
-  const [savePending, startSave] = useTransition();
-  const [saveErr, setSaveErr] = useState<string | null>(null);
-  const [saveSaved, setSaveSaved] = useState(false);
+  const enabledProviders = useMemo(
+    () => providers.filter((provider) => provider.enabled),
+    [providers],
+  );
 
-  // Model validation state
-  const [validateStatus, setValidateStatus] = useState<ValidateStatus>("idle");
-  const [validateError, setValidateError] = useState<string | null>(null);
+  const chatProvider = providers.find((provider) => provider.id === chatProviderId);
+  const reviewProvider = providers.find((provider) => provider.id === reviewProviderId);
 
-  function handleProviderChange(p: Provider) {
-    setProvider(p);
-    // Reset model to first option for new provider
-    setModel(MODELS_BY_PROVIDER[p][0].value);
-    // Reset validation when provider changes
-    setValidateStatus("idle");
-    setValidateError(null);
-    setSaveSaved(false);
-  }
-
-  function handleModelChange(m: string) {
-    setModel(m);
-    // Reset validation when model changes
-    setValidateStatus("idle");
-    setValidateError(null);
-    setSaveSaved(false);
-  }
-
-  const validateModel = useCallback(async () => {
-    setValidateStatus("checking");
-    setValidateError(null);
-    try {
-      const res = await fetch("/api/agent/validate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          communityId,
-          provider,
-          model,
-          // Send the new API key if user typed one, otherwise endpoint uses stored key
-          ...(apiKey.trim() ? { apiKey: apiKey.trim() } : {}),
-        }),
-      });
-      const data = await res.json();
-      if (data.ok) {
-        setValidateStatus("valid");
-      } else {
-        setValidateStatus("error");
-        setValidateError(data.error || "Kiểm tra thất bại");
+  function updateProviderForm(fields: Partial<ProviderForm>) {
+    setProviderForm((current) => {
+      const next = { ...current, ...fields };
+      if (fields.providerType) {
+        next.baseUrl = AI_PROVIDER_TYPES[fields.providerType].defaultBaseUrl;
+        next.testModelId = defaultModelForProvider(fields.providerType) ?? "";
       }
-    } catch {
-      setValidateStatus("error");
-      setValidateError("Không thể kết nối server");
+      return next;
+    });
+    setProviderSaved(false);
+    setProviderErr(null);
+    setTestStatus("idle");
+    setTestErr(null);
+  }
+
+  async function refreshProviders() {
+    const res = await fetch(`/api/ai-providers?communityId=${communityId}`);
+    const data = await res.json();
+    if (data.ok && Array.isArray(data.providers)) {
+      setProviders(data.providers);
     }
-  }, [communityId, provider, model, apiKey]);
+  }
 
-  function submitConfig() {
-    setSaveErr(null);
-    setSaveSaved(false);
-    startSave(async () => {
-      // Save provider + model always
-      const [pRes, mRes] = await Promise.all([
-        updateAgentProviderAction({ communityId, communitySlug, provider }),
-        updateAgentModelAction({ communityId, communitySlug, model }),
-      ]);
-      if (!pRes.ok) { setSaveErr(pRes.reason); return; }
-      if (!mRes.ok) { setSaveErr(mRes.reason); return; }
-
-      // Save API key only if user entered a new one
-      if (apiKey.trim()) {
-        const kRes = await updateAgentApiKeyAction({ communityId, communitySlug, apiKey });
-        if (!kRes.ok) { setSaveErr(kRes.reason); return; }
-        setApiKey("");
+  function saveProvider() {
+    setProviderErr(null);
+    setProviderSaved(false);
+    startProvider(async () => {
+      const body = {
+        communityId,
+        name: providerForm.name,
+        displayName: providerForm.displayName,
+        providerType: providerForm.providerType,
+        baseUrl: providerForm.baseUrl || null,
+        enabled: providerForm.enabled,
+        ...(providerForm.apiKey.trim()
+          ? { apiKey: providerForm.apiKey.trim() }
+          : {}),
+      };
+      const res = await fetch(
+        providerForm.id
+          ? `/api/ai-providers/${providerForm.id}`
+          : "/api/ai-providers",
+        {
+          method: providerForm.id ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        },
+      );
+      const data = await res.json();
+      if (!data.ok) {
+        setProviderErr(data.error || "provider_save_failed");
+        return;
       }
+      await refreshProviders();
+      setProviderForm(emptyProviderForm(providerForm.providerType));
+      setProviderSaved(true);
+      router.refresh();
+    });
+  }
 
-      setSaveSaved(true);
+  function deleteProvider(provider: AIProviderClient) {
+    if (!window.confirm(`Delete provider "${provider.displayName}"?`)) return;
+    setProviderErr(null);
+    setProviderSaved(false);
+    startProvider(async () => {
+      const res = await fetch(
+        `/api/ai-providers/${provider.id}?communityId=${communityId}`,
+        { method: "DELETE" },
+      );
+      const data = await res.json();
+      if (!data.ok) {
+        setProviderErr(data.error || "provider_delete_failed");
+        return;
+      }
+      await refreshProviders();
+      if (chatProviderId === provider.id) setChatProviderId("");
+      if (reviewProviderId === provider.id) setReviewProviderId("");
+      setProviderSaved(true);
+      router.refresh();
+    });
+  }
+
+  async function testProvider() {
+    setTestStatus("checking");
+    setTestErr(null);
+    const directTest = !providerForm.id || !!providerForm.apiKey.trim();
+    const res = await fetch("/api/ai-providers/validate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(
+        directTest && providerForm.apiKey.trim()
+          ? {
+              communityId,
+              providerType: providerForm.providerType,
+              baseUrl: providerForm.baseUrl || null,
+              apiKey: providerForm.apiKey.trim(),
+              modelId: providerForm.testModelId,
+            }
+          : {
+              communityId,
+              providerId: providerForm.id,
+              modelId: providerForm.testModelId,
+            },
+      ),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      setTestStatus("valid");
+      return;
+    }
+    setTestStatus("error");
+    setTestErr(data.error || "validation_failed");
+  }
+
+  function submitProfile() {
+    setProfileErr(null);
+    setProfileSaved(false);
+    startProfile(async () => {
+      const res = await updateAgentProfileAction({
+        communityId,
+        communitySlug,
+        name: agentName,
+        avatarUrl: agentAvatarUrl,
+        tagline: agentTagline,
+      });
+      if (!res.ok) {
+        setProfileErr(res.reason);
+        return;
+      }
+      setProfileSaved(true);
+      router.refresh();
+    });
+  }
+
+  function submitBrains() {
+    setBrainErr(null);
+    setBrainSaved(false);
+    startBrain(async () => {
+      const res = await updateAgentBrainsAction({
+        communityId,
+        communitySlug,
+        chatProviderId: chatProviderId || null,
+        chatModel,
+        reviewProviderId: reviewProviderId || null,
+        reviewModel,
+      });
+      if (!res.ok) {
+        setBrainErr(res.reason);
+        return;
+      }
+      setBrainSaved(true);
       router.refresh();
     });
   }
@@ -201,215 +310,308 @@ export function AgentConfigEditor({
     setPromptErr(null);
     setPromptSaved(false);
     startPrompt(async () => {
-      const res = await updateAgentSystemPromptAction({ communityId, communitySlug, prompt });
-      if (res.ok) {
-        setPromptSaved(true);
-        router.refresh();
-      } else {
+      const res = await updateAgentSystemPromptAction({
+        communityId,
+        communitySlug,
+        prompt,
+      });
+      if (!res.ok) {
         setPromptErr(res.reason);
+        return;
       }
+      setPromptSaved(true);
+      router.refresh();
     });
   }
-
-  const availableModels = MODELS_BY_PROVIDER[provider];
-
-  const checkBtnStyle: React.CSSProperties = {
-    padding: "8px 14px",
-    borderRadius: 4,
-    border: "1px solid var(--input-border)",
-    fontSize: "var(--text-base)",
-    fontWeight: 600,
-    whiteSpace: "nowrap",
-    cursor: validateStatus === "checking" ? "not-allowed" : "pointer",
-    opacity: validateStatus === "checking" ? 0.6 : 1,
-    transition: "all 0.15s ease",
-    ...(validateStatus === "valid"
-      ? { background: "var(--success, #1B9E75)", color: "#fff", borderColor: "var(--success, #1B9E75)" }
-      : validateStatus === "error"
-        ? { background: "transparent", color: "var(--danger, #e53e3e)", borderColor: "var(--danger, #e53e3e)" }
-        : { background: "var(--background-secondary)", color: "var(--text-normal)", borderColor: "var(--input-border)" }),
-  };
 
   return (
     <section className="ui-card ui-card-lg" style={{ marginBottom: "var(--space-4)" }}>
       <SectionHeader
-        title="AI Agent"
-        subtitle="Cấu hình provider, model, API key và system prompt cho Agent của cộng đồng."
+        title="Community AI Agent"
+        subtitle="Configure the visible Agent identity, provider credentials, and the chat/review brains."
       />
 
-      {/* Provider + Model */}
-      <div style={{ marginBottom: "var(--space-4)" }}>
-        <label
-          style={{
-            display: "block",
-            fontSize: "var(--text-sm)",
-            fontWeight: 600,
-            color: "var(--header-primary)",
-            marginBottom: 6,
-          }}
-        >
-          Provider & Model
-        </label>
-        <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-          <select
-            value={provider}
-            onChange={(e) => handleProviderChange(e.target.value as Provider)}
-            disabled={savePending}
-            style={{ ...selectStyle, flex: "0 0 200px" }}
-          >
-            {PROVIDERS.map((p) => (
-              <option key={p.value} value={p.value}>{p.label}</option>
-            ))}
-          </select>
-          <select
-            value={model}
-            onChange={(e) => handleModelChange(e.target.value)}
-            disabled={savePending}
-            style={{ ...selectStyle, flex: 1 }}
-          >
-            {availableModels.map((m) => (
-              <option key={m.value} value={m.value}>{m.label}</option>
-            ))}
-          </select>
+      <div style={{ display: "grid", gridTemplateColumns: "72px 1fr", gap: 14, marginBottom: 18 }}>
+        <ImageUploadField
+          value={agentAvatarUrl}
+          onChange={setAgentAvatarUrl}
+          context="avatar"
+          shape="circle"
+          disabled={profilePending}
+          placeholder="Agent"
+          maxSizeNote="Max 2MB"
+        />
+        <div style={{ display: "grid", gap: 10 }}>
+          <label style={labelStyle}>
+            Agent name
+            <input
+              value={agentName}
+              onChange={(e) => setAgentName(e.target.value)}
+              maxLength={80}
+              disabled={profilePending}
+              style={inputStyle}
+            />
+          </label>
+          <label style={labelStyle}>
+            Short intro
+            <input
+              value={agentTagline}
+              onChange={(e) => setAgentTagline(e.target.value)}
+              maxLength={160}
+              disabled={profilePending}
+              placeholder="Runs chat support and submission review for this community"
+              style={inputStyle}
+            />
+          </label>
+          <div style={{ display: "flex" }}>
+            <button
+              type="button"
+              onClick={submitProfile}
+              disabled={profilePending || !agentName.trim()}
+              style={{
+                ...btnPrimary,
+                marginLeft: "auto",
+                opacity: profilePending || !agentName.trim() ? 0.6 : 1,
+              }}
+            >
+              {profilePending ? "Saving..." : "Save identity"}
+            </button>
+          </div>
+          <ErrorBox msg={profileErr} />
+          <SuccessBox shown={profileSaved} />
+        </div>
+      </div>
+
+      <Divider />
+
+      <SectionHeader
+        title="AI Providers"
+        subtitle="Store provider credentials once. OpenAI Compatible supports custom base URLs and manual model IDs."
+      />
+
+      {providers.length === 0 ? (
+        <div style={emptyStateStyle}>
+          No provider instances yet.
+          {initial.hasApiKey ? " A legacy Agent key is still present and works as fallback." : ""}
+        </div>
+      ) : (
+        <div style={{ display: "grid", gap: 8, marginBottom: 14 }}>
+          {providers.map((provider) => (
+            <div key={provider.id} style={providerRowStyle}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 700, color: "var(--header-primary)" }}>
+                  {provider.displayName}
+                  {!provider.enabled && (
+                    <span style={{ color: "var(--text-muted)", fontWeight: 500 }}> disabled</span>
+                  )}
+                </div>
+                <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 2 }}>
+                  {provider.providerLabel}
+                  {provider.baseUrl ? ` · ${provider.baseUrl}` : ""}
+                  {provider.maskedKey ? ` · ${provider.maskedKey}` : ""}
+                </div>
+              </div>
+              <button type="button" onClick={() => setProviderForm(formFromProvider(provider))} style={btnSecondary}>
+                Edit
+              </button>
+              <button type="button" onClick={() => deleteProvider(provider)} style={btnDanger}>
+                Delete
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={formCardStyle}>
+        <div style={{ fontWeight: 700, color: "var(--header-primary)" }}>
+          {providerForm.id ? "Edit provider" : "Add provider"}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <label style={labelStyle}>
+            Display name
+            <input
+              value={providerForm.displayName}
+              onChange={(e) => updateProviderForm({ displayName: e.target.value })}
+              placeholder="Main Anthropic"
+              style={inputStyle}
+            />
+          </label>
+          <label style={labelStyle}>
+            Internal name
+            <input
+              value={providerForm.name}
+              onChange={(e) => updateProviderForm({ name: e.target.value })}
+              placeholder="main-anthropic"
+              style={inputStyle}
+            />
+          </label>
+          <label style={labelStyle}>
+            Provider type
+            <select
+              value={providerForm.providerType}
+              onChange={(e) =>
+                updateProviderForm({ providerType: e.target.value as AIProviderType })
+              }
+              style={selectStyle}
+            >
+              {AI_PROVIDER_TYPE_KEYS.map((type) => (
+                <option key={type} value={type}>
+                  {AI_PROVIDER_TYPES[type].label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label style={labelStyle}>
+            API key
+            <input
+              type="password"
+              value={providerForm.apiKey}
+              onChange={(e) => updateProviderForm({ apiKey: e.target.value })}
+              placeholder={providerForm.id ? "Leave blank to keep current key" : "sk-..."}
+              style={inputStyle}
+            />
+          </label>
+          {providerForm.providerType === "openaiCompatible" && (
+            <label style={{ ...labelStyle, gridColumn: "1 / -1" }}>
+              Base URL
+              <input
+                value={providerForm.baseUrl}
+                onChange={(e) => updateProviderForm({ baseUrl: e.target.value })}
+                placeholder="https://llm.chiasegpu.vn/v1"
+                style={inputStyle}
+              />
+            </label>
+          )}
+          <label style={labelStyle}>
+            Test model ID
+            <ModelInput
+              providerType={providerForm.providerType}
+              value={providerForm.testModelId}
+              onChange={(value) => updateProviderForm({ testModelId: value })}
+            />
+          </label>
+          <label style={{ ...labelStyle, justifyContent: "end" }}>
+            <span style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 22 }}>
+              <input
+                type="checkbox"
+                checked={providerForm.enabled}
+                onChange={(e) => updateProviderForm({ enabled: e.target.checked })}
+              />
+              Enabled
+            </span>
+          </label>
+        </div>
+        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+          {providerForm.id && (
+            <button type="button" onClick={() => setProviderForm(emptyProviderForm())} style={btnSecondary}>
+              New provider
+            </button>
+          )}
           <button
             type="button"
-            onClick={validateModel}
-            disabled={validateStatus === "checking"}
-            style={checkBtnStyle}
-            title="Kiểm tra model hoạt động với API key hiện tại"
+            onClick={testProvider}
+            disabled={testStatus === "checking" || !providerForm.testModelId.trim()}
+            style={btnSecondary}
           >
-            {validateStatus === "checking"
-              ? "Đang kiểm tra…"
-              : validateStatus === "valid"
-                ? "✓ Hợp lệ"
-                : "Kiểm tra"}
+            {testStatus === "checking" ? "Testing..." : testStatus === "valid" ? "Valid" : "Test"}
+          </button>
+          <button
+            type="button"
+            onClick={saveProvider}
+            disabled={
+              providerPending ||
+              !providerForm.displayName.trim() ||
+              (!providerForm.id && !providerForm.apiKey.trim())
+            }
+            style={{
+              ...btnPrimary,
+              opacity:
+                providerPending ||
+                !providerForm.displayName.trim() ||
+                (!providerForm.id && !providerForm.apiKey.trim())
+                  ? 0.6
+                  : 1,
+            }}
+          >
+            {providerPending ? "Saving..." : "Save provider"}
           </button>
         </div>
-        {validateStatus === "error" && validateError && (
-          <div
-            style={{
-              fontSize: "var(--text-sm)",
-              color: "var(--danger, #e53e3e)",
-              marginTop: 4,
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 4,
-            }}
-          >
-            <span style={{ flexShrink: 0 }}>✗</span>
-            <span>{validateError}</span>
-          </div>
-        )}
-        {validateStatus === "valid" && (
-          <div
-            style={{
-              fontSize: "var(--text-sm)",
-              color: "var(--success, #1B9E75)",
-              marginTop: 4,
-            }}
-          >
-            ✓ Model hoạt động bình thường
-          </div>
-        )}
+        <ErrorBox msg={testStatus === "error" ? testErr : null} />
+        <ErrorBox msg={providerErr} />
+        <SuccessBox shown={providerSaved} />
       </div>
 
-      {/* API Key */}
-      <div style={{ marginBottom: "var(--space-4)" }}>
-        <label
-          style={{
-            display: "block",
-            fontSize: "var(--text-sm)",
-            fontWeight: 600,
-            color: "var(--header-primary)",
-            marginBottom: 6,
-          }}
-        >
-          API Key ({PROVIDERS.find((p) => p.value === provider)?.label})
-        </label>
-        <div
-          style={{
-            fontSize: "var(--text-xs)",
-            color: "var(--text-muted)",
-            marginBottom: 8,
-          }}
-        >
-          {initial.hasApiKey
-            ? "✓ Đã lưu API key. Nhập key mới để thay thế."
-            : `Chưa có API key. Lấy key tại ${API_KEY_DOCS[provider]}`}
-        </div>
-        <input
-          type="password"
-          value={apiKey}
-          onChange={(e) => {
-            setApiKey(e.target.value);
-            setSaveSaved(false);
-            // Reset validation when API key changes
-            if (validateStatus !== "idle") {
-              setValidateStatus("idle");
-              setValidateError(null);
-            }
-          }}
-          placeholder={API_KEY_PLACEHOLDER[provider]}
-          disabled={savePending}
-          style={{ ...inputStyle, width: "100%" }}
-        />
-      </div>
+      <Divider />
 
-      {/* Single Save button for provider + model + API key */}
-      <div style={{ display: "flex", marginBottom: "var(--space-4)" }}>
-        <button
-          type="button"
-          onClick={submitConfig}
-          disabled={savePending}
-          style={{
-            ...btnPrimary,
-            marginLeft: "auto",
-            opacity: savePending ? 0.6 : 1,
-            cursor: savePending ? "not-allowed" : "pointer",
-          }}
-        >
-          {savePending ? "Đang lưu…" : "Lưu"}
-        </button>
-      </div>
-      <ErrorBox msg={saveErr} />
-      <SuccessBox shown={saveSaved} />
-
-      {/* Divider */}
-      <div
-        style={{
-          borderTop: "1px solid var(--background-modifier-accent)",
-          margin: "var(--space-4) 0",
-        }}
+      <SectionHeader
+        title="Agent brains"
+        subtitle="Chat and submission review can use different provider instances and models."
       />
 
-      {/* System Prompt */}
-      <label
-        style={{
-          display: "block",
-          fontSize: "var(--text-sm)",
-          fontWeight: 600,
-          color: "var(--header-primary)",
-          marginBottom: 6,
-        }}
-      >
-        System Prompt
-      </label>
-      <div
-        style={{
-          fontSize: "var(--text-xs)",
-          color: "var(--text-muted)",
-          marginBottom: 8,
-        }}
-      >
-        Để trống = dùng prompt mặc định.
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <BrainPicker
+          title="Chat brain"
+          providers={enabledProviders}
+          selectedProviderId={chatProviderId}
+          model={chatModel}
+          fallbackText={
+            initial.hasApiKey
+              ? `Legacy fallback: ${AI_PROVIDER_TYPES[initial.provider].label} / ${initial.model ?? "default"}`
+              : "No provider selected"
+          }
+          onProviderChange={(id) => {
+            setChatProviderId(id);
+            const provider = providers.find((item) => item.id === id);
+            if (provider) setChatModel(defaultModelForProvider(provider.providerType) ?? "");
+          }}
+          onModelChange={setChatModel}
+          provider={chatProvider}
+        />
+        <BrainPicker
+          title="Review brain default"
+          providers={enabledProviders}
+          selectedProviderId={reviewProviderId}
+          model={reviewModel}
+          fallbackText={
+            chatProvider
+              ? `Uses chat brain if empty: ${chatProvider.displayName}`
+              : "Uses legacy/chat fallback if empty"
+          }
+          onProviderChange={(id) => {
+            setReviewProviderId(id);
+            const provider = providers.find((item) => item.id === id);
+            if (provider) setReviewModel(defaultModelForProvider(provider.providerType) ?? "");
+          }}
+          onModelChange={setReviewModel}
+          provider={reviewProvider}
+        />
       </div>
+      <div style={{ display: "flex", marginTop: 12 }}>
+        <button
+          type="button"
+          onClick={submitBrains}
+          disabled={brainPending}
+          style={{ ...btnPrimary, marginLeft: "auto", opacity: brainPending ? 0.6 : 1 }}
+        >
+          {brainPending ? "Saving..." : "Save brains"}
+        </button>
+      </div>
+      <ErrorBox msg={brainErr} />
+      <SuccessBox shown={brainSaved} />
+
+      <Divider />
+
+      <SectionHeader
+        title="Instructions"
+        subtitle="Leave empty to use the default Agent prompt."
+      />
       <textarea
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
         rows={8}
         maxLength={4000}
         disabled={promptPending}
-        placeholder="Bạn là AI Agent của cộng đồng X. Hỗ trợ thành viên về…"
+        placeholder="You are the community AI Agent..."
         style={{
           ...inputStyle,
           resize: "vertical",
@@ -417,28 +619,17 @@ export function AgentConfigEditor({
           minHeight: 160,
         }}
       />
-      <div
-        style={{
-          fontSize: "var(--text-xs)",
-          color: "var(--text-muted)",
-          marginTop: 6,
-        }}
-      >
-        {prompt.length}/4000 ký tự
+      <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 6 }}>
+        {prompt.length}/4000
       </div>
       <div style={{ display: "flex", marginTop: 12 }}>
         <button
           type="button"
           onClick={submitPrompt}
           disabled={promptPending}
-          style={{
-            ...btnPrimary,
-            marginLeft: "auto",
-            opacity: promptPending ? 0.6 : 1,
-            cursor: promptPending ? "not-allowed" : "pointer",
-          }}
+          style={{ ...btnPrimary, marginLeft: "auto", opacity: promptPending ? 0.6 : 1 }}
         >
-          {promptPending ? "Đang lưu…" : "Lưu prompt"}
+          {promptPending ? "Saving..." : "Save prompt"}
         </button>
       </div>
       <ErrorBox msg={promptErr} />
@@ -446,3 +637,134 @@ export function AgentConfigEditor({
     </section>
   );
 }
+
+function BrainPicker({
+  title,
+  providers,
+  selectedProviderId,
+  provider,
+  model,
+  fallbackText,
+  onProviderChange,
+  onModelChange,
+}: {
+  title: string;
+  providers: AIProviderClient[];
+  selectedProviderId: string;
+  provider: AIProviderClient | undefined;
+  model: string;
+  fallbackText: string;
+  onProviderChange: (providerId: string) => void;
+  onModelChange: (model: string) => void;
+}) {
+  return (
+    <div style={formCardStyle}>
+      <div style={{ fontWeight: 700, color: "var(--header-primary)" }}>{title}</div>
+      <label style={labelStyle}>
+        Provider instance
+        <select
+          value={selectedProviderId}
+          onChange={(e) => onProviderChange(e.target.value)}
+          style={selectStyle}
+        >
+          <option value="">{fallbackText}</option>
+          {providers.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.displayName} ({item.providerLabel})
+            </option>
+          ))}
+        </select>
+      </label>
+      {provider && (
+        <label style={labelStyle}>
+          Model ID
+          <ModelInput
+            providerType={provider.providerType}
+            value={model}
+            onChange={onModelChange}
+          />
+        </label>
+      )}
+    </div>
+  );
+}
+
+function ModelInput({
+  providerType,
+  value,
+  onChange,
+}: {
+  providerType: AIProviderType;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const options = modelOptionsFor(providerType);
+  if (providerType === "openaiCompatible") {
+    return (
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="krr/claude-haiku-4-5-20251001"
+        style={inputStyle}
+      />
+    );
+  }
+  return (
+    <select value={value} onChange={(e) => onChange(e.target.value)} style={selectStyle}>
+      {options.map((model) => (
+        <option key={model.value} value={model.value}>
+          {model.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function Divider() {
+  return (
+    <div
+      style={{
+        borderTop: "1px solid var(--background-modifier-accent)",
+        margin: "var(--space-5) 0",
+      }}
+    />
+  );
+}
+
+const labelStyle: CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 6,
+  fontSize: "var(--text-sm)",
+  fontWeight: 600,
+  color: "var(--header-primary)",
+};
+
+const emptyStateStyle: CSSProperties = {
+  padding: 12,
+  borderRadius: 8,
+  border: "1px dashed var(--border-subtle)",
+  color: "var(--text-muted)",
+  fontSize: "var(--text-sm)",
+  marginBottom: 12,
+};
+
+const providerRowStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  padding: 12,
+  borderRadius: 8,
+  border: "1px solid var(--border-subtle)",
+  background: "var(--bg-card)",
+};
+
+const formCardStyle: CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 10,
+  padding: 12,
+  borderRadius: 8,
+  border: "1px solid var(--border-subtle)",
+  background: "var(--bg-card)",
+};

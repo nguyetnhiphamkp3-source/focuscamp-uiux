@@ -36,6 +36,7 @@ export async function POST(req: Request) {
     provider: string;
     model: string;
     apiKey?: string;
+    baseUrl?: string | null;
   };
   try {
     body = await req.json();
@@ -77,7 +78,12 @@ export async function POST(req: Request) {
   }
 
   try {
-    const model = buildModel(body.provider, apiKey, body.model);
+    const model = buildModel({
+      providerType: body.provider,
+      apiKey,
+      modelId: body.model,
+      baseUrl: body.baseUrl ?? null,
+    });
     await generateText({
       model,
       prompt: "Hi",

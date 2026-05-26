@@ -10,57 +10,61 @@ datasource db {
 // ============= AUTH =============
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  emailVerified DateTime?
-  name          String?
-  image         String?
-  handle        String?   @unique
-  bio           String?
-  location      String?
-  isSuperAdmin  Boolean   @default(false)
-  /** Linked Telegram user id — same person can chat AI agent via web or Telegram. */
-  telegramUserId   String? @unique
-  telegramUsername String?
-  /** Default community for cross-channel agent context (optional). */
+  id                 String    @id @default(cuid())
+  email              String    @unique
+  emailVerified      DateTime?
+  name               String?
+  image              String?
+  handle             String?   @unique
+  bio                String?
+  location           String?
+  isSuperAdmin       Boolean   @default(false)
+  /**
+   * Linked Telegram user id — same person can chat AI agent via web or Telegram.
+   */
+  telegramUserId     String?   @unique
+  telegramUsername   String?
+  /**
+   * Default community for cross-channel agent context (optional).
+   */
   defaultCommunityId String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  accounts         Account[]
-  sessions         Session[]
-  memberships      Membership[]
-  ownedCommunities Community[]        @relation("CommunityOwner")
-  posts            Post[]
-  comments         Comment[]
-  reactions        Reaction[]
-  votes            Vote[]
-  messages         Message[]
-  courseProgress   CourseProgress[]
-  challengeMembers ChallengeMember[]
-  taskCompletions  TaskCompletion[]
-  checkins         Checkin[]
-  reviewedCheckins Checkin[]          @relation("CheckinReviewer")
-  submissionVotes  SubmissionVote[]
-  checkinVotes     CheckinVote[]
-  notifications    Notification[]     @relation("NotifRecipient")
-  triggeredNotifs  Notification[]     @relation("NotifActor")
-  bookmarks        Bookmark[]
-  follows          Follow[]           @relation("FollowFollower")
-  followers        Follow[]           @relation("FollowFollowee")
-  featureReadStates FeatureReadState[]
-  purchases        Purchase[]
-  xpLedger         XPLedger[]
-  badgeAwards      BadgeAward[]
-  affiliateLinks   AffiliateLink[]
-  referrals        Referral[]
+  accounts           Account[]
+  sessions           Session[]
+  memberships        Membership[]
+  ownedCommunities   Community[]         @relation("CommunityOwner")
+  posts              Post[]
+  comments           Comment[]
+  reactions          Reaction[]
+  votes              Vote[]
+  messages           Message[]
+  courseProgress     CourseProgress[]
+  challengeMembers   ChallengeMember[]
+  taskCompletions    TaskCompletion[]
+  checkins           Checkin[]
+  reviewedCheckins   Checkin[]           @relation("CheckinReviewer")
+  submissionVotes    SubmissionVote[]
+  checkinVotes       CheckinVote[]
+  notifications      Notification[]      @relation("NotifRecipient")
+  triggeredNotifs    Notification[]      @relation("NotifActor")
+  bookmarks          Bookmark[]
+  follows            Follow[]            @relation("FollowFollower")
+  followers          Follow[]            @relation("FollowFollowee")
+  featureReadStates  FeatureReadState[]
+  purchases          Purchase[]
+  xpLedger           XPLedger[]
+  badgeAwards        BadgeAward[]
+  affiliateLinks     AffiliateLink[]
+  referrals          Referral[]
   agentConversations AgentConversation[]
-  apiKeys          ApiKey[]
-  ownedEvents      Event[]
-  eventBookings    EventBooking[]
-  couponRedemptions CouponRedemption[]
-  reportsFiled      ContentReport[]    @relation("ReportReporter")
-  reportsResolved   ContentReport[]    @relation("ReportResolver")
+  apiKeys            ApiKey[]
+  ownedEvents        Event[]
+  eventBookings      EventBooking[]
+  couponRedemptions  CouponRedemption[]
+  reportsFiled       ContentReport[]     @relation("ReportReporter")
+  reportsResolved    ContentReport[]     @relation("ReportResolver")
 }
 
 model Account {
@@ -105,11 +109,11 @@ model VerificationToken {
 // ============= COMMUNITY =============
 
 model Community {
-  id          String   @id @default(cuid())
-  slug        String   @unique
+  id          String  @id @default(cuid())
+  slug        String  @unique
   name        String
   tagline     String?
-  description String?  @db.Text
+  description String? @db.Text
   bannerUrl   String?
   iconUrl     String?
   ownerId     String
@@ -119,37 +123,74 @@ model Community {
   gemsConfig    Json?
   levelsConfig  Json?
   bossConfig    Json?
-  /** Subscription tier config — defines tiers + pricing + gates */
+  /**
+   * Subscription tier config — defines tiers + pricing + gates
+   */
   tiersConfig   Json?
   billingModel  Json?
-  /** UI visibility config — { hiddenFeatures: FeatureKey[] } */
+  /**
+   * UI visibility config — { hiddenFeatures: FeatureKey[] }
+   */
   uiConfig      Json?
 
-  /** Affiliate program config — { enabled, commissionPercent, cookieDays } */
+  /**
+   * Affiliate program config — { enabled, commissionPercent, cookieDays }
+   */
   affiliateConfig Json?
 
-  /** External notification channels — { discord?: { webhookUrl, eventTypes }, telegram?: { botToken, chatId, eventTypes } } */
+  /**
+   * External notification channels — { discord?: { webhookUrl, eventTypes }, telegram?: { botToken, chatId, eventTypes } }
+   */
   channelConfig Json?
 
-  /** Agency tier toggle — hide focus.camp brand footer */
-  whiteLabel    Boolean @default(false)
+  /**
+   * Agency tier toggle — hide focus.camp brand footer
+   */
+  whiteLabel Boolean @default(false)
 
-  /** Platform-level plan tier paid by owner: SOLO | PRO | AGENCY | GRANDFATHER */
-  planTier      String  @default("SOLO")
-  /** Null = not active yet (PENDING payment) OR grandfathered (lifetime free). Otherwise expiry date. */
+  /**
+   * Platform-level plan tier paid by owner: SOLO | PRO | AGENCY | GRANDFATHER
+   */
+  planTier      String    @default("SOLO")
+  /**
+   * Null = not active yet (PENDING payment) OR grandfathered (lifetime free). Otherwise expiry date.
+   */
   planExpiresAt DateTime?
 
-  /** AI Agent system prompt configured by owner. Empty = generic helper. */
-  agentSystemPrompt String? @db.Text
-  /** Encrypted API key for per-community AI Agent (provider-specific). */
-  agentApiKey       String? @db.Text
-  /** LLM provider: anthropic | openai | groq | xai | google */
-  agentProvider     String? @default("anthropic")
-  /** Model ID within the chosen provider, e.g. "claude-haiku-4-5" */
-  agentModel        String?
+  /**
+   * AI Agent system prompt configured by owner. Empty = generic helper.
+   */
+  agentSystemPrompt     String? @db.Text
+  /**
+   * Encrypted API key for per-community AI Agent (provider-specific).
+   */
+  agentApiKey           String? @db.Text
+  /**
+   * LLM provider: anthropic | openai | groq | xai | google
+   */
+  agentProvider         String? @default("anthropic")
+  /**
+   * Model ID within the chosen provider, e.g. "claude-haiku-4-5"
+   */
+  agentModel            String?
+  /**
+   * Visible identity for the community AI Agent.
+   */
+  agentName             String?
+  agentAvatarUrl        String?
+  agentTagline          String?
+  /**
+   * Selected provider instance for Agent chat. Null = legacy provider fields.
+   */
+  agentProviderId       String?
+  /**
+   * Selected provider/model defaults for AI submission review.
+   */
+  agentReviewProviderId String?
+  agentReviewModel      String?
 
   category         String?
-  featuredOnGlobal Boolean @default(false)
+  featuredOnGlobal Boolean   @default(false)
   slugChangedAt    DateTime?
   introVideoUrl    String?
   introGallery     Json?
@@ -160,25 +201,52 @@ model Community {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  owner         User           @relation("CommunityOwner", fields: [ownerId], references: [id])
-  memberships   Membership[]
-  channels      Channel[]
-  courses       Course[]
-  challenges    Challenge[]
-  posts         Post[]
-  products      Product[]
-  badges        Badge[]
-  subscriptions Subscription[]
-  xpLedgers     XPLedger[]
-  agentConversations AgentConversation[]
-  apiKeys       ApiKey[]
-  events        Event[]
-  featureReadStates FeatureReadState[]
-  affiliateLinks AffiliateLink[]
-  coupons       Coupon[]
-  contentReports ContentReport[]
+  owner                       User                @relation("CommunityOwner", fields: [ownerId], references: [id])
+  memberships                 Membership[]
+  channels                    Channel[]
+  courses                     Course[]
+  challenges                  Challenge[]
+  posts                       Post[]
+  products                    Product[]
+  badges                      Badge[]
+  subscriptions               Subscription[]
+  xpLedgers                   XPLedger[]
+  agentConversations          AgentConversation[]
+  aiProviders                 AIProvider[]        @relation("CommunityAIProviders")
+  agentProviderInstance       AIProvider?         @relation("CommunityAgentProvider", fields: [agentProviderId], references: [id], onDelete: SetNull)
+  agentReviewProviderInstance AIProvider?         @relation("CommunityAgentReviewProvider", fields: [agentReviewProviderId], references: [id], onDelete: SetNull)
+  apiKeys                     ApiKey[]
+  events                      Event[]
+  featureReadStates           FeatureReadState[]
+  affiliateLinks              AffiliateLink[]
+  coupons                     Coupon[]
+  contentReports              ContentReport[]
 
   @@index([featuredOnGlobal, createdAt])
+  @@index([agentProviderId])
+  @@index([agentReviewProviderId])
+}
+
+model AIProvider {
+  id              String   @id @default(cuid())
+  communityId     String
+  name            String
+  displayName     String
+  providerType    String
+  baseUrl         String?
+  encryptedApiKey String?  @db.Text
+  enabled         Boolean  @default(true)
+  settings        Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  community                Community   @relation("CommunityAIProviders", fields: [communityId], references: [id], onDelete: Cascade)
+  chatCommunities          Community[] @relation("CommunityAgentProvider")
+  reviewCommunities        Community[] @relation("CommunityAgentReviewProvider")
+  challengeReviewOverrides Challenge[] @relation("ChallengeAIReviewProvider")
+
+  @@unique([communityId, name])
+  @@index([communityId, enabled])
 }
 
 model Membership {
@@ -258,21 +326,23 @@ model Message {
 // ============= COURSES =============
 
 model Course {
-  id           String   @id @default(cuid())
-  communityId  String
-  slug         String
-  title        String
-  description  String?  @db.Text
-  thumbnailUrl String?
-  pillar       String?
-  level        String   @default("BASIC")
-  requiredTier String?
-  xpReward     Int      @default(0)
-  aipReward    Int      @default(0)
-  isPublished  Boolean  @default(false)
-  /** Owner opt-in: include this course on the global marketplace. */
-  featuredOnGlobal Boolean @default(false)
-  createdAt    DateTime @default(now())
+  id               String   @id @default(cuid())
+  communityId      String
+  slug             String
+  title            String
+  description      String?  @db.Text
+  thumbnailUrl     String?
+  pillar           String?
+  level            String   @default("BASIC")
+  requiredTier     String?
+  xpReward         Int      @default(0)
+  aipReward        Int      @default(0)
+  isPublished      Boolean  @default(false)
+  /**
+   * Owner opt-in: include this course on the global marketplace.
+   */
+  featuredOnGlobal Boolean  @default(false)
+  createdAt        DateTime @default(now())
 
   community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
   lessons   Lesson[]
@@ -312,77 +382,123 @@ model CourseProgress {
 // ============= CHALLENGES =============
 
 model Challenge {
-  id             String    @id @default(cuid())
-  communityId    String
-  slug           String
-  title          String
-  description    String?   @db.Text
-  bannerUrl      String?
-  /** IMAGE = bannerUrl is the hero image. VIDEO = bannerVideoUrl is embedded and bannerUrl is the poster/thumbnail. */
-  bannerMediaType String   @default("IMAGE")
-  bannerVideoUrl  String?
-  difficulty     String    @default("NORMAL")
-  requiredDays   Int       @default(21)
-  maxMembers     Int       @default(999)
-  depositAip     Int?
-  priceVnd       Decimal?  @db.Decimal(15, 2)
-  leaderId       String?
-  status         String    @default("OPEN")
-  startsAt       DateTime?
-  endsAt         DateTime?
-  freezeFromDay  Int?
-  freezeStartsAt DateTime?
-  freezeEndsAt   DateTime?
-  /** DEPRECATED: replaced by autoStartAfterHours. Kept for backward compatibility. */
-  requiresApproval Boolean @default(false)
-  /** Auto-start grace period in hours. Null = manual start (member presses "Bắt đầu"). */
+  id                  String    @id @default(cuid())
+  communityId         String
+  slug                String
+  title               String
+  description         String?   @db.Text
+  bannerUrl           String?
+  /**
+   * IMAGE = bannerUrl is the hero image. VIDEO = bannerVideoUrl is embedded and bannerUrl is the poster/thumbnail.
+   */
+  bannerMediaType     String    @default("IMAGE")
+  bannerVideoUrl      String?
+  difficulty          String    @default("NORMAL")
+  requiredDays        Int       @default(21)
+  maxMembers          Int       @default(999)
+  depositAip          Int?
+  priceVnd            Decimal?  @db.Decimal(15, 2)
+  leaderId            String?
+  status              String    @default("OPEN")
+  startsAt            DateTime?
+  endsAt              DateTime?
+  freezeFromDay       Int?
+  freezeStartsAt      DateTime?
+  freezeEndsAt        DateTime?
+  /**
+   * DEPRECATED: replaced by autoStartAfterHours. Kept for backward compatibility.
+   */
+  requiresApproval    Boolean   @default(false)
+  /**
+   * Auto-start grace period in hours. Null = manual start (member presses "Bắt đầu").
+   */
   autoStartAfterHours Int?
-  /** Owner opt-in: include this challenge on the global marketplace. */
-  featuredOnGlobal Boolean @default(false)
-  /** Subscription tier required to join. Null = free for any member. */
-  requiredTier   String?
-  /** Tiered pricing config. Null = free join. Shape: PricingConfig in lib/services/pricing.ts */
-  pricingConfig  Json?
-  /** When true, members only see tasks up to their current day — future tasks are hidden. */
-  hideFutureTasks Boolean @default(false)
-  /** Task unlock mode: ALL (all visible), DAILY (time-based), SEQUENTIAL (complete prev first), MANUAL (admin unlocks) */
-  taskUnlockMode  String  @default("DAILY")
-  /** Default hours between task unlocks (used in DAILY mode). Default 24. */
-  unlockIntervalHours Int @default(24)
-  /** Multiple freeze windows. Array of {label?: string, startsAt: string, endsAt: string} */
-  freezeWindows  Json?
-  /** Long-form sales pitch shown on challenge page to non-members. Markdown supported. */
-  pitch          String?   @db.Text
-  /** Structured "Bạn sẽ có được gì?" bullets shown on sales view. Null/empty = fallback to derived defaults. Shape: Array<{ icon?: string, text: string }> — max 6 items. */
-  benefits       Json?
-  /** Last editor user/key id (audit for both admin edits and future agent/API edits). */
-  lastEditedBy     String?
-  /** Last editor type: USER | INTERNAL_AGENT | EXTERNAL_API. */
-  lastEditedByType String?
-  /** Last edit timestamp. */
-  lastEditedAt     DateTime?
-  bumpProductId  String?
-  /** AI auto-review: master toggle for this challenge. */
-  aiReviewEnabled    Boolean  @default(false)
-  /** Confidence threshold — below this, AI flags for human review. */
-  aiReviewThreshold  Float    @default(0.8)
-  /** Fallback when AI uncertain: "FLAG" (keep PENDING) or "REJECT". */
-  aiReviewFallback   String   @default("FLAG")
-  /** Optional provider override for AI review (null = use community agent provider). */
-  aiReviewProvider   String?
-  /** Optional model override for AI review (null = use community agent model). */
-  aiReviewModel      String?
-  createdAt      DateTime  @default(now())
+  /**
+   * Owner opt-in: include this challenge on the global marketplace.
+   */
+  featuredOnGlobal    Boolean   @default(false)
+  /**
+   * Subscription tier required to join. Null = free for any member.
+   */
+  requiredTier        String?
+  /**
+   * Tiered pricing config. Null = free join. Shape: PricingConfig in lib/services/pricing.ts
+   */
+  pricingConfig       Json?
+  /**
+   * When true, members only see tasks up to their current day — future tasks are hidden.
+   */
+  hideFutureTasks     Boolean   @default(false)
+  /**
+   * Task unlock mode: ALL (all visible), DAILY (time-based), SEQUENTIAL (complete prev first), MANUAL (admin unlocks)
+   */
+  taskUnlockMode      String    @default("DAILY")
+  /**
+   * Default hours between task unlocks (used in DAILY mode). Default 24.
+   */
+  unlockIntervalHours Int       @default(24)
+  /**
+   * Multiple freeze windows. Array of {label?: string, startsAt: string, endsAt: string}
+   */
+  freezeWindows       Json?
+  /**
+   * Long-form sales pitch shown on challenge page to non-members. Markdown supported.
+   */
+  pitch               String?   @db.Text
+  /**
+   * Structured "Bạn sẽ có được gì?" bullets shown on sales view. Null/empty = fallback to derived defaults. Shape: Array<{ icon?: string, text: string }> — max 6 items.
+   */
+  benefits            Json?
+  /**
+   * Last editor user/key id (audit for both admin edits and future agent/API edits).
+   */
+  lastEditedBy        String?
+  /**
+   * Last editor type: USER | INTERNAL_AGENT | EXTERNAL_API.
+   */
+  lastEditedByType    String?
+  /**
+   * Last edit timestamp.
+   */
+  lastEditedAt        DateTime?
+  bumpProductId       String?
+  /**
+   * AI auto-review: master toggle for this challenge.
+   */
+  aiReviewEnabled     Boolean   @default(false)
+  /**
+   * Confidence threshold — below this, AI flags for human review.
+   */
+  aiReviewThreshold   Float     @default(0.8)
+  /**
+   * Fallback when AI uncertain: "FLAG" (keep PENDING) or "REJECT".
+   */
+  aiReviewFallback    String    @default("FLAG")
+  /**
+   * Optional provider override for AI review (null = use community agent provider).
+   */
+  aiReviewProvider    String?
+  /**
+   * Optional model override for AI review (null = use community agent model).
+   */
+  aiReviewModel       String?
+  /**
+   * Optional provider instance override for AI review (null = use community Agent review default).
+   */
+  aiReviewProviderId  String?
+  createdAt           DateTime  @default(now())
 
-  community   Community         @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  tasks       ChallengeTask[]
-  members     ChallengeMember[]
-  checkins    Checkin[]
-  products    ChallengeProduct[]
-  bumpProduct Product?          @relation("ChallengeBump", fields: [bumpProductId], references: [id])
+  community                Community          @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  aiReviewProviderInstance AIProvider?        @relation("ChallengeAIReviewProvider", fields: [aiReviewProviderId], references: [id], onDelete: SetNull)
+  tasks                    ChallengeTask[]
+  members                  ChallengeMember[]
+  checkins                 Checkin[]
+  products                 ChallengeProduct[]
+  bumpProduct              Product?           @relation("ChallengeBump", fields: [bumpProductId], references: [id])
 
   @@unique([communityId, slug])
   @@index([featuredOnGlobal, createdAt])
+  @@index([aiReviewProviderId])
 }
 
 // Cross-link between Challenges and Products in Marketplace.
@@ -402,23 +518,29 @@ model ChallengeProduct {
 }
 
 model ChallengeTask {
-  id            String    @id @default(cuid())
-  challengeId   String
-  dayNumber     Int
-  label         String?
-  title         String
-  description   String?   @db.Text
-  sopContent    String?   @db.Text
-  videoUrl      String?
-  meetingAt     DateTime?
-  evidenceType  String    @default("TEXT")
-  evidenceLabel String?   @db.Text
-  /** Per-task unlock override in hours. Null = use challenge default. */
-  unlockAfterHours Int?
-  /** Natural-language criteria for AI auto-approval. Null = no AI review for this task. */
-  aiReviewGuidelines String? @db.Text
-  /** Red-flag criteria for AI auto-rejection. */
-  aiReviewRedFlags   String? @db.Text
+  id                 String    @id @default(cuid())
+  challengeId        String
+  dayNumber          Int
+  label              String?
+  title              String
+  description        String?   @db.Text
+  sopContent         String?   @db.Text
+  videoUrl           String?
+  meetingAt          DateTime?
+  evidenceType       String    @default("TEXT")
+  evidenceLabel      String?   @db.Text
+  /**
+   * Per-task unlock override in hours. Null = use challenge default.
+   */
+  unlockAfterHours   Int?
+  /**
+   * Natural-language criteria for AI auto-approval. Null = no AI review for this task.
+   */
+  aiReviewGuidelines String?   @db.Text
+  /**
+   * Red-flag criteria for AI auto-rejection.
+   */
+  aiReviewRedFlags   String?   @db.Text
 
   challenge   Challenge        @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   completions TaskCompletion[]
@@ -469,23 +591,25 @@ model TaskCompletion {
 }
 
 model Checkin {
-  id          String   @id @default(cuid())
-  challengeId String
-  userId      String
-  taskId      String? // links this check-in to a specific daily task (optional)
-  dayNumber   Int? // redundant cache for querying by day
-  content     String   @db.Text
-  linkUrl     String? // external evidence URL (e.g. screenshot host, notion, miro)
-  imageUrl    String? // inline image URL (uploaded/pasted)
-  status       String   @default("APPROVED") // PENDING | APPROVED | REJECTED
+  id           String    @id @default(cuid())
+  challengeId  String
+  userId       String
+  taskId       String? // links this check-in to a specific daily task (optional)
+  dayNumber    Int? // redundant cache for querying by day
+  content      String    @db.Text
+  linkUrl      String? // external evidence URL (e.g. screenshot host, notion, miro)
+  imageUrl     String? // inline image URL (uploaded/pasted)
+  status       String    @default("APPROVED") // PENDING | APPROVED | REJECTED
   reviewedById String?
   reviewedAt   DateTime?
-  reviewNote   String?  @db.Text
-  rejectCount  Int      @default(0)
-  /** AI review output: { decision, confidence, reasoning, model, reviewedAt } */
+  reviewNote   String?   @db.Text
+  rejectCount  Int       @default(0)
+  /**
+   * AI review output: { decision, confidence, reasoning, model, reviewedAt }
+   */
   aiReviewData Json?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   challenge  Challenge      @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -545,8 +669,8 @@ model Post {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  community Community  @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  community Community       @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   comments  Comment[]
   reactions Reaction[]
   votes     Vote[]
@@ -567,10 +691,10 @@ model Comment {
   isBestAnswer Boolean  @default(false)
   createdAt    DateTime @default(now())
 
-  post    Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parent  Comment?  @relation("CommentReply", fields: [parentId], references: [id])
-  replies Comment[] @relation("CommentReply")
+  post    Post            @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent  Comment?        @relation("CommentReply", fields: [parentId], references: [id])
+  replies Comment[]       @relation("CommentReply")
   reports ContentReport[]
 
   @@index([postId, createdAt])
@@ -604,8 +728,8 @@ model Bookmark {
 
 model Follow {
   id         String   @id @default(cuid())
-  followerId String   // who initiated the follow
-  followeeId String   // who's being followed
+  followerId String // who initiated the follow
+  followeeId String // who's being followed
   createdAt  DateTime @default(now())
 
   follower User @relation("FollowFollower", fields: [followerId], references: [id], onDelete: Cascade)
@@ -630,19 +754,19 @@ model Vote {
 }
 
 model ContentReport {
-  id            String    @id @default(cuid())
-  communityId   String
-  reporterId    String
-  targetType    String
-  postId        String?
-  commentId     String?
-  reason        String
-  detail        String?   @db.Text
-  status        String    @default("PENDING")
-  resolvedById  String?
-  resolvedAt    DateTime?
-  resolveNote   String?
-  createdAt     DateTime  @default(now())
+  id           String    @id @default(cuid())
+  communityId  String
+  reporterId   String
+  targetType   String
+  postId       String?
+  commentId    String?
+  reason       String
+  detail       String?   @db.Text
+  status       String    @default("PENDING")
+  resolvedById String?
+  resolvedAt   DateTime?
+  resolveNote  String?
+  createdAt    DateTime  @default(now())
 
   community  Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
   reporter   User      @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
@@ -674,11 +798,17 @@ model Product {
   externalUrl        String?
   stock              Int?
   soldCount          Int      @default(0)
-  /** Owner opt-in: include this product on the global marketplace. */
+  /**
+   * Owner opt-in: include this product on the global marketplace.
+   */
   featuredOnGlobal   Boolean  @default(false)
-  /** Template for generated license keys, e.g. "FC-{XXXX}-{XXXX}". Only used when type=LICENSE. */
+  /**
+   * Template for generated license keys, e.g. "FC-{XXXX}-{XXXX}". Only used when type=LICENSE.
+   */
   licenseKeyTemplate String?
-  /** Tiered pricing config. Null = use priceVnd as flat price. Shape: PricingConfig in lib/services/pricing.ts */
+  /**
+   * Tiered pricing config. Null = use priceVnd as flat price. Shape: PricingConfig in lib/services/pricing.ts
+   */
   pricingConfig      Json?
   isVisible          Boolean  @default(true)
   showInCartBump     Boolean  @default(false)
@@ -686,11 +816,11 @@ model Product {
   upsellProductId    String?
   createdAt          DateTime @default(now())
 
-  community     Community          @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  purchases     Purchase[]
-  challenges    ChallengeProduct[]
-  bumpProduct   Product?           @relation("ProductBump", fields: [bumpProductId], references: [id])
-  upsellProduct Product?           @relation("ProductUpsell", fields: [upsellProductId], references: [id])
+  community      Community          @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  purchases      Purchase[]
+  challenges     ChallengeProduct[]
+  bumpProduct    Product?           @relation("ProductBump", fields: [bumpProductId], references: [id])
+  upsellProduct  Product?           @relation("ProductUpsell", fields: [upsellProductId], references: [id])
   bumpedBy       Product[]          @relation("ProductBump")
   upsellFor      Product[]          @relation("ProductUpsell")
   challengeBumps Challenge[]        @relation("ChallengeBump")
@@ -706,7 +836,9 @@ model Purchase {
   amountVnd  Decimal  @db.Decimal(15, 2)
   paymentRef String?
   status     String   @default("PENDING")
-  /** Auto-generated license key (only set for LICENSE-type products after activation). */
+  /**
+   * Auto-generated license key (only set for LICENSE-type products after activation).
+   */
   licenseKey String?
   createdAt  DateTime @default(now())
 
@@ -720,30 +852,36 @@ model Purchase {
 // ============= PAYMENT (SePay) =============
 
 model Payment {
-  id            String   @id @default(cuid())
-  paymentCode   String   @unique // unique code used in transfer content
-  userId        String
-  communityId   String?
-  purpose       String   // subscription | product | challenge_deposit
-  refType       String   // subscription | product | challenge
-  refId         String   // ID của subscription/product/challenge
-  amountVnd     Decimal  @db.Decimal(15, 2)
-  /** Pre-discount total. Null when no coupon applied. */
-  originalAmountVnd Decimal? @db.Decimal(15, 2)
-  /** Discount applied via coupon. Null when no coupon. */
-  discountVnd   Decimal? @db.Decimal(15, 2)
-  /** Coupon used at checkout (denormalized for queries). */
-  couponId      String?
-  couponCode    String?
-  status        String   @default("PENDING") // PENDING, COMPLETED, EXPIRED, REFUNDED
-  provider      String   @default("SEPAY_STANDARD") // SEPAY_STANDARD | SEPAY_BANKHUB
-  bankName      String?
-  bankAccount   String?
-  receivedAt    DateTime?
-  transactionId String?
-  metadata      Json?
-  expiresAt     DateTime
-  createdAt     DateTime @default(now())
+  id                String    @id @default(cuid())
+  paymentCode       String    @unique // unique code used in transfer content
+  userId            String
+  communityId       String?
+  purpose           String // subscription | product | challenge_deposit
+  refType           String // subscription | product | challenge
+  refId             String // ID của subscription/product/challenge
+  amountVnd         Decimal   @db.Decimal(15, 2)
+  /**
+   * Pre-discount total. Null when no coupon applied.
+   */
+  originalAmountVnd Decimal?  @db.Decimal(15, 2)
+  /**
+   * Discount applied via coupon. Null when no coupon.
+   */
+  discountVnd       Decimal?  @db.Decimal(15, 2)
+  /**
+   * Coupon used at checkout (denormalized for queries).
+   */
+  couponId          String?
+  couponCode        String?
+  status            String    @default("PENDING") // PENDING, COMPLETED, EXPIRED, REFUNDED
+  provider          String    @default("SEPAY_STANDARD") // SEPAY_STANDARD | SEPAY_BANKHUB
+  bankName          String?
+  bankAccount       String?
+  receivedAt        DateTime?
+  transactionId     String?
+  metadata          Json?
+  expiresAt         DateTime
+  createdAt         DateTime  @default(now())
 
   couponRedemption CouponRedemption?
 
@@ -754,21 +892,21 @@ model Payment {
 }
 
 model SePayTransaction {
-  id              String   @id @default(cuid())
-  transactionId   String   @unique // ID từ SePay
-  referenceCode   String?
-  gateway         String
-  accountNumber   String?
-  vaNumber        String?
-  paymentCode     String?
-  content         String   @db.Text
-  transferType    String   // credit | debit
-  amount          Decimal  @db.Decimal(15, 2)
-  accumulated     Decimal? @db.Decimal(15, 2)
-  transactionDate DateTime
+  id               String   @id @default(cuid())
+  transactionId    String   @unique // ID từ SePay
+  referenceCode    String?
+  gateway          String
+  accountNumber    String?
+  vaNumber         String?
+  paymentCode      String?
+  content          String   @db.Text
+  transferType     String // credit | debit
+  amount           Decimal  @db.Decimal(15, 2)
+  accumulated      Decimal? @db.Decimal(15, 2)
+  transactionDate  DateTime
   matchedPaymentId String?
-  raw             Json     // raw payload
-  createdAt       DateTime @default(now())
+  raw              Json // raw payload
+  createdAt        DateTime @default(now())
 
   @@index([paymentCode])
   @@index([transactionDate])
@@ -778,12 +916,14 @@ model SePayTransaction {
 
 model Notification {
   id            String    @id @default(cuid())
-  userId        String    // recipient
-  type          String    // POST_COMMENT | POST_REACTION | COMMENT_REPLY | BEST_ANSWER | POST_COT | SUBMISSION_APPROVED | SUBMISSION_REJECTED
+  userId        String // recipient
+  type          String // POST_COMMENT | POST_REACTION | COMMENT_REPLY | BEST_ANSWER | POST_COT | SUBMISSION_APPROVED | SUBMISSION_REJECTED
   title         String
   body          String?   @db.Text
-  actorId       String?   // who triggered this (user who commented, reacted, etc.)
-  /** Route target — e.g. /c/<slug>/p/<postId> */
+  actorId       String? // who triggered this (user who commented, reacted, etc.)
+  /**
+   * Route target — e.g. /c/<slug>/p/<postId>
+   */
   link          String?
   communitySlug String?
   postId        String?
@@ -887,7 +1027,7 @@ model Referral {
   convertedAt    DateTime?
   commissionVnd  Decimal?  @db.Decimal(15, 2)
   status         String    @default("PENDING")
-  payoutStatus   String    @default("UNPAID")  // UNPAID | PAID | REJECTED
+  payoutStatus   String    @default("UNPAID") // UNPAID | PAID | REJECTED
   payoutNote     String?
   createdAt      DateTime  @default(now())
 
@@ -902,7 +1042,9 @@ model AgentConversation {
   userId      String
   communityId String
   title       String?
-  /** Source channel — "web" or "telegram". Same userId can have one of each. */
+  /**
+   * Source channel — "web" or "telegram". Same userId can have one of each.
+   */
   channel     String   @default("web")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -928,7 +1070,7 @@ model TelegramLinkCode {
 model AgentMessage {
   id             String   @id @default(cuid())
   conversationId String
-  role           String   // user | assistant
+  role           String // user | assistant
   content        String   @db.Text
   createdAt      DateTime @default(now())
 
@@ -940,27 +1082,27 @@ model AgentMessage {
 // ============= EVENTS / CALENDAR =============
 
 model Event {
-  id          String   @id @default(cuid())
-  communityId String
-  ownerId     String
-  type        String   @default("GROUP_LIVE") // ONE_ON_ONE | GROUP_LIVE | WORKSHOP
-  title       String
-  description String?  @db.Text
-  startsAt    DateTime
-  durationMin Int      @default(60)
-  capacity    Int      @default(1)
-  priceVnd    Int      @default(0)
-  isFree      Boolean  @default(false)
-  meetingUrl      String?
-  bannerUrl       String?
-  status          String   @default("OPEN") // OPEN | CANCELLED | COMPLETED
-  featuredOnGlobal Boolean @default(false)
-  createdAt       DateTime @default(now())
+  id                String    @id @default(cuid())
+  communityId       String
+  ownerId           String
+  type              String    @default("GROUP_LIVE") // ONE_ON_ONE | GROUP_LIVE | WORKSHOP
+  title             String
+  description       String?   @db.Text
+  startsAt          DateTime
+  durationMin       Int       @default(60)
+  capacity          Int       @default(1)
+  priceVnd          Int       @default(0)
+  isFree            Boolean   @default(false)
+  meetingUrl        String?
+  bannerUrl         String?
+  status            String    @default("OPEN") // OPEN | CANCELLED | COMPLETED
+  featuredOnGlobal  Boolean   @default(false)
+  createdAt         DateTime  @default(now())
   // Google Meet integration
-  meetSpaceName   String?  // e.g. "spaces/abc123" — for post-meeting API calls
+  meetSpaceName     String? // e.g. "spaces/abc123" — for post-meeting API calls
   meetRecordingUrl  String? // Drive link after meeting ends
   meetTranscriptUrl String? // Google Docs transcript link
-  meetEndedAt     DateTime? // actual conference end time from Meet API
+  meetEndedAt       DateTime? // actual conference end time from Meet API
 
   community Community      @relation(fields: [communityId], references: [id], onDelete: Cascade)
   owner     User           @relation(fields: [ownerId], references: [id])
@@ -971,13 +1113,13 @@ model Event {
 }
 
 model EventBooking {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   eventId    String
   userId     String
-  status     String   @default("PENDING") // PENDING | CONFIRMED | ATTENDED | NO_SHOW | REFUNDED
+  status     String    @default("PENDING") // PENDING | CONFIRMED | ATTENDED | NO_SHOW | REFUNDED
   paymentRef String?
   attendedAt DateTime? // set by Meet participants API after event ends
-  createdAt  DateTime @default(now())
+  createdAt  DateTime  @default(now())
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
   user  User  @relation(fields: [userId], references: [id])
@@ -1030,25 +1172,43 @@ model AgentToolCall {
 model Coupon {
   id              String    @id @default(cuid())
   communityId     String
-  /** Human-readable code; stored uppercase. Unique within community. */
+  /**
+   * Human-readable code; stored uppercase. Unique within community.
+   */
   code            String
-  /** "PERCENTAGE" | "FIXED" */
+  /**
+   * "PERCENTAGE" | "FIXED"
+   */
   discountType    String
-  /** Basis points (2000 = 20.00%). Required when discountType = PERCENTAGE. */
+  /**
+   * Basis points (2000 = 20.00%). Required when discountType = PERCENTAGE.
+   */
   percentageBps   Int?
-  /** Optional cap (VND) applied to PERCENTAGE discounts. */
+  /**
+   * Optional cap (VND) applied to PERCENTAGE discounts.
+   */
   maxDiscountVnd  Decimal?  @db.Decimal(15, 2)
-  /** Required when discountType = FIXED. */
+  /**
+   * Required when discountType = FIXED.
+   */
   fixedAmountVnd  Decimal?  @db.Decimal(15, 2)
-  /** Minimum order amount (VND) required to use this coupon. */
+  /**
+   * Minimum order amount (VND) required to use this coupon.
+   */
   minOrderVnd     Decimal?  @db.Decimal(15, 2)
   validFrom       DateTime?
   validUntil      DateTime?
-  /** Null = unlimited total redemptions. */
+  /**
+   * Null = unlimited total redemptions.
+   */
   maxRedemptions  Int?
-  /** Per-user limit; default 1. */
+  /**
+   * Per-user limit; default 1.
+   */
   perUserLimit    Int       @default(1)
-  /** Allowed checkout refTypes: subset of ["product","challenge","cart","event"]. */
+  /**
+   * Allowed checkout refTypes: subset of ["product","challenge","cart","event"].
+   */
   allowedRefTypes String[]
   isActive        Boolean   @default(true)
   createdAt       DateTime  @default(now())
@@ -1065,10 +1225,14 @@ model CouponRedemption {
   id          String    @id @default(cuid())
   couponId    String
   userId      String
-  /** 1 payment can have at most 1 redemption. */
+  /**
+   * 1 payment can have at most 1 redemption.
+   */
   paymentId   String    @unique
   discountVnd Decimal   @db.Decimal(15, 2)
-  /** PENDING → COMPLETED on webhook match, CANCELLED on payment expire/cancel. */
+  /**
+   * PENDING → COMPLETED on webhook match, CANCELLED on payment expire/cancel.
+   */
   status      String    @default("PENDING")
   createdAt   DateTime  @default(now())
   completedAt DateTime?

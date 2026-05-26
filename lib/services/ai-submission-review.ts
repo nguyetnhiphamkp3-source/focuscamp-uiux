@@ -2,8 +2,8 @@ import { generateObject } from "ai";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { buildModel, DEFAULT_MODELS } from "@/lib/ai-model";
-import { getAgentApiKey, getAgentProvider, getAgentModel } from "@/lib/services/agent";
+import { buildModel } from "@/lib/ai-model";
+import { getAgentProfile, getAgentReviewModelConfig } from "@/lib/services/agent";
 import { reviewSubmission } from "@/lib/services/challenge-member";
 import { rateLimit } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
@@ -46,6 +46,7 @@ export async function runAIReview({ checkinId }: { checkinId: string }) {
           aiReviewEnabled: true,
           aiReviewThreshold: true,
           aiReviewFallback: true,
+          aiReviewProviderId: true,
           aiReviewProvider: true,
           aiReviewModel: true,
         },
@@ -70,15 +71,20 @@ export async function runAIReview({ checkinId }: { checkinId: string }) {
     return;
   }
 
-  // Resolve model: challenge override > community agent > defaults
-  const provider = challenge.aiReviewProvider ?? (await getAgentProvider(challenge.communityId));
-  const apiKey = await getAgentApiKey(challenge.communityId);
-  if (!apiKey) {
+  // Resolve model: challenge override > community review brain > chat brain > legacy
+  const modelConfig = await getAgentReviewModelConfig({
+    communityId: challenge.communityId,
+    challengeProviderId: challenge.aiReviewProviderId,
+    challengeModel: challenge.aiReviewModel,
+    legacyProvider: challenge.aiReviewProvider,
+  });
+  if (!modelConfig) {
     logger.warn({ communityId: challenge.communityId }, "[ai-review] no API key");
     return;
   }
-  const modelId = challenge.aiReviewModel ?? (await getAgentModel(challenge.communityId)) ?? DEFAULT_MODELS[provider] ?? DEFAULT_MODELS.anthropic;
-  const model = buildModel(provider, apiKey, modelId);
+  const modelId = modelConfig.modelId;
+  const model = buildModel(modelConfig);
+  const agentProfile = await getAgentProfile(challenge.communityId);
 
   // Build prompt
   const useVision = (checkin.task.evidenceType === "IMAGE" || checkin.task.evidenceType === "TEXT_IMAGE") && checkin.imageUrl;
@@ -105,6 +111,10 @@ export async function runAIReview({ checkinId }: { checkinId: string }) {
       confidence: result.confidence,
       reasoning: result.reasoning,
       model: modelId,
+      providerType: modelConfig.providerType,
+      providerId: modelConfig.providerId,
+      reviewerName: agentProfile.name,
+      reviewerAvatarUrl: agentProfile.avatarUrl,
       reviewedAt: new Date().toISOString(),
     };
 
@@ -115,7 +125,7 @@ export async function runAIReview({ checkinId }: { checkinId: string }) {
         userId: "ai-review",
         checkinId,
         action: "APPROVE",
-        note: `🤖 AI đã duyệt (${Math.round(result.confidence * 100)}%) — ${result.reasoning}`,
+        note: `${agentProfile.name} đã duyệt (${Math.round(result.confidence * 100)}%) — ${result.reasoning}`,
         internal: true,
       });
     } else if (result.decision === "REJECT" && result.confidence >= threshold) {
@@ -123,7 +133,7 @@ export async function runAIReview({ checkinId }: { checkinId: string }) {
         userId: "ai-review",
         checkinId,
         action: "REJECT",
-        note: `🤖 AI từ chối (${Math.round(result.confidence * 100)}%) — ${result.reasoning}`,
+        note: `${agentProfile.name} từ chối (${Math.round(result.confidence * 100)}%) — ${result.reasoning}`,
         internal: true,
       });
     } else if (result.decision === "FLAG" || result.confidence < threshold) {
@@ -133,7 +143,7 @@ export async function runAIReview({ checkinId }: { checkinId: string }) {
           userId: "ai-review",
           checkinId,
           action: "REJECT",
-          note: `🤖 AI từ chối (${Math.round(result.confidence * 100)}%) — ${result.reasoning}`,
+          note: `${agentProfile.name} từ chối (${Math.round(result.confidence * 100)}%) — ${result.reasoning}`,
           internal: true,
         });
       }
@@ -164,6 +174,10 @@ export async function runAIReview({ checkinId }: { checkinId: string }) {
           confidence: result.confidence,
           reasoning: result.reasoning,
           model: modelId,
+          providerType: modelConfig.providerType,
+          providerId: modelConfig.providerId,
+          reviewerName: agentProfile.name,
+          reviewerAvatarUrl: agentProfile.avatarUrl,
           reviewedAt: new Date().toISOString(),
           visionFailed: true,
         };

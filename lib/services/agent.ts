@@ -10,6 +10,12 @@
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { assertCommunityPermission } from "@/lib/services/community-settings";
+import { DEFAULT_MODELS } from "@/lib/ai-model";
+import {
+  providerTypeLabel,
+  resolveAIProviderConfig,
+  type ResolvedAIModelConfig,
+} from "@/lib/services/ai-provider";
 
 const DAILY_QUOTA_FREE = 50;
 const MAX_MESSAGES_PER_CONVERSATION = 100;
@@ -56,7 +62,13 @@ export async function getOrCreateConversation(input: {
     const existing = await prisma.agentConversation.findUnique({
       where: { id: input.conversationId },
     });
-    if (existing && existing.userId === input.userId) return existing;
+    if (
+      existing &&
+      existing.userId === input.userId &&
+      existing.communityId === input.communityId
+    ) {
+      return existing;
+    }
   }
   // For telegram, reuse latest conversation per (user, community, telegram channel)
   if (channel === "telegram") {
@@ -139,8 +151,9 @@ export async function listConversations(userId: string, communityId: string) {
   });
 }
 
-export function defaultSystemPrompt(communityName: string): string {
-  return `Bạn là AI Agent của cộng đồng "${communityName}" trên focus.camp — nền tảng cộng đồng challenge-first.
+export function defaultSystemPrompt(communityName: string, agentName?: string | null): string {
+  const name = agentName?.trim() || "AI Agent";
+  return `Bạn là ${name}, AI Agent của cộng đồng "${communityName}" trên focus.camp — nền tảng cộng đồng challenge-first.
 
 Trả lời bằng tiếng Việt, ngắn gọn, có hành động cụ thể. Tone gần gũi, không formal cứng. Khi user hỏi về challenge / habit / build kỷ luật, đưa lời khuyên thực tế — không phải general motivation.
 
@@ -150,13 +163,55 @@ Nếu user hỏi vượt phạm vi cộng đồng (vd code, kiến thức học 
 export async function getSystemPrompt(communityId: string): Promise<string> {
   const c = await prisma.community.findUnique({
     where: { id: communityId },
-    select: { name: true, agentSystemPrompt: true },
+    select: { name: true, agentName: true, agentSystemPrompt: true },
   });
   if (!c) return "";
   if (c.agentSystemPrompt && c.agentSystemPrompt.trim()) {
     return c.agentSystemPrompt;
   }
-  return defaultSystemPrompt(c.name);
+  return defaultSystemPrompt(c.name, c.agentName);
+}
+
+export async function getAgentProfile(communityId: string) {
+  const c = await prisma.community.findUnique({
+    where: { id: communityId },
+    select: {
+      name: true,
+      iconUrl: true,
+      agentName: true,
+      agentAvatarUrl: true,
+      agentTagline: true,
+    },
+  });
+  if (!c) {
+    return { name: "AI Agent", avatarUrl: null, tagline: null };
+  }
+  return {
+    name: c.agentName?.trim() || `${c.name} Agent`,
+    avatarUrl: c.agentAvatarUrl || c.iconUrl || null,
+    tagline: c.agentTagline,
+  };
+}
+
+export async function updateAgentProfile(input: {
+  userId: string;
+  communityId: string;
+  name: string;
+  avatarUrl?: string | null;
+  tagline?: string | null;
+}) {
+  await assertCommunityPermission(input.userId, input.communityId, "manage_ai_agent");
+  const name = input.name.trim().slice(0, 80);
+  if (!name) throw new Error("Agent name is required");
+  await prisma.community.update({
+    where: { id: input.communityId },
+    data: {
+      agentName: name,
+      agentAvatarUrl: input.avatarUrl?.trim() || null,
+      agentTagline: input.tagline?.trim().slice(0, 160) || null,
+    },
+  });
+  logger.info({ communityId: input.communityId }, "[agent] profile updated");
 }
 
 export async function setSystemPrompt(input: {
@@ -177,11 +232,8 @@ export async function setSystemPrompt(input: {
 }
 
 export async function getAgentApiKey(communityId: string): Promise<string | null> {
-  const c = await prisma.community.findUnique({
-    where: { id: communityId },
-    select: { agentApiKey: true },
-  });
-  return c?.agentApiKey ?? null;
+  const resolved = await getAgentModelConfig(communityId);
+  return resolved?.apiKey ?? null;
 }
 
 export async function setAgentApiKey(input: {
@@ -199,14 +251,13 @@ export async function setAgentApiKey(input: {
 }
 
 export async function hasAgentApiKey(communityId: string): Promise<boolean> {
-  const c = await prisma.community.findUnique({
-    where: { id: communityId },
-    select: { agentApiKey: true },
-  });
-  return !!(c?.agentApiKey?.trim());
+  const resolved = await getAgentModelConfig(communityId);
+  return !!resolved?.apiKey;
 }
 
 export async function getAgentProvider(communityId: string): Promise<string> {
+  const resolved = await getAgentModelConfig(communityId);
+  if (resolved) return resolved.providerType;
   const c = await prisma.community.findUnique({
     where: { id: communityId },
     select: { agentProvider: true },
@@ -228,6 +279,8 @@ export async function setAgentProvider(input: {
 }
 
 export async function getAgentModel(communityId: string): Promise<string | null> {
+  const resolved = await getAgentModelConfig(communityId);
+  if (resolved) return resolved.modelId;
   const c = await prisma.community.findUnique({
     where: { id: communityId },
     select: { agentModel: true },
@@ -246,4 +299,88 @@ export async function setAgentModel(input: {
     data: { agentModel: input.model },
   });
   logger.info({ communityId: input.communityId, model: input.model }, "[agent] model updated");
+}
+
+export async function getAgentModelConfig(
+  communityId: string,
+): Promise<ResolvedAIModelConfig | null> {
+  const c = await prisma.community.findUnique({
+    where: { id: communityId },
+    select: {
+      agentProviderId: true,
+      agentModel: true,
+      agentApiKey: true,
+      agentProvider: true,
+    },
+  });
+  if (!c) return null;
+
+  const providerConfig = await resolveAIProviderConfig({
+    communityId,
+    providerId: c.agentProviderId,
+    modelId: c.agentModel,
+  });
+  if (providerConfig) return providerConfig;
+  if (c.agentProviderId) return null;
+
+  if (!c.agentApiKey?.trim()) return null;
+  const providerType = c.agentProvider ?? "anthropic";
+  return {
+    providerId: null,
+    providerType: providerType as ResolvedAIModelConfig["providerType"],
+    apiKey: c.agentApiKey,
+    modelId:
+      c.agentModel ??
+      DEFAULT_MODELS[providerType] ??
+      DEFAULT_MODELS.anthropic,
+    baseUrl: null,
+    providerDisplayName: providerTypeLabel(providerType),
+  };
+}
+
+export async function getAgentReviewModelConfig(input: {
+  communityId: string;
+  challengeProviderId?: string | null;
+  challengeModel?: string | null;
+  legacyProvider?: string | null;
+}): Promise<ResolvedAIModelConfig | null> {
+  const c = await prisma.community.findUnique({
+    where: { id: input.communityId },
+    select: {
+      agentReviewProviderId: true,
+      agentReviewModel: true,
+      agentProviderId: true,
+      agentModel: true,
+      agentApiKey: true,
+      agentProvider: true,
+    },
+  });
+  if (!c) return null;
+
+  const configuredProviderId =
+    input.challengeProviderId ?? c.agentReviewProviderId ?? c.agentProviderId;
+  const configuredModel =
+    input.challengeModel ?? c.agentReviewModel ?? c.agentModel;
+
+  const providerConfig = await resolveAIProviderConfig({
+    communityId: input.communityId,
+    providerId: configuredProviderId,
+    modelId: configuredModel,
+  });
+  if (providerConfig) return providerConfig;
+  if (configuredProviderId) return null;
+
+  if (!c.agentApiKey?.trim()) return null;
+  const providerType = input.legacyProvider ?? c.agentProvider ?? "anthropic";
+  return {
+    providerId: null,
+    providerType: providerType as ResolvedAIModelConfig["providerType"],
+    apiKey: c.agentApiKey,
+    modelId:
+      configuredModel ??
+      DEFAULT_MODELS[providerType] ??
+      DEFAULT_MODELS.anthropic,
+    baseUrl: null,
+    providerDisplayName: providerTypeLabel(providerType),
+  };
 }

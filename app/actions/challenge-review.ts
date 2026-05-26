@@ -212,6 +212,7 @@ export async function updateChallengeSettingsAction(input: {
   aiReviewThreshold?: number;
   aiReviewFallback?: string;
   aiReviewProvider?: string | null;
+  aiReviewProviderId?: string | null;
   aiReviewModel?: string | null;
   communitySlug: string;
   challengeSlug: string;
@@ -243,6 +244,7 @@ export async function updateChallengeSettingsAction(input: {
     aiReviewThreshold: input.aiReviewThreshold,
     aiReviewFallback: input.aiReviewFallback,
     aiReviewProvider: input.aiReviewProvider,
+    aiReviewProviderId: input.aiReviewProviderId,
     aiReviewModel: input.aiReviewModel,
   });
   if (!parsed.success) {
@@ -327,6 +329,10 @@ export async function updateChallengeSettingsAction(input: {
         parsed.data.aiReviewProvider === undefined
           ? undefined
           : parsed.data.aiReviewProvider || null,
+      aiReviewProviderId:
+        parsed.data.aiReviewProviderId === undefined
+          ? undefined
+          : parsed.data.aiReviewProviderId || null,
       aiReviewModel:
         parsed.data.aiReviewModel === undefined
           ? undefined

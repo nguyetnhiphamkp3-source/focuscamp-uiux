@@ -11,6 +11,7 @@ import { ChallengePricingEditor } from "@/components/community/challenge-pricing
 import { AIReviewSettings } from "@/components/community/ai-review-settings";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import type { PricingConfig } from "@/lib/services/pricing";
+import type { AIProviderClient } from "@/lib/services/ai-provider";
 import { parseChallengeVideoUrl, type ChallengeBannerMediaType } from "@/lib/challenge-video";
 
 type UnlockMode = "ALL" | "DAILY" | "SEQUENTIAL" | "MANUAL";
@@ -48,6 +49,7 @@ export function ChallengeSettingsPanel({
   challengeSlug,
   initial,
   communityProducts = [],
+  aiProviders = [],
   pendingSubmissionsCount = 0,
 }: {
   challengeId: string;
@@ -74,9 +76,11 @@ export function ChallengeSettingsPanel({
     aiReviewThreshold: number;
     aiReviewFallback: string;
     aiReviewProvider: string | null;
+    aiReviewProviderId: string | null;
     aiReviewModel: string | null;
   };
   communityProducts?: { id: string; title: string }[];
+  aiProviders?: AIProviderClient[];
   pendingSubmissionsCount?: number;
 }) {
   const router = useRouter();
@@ -130,6 +134,7 @@ export function ChallengeSettingsPanel({
   const [aiReviewThreshold, setAiReviewThreshold] = useState(initial.aiReviewThreshold);
   const [aiReviewFallback, setAiReviewFallback] = useState(initial.aiReviewFallback);
   const [aiReviewProvider, setAiReviewProvider] = useState<string | null>(initial.aiReviewProvider);
+  const [aiReviewProviderId, setAiReviewProviderId] = useState<string | null>(initial.aiReviewProviderId);
   const [aiReviewModel, setAiReviewModel] = useState<string | null>(initial.aiReviewModel);
   const [pending, setPending] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -184,6 +189,7 @@ export function ChallengeSettingsPanel({
     setAiReviewThreshold(initial.aiReviewThreshold);
     setAiReviewFallback(initial.aiReviewFallback);
     setAiReviewProvider(initial.aiReviewProvider);
+    setAiReviewProviderId(initial.aiReviewProviderId);
     setAiReviewModel(initial.aiReviewModel);
     setErr(null);
     setSaved(false);
@@ -255,6 +261,7 @@ export function ChallengeSettingsPanel({
       aiReviewThreshold,
       aiReviewFallback,
       aiReviewProvider,
+      aiReviewProviderId,
       aiReviewModel,
       communitySlug,
       challengeSlug,
@@ -809,14 +816,18 @@ export function ChallengeSettingsPanel({
             enabled={aiReviewEnabled}
             threshold={aiReviewThreshold}
             fallback={aiReviewFallback}
-            provider={aiReviewProvider}
+            providers={aiProviders}
+            providerId={aiReviewProviderId}
             model={aiReviewModel}
             pendingCount={pendingSubmissionsCount}
             onChange={(fields) => {
               if (fields.aiReviewEnabled !== undefined) setAiReviewEnabled(fields.aiReviewEnabled);
               if (fields.aiReviewThreshold !== undefined) setAiReviewThreshold(fields.aiReviewThreshold);
               if (fields.aiReviewFallback !== undefined) setAiReviewFallback(fields.aiReviewFallback);
-              if (fields.aiReviewProvider !== undefined) setAiReviewProvider(fields.aiReviewProvider);
+              if (fields.aiReviewProviderId !== undefined) {
+                setAiReviewProviderId(fields.aiReviewProviderId);
+                setAiReviewProvider(null);
+              }
               if (fields.aiReviewModel !== undefined) setAiReviewModel(fields.aiReviewModel);
             }}
           />

@@ -357,6 +357,7 @@ export async function flagSubmissionForReview(input: {
       reviewedById: null,
       reviewedAt: null,
       reviewNote: null,
+      aiReviewData: Prisma.DbNull,
     },
   });
   logger.info(
@@ -579,6 +580,7 @@ export async function updateChallengeSettings(input: {
   aiReviewThreshold?: number;
   aiReviewFallback?: string;
   aiReviewProvider?: string | null;
+  aiReviewProviderId?: string | null;
   aiReviewModel?: string | null;
   /** Audit: who performed this edit. Defaults to USER. Pass INTERNAL_AGENT / EXTERNAL_API from agent paths. */
   actorType?: ChallengeEditorType;
@@ -588,6 +590,13 @@ export async function updateChallengeSettings(input: {
   const ch = await assertChallengeAdmin(input.userId, input.challengeId);
   const actorType: ChallengeEditorType = input.actorType ?? "USER";
   const actorId = input.actorId ?? input.userId;
+  if (input.aiReviewProviderId) {
+    const provider = await prisma.aIProvider.findFirst({
+      where: { id: input.aiReviewProviderId, communityId: ch.communityId },
+      select: { id: true },
+    });
+    if (!provider) throw new Error("AI provider khong thuoc community nay");
+  }
   // Empty benefits array = "reset to defaults" — store null so render falls back.
   const benefitsValue =
     input.benefits === undefined
@@ -629,6 +638,7 @@ export async function updateChallengeSettings(input: {
       ...(input.aiReviewThreshold !== undefined ? { aiReviewThreshold: input.aiReviewThreshold } : {}),
       ...(input.aiReviewFallback !== undefined ? { aiReviewFallback: input.aiReviewFallback } : {}),
       ...(input.aiReviewProvider !== undefined ? { aiReviewProvider: input.aiReviewProvider } : {}),
+      ...(input.aiReviewProviderId !== undefined ? { aiReviewProviderId: input.aiReviewProviderId } : {}),
       ...(input.aiReviewModel !== undefined ? { aiReviewModel: input.aiReviewModel } : {}),
       lastEditedBy: actorId,
       lastEditedByType: actorType,

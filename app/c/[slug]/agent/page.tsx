@@ -1,7 +1,12 @@
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { listConversations, listMessages, hasAgentApiKey } from "@/lib/services/agent";
+import {
+  getAgentProfile,
+  listConversations,
+  listMessages,
+  hasAgentApiKey,
+} from "@/lib/services/agent";
 import { AgentChat } from "@/components/agent/agent-chat";
 import { canCommunity, effectiveCommunityRole } from "@/lib/community-permissions";
 
@@ -56,12 +61,13 @@ export default async function AgentPage({
     membershipRole: membership?.role,
   });
   const canChatWithAgent = canCommunity(role, "manage_ai_agent");
+  const agentProfile = await getAgentProfile(community.id);
 
   if (!canChatWithAgent) {
     return (
       <>
         <header className="view-header">
-          <span className="view-title">AI Agent</span>
+          <span className="view-title">{agentProfile.name}</span>
           <span className="view-subtitle">{community.name}</span>
         </header>
         <div
@@ -85,7 +91,7 @@ export default async function AgentPage({
     return (
       <>
         <header className="view-header">
-          <span className="view-title">AI Agent</span>
+          <span className="view-title">{agentProfile.name}</span>
           <span className="view-subtitle">{community.name}</span>
         </header>
         <div
@@ -100,7 +106,16 @@ export default async function AgentPage({
             gap: 12,
           }}
         >
-          <div style={{ fontSize: 40 }}>🤖</div>
+          {agentProfile.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={agentProfile.avatarUrl}
+              alt={agentProfile.name}
+              style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover" }}
+            />
+          ) : (
+            <div style={{ fontSize: 40 }}>🤖</div>
+          )}
           <div
             style={{
               fontSize: "var(--text-lg)",
@@ -169,8 +184,8 @@ export default async function AgentPage({
   return (
     <>
       <header className="view-header">
-        <span className="view-title">AI Agent</span>
-        <span className="view-subtitle">{community.name}</span>
+        <span className="view-title">{agentProfile.name}</span>
+        <span className="view-subtitle">{agentProfile.tagline || community.name}</span>
         <span
           style={{
             marginLeft: "auto",
@@ -195,6 +210,9 @@ export default async function AgentPage({
       </header>
       <AgentChat
         communityId={community.id}
+        agentName={agentProfile.name}
+        agentAvatarUrl={agentProfile.avatarUrl}
+        agentTagline={agentProfile.tagline}
         conversationId={conversationId}
         initialMessages={initialMessages.map((m) => ({
           id: m.id,

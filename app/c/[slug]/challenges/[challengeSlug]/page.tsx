@@ -30,6 +30,9 @@ import { toEmbedUrl } from "@/lib/brand";
 import { parseChallengeVideoUrl } from "@/lib/challenge-video";
 import { parseChallengeBenefits } from "@/lib/challenge-benefits";
 import { SopContent } from "@/components/community/sop-content";
+import { AgentReviewCard } from "@/components/community/agent-review-card";
+import type { AIReviewData } from "@/lib/ai-review-data";
+import { listAIProviders } from "@/lib/services/ai-provider";
 
 export const dynamic = "force-dynamic";
 
@@ -121,6 +124,7 @@ export default async function ChallengeDetailPage({
     myMembership,
     activeChallenge,
     communityMembership,
+    aiProviders,
   ] = await Promise.all([
     // Tier gate — non-owners must have sufficient tier for this difficulty
     (async (): Promise<{ message: string; requiredTier: string } | null> => {
@@ -186,7 +190,7 @@ export default async function ChallengeDetailPage({
     session?.user?.id
       ? prisma.checkin.findMany({
           where: { challengeId: challenge.id, userId: session.user.id },
-          select: { id: true, taskId: true, dayNumber: true, createdAt: true, updatedAt: true, content: true, linkUrl: true, imageUrl: true, status: true, reviewedAt: true, reviewNote: true, rejectCount: true },
+          select: { id: true, taskId: true, dayNumber: true, createdAt: true, updatedAt: true, content: true, linkUrl: true, imageUrl: true, status: true, reviewedAt: true, reviewNote: true, rejectCount: true, aiReviewData: true },
         })
       : Promise.resolve([]),
 
@@ -219,6 +223,10 @@ export default async function ChallengeDetailPage({
           select: { aip: true },
         })
       : Promise.resolve(null),
+
+    permissions.canManageAiAgent && session?.user?.id
+      ? listAIProviders(session.user.id, challenge.community.id)
+      : Promise.resolve([]),
   ]);
 
   // Only count non-rejected checkins as done
@@ -423,9 +431,11 @@ export default async function ChallengeDetailPage({
                 aiReviewThreshold: challenge.aiReviewThreshold,
                 aiReviewFallback: challenge.aiReviewFallback,
                 aiReviewProvider: challenge.aiReviewProvider,
+                aiReviewProviderId: challenge.aiReviewProviderId,
                 aiReviewModel: challenge.aiReviewModel,
               }}
               communityProducts={communityProducts}
+              aiProviders={aiProviders}
               pendingSubmissionsCount={submissionData?.pendingCount ?? 0}
             />
           )}
@@ -1021,6 +1031,12 @@ export default async function ChallengeDetailPage({
                                   <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: "var(--space-2)" }}>
                                     Duyệt lúc {checkinData.reviewedAt.toLocaleString("vi-VN", fmtOpts)}
                                   </div>
+                                )}
+                                {checkinData.aiReviewData && (
+                                  <AgentReviewCard
+                                    data={checkinData.aiReviewData as AIReviewData}
+                                    status={checkinData.status}
+                                  />
                                 )}
                                 {isRejected && checkinData.reviewNote && (
                                   <div className="ch-submission-reject-note">

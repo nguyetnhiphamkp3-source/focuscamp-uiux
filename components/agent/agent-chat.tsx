@@ -13,10 +13,16 @@ interface InitialMessage {
 
 export function AgentChat({
   communityId,
+  agentName,
+  agentAvatarUrl,
+  agentTagline,
   conversationId: initialConvId,
   initialMessages,
 }: {
   communityId: string;
+  agentName: string;
+  agentAvatarUrl: string | null;
+  agentTagline: string | null;
   conversationId: string | null;
   initialMessages: InitialMessage[];
 }) {
@@ -109,11 +115,27 @@ export function AgentChat({
               lineHeight: 1.6,
             }}
           >
-            <div style={{ fontSize: 36, marginBottom: 8 }}>🤖</div>
+            {agentAvatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={agentAvatarUrl}
+                alt={agentName}
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                  margin: "0 auto 10px",
+                  border: "1px solid var(--border-subtle)",
+                }}
+              />
+            ) : (
+              <div style={{ fontSize: 36, marginBottom: 8 }}>🤖</div>
+            )}
             <div style={{ color: "var(--header-primary)", fontWeight: 700, marginBottom: 4 }}>
-              Bắt đầu chat với AI Agent của cộng đồng
+              Bắt đầu chat với {agentName}
             </div>
-            <div>Hỏi về challenge, kế hoạch, hoặc bất kỳ điều gì cần hỗ trợ.</div>
+            <div>{agentTagline || "Hỏi về challenge, kế hoạch, hoặc bất kỳ điều gì cần hỗ trợ."}</div>
           </div>
         )}
 
@@ -123,12 +145,10 @@ export function AgentChat({
             .map((p) => p.text)
             .join("");
           const isUser = m.role === "user";
-          return (
+          const bubble = (
             <div
-              key={m.id}
               style={{
-                alignSelf: isUser ? "flex-end" : "flex-start",
-                maxWidth: "78%",
+                maxWidth: isUser ? "78%" : "100%",
                 padding: "10px 14px",
                 borderRadius: 12,
                 background: isUser ? "var(--brand-green)" : "var(--bg-card)",
@@ -147,6 +167,41 @@ export function AgentChat({
               ) : (
                 isStreaming ? "▍" : ""
               )}
+            </div>
+          );
+          if (isUser) {
+            return (
+              <div key={m.id} style={{ alignSelf: "flex-end", maxWidth: "78%" }}>
+                {bubble}
+              </div>
+            );
+          }
+          return (
+            <div
+              key={m.id}
+              style={{
+                alignSelf: "flex-start",
+                maxWidth: "78%",
+                display: "grid",
+                gridTemplateColumns: "32px minmax(0, 1fr)",
+                gap: 8,
+                alignItems: "start",
+              }}
+            >
+              <AgentAvatar name={agentName} avatarUrl={agentAvatarUrl} />
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: "var(--text-xs)",
+                    color: "var(--text-muted)",
+                    fontWeight: 700,
+                    marginBottom: 4,
+                  }}
+                >
+                  {agentName}
+                </div>
+                {bubble}
+              </div>
             </div>
           );
         })}
@@ -213,6 +268,48 @@ export function AgentChat({
           {isStreaming ? "…" : "Gửi"}
         </button>
       </form>
+    </div>
+  );
+}
+
+function AgentAvatar({
+  name,
+  avatarUrl,
+}: {
+  name: string;
+  avatarUrl: string | null;
+}) {
+  if (avatarUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={avatarUrl}
+        alt={name}
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: "50%",
+          objectFit: "cover",
+          border: "1px solid var(--border-subtle)",
+        }}
+      />
+    );
+  }
+  return (
+    <div
+      style={{
+        width: 32,
+        height: 32,
+        borderRadius: "50%",
+        display: "grid",
+        placeItems: "center",
+        background: "rgba(27,158,117,0.12)",
+        color: "var(--brand-green)",
+        fontSize: "var(--text-sm)",
+        fontWeight: 700,
+      }}
+    >
+      {(name.trim()[0] || "A").toUpperCase()}
     </div>
   );
 }

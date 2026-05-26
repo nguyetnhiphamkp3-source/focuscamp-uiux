@@ -25,6 +25,7 @@ import { TiersEditor } from "@/components/settings/tiers-editor";
 import { UiConfigEditor } from "@/components/settings/ui-config-editor";
 import { CommunityPlanPanel } from "@/components/settings/community-plan-panel";
 import { AgentConfigEditor } from "@/components/settings/agent-config-editor";
+import { listAIProviders } from "@/lib/services/ai-provider";
 import { ApiKeysPanel } from "@/components/settings/api-keys-panel";
 import { AgentActivityPanel } from "@/components/settings/agent-activity-panel";
 import { listApiKeys } from "@/app/actions/api-keys";
@@ -98,6 +99,10 @@ export default async function SettingsPage({
 
   // Async queries — only fetch for active tab
   const apiKeys = tab === "integrations" && perms.canManageApiKeys ? await listApiKeys(community.id) : [];
+  const aiProviders =
+    tab === "integrations" && perms.canManageAiAgent
+      ? await listAIProviders(session.user.id, community.id)
+      : [];
   const { members, total } =
     tab === "members" && perms.canViewMembers
       ? await listMembers({ communityId: community.id, limit: 100 })
@@ -408,6 +413,14 @@ export default async function SettingsPage({
                     hasApiKey: !!community.agentApiKey,
                     provider: (community.agentProvider ?? "anthropic") as "anthropic" | "openai" | "groq" | "xai" | "google",
                     model: community.agentModel ?? null,
+                    agentName: community.agentName,
+                    agentAvatarUrl: community.agentAvatarUrl,
+                    agentTagline: community.agentTagline,
+                    chatProviderId: community.agentProviderId,
+                    reviewProviderId: community.agentReviewProviderId,
+                    reviewModel: community.agentReviewModel,
+                    providers: aiProviders,
+                    communityName: community.name,
                   }}
                 />
               )}

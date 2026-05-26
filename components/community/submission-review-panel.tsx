@@ -9,6 +9,8 @@ import {
   approveAllPendingAction,
 } from "@/app/actions/challenge-review";
 import { avatarColorFor, initials, fmtRelativeTime } from "@/lib/brand";
+import type { AIReviewData } from "@/lib/ai-review-data";
+import { AgentReviewCard } from "@/components/community/agent-review-card";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 
 export type SubmissionRow = {
@@ -24,13 +26,7 @@ export type SubmissionRow = {
   user: { id: string; name: string | null; image: string | null };
   task: { dayNumber: number; title: string; label: string | null } | null;
   reviewedBy: { id: string; name: string | null } | null;
-  aiReviewData?: {
-    decision: string;
-    confidence: number;
-    reasoning: string;
-    model: string;
-    reviewedAt: string;
-  } | null;
+  aiReviewData?: AIReviewData | null;
 };
 
 export function SubmissionReviewPanel({
@@ -442,6 +438,14 @@ function SubmissionCard({
             </div>
           )}
 
+          {submission.aiReviewData && (
+            <AgentReviewCard
+              data={submission.aiReviewData}
+              status={submission.status}
+              compact
+            />
+          )}
+
           {submission.reviewNote && (
             <div
               style={{
@@ -596,13 +600,7 @@ function AIReviewBadge({
   expanded,
   onToggle,
 }: {
-  data: {
-    decision: string;
-    confidence: number;
-    reasoning: string;
-    model: string;
-    reviewedAt: string;
-  };
+  data: AIReviewData;
   expanded: boolean;
   onToggle: () => void;
 }) {

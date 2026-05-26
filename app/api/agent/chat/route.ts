@@ -5,9 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import {
   appendMessage,
-  getAgentApiKey,
-  getAgentProvider,
-  getAgentModel,
+  getAgentModelConfig,
   getOrCreateConversation,
   getSystemPrompt,
 } from "@/lib/services/agent";
@@ -145,19 +143,20 @@ export async function POST(req: Request) {
 
   const systemPrompt = `${await getSystemPrompt(body.communityId)}\n\n${OUTPUT_FORMAT_INSTRUCTIONS}`;
 
-  const apiKey = await getAgentApiKey(body.communityId);
-  if (!apiKey) {
+  const modelConfig = await getAgentModelConfig(body.communityId);
+  if (!modelConfig) {
     return NextResponse.json(
       { error: "agent_not_configured", message: "Chủ cộng đồng chưa cấu hình API key cho AI Agent." },
       { status: 503 },
     );
   }
 
-  const provider = await getAgentProvider(body.communityId);
-  const storedModel = await getAgentModel(body.communityId);
-  const modelId = storedModel ?? DEFAULT_MODELS[provider] ?? DEFAULT_MODELS.anthropic;
+  const modelId =
+    modelConfig.modelId ??
+    DEFAULT_MODELS[modelConfig.providerType] ??
+    DEFAULT_MODELS.anthropic;
 
-  const model = buildModel(provider, apiKey, modelId);
+  const model = buildModel({ ...modelConfig, modelId });
   const contextMessages = trimContextMessages(body.messages);
   const modelMessages = await convertToModelMessages(contextMessages);
   const tools = buildChatAgentTools(body.communityId, s.user.id, role);

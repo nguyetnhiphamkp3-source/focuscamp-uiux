@@ -13,6 +13,44 @@ export const SlugSchema = z
   .max(60)
   .regex(/^[a-z0-9-]+$/, "Slug chỉ chứa a-z, 0-9, -");
 
+const AIProviderTypeSchema = z.enum([
+  "anthropic",
+  "openai",
+  "google",
+  "groq",
+  "xai",
+  "openaiCompatible",
+]);
+
+export const AIProviderCreateSchema = z.object({
+  communityId: z.string().cuid(),
+  name: z.string().trim().max(80).optional().or(z.literal("")),
+  displayName: z.string().trim().min(1).max(80),
+  providerType: AIProviderTypeSchema,
+  baseUrl: z.string().trim().url().max(500).optional().nullable().or(z.literal("")),
+  apiKey: z.string().trim().min(1).max(5000),
+  enabled: z.boolean().optional(),
+});
+
+export const AIProviderUpdateSchema = z.object({
+  communityId: z.string().cuid(),
+  name: z.string().trim().max(80).optional().or(z.literal("")),
+  displayName: z.string().trim().min(1).max(80).optional(),
+  providerType: AIProviderTypeSchema.optional(),
+  baseUrl: z.string().trim().url().max(500).optional().nullable().or(z.literal("")),
+  apiKey: z.string().trim().max(5000).optional().or(z.literal("")),
+  enabled: z.boolean().optional(),
+});
+
+export const AIProviderValidateSchema = z.object({
+  communityId: z.string().cuid(),
+  providerId: z.string().cuid().optional(),
+  providerType: AIProviderTypeSchema.optional(),
+  baseUrl: z.string().trim().url().max(500).optional().nullable().or(z.literal("")),
+  apiKey: z.string().trim().max(5000).optional().nullable(),
+  modelId: z.string().trim().min(1).max(200),
+});
+
 /* ========== Payment / SePay ========== */
 export const SePayWebhookSchema = z.object({
   id: z.union([z.string(), z.number()]).optional(),
@@ -114,6 +152,7 @@ export const UpdateChallengeSettingsSchema = z.object({
   aiReviewThreshold: z.number().min(0).max(1).optional(),
   aiReviewFallback: z.enum(["FLAG", "REJECT"]).optional(),
   aiReviewProvider: z.enum(["anthropic", "openai", "groq", "xai", "google"]).optional().nullable(),
+  aiReviewProviderId: z.string().cuid().optional().nullable().or(z.literal("")),
   aiReviewModel: z.string().trim().max(120).optional().nullable().or(z.literal("")),
 }).superRefine((data, ctx) => {
   if (!data.bannerVideoUrl) return;
