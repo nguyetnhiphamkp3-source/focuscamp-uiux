@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   updateAgentSystemPromptAction,
@@ -89,6 +89,8 @@ const selectStyle: React.CSSProperties = {
   cursor: "pointer",
 };
 
+type ValidateStatus = "idle" | "checking" | "valid" | "error";
+
 export function AgentConfigEditor({
   communityId,
   communitySlug,
@@ -111,70 +113,122 @@ export function AgentConfigEditor({
     initial.model ?? MODELS_BY_PROVIDER[initial.provider][0].value,
   );
 
-  const [pending, start] = useTransition();
-  const [err, setErr] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
+  // Prompt save state
+  const [promptPending, startPrompt] = useTransition();
+  const [promptErr, setPromptErr] = useState<string | null>(null);
+  const [promptSaved, setPromptSaved] = useState(false);
 
-  const [keyErr, setKeyErr] = useState<string | null>(null);
-  const [keySaved, setKeySaved] = useState(false);
-  const [keyPending, startKey] = useTransition();
+  // Config save state (provider + model + API key)
+  const [savePending, startSave] = useTransition();
+  const [saveErr, setSaveErr] = useState<string | null>(null);
+  const [saveSaved, setSaveSaved] = useState(false);
 
-  const [providerPending, startProvider] = useTransition();
-  const [providerErr, setProviderErr] = useState<string | null>(null);
-  const [providerSaved, setProviderSaved] = useState(false);
+  // Model validation state
+  const [validateStatus, setValidateStatus] = useState<ValidateStatus>("idle");
+  const [validateError, setValidateError] = useState<string | null>(null);
 
   function handleProviderChange(p: Provider) {
     setProvider(p);
-    setProviderSaved(false);
     // Reset model to first option for new provider
     setModel(MODELS_BY_PROVIDER[p][0].value);
+    // Reset validation when provider changes
+    setValidateStatus("idle");
+    setValidateError(null);
+    setSaveSaved(false);
   }
 
-  function submitProviderAndModel() {
-    setProviderErr(null);
-    setProviderSaved(false);
-    startProvider(async () => {
+  function handleModelChange(m: string) {
+    setModel(m);
+    // Reset validation when model changes
+    setValidateStatus("idle");
+    setValidateError(null);
+    setSaveSaved(false);
+  }
+
+  const validateModel = useCallback(async () => {
+    setValidateStatus("checking");
+    setValidateError(null);
+    try {
+      const res = await fetch("/api/agent/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          communityId,
+          provider,
+          model,
+          // Send the new API key if user typed one, otherwise endpoint uses stored key
+          ...(apiKey.trim() ? { apiKey: apiKey.trim() } : {}),
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setValidateStatus("valid");
+      } else {
+        setValidateStatus("error");
+        setValidateError(data.error || "Kiểm tra thất bại");
+      }
+    } catch {
+      setValidateStatus("error");
+      setValidateError("Không thể kết nối server");
+    }
+  }, [communityId, provider, model, apiKey]);
+
+  function submitConfig() {
+    setSaveErr(null);
+    setSaveSaved(false);
+    startSave(async () => {
+      // Save provider + model always
       const [pRes, mRes] = await Promise.all([
         updateAgentProviderAction({ communityId, communitySlug, provider }),
         updateAgentModelAction({ communityId, communitySlug, model }),
       ]);
-      if (!pRes.ok) { setProviderErr(pRes.reason); return; }
-      if (!mRes.ok) { setProviderErr(mRes.reason); return; }
-      setProviderSaved(true);
+      if (!pRes.ok) { setSaveErr(pRes.reason); return; }
+      if (!mRes.ok) { setSaveErr(mRes.reason); return; }
+
+      // Save API key only if user entered a new one
+      if (apiKey.trim()) {
+        const kRes = await updateAgentApiKeyAction({ communityId, communitySlug, apiKey });
+        if (!kRes.ok) { setSaveErr(kRes.reason); return; }
+        setApiKey("");
+      }
+
+      setSaveSaved(true);
       router.refresh();
     });
   }
 
-  function submitKey() {
-    setKeyErr(null);
-    setKeySaved(false);
-    startKey(async () => {
-      const res = await updateAgentApiKeyAction({ communityId, communitySlug, apiKey });
-      if (res.ok) {
-        setKeySaved(true);
-        setApiKey("");
-        router.refresh();
-      } else {
-        setKeyErr(res.reason);
-      }
-    });
-  }
-
   function submitPrompt() {
-    setErr(null);
-    setSaved(false);
-    start(async () => {
+    setPromptErr(null);
+    setPromptSaved(false);
+    startPrompt(async () => {
       const res = await updateAgentSystemPromptAction({ communityId, communitySlug, prompt });
       if (res.ok) {
-        setSaved(true);
+        setPromptSaved(true);
         router.refresh();
       } else {
-        setErr(res.reason);
+        setPromptErr(res.reason);
       }
     });
   }
 
   const availableModels = MODELS_BY_PROVIDER[provider];
+
+  const checkBtnStyle: React.CSSProperties = {
+    padding: "8px 14px",
+    borderRadius: 4,
+    border: "1px solid var(--input-border)",
+    fontSize: "var(--text-base)",
+    fontWeight: 600,
+    whiteSpace: "nowrap",
+    cursor: validateStatus === "checking" ? "not-allowed" : "pointer",
+    opacity: validateStatus === "checking" ? 0.6 : 1,
+    transition: "all 0.15s ease",
+    ...(validateStatus === "valid"
+      ? { background: "var(--success, #1B9E75)", color: "#fff", borderColor: "var(--success, #1B9E75)" }
+      : validateStatus === "error"
+        ? { background: "transparent", color: "var(--danger, #e53e3e)", borderColor: "var(--danger, #e53e3e)" }
+        : { background: "var(--background-secondary)", color: "var(--text-normal)", borderColor: "var(--input-border)" }),
+  };
 
   return (
     <section className="ui-card ui-card-lg" style={{ marginBottom: "var(--space-4)" }}>
@@ -200,7 +254,7 @@ export function AgentConfigEditor({
           <select
             value={provider}
             onChange={(e) => handleProviderChange(e.target.value as Provider)}
-            disabled={providerPending}
+            disabled={savePending}
             style={{ ...selectStyle, flex: "0 0 200px" }}
           >
             {PROVIDERS.map((p) => (
@@ -209,8 +263,8 @@ export function AgentConfigEditor({
           </select>
           <select
             value={model}
-            onChange={(e) => setModel(e.target.value)}
-            disabled={providerPending}
+            onChange={(e) => handleModelChange(e.target.value)}
+            disabled={savePending}
             style={{ ...selectStyle, flex: 1 }}
           >
             {availableModels.map((m) => (
@@ -219,20 +273,44 @@ export function AgentConfigEditor({
           </select>
           <button
             type="button"
-            onClick={submitProviderAndModel}
-            disabled={providerPending}
-            style={{
-              ...btnPrimary,
-              opacity: providerPending ? 0.6 : 1,
-              cursor: providerPending ? "not-allowed" : "pointer",
-              whiteSpace: "nowrap",
-            }}
+            onClick={validateModel}
+            disabled={validateStatus === "checking"}
+            style={checkBtnStyle}
+            title="Kiểm tra model hoạt động với API key hiện tại"
           >
-            {providerPending ? "Đang lưu…" : "Lưu"}
+            {validateStatus === "checking"
+              ? "Đang kiểm tra…"
+              : validateStatus === "valid"
+                ? "✓ Hợp lệ"
+                : "Kiểm tra"}
           </button>
         </div>
-        <ErrorBox msg={providerErr} />
-        <SuccessBox shown={providerSaved} />
+        {validateStatus === "error" && validateError && (
+          <div
+            style={{
+              fontSize: "var(--text-sm)",
+              color: "var(--danger, #e53e3e)",
+              marginTop: 4,
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 4,
+            }}
+          >
+            <span style={{ flexShrink: 0 }}>✗</span>
+            <span>{validateError}</span>
+          </div>
+        )}
+        {validateStatus === "valid" && (
+          <div
+            style={{
+              fontSize: "var(--text-sm)",
+              color: "var(--success, #1B9E75)",
+              marginTop: 4,
+            }}
+          >
+            ✓ Model hoạt động bình thường
+          </div>
+        )}
       </div>
 
       {/* API Key */}
@@ -259,31 +337,50 @@ export function AgentConfigEditor({
             ? "✓ Đã lưu API key. Nhập key mới để thay thế."
             : `Chưa có API key. Lấy key tại ${API_KEY_DOCS[provider]}`}
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <input
-            type="password"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            placeholder={API_KEY_PLACEHOLDER[provider]}
-            disabled={keyPending}
-            style={{ ...inputStyle, flex: 1 }}
-          />
-          <button
-            type="button"
-            onClick={submitKey}
-            disabled={keyPending || !apiKey.trim()}
-            style={{
-              ...btnPrimary,
-              opacity: keyPending || !apiKey.trim() ? 0.6 : 1,
-              cursor: keyPending || !apiKey.trim() ? "not-allowed" : "pointer",
-            }}
-          >
-            {keyPending ? "Đang lưu…" : "Lưu key"}
-          </button>
-        </div>
-        <ErrorBox msg={keyErr} />
-        <SuccessBox shown={keySaved} />
+        <input
+          type="password"
+          value={apiKey}
+          onChange={(e) => {
+            setApiKey(e.target.value);
+            setSaveSaved(false);
+            // Reset validation when API key changes
+            if (validateStatus !== "idle") {
+              setValidateStatus("idle");
+              setValidateError(null);
+            }
+          }}
+          placeholder={API_KEY_PLACEHOLDER[provider]}
+          disabled={savePending}
+          style={{ ...inputStyle, width: "100%" }}
+        />
       </div>
+
+      {/* Single Save button for provider + model + API key */}
+      <div style={{ display: "flex", marginBottom: "var(--space-4)" }}>
+        <button
+          type="button"
+          onClick={submitConfig}
+          disabled={savePending}
+          style={{
+            ...btnPrimary,
+            marginLeft: "auto",
+            opacity: savePending ? 0.6 : 1,
+            cursor: savePending ? "not-allowed" : "pointer",
+          }}
+        >
+          {savePending ? "Đang lưu…" : "Lưu"}
+        </button>
+      </div>
+      <ErrorBox msg={saveErr} />
+      <SuccessBox shown={saveSaved} />
+
+      {/* Divider */}
+      <div
+        style={{
+          borderTop: "1px solid var(--background-modifier-accent)",
+          margin: "var(--space-4) 0",
+        }}
+      />
 
       {/* System Prompt */}
       <label
@@ -311,7 +408,7 @@ export function AgentConfigEditor({
         onChange={(e) => setPrompt(e.target.value)}
         rows={8}
         maxLength={4000}
-        disabled={pending}
+        disabled={promptPending}
         placeholder="Bạn là AI Agent của cộng đồng X. Hỗ trợ thành viên về…"
         style={{
           ...inputStyle,
@@ -333,19 +430,19 @@ export function AgentConfigEditor({
         <button
           type="button"
           onClick={submitPrompt}
-          disabled={pending}
+          disabled={promptPending}
           style={{
             ...btnPrimary,
             marginLeft: "auto",
-            opacity: pending ? 0.6 : 1,
-            cursor: pending ? "not-allowed" : "pointer",
+            opacity: promptPending ? 0.6 : 1,
+            cursor: promptPending ? "not-allowed" : "pointer",
           }}
         >
-          {pending ? "Đang lưu…" : "Lưu prompt"}
+          {promptPending ? "Đang lưu…" : "Lưu prompt"}
         </button>
       </div>
-      <ErrorBox msg={err} />
-      <SuccessBox shown={saved} />
+      <ErrorBox msg={promptErr} />
+      <SuccessBox shown={promptSaved} />
     </section>
   );
 }

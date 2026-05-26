@@ -17,6 +17,7 @@ import {
   getSystemPrompt,
 } from "@/lib/services/agent";
 import { buildChatAgentTools } from "@/lib/agent-tools";
+import { effectiveCommunityRole } from "@/lib/community-permissions";
 import { rateLimit } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 
@@ -84,13 +85,22 @@ export async function POST(req: Request) {
     where: {
       userId_communityId: { userId: s.user.id, communityId: body.communityId },
     },
-    select: { tier: true },
+    select: { tier: true, role: true },
   });
   if (!membership) {
     return NextResponse.json({ error: "not_a_member" }, { status: 403 });
   }
 
   const isPaid = membership.tier !== "EXPLORER";
+
+  const community = await prisma.community.findUnique({
+    where: { id: body.communityId },
+    select: { ownerId: true },
+  });
+  const role = effectiveCommunityRole({
+    isOwner: community?.ownerId === s.user.id,
+    membershipRole: membership.role,
+  });
   const quota = await checkQuota(s.user.id, isPaid);
   if (!quota.ok) {
     return NextResponse.json(
@@ -139,7 +149,7 @@ export async function POST(req: Request) {
 
   const model = buildModel(provider, apiKey, modelId);
   const modelMessages = await convertToModelMessages(body.messages);
-  const tools = buildChatAgentTools(body.communityId);
+  const tools = buildChatAgentTools(body.communityId, s.user.id, role);
 
   const result = streamText({
     model,

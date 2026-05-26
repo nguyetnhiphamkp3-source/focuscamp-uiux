@@ -1,21 +1,22 @@
 /**
  * AI SDK tools for the community chat agent.
  *
- * Read-only subset of MCP tools, converted to AI SDK `tool()` format so the
- * chat agent can query community data (challenges, members, stats, posts, XP)
- * while responding to users. No write tools — the chat agent is read-only.
+ * Read-only tools available to all members. Write tools (Tier 1) only
+ * included when the caller has OWNER or ADMIN role — gated here so the
+ * LLM never even sees write tools for regular members.
  */
 import { tool } from "ai";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { listFeed, getPostWithComments } from "@/lib/services/post";
-import { listChallengeSubmissions } from "@/lib/services/challenge-member";
+import { listChallengeSubmissions, updateChallengeSettings, updateChallengeTask, createChallengeTask } from "@/lib/services/challenge-member";
 import { getCommunityProfile } from "@/lib/services/profile";
 import { listMembers } from "@/lib/services/community-settings";
 import { getPlanStatus, planLabel } from "@/lib/platform-plans";
+import type { CommunityRole } from "@/lib/community-permissions";
 
-export function buildChatAgentTools(communityId: string) {
-  return {
+export function buildChatAgentTools(communityId: string, userId: string, role: CommunityRole) {
+  const readTools = {
     community_get_info: tool({
       description: "Fetch core info + plan status for the connected community.",
       inputSchema: z.object({}),
@@ -211,4 +212,102 @@ export function buildChatAgentTools(communityId: string) {
       },
     }),
   };
+
+  const isAdmin = role === "OWNER" || role === "ADMIN";
+  if (!isAdmin) return readTools;
+
+  const writeTools = {
+    challenge_update: tool({
+      description:
+        "Update challenge metadata (title, description, pitch, benefits). Admin only.",
+      inputSchema: z.object({
+        challengeId: z.string(),
+        title: z.string().min(1).max(200).optional(),
+        description: z.string().max(5000).optional(),
+        pitch: z.string().max(1000).optional(),
+        benefits: z
+          .array(
+            z.object({
+              icon: z.string().max(8).optional(),
+              text: z.string().min(1).max(150),
+            }),
+          )
+          .max(6)
+          .nullable()
+          .optional(),
+      }),
+      execute: async (args) => {
+        const ch = await prisma.challenge.findUnique({
+          where: { id: args.challengeId },
+          select: { communityId: true },
+        });
+        if (!ch || ch.communityId !== communityId)
+          return { error: "challenge_not_in_community" };
+        await updateChallengeSettings({
+          userId,
+          challengeId: args.challengeId,
+          ...(args.title !== undefined ? { title: args.title } : {}),
+          ...(args.description !== undefined ? { description: args.description } : {}),
+          ...(args.pitch !== undefined ? { pitch: args.pitch } : {}),
+          ...(args.benefits !== undefined ? { benefits: args.benefits ?? null } : {}),
+          actorType: "INTERNAL_AGENT",
+          actorId: userId,
+        });
+        return { success: true };
+      },
+    }),
+
+    challenge_task_update_content: tool({
+      description:
+        "Update a challenge task's content fields (title, description, SOP, video URL, evidence settings). Admin only.",
+      inputSchema: z.object({
+        taskId: z.string(),
+        title: z.string().min(1).max(200).optional(),
+        description: z.string().max(5000).optional(),
+        sopContent: z.string().max(10000).optional(),
+        videoUrl: z.string().url().optional(),
+        evidenceType: z.enum(["TEXT", "LINK", "IMAGE", "TEXT_IMAGE"]).optional(),
+        evidenceLabel: z.string().max(200).optional(),
+        label: z.string().max(100).optional(),
+      }),
+      execute: async (args) => {
+        const task = await prisma.challengeTask.findUnique({
+          where: { id: args.taskId },
+          select: { challenge: { select: { communityId: true } } },
+        });
+        if (!task || task.challenge.communityId !== communityId)
+          return { error: "task_not_in_community" };
+        await updateChallengeTask({ userId, ...args });
+        return { success: true };
+      },
+    }),
+
+    challenge_task_create: tool({
+      description:
+        "Create a new task in a challenge (appended at the given day number). Admin only.",
+      inputSchema: z.object({
+        challengeId: z.string(),
+        dayNumber: z.number().int().min(1),
+        title: z.string().min(1).max(200),
+        description: z.string().max(5000).optional(),
+        sopContent: z.string().max(10000).optional(),
+        videoUrl: z.string().url().optional(),
+        evidenceType: z.enum(["TEXT", "LINK", "IMAGE", "TEXT_IMAGE"]).optional(),
+        evidenceLabel: z.string().max(200).optional(),
+        label: z.string().max(100).optional(),
+      }),
+      execute: async (args) => {
+        const ch = await prisma.challenge.findUnique({
+          where: { id: args.challengeId },
+          select: { communityId: true },
+        });
+        if (!ch || ch.communityId !== communityId)
+          return { error: "challenge_not_in_community" };
+        const task = await createChallengeTask({ userId, ...args });
+        return { success: true, taskId: task.id };
+      },
+    }),
+  };
+
+  return { ...readTools, ...writeTools };
 }

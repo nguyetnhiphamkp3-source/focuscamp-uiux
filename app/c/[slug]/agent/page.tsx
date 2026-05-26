@@ -140,10 +140,32 @@ export default async function AgentPage({
       <header className="view-header">
         <span className="view-title">AI Agent</span>
         <span className="view-subtitle">{community.name}</span>
+        <span
+          style={{
+            marginLeft: "auto",
+            fontSize: "var(--text-xs)",
+            padding: "3px 8px",
+            borderRadius: 6,
+            background: membership.role === "OWNER" || membership.role === "ADMIN"
+              ? "rgba(27,158,117,0.12)"
+              : "var(--bg-modifier-hover)",
+            color: membership.role === "OWNER" || membership.role === "ADMIN"
+              ? "var(--brand-green)"
+              : "var(--text-muted)",
+            fontWeight: 600,
+          }}
+        >
+          {membership.role === "OWNER" || membership.role === "ADMIN"
+            ? "🛡 Quản trị viên"
+            : membership.role === "MOD"
+              ? "Điều hành viên"
+              : "Thành viên"}
+        </span>
       </header>
       <AgentChat
         communityId={community.id}
         conversationId={conversationId}
+        memberRole={membership.role as "OWNER" | "ADMIN" | "MOD" | "MEMBER"}
         initialMessages={initialMessages.map((m) => ({
           id: m.id,
           role: m.role as "user" | "assistant" | "system",
