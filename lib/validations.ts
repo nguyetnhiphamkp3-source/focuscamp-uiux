@@ -110,6 +110,11 @@ export const UpdateChallengeSettingsSchema = z.object({
   pitch: z.string().trim().max(20000).optional().nullable(),
   benefits: ChallengeBenefitsSchema.optional(),
   bumpProductId: z.string().cuid().optional().nullable(),
+  aiReviewEnabled: z.boolean().optional(),
+  aiReviewThreshold: z.number().min(0).max(1).optional(),
+  aiReviewFallback: z.enum(["FLAG", "REJECT"]).optional(),
+  aiReviewProvider: z.enum(["anthropic", "openai", "groq", "xai", "google"]).optional().nullable(),
+  aiReviewModel: z.string().trim().max(120).optional().nullable().or(z.literal("")),
 }).superRefine((data, ctx) => {
   if (!data.bannerVideoUrl) return;
   if (parseChallengeVideoUrl(data.bannerVideoUrl)) return;
@@ -154,6 +159,8 @@ export const CreateChallengeTaskSchema = z.object({
   evidenceLabel: z.string().trim().max(500).optional().or(z.literal("")),
   label: z.string().trim().max(60).optional().or(z.literal("")),
   unlockAfterHours: z.number().int().min(0).max(720).optional().nullable(),
+  aiReviewGuidelines: z.string().trim().max(2000).optional().nullable().or(z.literal("")),
+  aiReviewRedFlags: z.string().trim().max(1000).optional().nullable().or(z.literal("")),
 });
 
 export const DeleteChallengeTaskSchema = z.object({
@@ -170,6 +177,8 @@ export const UpdateChallengeTaskSchema = z.object({
   evidenceLabel: z.string().trim().max(500).optional().or(z.literal("")),
   label: z.string().trim().max(60).optional().or(z.literal("")),
   unlockAfterHours: z.number().int().min(0).max(720).optional().nullable(),
+  aiReviewGuidelines: z.string().trim().max(2000).optional().nullable().or(z.literal("")),
+  aiReviewRedFlags: z.string().trim().max(1000).optional().nullable().or(z.literal("")),
 });
 
 export const ReviewSubmissionSchema = z.object({

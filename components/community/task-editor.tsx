@@ -31,6 +31,8 @@ export function TaskEditorButton({
     evidenceLabel: string | null;
     label: string | null;
     unlockAfterHours: number | null;
+    aiReviewGuidelines: string | null;
+    aiReviewRedFlags: string | null;
   };
 }) {
   const router = useRouter();
@@ -47,6 +49,8 @@ export function TaskEditorButton({
   const [unlockAfterHours, setUnlockAfterHours] = useState(
     initial.unlockAfterHours != null ? String(initial.unlockAfterHours) : ""
   );
+  const [aiGuidelines, setAiGuidelines] = useState(initial.aiReviewGuidelines ?? "");
+  const [aiRedFlags, setAiRedFlags] = useState(initial.aiReviewRedFlags ?? "");
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
 
@@ -87,6 +91,8 @@ export function TaskEditorButton({
         evidenceLabel: evidenceLabel.trim(),
         label: label.trim(),
         unlockAfterHours: unlockAfterHours.trim() ? parseInt(unlockAfterHours, 10) : null,
+        aiReviewGuidelines: aiGuidelines.trim() || null,
+        aiReviewRedFlags: aiRedFlags.trim() || null,
         communitySlug,
         challengeSlug,
       });
@@ -277,6 +283,40 @@ export function TaskEditorButton({
                   style={inputStyle}
                 />
               </Field>
+
+              <div style={{ borderTop: "1px solid var(--border-subtle)", margin: "12px 0", paddingTop: 12 }}>
+                <div style={{ fontSize: "var(--text-sm)", fontWeight: 700, marginBottom: 8, color: "var(--header-primary)" }}>
+                  🤖 AI Review
+                </div>
+                <Field label="Tiêu chí AI duyệt (viết bằng ngôn ngữ tự nhiên)">
+                  <textarea
+                    value={aiGuidelines}
+                    onChange={(e) => setAiGuidelines(e.target.value)}
+                    maxLength={2000}
+                    rows={3}
+                    disabled={pending}
+                    placeholder="vd: Phải có ảnh chụp thật (không phải ảnh mạng), mô tả ít nhất 50 từ về trải nghiệm hôm nay"
+                    style={{ ...inputStyle, resize: "vertical" as const, fontFamily: "inherit" }}
+                  />
+                  <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 4 }}>
+                    {aiGuidelines.length}/2000 · Để trống = task này không có AI review
+                  </div>
+                </Field>
+                <Field label="Red flags — auto-reject nếu phát hiện (tùy chọn)">
+                  <textarea
+                    value={aiRedFlags}
+                    onChange={(e) => setAiRedFlags(e.target.value)}
+                    maxLength={1000}
+                    rows={2}
+                    disabled={pending}
+                    placeholder="vd: Nội dung copy-paste, ảnh chụp màn hình cũ, spam ký tự vô nghĩa"
+                    style={{ ...inputStyle, resize: "vertical" as const, fontFamily: "inherit" }}
+                  />
+                  <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 4 }}>
+                    {aiRedFlags.length}/1000
+                  </div>
+                </Field>
+              </div>
             </div>
 
             {err && (

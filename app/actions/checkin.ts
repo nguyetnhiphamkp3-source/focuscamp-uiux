@@ -1,8 +1,10 @@
 "use server";
 
 import { auth } from "@/auth";
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { submitCheckin } from "@/lib/services/challenge";
+import { triggerAIReviewIfEnabled } from "@/lib/services/ai-submission-review";
 import { ChallengeCheckinSchema } from "@/lib/validations";
 import { logError } from "@/lib/logger";
 import { rateLimit } from "@/lib/rate-limit";
@@ -52,6 +54,9 @@ export async function checkinAction(input: {
     });
     revalidatePath(`/c/${input.communitySlug}/challenges/${input.challengeSlug}`);
     revalidatePath(`/c/${input.communitySlug}`);
+    if (res.checkinId) {
+      after(() => triggerAIReviewIfEnabled(res.checkinId));
+    }
     if ("completed" in res && res.completed) {
       return {
         ok: true,

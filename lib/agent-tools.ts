@@ -10,6 +10,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { listFeed, getPostWithComments } from "@/lib/services/post";
 import { listChallengeSubmissions, updateChallengeSettings, updateChallengeTask, createChallengeTask } from "@/lib/services/challenge-member";
+import { scanPendingCheckins } from "@/lib/services/ai-submission-review";
 import { getCommunityProfile } from "@/lib/services/profile";
 import { listMembers } from "@/lib/services/community-settings";
 import { getPlanStatus, planLabel } from "@/lib/platform-plans";
@@ -305,6 +306,34 @@ export function buildChatAgentTools(communityId: string, userId: string, role: C
           return { error: "challenge_not_in_community" };
         const task = await createChallengeTask({ userId, ...args });
         return { success: true, taskId: task.id };
+      },
+    }),
+
+    challenge_toggle_ai_review: tool({
+      description:
+        "Enable or disable AI auto-review for a challenge. When enabling, scans all pending submissions. Admin only.",
+      inputSchema: z.object({
+        challengeId: z.string(),
+        enable: z.boolean(),
+      }),
+      execute: async (args) => {
+        const ch = await prisma.challenge.findUnique({
+          where: { id: args.challengeId },
+          select: { communityId: true },
+        });
+        if (!ch || ch.communityId !== communityId)
+          return { error: "challenge_not_in_community" };
+        await updateChallengeSettings({
+          userId,
+          challengeId: args.challengeId,
+          aiReviewEnabled: args.enable,
+          actorType: "INTERNAL_AGENT",
+          actorId: userId,
+        });
+        if (args.enable) {
+          scanPendingCheckins(args.challengeId).catch(() => {});
+        }
+        return { success: true, aiReviewEnabled: args.enable };
       },
     }),
   };

@@ -102,10 +102,10 @@ export default async function ChallengeDetailPage({
       : null;
 
   // reviewTab needed by parallel batch below
-  type ReviewTab = "ALL" | "PENDING" | "APPROVED" | "REJECTED";
+  type ReviewTab = "ALL" | "AI_FLAGGED" | "PENDING" | "APPROVED" | "REJECTED";
   const reviewTab = ((): ReviewTab => {
     const t = (sp.review || "").toUpperCase();
-    if (t === "PENDING" || t === "APPROVED" || t === "REJECTED" || t === "ALL")
+    if (t === "PENDING" || t === "APPROVED" || t === "REJECTED" || t === "AI_FLAGGED" || t === "ALL")
       return t as ReviewTab;
     return "PENDING"; // default shows what needs attention
   })();
@@ -151,7 +151,7 @@ export default async function ChallengeDetailPage({
 
     // Operator review panel data
     permissions.canReviewSubmissions
-      ? (async (): Promise<{ rows: SubmissionRow[]; total: number; pendingCount: number } | null> => {
+      ? (async (): Promise<{ rows: SubmissionRow[]; total: number; pendingCount: number; aiFlaggedCount: number } | null> => {
           const res = await listChallengeSubmissions({
             challengeId: challenge.id,
             status: reviewTab,
@@ -173,9 +173,11 @@ export default async function ChallengeDetailPage({
                 ? { dayNumber: r.task.dayNumber, title: r.task.title, label: r.task.label }
                 : null,
               reviewedBy: r.reviewedBy,
+              aiReviewData: r.aiReviewData as SubmissionRow["aiReviewData"],
             })),
             total: res.total,
             pendingCount: res.pendingCount,
+            aiFlaggedCount: res.aiFlaggedCount,
           };
         })()
       : Promise.resolve(null),
@@ -417,8 +419,14 @@ export default async function ChallengeDetailPage({
                 taskUnlockMode: challenge.taskUnlockMode,
                 unlockIntervalHours: challenge.unlockIntervalHours,
                 bumpProductId: (challenge as { bumpProductId?: string | null }).bumpProductId ?? null,
+                aiReviewEnabled: challenge.aiReviewEnabled,
+                aiReviewThreshold: challenge.aiReviewThreshold,
+                aiReviewFallback: challenge.aiReviewFallback,
+                aiReviewProvider: challenge.aiReviewProvider,
+                aiReviewModel: challenge.aiReviewModel,
               }}
               communityProducts={communityProducts}
+              pendingSubmissionsCount={submissionData?.pendingCount ?? 0}
             />
           )}
 
@@ -880,6 +888,8 @@ export default async function ChallengeDetailPage({
                             evidenceLabel: t.evidenceLabel,
                             label: t.label,
                             unlockAfterHours: t.unlockAfterHours,
+                            aiReviewGuidelines: t.aiReviewGuidelines ?? null,
+                            aiReviewRedFlags: t.aiReviewRedFlags ?? null,
                           }}
                         />
                       )}
@@ -1232,6 +1242,7 @@ export default async function ChallengeDetailPage({
                 submissions={submissionData.rows}
                 total={submissionData.total}
                 pendingCount={submissionData.pendingCount}
+                aiFlaggedCount={submissionData.aiFlaggedCount}
                 activeStatus={reviewTab}
               />
             </div>

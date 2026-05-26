@@ -362,6 +362,16 @@ model Challenge {
   /** Last edit timestamp. */
   lastEditedAt     DateTime?
   bumpProductId  String?
+  /** AI auto-review: master toggle for this challenge. */
+  aiReviewEnabled    Boolean  @default(false)
+  /** Confidence threshold — below this, AI flags for human review. */
+  aiReviewThreshold  Float    @default(0.8)
+  /** Fallback when AI uncertain: "FLAG" (keep PENDING) or "REJECT". */
+  aiReviewFallback   String   @default("FLAG")
+  /** Optional provider override for AI review (null = use community agent provider). */
+  aiReviewProvider   String?
+  /** Optional model override for AI review (null = use community agent model). */
+  aiReviewModel      String?
   createdAt      DateTime  @default(now())
 
   community   Community         @relation(fields: [communityId], references: [id], onDelete: Cascade)
@@ -405,6 +415,10 @@ model ChallengeTask {
   evidenceLabel String?   @db.Text
   /** Per-task unlock override in hours. Null = use challenge default. */
   unlockAfterHours Int?
+  /** Natural-language criteria for AI auto-approval. Null = no AI review for this task. */
+  aiReviewGuidelines String? @db.Text
+  /** Red-flag criteria for AI auto-rejection. */
+  aiReviewRedFlags   String? @db.Text
 
   challenge   Challenge        @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   completions TaskCompletion[]
@@ -468,6 +482,8 @@ model Checkin {
   reviewedAt   DateTime?
   reviewNote   String?  @db.Text
   rejectCount  Int      @default(0)
+  /** AI review output: { decision, confidence, reasoning, model, reviewedAt } */
+  aiReviewData Json?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

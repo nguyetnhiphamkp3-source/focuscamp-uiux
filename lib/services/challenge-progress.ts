@@ -194,7 +194,7 @@ export async function submitCheckin(params: {
   const task = taskId
     ? await prisma.challengeTask.findFirst({
         where: { id: taskId, challengeId },
-        select: { evidenceType: true },
+        select: { evidenceType: true, aiReviewGuidelines: true },
       })
     : null;
   const evidenceType = task?.evidenceType ?? "TEXT";
@@ -235,7 +235,7 @@ export async function submitCheckin(params: {
   // Calculate if this check-in completes the challenge
   const challenge = await prisma.challenge.findUnique({
     where: { id: challengeId },
-    select: { requiredDays: true, autoStartAfterHours: true },
+    select: { requiredDays: true, autoStartAfterHours: true, aiReviewEnabled: true },
   });
   if (!challenge) throw new Error("challenge_not_found");
 
@@ -256,9 +256,11 @@ export async function submitCheckin(params: {
     !existingDayCheckins.some((c) => c.dayNumber === dayNumber);
   const totalCheckedDays = existingDayCount + (thisAddsNewDay ? 1 : 0);
   const isFinalDay = totalCheckedDays >= challenge.requiredDays;
+  const shouldAIReview = challenge.aiReviewEnabled && !!task?.aiReviewGuidelines?.trim();
 
+  let checkinId = "";
   await prisma.$transaction(async (tx) => {
-    await tx.checkin.create({
+    const created = await tx.checkin.create({
       data: {
         userId,
         challengeId,
@@ -267,8 +269,10 @@ export async function submitCheckin(params: {
         dayNumber: dayNumber ?? null,
         linkUrl: linkUrl ?? null,
         imageUrl: imageUrl ?? null,
+        status: shouldAIReview ? "PENDING" : "APPROVED",
       },
     });
+    checkinId = created.id;
     await tx.challengeMember.update({
       where: { id: member.id },
       data: {
@@ -307,5 +311,5 @@ export async function submitCheckin(params: {
     }
   }
 
-  return { ok: true, completed: isFinalDay };
+  return { ok: true, completed: isFinalDay, checkinId };
 }

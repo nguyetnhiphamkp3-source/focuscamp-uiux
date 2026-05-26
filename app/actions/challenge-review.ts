@@ -208,6 +208,11 @@ export async function updateChallengeSettingsAction(input: {
   pitch?: string | null;
   benefits?: Array<{ icon?: string; text: string }> | null;
   bumpProductId?: string | null;
+  aiReviewEnabled?: boolean;
+  aiReviewThreshold?: number;
+  aiReviewFallback?: string;
+  aiReviewProvider?: string | null;
+  aiReviewModel?: string | null;
   communitySlug: string;
   challengeSlug: string;
 }): Promise<ActionResult> {
@@ -234,6 +239,11 @@ export async function updateChallengeSettingsAction(input: {
     pitch: input.pitch,
     benefits: input.benefits,
     bumpProductId: input.bumpProductId,
+    aiReviewEnabled: input.aiReviewEnabled,
+    aiReviewThreshold: input.aiReviewThreshold,
+    aiReviewFallback: input.aiReviewFallback,
+    aiReviewProvider: input.aiReviewProvider,
+    aiReviewModel: input.aiReviewModel,
   });
   if (!parsed.success) {
     return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
@@ -310,7 +320,23 @@ export async function updateChallengeSettingsAction(input: {
               text: b.text,
             })),
       bumpProductId: parsed.data.bumpProductId !== undefined ? (parsed.data.bumpProductId ?? null) : undefined,
+      aiReviewEnabled: parsed.data.aiReviewEnabled,
+      aiReviewThreshold: parsed.data.aiReviewThreshold,
+      aiReviewFallback: parsed.data.aiReviewFallback,
+      aiReviewProvider:
+        parsed.data.aiReviewProvider === undefined
+          ? undefined
+          : parsed.data.aiReviewProvider || null,
+      aiReviewModel:
+        parsed.data.aiReviewModel === undefined
+          ? undefined
+          : parsed.data.aiReviewModel || null,
     });
+    if (parsed.data.aiReviewEnabled) {
+      const { after } = await import("next/server");
+      const { scanPendingCheckins } = await import("@/lib/services/ai-submission-review");
+      after(() => scanPendingCheckins(parsed.data.challengeId));
+    }
     bumpChallenge(input.communitySlug, input.challengeSlug);
     revalidatePath(`/marketplace`);
     revalidatePath("/discovery");
@@ -369,6 +395,8 @@ export async function updateTaskAction(input: {
   evidenceLabel?: string;
   label?: string;
   unlockAfterHours?: number | null;
+  aiReviewGuidelines?: string | null;
+  aiReviewRedFlags?: string | null;
   communitySlug: string;
   challengeSlug: string;
 }): Promise<ActionResult> {
@@ -384,6 +412,8 @@ export async function updateTaskAction(input: {
     evidenceLabel: input.evidenceLabel,
     label: input.label,
     unlockAfterHours: input.unlockAfterHours,
+    aiReviewGuidelines: input.aiReviewGuidelines,
+    aiReviewRedFlags: input.aiReviewRedFlags,
   });
   if (!parsed.success) {
     return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
@@ -400,6 +430,14 @@ export async function updateTaskAction(input: {
       evidenceLabel: parsed.data.evidenceLabel ?? undefined,
       label: parsed.data.label ?? undefined,
       unlockAfterHours: parsed.data.unlockAfterHours,
+      aiReviewGuidelines:
+        parsed.data.aiReviewGuidelines === undefined
+          ? undefined
+          : parsed.data.aiReviewGuidelines || null,
+      aiReviewRedFlags:
+        parsed.data.aiReviewRedFlags === undefined
+          ? undefined
+          : parsed.data.aiReviewRedFlags || null,
     });
     bumpChallenge(input.communitySlug, input.challengeSlug);
     return { ok: true };
@@ -747,4 +785,32 @@ export async function renewChallengePaymentAction(input: {
   });
 
   return { ok: true, paymentCode: payment.paymentCode, amountVnd: newAmount };
+}
+
+export async function toggleAIReviewAction(input: {
+  challengeId: string;
+  enable: boolean;
+  communitySlug: string;
+  challengeSlug: string;
+}): Promise<ActionResult> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+  try {
+    await updateChallengeSettings({
+      userId: s.user.id,
+      challengeId: input.challengeId,
+      aiReviewEnabled: input.enable,
+    });
+    if (input.enable) {
+      const { after } = await import("next/server");
+      const { scanPendingCheckins } = await import("@/lib/services/ai-submission-review");
+      after(() => scanPendingCheckins(input.challengeId));
+    }
+    bumpChallenge(input.communitySlug, input.challengeSlug);
+    return { ok: true };
+  } catch (err) {
+    logError(err, { userId: s.user.id, challengeId: input.challengeId });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
 }

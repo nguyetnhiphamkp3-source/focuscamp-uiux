@@ -24,6 +24,13 @@ export type SubmissionRow = {
   user: { id: string; name: string | null; image: string | null };
   task: { dayNumber: number; title: string; label: string | null } | null;
   reviewedBy: { id: string; name: string | null } | null;
+  aiReviewData?: {
+    decision: string;
+    confidence: number;
+    reasoning: string;
+    model: string;
+    reviewedAt: string;
+  } | null;
 };
 
 export function SubmissionReviewPanel({
@@ -33,6 +40,7 @@ export function SubmissionReviewPanel({
   submissions,
   total,
   pendingCount,
+  aiFlaggedCount,
   activeStatus,
 }: {
   challengeId: string;
@@ -41,7 +49,8 @@ export function SubmissionReviewPanel({
   submissions: SubmissionRow[];
   total: number;
   pendingCount: number;
-  activeStatus: "ALL" | "PENDING" | "APPROVED" | "REJECTED";
+  aiFlaggedCount: number;
+  activeStatus: "ALL" | "AI_FLAGGED" | "PENDING" | "APPROVED" | "REJECTED";
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -172,6 +181,7 @@ export function SubmissionReviewPanel({
         {(
           [
             { key: "ALL", label: "Tất cả" },
+            { key: "AI_FLAGGED", label: `🤖 AI Flagged${aiFlaggedCount > 0 ? ` (${aiFlaggedCount})` : ""}` },
             { key: "PENDING", label: `Chờ (${pendingCount})` },
             { key: "APPROVED", label: "Đã duyệt" },
             { key: "REJECTED", label: "Từ chối" },
@@ -263,6 +273,7 @@ function SubmissionCard({
 }) {
   const [rejecting, setRejecting] = useState(false);
   const [note, setNote] = useState("");
+  const [aiReasoningExpanded, setAiReasoningExpanded] = useState(false);
   const authorName = submission.user.name || "Ẩn danh";
 
   function handleReject() {
@@ -381,6 +392,13 @@ function SubmissionCard({
               </span>
             )}
             {statusBadge}
+            {submission.aiReviewData && (
+              <AIReviewBadge
+                data={submission.aiReviewData}
+                expanded={aiReasoningExpanded}
+                onToggle={() => setAiReasoningExpanded(!aiReasoningExpanded)}
+              />
+            )}
           </div>
 
           <div
@@ -571,4 +589,92 @@ function actionBtnStyle(
     fontWeight: 600,
     cursor: "pointer",
   };
+}
+
+function AIReviewBadge({
+  data,
+  expanded,
+  onToggle,
+}: {
+  data: {
+    decision: string;
+    confidence: number;
+    reasoning: string;
+    model: string;
+    reviewedAt: string;
+  };
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const confidencePercent = Math.round(data.confidence * 100);
+
+  const badgeColor = (() => {
+    switch (data.decision) {
+      case "APPROVE":
+        return {
+          color: "var(--success)",
+          background: "rgba(36,128,70,0.12)",
+        };
+      case "REJECT":
+        return {
+          color: "var(--danger)",
+          background: "rgba(218,55,60,0.1)",
+        };
+      case "FLAG":
+        return {
+          color: "var(--warning)",
+          background: "rgba(240,178,50,0.14)",
+        };
+      default:
+        return {
+          color: "var(--text-muted)",
+          background: "var(--bg-modifier-hover)",
+        };
+    }
+  })();
+
+  const label = (() => {
+    switch (data.decision) {
+      case "APPROVE":
+        return `🤖 AI Approved (${confidencePercent}%)`;
+      case "REJECT":
+        return `🤖 AI Rejected (${confidencePercent}%)`;
+      case "FLAG":
+        return `🤖 AI Flagged (${confidencePercent}%)`;
+      default:
+        return `🤖 AI Review (${confidencePercent}%)`;
+    }
+  })();
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <span
+        onClick={onToggle}
+        style={{
+          ...badgeStyle,
+          color: badgeColor.color,
+          background: badgeColor.background,
+          cursor: "pointer",
+          userSelect: "none",
+        }}
+      >
+        {label}
+      </span>
+      {expanded && (
+        <div
+          style={{
+            fontSize: "var(--text-xs)",
+            color: "var(--text-muted)",
+            padding: 8,
+            background: "var(--bg-modifier-hover)",
+            borderRadius: 4,
+            marginTop: 4,
+            lineHeight: 1.5,
+          }}
+        >
+          {data.reasoning}
+        </div>
+      )}
+    </div>
+  );
 }

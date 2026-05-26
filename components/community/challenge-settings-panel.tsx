@@ -8,6 +8,7 @@ import {
 } from "@/app/actions/challenge-review";
 import { ImageUploadField } from "@/components/shared/image-upload-field";
 import { ChallengePricingEditor } from "@/components/community/challenge-pricing-editor";
+import { AIReviewSettings } from "@/components/community/ai-review-settings";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import type { PricingConfig } from "@/lib/services/pricing";
 import { parseChallengeVideoUrl, type ChallengeBannerMediaType } from "@/lib/challenge-video";
@@ -47,6 +48,7 @@ export function ChallengeSettingsPanel({
   challengeSlug,
   initial,
   communityProducts = [],
+  pendingSubmissionsCount = 0,
 }: {
   challengeId: string;
   communitySlug: string;
@@ -68,8 +70,14 @@ export function ChallengeSettingsPanel({
     taskUnlockMode: string;
     unlockIntervalHours: number;
     bumpProductId?: string | null;
+    aiReviewEnabled: boolean;
+    aiReviewThreshold: number;
+    aiReviewFallback: string;
+    aiReviewProvider: string | null;
+    aiReviewModel: string | null;
   };
   communityProducts?: { id: string; title: string }[];
+  pendingSubmissionsCount?: number;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -118,6 +126,11 @@ export function ChallengeSettingsPanel({
       : []
   );
   const [bumpProductId, setBumpProductId] = useState<string>(initial.bumpProductId ?? "");
+  const [aiReviewEnabled, setAiReviewEnabled] = useState(initial.aiReviewEnabled);
+  const [aiReviewThreshold, setAiReviewThreshold] = useState(initial.aiReviewThreshold);
+  const [aiReviewFallback, setAiReviewFallback] = useState(initial.aiReviewFallback);
+  const [aiReviewProvider, setAiReviewProvider] = useState<string | null>(initial.aiReviewProvider);
+  const [aiReviewModel, setAiReviewModel] = useState<string | null>(initial.aiReviewModel);
   const [pending, setPending] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -167,6 +180,11 @@ export function ChallengeSettingsPanel({
         : []
     );
     setBumpProductId(initial.bumpProductId ?? "");
+    setAiReviewEnabled(initial.aiReviewEnabled);
+    setAiReviewThreshold(initial.aiReviewThreshold);
+    setAiReviewFallback(initial.aiReviewFallback);
+    setAiReviewProvider(initial.aiReviewProvider);
+    setAiReviewModel(initial.aiReviewModel);
     setErr(null);
     setSaved(false);
     setEditorKey((k) => k + 1);
@@ -233,6 +251,11 @@ export function ChallengeSettingsPanel({
       pricingConfig: pricingConfig as Record<string, unknown> | null,
       freezeWindows: freezeWindows.length > 0 ? freezeWindows : null,
       bumpProductId: bumpProductId || null,
+      aiReviewEnabled,
+      aiReviewThreshold,
+      aiReviewFallback,
+      aiReviewProvider,
+      aiReviewModel,
       communitySlug,
       challengeSlug,
     });
@@ -781,6 +804,22 @@ export function ChallengeSettingsPanel({
               </div>
             )}
           </div>
+
+          <AIReviewSettings
+            enabled={aiReviewEnabled}
+            threshold={aiReviewThreshold}
+            fallback={aiReviewFallback}
+            provider={aiReviewProvider}
+            model={aiReviewModel}
+            pendingCount={pendingSubmissionsCount}
+            onChange={(fields) => {
+              if (fields.aiReviewEnabled !== undefined) setAiReviewEnabled(fields.aiReviewEnabled);
+              if (fields.aiReviewThreshold !== undefined) setAiReviewThreshold(fields.aiReviewThreshold);
+              if (fields.aiReviewFallback !== undefined) setAiReviewFallback(fields.aiReviewFallback);
+              if (fields.aiReviewProvider !== undefined) setAiReviewProvider(fields.aiReviewProvider);
+              if (fields.aiReviewModel !== undefined) setAiReviewModel(fields.aiReviewModel);
+            }}
+          />
 
           <label
             style={{

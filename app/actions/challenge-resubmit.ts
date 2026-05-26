@@ -1,8 +1,10 @@
 "use server";
 
 import { auth } from "@/auth";
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { resubmitCheckin } from "@/lib/services/challenge";
+import { triggerAIReviewIfEnabled } from "@/lib/services/ai-submission-review";
 import { ResubmitCheckinSchema } from "@/lib/validations";
 import { logError } from "@/lib/logger";
 
@@ -36,6 +38,7 @@ export async function resubmitCheckinAction(input: {
       imageUrl: parsed.data.imageUrl || undefined,
     });
     revalidatePath(`/c/${input.communitySlug}/challenges/${input.challengeSlug}`);
+    after(() => triggerAIReviewIfEnabled(parsed.data.checkinId));
     return { ok: true };
   } catch (err) {
     logError(err, { userId: s.user.id, checkinId: input.checkinId });

@@ -206,16 +206,25 @@ export async function rejectChallengeMember(input: {
  */
 export async function listChallengeSubmissions(input: {
   challengeId: string;
-  status?: SubmissionStatus | "ALL";
+  status?: SubmissionStatus | "ALL" | "AI_FLAGGED";
   limit?: number;
   offset?: number;
 }) {
   const { challengeId, status = "ALL", limit = 50, offset = 0 } = input;
-  const [rows, total, pendingCount] = await Promise.all([
+  const statusWhere: Prisma.CheckinWhereInput =
+    status === "AI_FLAGGED"
+      ? {
+          status: "PENDING",
+          NOT: [{ aiReviewData: { equals: Prisma.DbNull } }],
+        }
+      : status !== "ALL"
+        ? { status }
+        : {};
+  const [rows, total, pendingCount, aiFlaggedCount] = await Promise.all([
     prisma.checkin.findMany({
       where: {
         challengeId,
-        ...(status !== "ALL" ? { status } : {}),
+        ...statusWhere,
       },
       include: {
         user: { select: { id: true, name: true, image: true } },
@@ -228,8 +237,15 @@ export async function listChallengeSubmissions(input: {
     }),
     prisma.checkin.count({ where: { challengeId } }),
     prisma.checkin.count({ where: { challengeId, status: "PENDING" } }),
+    prisma.checkin.count({
+      where: {
+        challengeId,
+        status: "PENDING",
+        NOT: [{ aiReviewData: { equals: Prisma.DbNull } }],
+      },
+    }),
   ]);
-  return { rows, total, pendingCount };
+  return { rows, total, pendingCount, aiFlaggedCount };
 }
 
 /**
@@ -241,12 +257,15 @@ export async function reviewSubmission(input: {
   checkinId: string;
   action: "APPROVE" | "REJECT";
   note?: string;
+  internal?: boolean;
 }) {
   const checkin = await prisma.checkin.findUnique({
     where: { id: input.checkinId },
   });
   if (!checkin) throw new Error("Check-in không tồn tại");
-  await assertChallengeReviewer(input.userId, checkin.challengeId);
+  if (!input.internal) {
+    await assertChallengeReviewer(input.userId, checkin.challengeId);
+  }
 
   if (input.action === "REJECT" && !input.note?.trim()) {
     throw new Error("Vui lòng ghi note khi reject để người làm biết cần sửa gì");
@@ -256,7 +275,7 @@ export async function reviewSubmission(input: {
     where: { id: input.checkinId },
     data: {
       status: input.action === "APPROVE" ? "APPROVED" : "REJECTED",
-      reviewedById: input.userId,
+      reviewedById: input.internal ? null : input.userId,
       reviewedAt: new Date(),
       reviewNote: input.note?.trim() || null,
       ...(input.action === "REJECT" ? { rejectCount: { increment: 1 } } : {}),
@@ -282,15 +301,16 @@ export async function reviewSubmission(input: {
     },
   });
   if (ctx) {
+    const isAI = !!input.internal;
     await createNotification({
       userId: checkin.userId,
       type: input.action === "APPROVE" ? "SUBMISSION_APPROVED" : "SUBMISSION_REJECTED",
       title:
         input.action === "APPROVE"
-          ? `Submission của bạn được duyệt ✓ (${ctx.title})`
-          : `Submission của bạn bị từ chối ✕ (${ctx.title})`,
+          ? `Submission của bạn được ${isAI ? "🤖 AI" : ""} duyệt ✓ (${ctx.title})`
+          : `Submission của bạn bị ${isAI ? "🤖 AI" : ""} từ chối ✕ (${ctx.title})`,
       body: input.note?.trim() || undefined,
-      actorId: input.userId,
+      actorId: input.internal ? undefined : input.userId,
       link: `/c/${ctx.community.slug}/challenges/${ctx.slug}`,
       communitySlug: ctx.community.slug,
     });
@@ -555,6 +575,11 @@ export async function updateChallengeSettings(input: {
   pitch?: string | null;
   benefits?: Array<{ icon?: string; text: string }> | null;
   bumpProductId?: string | null;
+  aiReviewEnabled?: boolean;
+  aiReviewThreshold?: number;
+  aiReviewFallback?: string;
+  aiReviewProvider?: string | null;
+  aiReviewModel?: string | null;
   /** Audit: who performed this edit. Defaults to USER. Pass INTERNAL_AGENT / EXTERNAL_API from agent paths. */
   actorType?: ChallengeEditorType;
   /** Audit: actor id (user id, or api key id for external). Defaults to input.userId. */
@@ -600,6 +625,11 @@ export async function updateChallengeSettings(input: {
       ...(input.pitch !== undefined ? { pitch: input.pitch } : {}),
       ...(benefitsValue !== undefined ? { benefits: benefitsValue } : {}),
       ...(input.bumpProductId !== undefined ? { bumpProductId: input.bumpProductId } : {}),
+      ...(input.aiReviewEnabled !== undefined ? { aiReviewEnabled: input.aiReviewEnabled } : {}),
+      ...(input.aiReviewThreshold !== undefined ? { aiReviewThreshold: input.aiReviewThreshold } : {}),
+      ...(input.aiReviewFallback !== undefined ? { aiReviewFallback: input.aiReviewFallback } : {}),
+      ...(input.aiReviewProvider !== undefined ? { aiReviewProvider: input.aiReviewProvider } : {}),
+      ...(input.aiReviewModel !== undefined ? { aiReviewModel: input.aiReviewModel } : {}),
       lastEditedBy: actorId,
       lastEditedByType: actorType,
       lastEditedAt: new Date(),
@@ -644,6 +674,8 @@ export async function updateChallengeTask(input: {
   evidenceLabel?: string;
   label?: string;
   unlockAfterHours?: number | null;
+  aiReviewGuidelines?: string | null;
+  aiReviewRedFlags?: string | null;
 }) {
   const task = await prisma.challengeTask.findUnique({
     where: { id: input.taskId },
@@ -673,6 +705,8 @@ export async function updateChallengeTask(input: {
         : {}),
       ...(input.label !== undefined ? { label: input.label || null } : {}),
       ...("unlockAfterHours" in input ? { unlockAfterHours: input.unlockAfterHours ?? null } : {}),
+      ...(input.aiReviewGuidelines !== undefined ? { aiReviewGuidelines: input.aiReviewGuidelines } : {}),
+      ...(input.aiReviewRedFlags !== undefined ? { aiReviewRedFlags: input.aiReviewRedFlags } : {}),
     },
   });
   logger.info(
