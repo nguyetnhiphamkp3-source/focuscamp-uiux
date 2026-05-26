@@ -47,16 +47,16 @@ export function ImageUploadField({
 
   useEffect(() => {
     const staged = stagedUploadsRef.current;
-    const onBeforeUnload = () => {
-      for (const url of staged) void deleteUploadedFile(url);
-    };
-    window.addEventListener("beforeunload", onBeforeUnload);
-    return () => {
-      window.removeEventListener("beforeunload", onBeforeUnload);
+    const cleanup = () => {
       for (const url of staged) {
         if (url === valueRef.current) continue;
         void deleteUploadedFile(url);
       }
+    };
+    window.addEventListener("beforeunload", cleanup);
+    return () => {
+      window.removeEventListener("beforeunload", cleanup);
+      cleanup();
     };
   }, []);
 
