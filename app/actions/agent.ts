@@ -2,7 +2,12 @@
 
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
-import { setSystemPrompt, setAgentApiKey } from "@/lib/services/agent";
+import {
+  setSystemPrompt,
+  setAgentApiKey,
+  setAgentProvider,
+  setAgentModel,
+} from "@/lib/services/agent";
 import { logError } from "@/lib/logger";
 
 type ActionResult = { ok: true } | { ok: false; reason: string };
@@ -52,3 +57,48 @@ export async function updateAgentApiKeyAction(input: {
     return { ok: false, reason: "unknown" };
   }
 }
+
+export async function updateAgentProviderAction(input: {
+  communityId: string;
+  communitySlug: string;
+  provider: string;
+}): Promise<ActionResult> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+  try {
+    await setAgentProvider({
+      userId: s.user.id,
+      communityId: input.communityId,
+      provider: input.provider,
+    });
+    revalidatePath(`/c/${input.communitySlug}/settings`);
+    return { ok: true };
+  } catch (err) {
+    logError(err, { userId: s.user.id, communityId: input.communityId });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+export async function updateAgentModelAction(input: {
+  communityId: string;
+  communitySlug: string;
+  model: string;
+}): Promise<ActionResult> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+  try {
+    await setAgentModel({
+      userId: s.user.id,
+      communityId: input.communityId,
+      model: input.model,
+    });
+    revalidatePath(`/c/${input.communitySlug}/settings`);
+    return { ok: true };
+  } catch (err) {
+    logError(err, { userId: s.user.id, communityId: input.communityId });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+

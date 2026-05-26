@@ -139,8 +139,12 @@ model Community {
 
   /** AI Agent system prompt configured by owner. Empty = generic helper. */
   agentSystemPrompt String? @db.Text
-  /** Encrypted Anthropic API key for per-community AI Agent. */
+  /** Encrypted API key for per-community AI Agent (provider-specific). */
   agentApiKey       String? @db.Text
+  /** LLM provider: anthropic | openai | groq | xai | google */
+  agentProvider     String? @default("anthropic")
+  /** Model ID within the chosen provider, e.g. "claude-haiku-4-5" */
+  agentModel        String?
 
   category         String?
   featuredOnGlobal Boolean @default(false)

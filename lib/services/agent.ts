@@ -1,13 +1,11 @@
 /**
  * AI Agent service — per-community chat assistant.
  *
- * v1 scope:
  *   - Streaming reply via Anthropic (Claude Haiku 4.5 default for cost)
  *   - System prompt configured by community owner
  *   - Persistent conversations + messages in DB
  *   - Per-user daily quota (50 messages / day for EXPLORER tier, unlimited for paid)
- *
- * Out of scope v1: tool calling, RAG over community content, multi-turn agents.
+ *   - Read-only tool calling (community data: challenges, members, stats, posts, XP)
  */
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
@@ -182,4 +180,46 @@ export async function hasAgentApiKey(communityId: string): Promise<boolean> {
     select: { agentApiKey: true },
   });
   return !!(c?.agentApiKey?.trim());
+}
+
+export async function getAgentProvider(communityId: string): Promise<string> {
+  const c = await prisma.community.findUnique({
+    where: { id: communityId },
+    select: { agentProvider: true },
+  });
+  return c?.agentProvider ?? "anthropic";
+}
+
+export async function setAgentProvider(input: {
+  userId: string;
+  communityId: string;
+  provider: string;
+}) {
+  await assertCommunityPermission(input.userId, input.communityId, "manage_ai_agent");
+  await prisma.community.update({
+    where: { id: input.communityId },
+    data: { agentProvider: input.provider },
+  });
+  logger.info({ communityId: input.communityId, provider: input.provider }, "[agent] provider updated");
+}
+
+export async function getAgentModel(communityId: string): Promise<string | null> {
+  const c = await prisma.community.findUnique({
+    where: { id: communityId },
+    select: { agentModel: true },
+  });
+  return c?.agentModel ?? null;
+}
+
+export async function setAgentModel(input: {
+  userId: string;
+  communityId: string;
+  model: string;
+}) {
+  await assertCommunityPermission(input.userId, input.communityId, "manage_ai_agent");
+  await prisma.community.update({
+    where: { id: input.communityId },
+    data: { agentModel: input.model },
+  });
+  logger.info({ communityId: input.communityId, model: input.model }, "[agent] model updated");
 }

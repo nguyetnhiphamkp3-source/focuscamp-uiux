@@ -1,15 +1,22 @@
 import { NextResponse } from "next/server";
-import { streamText, convertToModelMessages, type UIMessage } from "ai";
+import { streamText, convertToModelMessages, stepCountIs, type UIMessage, type LanguageModel } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
+import { createOpenAI } from "@ai-sdk/openai";
+import { createGroq } from "@ai-sdk/groq";
+import { createXai } from "@ai-sdk/xai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import {
   appendMessage,
   checkQuota,
   getAgentApiKey,
+  getAgentProvider,
+  getAgentModel,
   getOrCreateConversation,
   getSystemPrompt,
 } from "@/lib/services/agent";
+import { buildChatAgentTools } from "@/lib/agent-tools";
 import { rateLimit } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 
@@ -22,7 +29,29 @@ interface ChatRequestBody {
   messages: UIMessage[];
 }
 
-const MODEL_ID = process.env.AGENT_MODEL || "claude-haiku-4-5-20251001";
+const DEFAULT_MODELS: Record<string, string> = {
+  anthropic: "claude-haiku-4-5",
+  openai: "gpt-4o-mini",
+  groq: "llama-3.3-70b-versatile",
+  xai: "grok-3-mini",
+  google: "gemini-2.5-flash",
+};
+
+function buildModel(provider: string, apiKey: string, modelId: string): LanguageModel {
+  switch (provider) {
+    case "openai":
+      return createOpenAI({ apiKey })(modelId);
+    case "groq":
+      return createGroq({ apiKey })(modelId);
+    case "xai":
+      return createXai({ apiKey })(modelId);
+    case "google":
+      return createGoogleGenerativeAI({ apiKey })(modelId);
+    case "anthropic":
+    default:
+      return createAnthropic({ apiKey })(modelId);
+  }
+}
 
 export async function POST(req: Request) {
   const s = await auth();
@@ -104,15 +133,22 @@ export async function POST(req: Request) {
     );
   }
 
-  const anthropic = createAnthropic({ apiKey });
+  const provider = await getAgentProvider(body.communityId);
+  const storedModel = await getAgentModel(body.communityId);
+  const modelId = storedModel ?? DEFAULT_MODELS[provider] ?? DEFAULT_MODELS.anthropic;
+
+  const model = buildModel(provider, apiKey, modelId);
   const modelMessages = await convertToModelMessages(body.messages);
+  const tools = buildChatAgentTools(body.communityId);
 
   const result = streamText({
-    model: anthropic(MODEL_ID),
+    model,
     system: systemPrompt,
     messages: modelMessages,
+    tools,
+    stopWhen: stepCountIs(3),
     temperature: 0.7,
-    maxOutputTokens: 1024,
+    maxOutputTokens: 2048,
     onFinish: async ({ text }) => {
       try {
         await appendMessage({

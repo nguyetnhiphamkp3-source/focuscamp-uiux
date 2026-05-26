@@ -403,7 +403,12 @@ export default async function SettingsPage({
                 <AgentConfigEditor
                   communityId={community.id}
                   communitySlug={slug}
-                  initial={{ prompt: community.agentSystemPrompt ?? "", hasApiKey: !!community.agentApiKey }}
+                  initial={{
+                    prompt: community.agentSystemPrompt ?? "",
+                    hasApiKey: !!community.agentApiKey,
+                    provider: (community.agentProvider ?? "anthropic") as "anthropic" | "openai" | "groq" | "xai" | "google",
+                    model: community.agentModel ?? null,
+                  }}
                 />
               )}
 
