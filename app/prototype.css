@@ -2816,8 +2816,14 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
   color: var(--text-normal);
   line-height: 1.6;
   margin-bottom: 12px;
-  white-space: pre-line;
 }
+.ch-task-desc strong { font-weight: 700; color: var(--header-primary); }
+.ch-task-desc ul,
+.ch-task-desc ol { margin: 6px 0; padding-left: 20px; }
+.ch-task-desc li { margin: 4px 0; }
+.ch-task-desc p { margin: 8px 0; }
+.ch-task-desc p:first-child { margin-top: 0; }
+.ch-task-desc p:last-child { margin-bottom: 0; }
 .ch-task-sop {
   background: var(--bg-elevated);
   border-radius: 8px;

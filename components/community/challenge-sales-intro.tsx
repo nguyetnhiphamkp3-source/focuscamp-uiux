@@ -44,7 +44,7 @@ export function ChallengeSalesIntro({ challenge, effectivePrice, joinButton }: S
           { icon: "📋", value: String(challenge.tasks.length), label: "nhiệm vụ hàng ngày" },
           { icon: "🏷️", value: diffLabel, label: "độ khó" },
         ].map(({ icon, value, label }) => (
-          <div key={label} style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 10, padding: "10px 16px", flex: "0 0 auto" }}>
+          <div key={label} style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 10, padding: "10px 16px", flex: "1 1 0", minWidth: 140 }}>
             <span style={{ fontSize: 18 }}>{icon}</span>
             <div>
               <div style={{ fontSize: "var(--text-md)", fontWeight: 800, color: "var(--header-primary)", lineHeight: 1.1 }}>{value}</div>
