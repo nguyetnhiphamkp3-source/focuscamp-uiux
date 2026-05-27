@@ -8,6 +8,7 @@ import {
   deleteTaskAction,
 } from "@/app/actions/challenge-review";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { FileUploadField } from "@/components/shared/file-upload-field";
 
 /**
  * Admin-only inline task editor. Tiny '✎' button on each task row; opens
@@ -33,6 +34,9 @@ export function TaskEditorButton({
     unlockAfterHours: number | null;
     aiReviewGuidelines: string | null;
     aiReviewRedFlags: string | null;
+    giftLabel: string | null;
+    giftFileUrl: string | null;
+    giftLinkUrl: string | null;
   };
 }) {
   const router = useRouter();
@@ -51,6 +55,12 @@ export function TaskEditorButton({
   );
   const [aiGuidelines, setAiGuidelines] = useState(initial.aiReviewGuidelines ?? "");
   const [aiRedFlags, setAiRedFlags] = useState(initial.aiReviewRedFlags ?? "");
+  const [giftLabel, setGiftLabel] = useState(initial.giftLabel ?? "");
+  const [giftType, setGiftType] = useState<"none" | "file" | "link">(
+    initial.giftFileUrl ? "file" : initial.giftLinkUrl ? "link" : "none"
+  );
+  const [giftFileUrl, setGiftFileUrl] = useState(initial.giftFileUrl ?? "");
+  const [giftLinkUrl, setGiftLinkUrl] = useState(initial.giftLinkUrl ?? "");
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
 
@@ -93,6 +103,9 @@ export function TaskEditorButton({
         unlockAfterHours: unlockAfterHours.trim() ? parseInt(unlockAfterHours, 10) : null,
         aiReviewGuidelines: aiGuidelines.trim() || null,
         aiReviewRedFlags: aiRedFlags.trim() || null,
+        giftLabel: giftType === "none" ? "" : giftLabel.trim(),
+        giftFileUrl: giftType === "file" ? giftFileUrl : "",
+        giftLinkUrl: giftType === "link" ? giftLinkUrl.trim() : "",
         communitySlug,
         challengeSlug,
       });
@@ -316,6 +329,65 @@ export function TaskEditorButton({
                     {aiRedFlags.length}/1000
                   </div>
                 </Field>
+              </div>
+
+              <div style={{ borderTop: "1px solid var(--border-subtle)", margin: "12px 0", paddingTop: 12 }}>
+                <div style={{ fontSize: "var(--text-sm)", fontWeight: 700, marginBottom: 8, color: "var(--header-primary)" }}>
+                  🎁 Quà hoàn thành
+                </div>
+                <Field label="Loại quà">
+                  <select
+                    value={giftType}
+                    onChange={(e) => setGiftType(e.target.value as "none" | "file" | "link")}
+                    disabled={pending}
+                    style={inputStyle}
+                  >
+                    <option value="none">Không có</option>
+                    <option value="file">File (upload)</option>
+                    <option value="link">Link</option>
+                  </select>
+                </Field>
+                {giftType !== "none" && (
+                  <Field label="Nhãn quà">
+                    <input
+                      type="text"
+                      value={giftLabel}
+                      onChange={(e) => setGiftLabel(e.target.value)}
+                      maxLength={120}
+                      disabled={pending}
+                      placeholder="vd: Template KPI (Notion)"
+                      style={inputStyle}
+                    />
+                  </Field>
+                )}
+                {giftType === "file" && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>File quà</span>
+                    <FileUploadField
+                      value={giftFileUrl || null}
+                      onChange={(url) => setGiftFileUrl(url ?? "")}
+                      context="product-file"
+                      disabled={pending}
+                    />
+                  </div>
+                )}
+                {giftType === "link" && (
+                  <Field label="Link quà">
+                    <input
+                      type="url"
+                      value={giftLinkUrl}
+                      onChange={(e) => setGiftLinkUrl(e.target.value)}
+                      placeholder="https://..."
+                      disabled={pending}
+                      style={inputStyle}
+                    />
+                  </Field>
+                )}
+                {giftType !== "none" && (
+                  <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 4 }}>
+                    Member thấy quà sau khi task được duyệt (APPROVED).
+                  </div>
+                )}
               </div>
             </div>
 

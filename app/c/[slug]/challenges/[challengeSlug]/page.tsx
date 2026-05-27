@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
@@ -11,6 +12,7 @@ import { ChallengeSettingsPanel } from "@/components/community/challenge-setting
 import { ChallengeEditButton } from "@/components/community/challenge-edit-button";
 import { ResubmitForm } from "@/components/community/resubmit-form";
 import { TaskEditorButton } from "@/components/community/task-editor";
+import { TaskGiftStrip } from "@/components/community/task-gift-strip";
 import { CreateTaskButton } from "@/components/community/create-task-button";
 import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
 import { checkGate, getTiersConfig, getUserTier } from "@/lib/services/subscription";
@@ -190,6 +192,9 @@ export default async function ChallengeDetailPage({
     session?.user?.id
       ? prisma.checkin.findMany({
           where: { challengeId: challenge.id, userId: session.user.id },
+          // asc so the latest check-in per dayNumber wins the checkinByDay Map (last-write-wins);
+          // keeps isPending/isRejected (and the gift gate) deterministic when a day has >1 check-in.
+          orderBy: { createdAt: "asc" },
           select: { id: true, taskId: true, dayNumber: true, createdAt: true, updatedAt: true, content: true, linkUrl: true, imageUrl: true, status: true, reviewedAt: true, reviewNote: true, rejectCount: true, aiReviewData: true },
         })
       : Promise.resolve([]),
@@ -799,9 +804,15 @@ export default async function ChallengeDetailPage({
                     </div>
                   );
                 }
+                const giftUnlocked = isDone && !isPending && !isRejected;
+                const showGift = !!(
+                  t.giftLabel &&
+                  (t.giftFileUrl || t.giftLinkUrl) &&
+                  (giftUnlocked || permissions.canManageChallenges)
+                );
                 return (
+                  <Fragment key={t.id}>
                   <details
-                    key={t.id}
                     className={`ch-task${isCurrent ? " current" : ""}`}
                     open={isCurrent}
                     style={{
@@ -900,6 +911,9 @@ export default async function ChallengeDetailPage({
                             unlockAfterHours: t.unlockAfterHours,
                             aiReviewGuidelines: t.aiReviewGuidelines ?? null,
                             aiReviewRedFlags: t.aiReviewRedFlags ?? null,
+                            giftLabel: t.giftLabel ?? null,
+                            giftFileUrl: t.giftFileUrl ?? null,
+                            giftLinkUrl: t.giftLinkUrl ?? null,
                           }}
                         />
                       )}
@@ -1089,6 +1103,16 @@ export default async function ChallengeDetailPage({
                       </div>
                     )}
                   </details>
+                  {showGift && (
+                    <TaskGiftStrip
+                      taskId={t.id}
+                      label={t.giftLabel ?? ""}
+                      fileUrl={t.giftFileUrl}
+                      linkUrl={t.giftLinkUrl}
+                      adminPreview={!giftUnlocked}
+                    />
+                  )}
+                  </Fragment>
                 );
               })}
             </>

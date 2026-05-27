@@ -541,6 +541,12 @@ model ChallengeTask {
    * Red-flag criteria for AI auto-rejection.
    */
   aiReviewRedFlags   String?   @db.Text
+  /**
+   * Reward unlocked when this task is APPROVED. Label + exactly one of file/link.
+   */
+  giftLabel          String?
+  giftFileUrl        String? // R2 public URL (private file, served via protected download route)
+  giftLinkUrl        String? // external link (UI-gated)
 
   challenge   Challenge        @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   completions TaskCompletion[]

@@ -686,6 +686,9 @@ export async function updateChallengeTask(input: {
   unlockAfterHours?: number | null;
   aiReviewGuidelines?: string | null;
   aiReviewRedFlags?: string | null;
+  giftLabel?: string;
+  giftFileUrl?: string;
+  giftLinkUrl?: string;
 }) {
   const task = await prisma.challengeTask.findUnique({
     where: { id: input.taskId },
@@ -717,6 +720,9 @@ export async function updateChallengeTask(input: {
       ...("unlockAfterHours" in input ? { unlockAfterHours: input.unlockAfterHours ?? null } : {}),
       ...(input.aiReviewGuidelines !== undefined ? { aiReviewGuidelines: input.aiReviewGuidelines } : {}),
       ...(input.aiReviewRedFlags !== undefined ? { aiReviewRedFlags: input.aiReviewRedFlags } : {}),
+      ...(input.giftLabel !== undefined ? { giftLabel: input.giftLabel || null } : {}),
+      ...(input.giftFileUrl !== undefined ? { giftFileUrl: input.giftFileUrl || null } : {}),
+      ...(input.giftLinkUrl !== undefined ? { giftLinkUrl: input.giftLinkUrl || null } : {}),
     },
   });
   logger.info(

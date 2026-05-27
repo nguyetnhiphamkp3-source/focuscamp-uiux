@@ -218,6 +218,9 @@ export const UpdateChallengeTaskSchema = z.object({
   unlockAfterHours: z.number().int().min(0).max(720).optional().nullable(),
   aiReviewGuidelines: z.string().trim().max(2000).optional().nullable().or(z.literal("")),
   aiReviewRedFlags: z.string().trim().max(1000).optional().nullable().or(z.literal("")),
+  giftLabel: z.string().trim().max(120).optional().or(z.literal("")),
+  giftFileUrl: z.string().url().optional().or(z.literal("")),
+  giftLinkUrl: z.string().url().optional().or(z.literal("")),
 });
 
 export const ReviewSubmissionSchema = z.object({

@@ -403,6 +403,9 @@ export async function updateTaskAction(input: {
   unlockAfterHours?: number | null;
   aiReviewGuidelines?: string | null;
   aiReviewRedFlags?: string | null;
+  giftLabel?: string;
+  giftFileUrl?: string;
+  giftLinkUrl?: string;
   communitySlug: string;
   challengeSlug: string;
 }): Promise<ActionResult> {
@@ -420,6 +423,9 @@ export async function updateTaskAction(input: {
     unlockAfterHours: input.unlockAfterHours,
     aiReviewGuidelines: input.aiReviewGuidelines,
     aiReviewRedFlags: input.aiReviewRedFlags,
+    giftLabel: input.giftLabel,
+    giftFileUrl: input.giftFileUrl,
+    giftLinkUrl: input.giftLinkUrl,
   });
   if (!parsed.success) {
     return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
@@ -444,6 +450,9 @@ export async function updateTaskAction(input: {
         parsed.data.aiReviewRedFlags === undefined
           ? undefined
           : parsed.data.aiReviewRedFlags || null,
+      giftLabel: parsed.data.giftLabel ?? undefined,
+      giftFileUrl: parsed.data.giftFileUrl ?? undefined,
+      giftLinkUrl: parsed.data.giftLinkUrl ?? undefined,
     });
     bumpChallenge(input.communitySlug, input.challengeSlug);
     return { ok: true };
