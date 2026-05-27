@@ -17,7 +17,9 @@ export function EditProfileButton({
     image: string | null;
     userId: string;
   };
-  communitySlug: string;
+  /** Optional: only used to revalidate a community-scoped profile page.
+   * Omit on the global /u/[handle] page (router.refresh handles it). */
+  communitySlug?: string;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);

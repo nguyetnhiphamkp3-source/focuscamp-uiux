@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { avatarColorFor, initials, fmtRelativeTime } from "@/lib/brand";
 import { followCounts, isFollowing } from "@/lib/services/follow";
 import { FollowButton } from "@/components/profile/follow-button";
+import { EditProfileButton } from "@/components/profile/edit-profile-modal";
 
 export const dynamic = "force-dynamic";
 
@@ -179,6 +180,18 @@ export default async function UserGlobalPage({
                   targetUserId={user.id}
                   initialFollowing={viewerIsFollowing}
                   variant="compact"
+                />
+              )}
+              {isSelf && (
+                <EditProfileButton
+                  initial={{
+                    name: user.name,
+                    handle: user.handle,
+                    bio: user.bio,
+                    location: user.location,
+                    image: user.image,
+                    userId: user.id,
+                  }}
                 />
               )}
             </div>
