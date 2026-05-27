@@ -75,6 +75,66 @@ function modelOptionsFor(providerType: AIProviderType) {
   return PROVIDER_MODELS[providerType];
 }
 
+function formatAgentSettingsError(msg: string | null): string | null {
+  if (!msg) return null;
+  const exact: Record<string, string> = {
+    provider_save_failed: "Không lưu được nhà cung cấp.",
+    provider_delete_failed: "Không xóa được nhà cung cấp.",
+    validation_failed: "Không kiểm tra được nhà cung cấp.",
+    unauthorized: "Bạn chưa đăng nhập.",
+    invalid_json: "Dữ liệu gửi lên không hợp lệ.",
+    invalid: "Dữ liệu chưa hợp lệ.",
+    missing_community: "Thiếu thông tin cộng đồng.",
+    rate_limited: "Bạn kiểm tra quá nhanh. Thử lại sau ít phút.",
+    unknown: "Có lỗi không xác định.",
+  };
+  if (exact[msg]) return exact[msg];
+
+  const lower = msg.toLowerCase();
+  if (lower.includes("integration_secret_key")) {
+    return "Server chưa cấu hình khóa mã hóa để lưu API key.";
+  }
+  if (lower.includes("missing api key") || lower.includes("api key is required")) {
+    return "Thiếu khóa API.";
+  }
+  if (lower.includes("missing model id") || lower.includes("requires a model id")) {
+    return "Thiếu Model ID.";
+  }
+  if (lower.includes("provider not found")) {
+    return "Không tìm thấy nhà cung cấp này.";
+  }
+  if (lower.includes("disabled") || lower.includes("not configured")) {
+    return "Nhà cung cấp chưa được cấu hình hoặc đang bị tắt.";
+  }
+  if (lower.includes("invalid or expired")) {
+    return "Khóa API không hợp lệ hoặc đã hết hạn.";
+  }
+  if (lower.includes("billing") || lower.includes("credit")) {
+    return "Tài khoản nhà cung cấp chưa có billing/credit khả dụng.";
+  }
+  if (lower.includes("rate limit")) {
+    return "Nhà cung cấp đang giới hạn tốc độ. Thử lại sau.";
+  }
+  if (lower.includes("model") && lower.includes("not available")) {
+    return msg.replace("is not available for this provider", "không khả dụng với nhà cung cấp này");
+  }
+  if (lower.includes("base url")) {
+    return msg
+      .replace("Base URL is required for OpenAI Compatible", "OpenAI Compatible cần Base URL")
+      .replace("Base URL must use https", "Base URL phải dùng https")
+      .replace(
+        "Base URL must not include credentials, query, or fragment",
+        "Base URL không được chứa credentials, query hoặc fragment",
+      )
+      .replace("Base URL host is not allowed", "Host của Base URL không được phép")
+      .replace("Base URL is invalid", "Base URL không hợp lệ");
+  }
+  if (lower.includes("currently used")) {
+    return "Nhà cung cấp này đang được Agent hoặc AI Review sử dụng.";
+  }
+  return msg;
+}
+
 export function AgentConfigEditor({
   communityId,
   communitySlug,
@@ -212,7 +272,7 @@ export function AgentConfigEditor({
   }
 
   function deleteProvider(provider: AIProviderClient) {
-    if (!window.confirm(`Delete provider "${provider.displayName}"?`)) return;
+    if (!window.confirm(`Xóa nhà cung cấp "${provider.displayName}"?`)) return;
     setProviderErr(null);
     setProviderSaved(false);
     startProvider(async () => {
@@ -327,8 +387,8 @@ export function AgentConfigEditor({
   return (
     <section className="ui-card ui-card-lg" style={{ marginBottom: "var(--space-4)" }}>
       <SectionHeader
-        title="Community AI Agent"
-        subtitle="Configure the visible Agent identity, provider credentials, and the chat/review brains."
+        title="AI Agent cộng đồng"
+        subtitle="Cấu hình danh tính hiển thị, khóa API nhà cung cấp, và bộ não dùng cho chat/duyệt bài."
       />
 
       <div style={{ display: "grid", gridTemplateColumns: "72px 1fr", gap: 14, marginBottom: 18 }}>
@@ -339,11 +399,11 @@ export function AgentConfigEditor({
           shape="circle"
           disabled={profilePending}
           placeholder="Agent"
-          maxSizeNote="Max 2MB"
+          maxSizeNote="Tối đa 2MB"
         />
         <div style={{ display: "grid", gap: 10 }}>
           <label style={labelStyle}>
-            Agent name
+            Tên Agent
             <input
               value={agentName}
               onChange={(e) => setAgentName(e.target.value)}
@@ -353,13 +413,13 @@ export function AgentConfigEditor({
             />
           </label>
           <label style={labelStyle}>
-            Short intro
+            Mô tả ngắn
             <input
               value={agentTagline}
               onChange={(e) => setAgentTagline(e.target.value)}
               maxLength={160}
               disabled={profilePending}
-              placeholder="Runs chat support and submission review for this community"
+              placeholder="Hỗ trợ chat và duyệt bài nộp cho cộng đồng này"
               style={inputStyle}
             />
           </label>
@@ -374,10 +434,10 @@ export function AgentConfigEditor({
                 opacity: profilePending || !agentName.trim() ? 0.6 : 1,
               }}
             >
-              {profilePending ? "Saving..." : "Save identity"}
+              {profilePending ? "Đang lưu..." : "Lưu danh tính"}
             </button>
           </div>
-          <ErrorBox msg={profileErr} />
+          <ErrorBox msg={formatAgentSettingsError(profileErr)} />
           <SuccessBox shown={profileSaved} />
         </div>
       </div>
@@ -385,14 +445,14 @@ export function AgentConfigEditor({
       <Divider />
 
       <SectionHeader
-        title="AI Providers"
-        subtitle="Store provider credentials once. OpenAI Compatible supports custom base URLs and manual model IDs."
+        title="Nhà cung cấp AI"
+        subtitle="Lưu khóa API một lần. OpenAI Compatible hỗ trợ Base URL riêng và Model ID nhập tay."
       />
 
       {providers.length === 0 ? (
         <div style={emptyStateStyle}>
-          No provider instances yet.
-          {initial.hasApiKey ? " A legacy Agent key is still present and works as fallback." : ""}
+          Chưa có nhà cung cấp nào.
+          {initial.hasApiKey ? " Khóa Agent cũ vẫn còn và đang hoạt động như dự phòng." : ""}
         </div>
       ) : (
         <div style={{ display: "grid", gap: 8, marginBottom: 14 }}>
@@ -402,7 +462,7 @@ export function AgentConfigEditor({
                 <div style={{ fontWeight: 700, color: "var(--header-primary)" }}>
                   {provider.displayName}
                   {!provider.enabled && (
-                    <span style={{ color: "var(--text-muted)", fontWeight: 500 }}> disabled</span>
+                    <span style={{ color: "var(--text-muted)", fontWeight: 500 }}> đã tắt</span>
                   )}
                 </div>
                 <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 2 }}>
@@ -412,10 +472,10 @@ export function AgentConfigEditor({
                 </div>
               </div>
               <button type="button" onClick={() => setProviderForm(formFromProvider(provider))} style={btnSecondary}>
-                Edit
+                Sửa
               </button>
               <button type="button" onClick={() => deleteProvider(provider)} style={btnDanger}>
-                Delete
+                Xóa
               </button>
             </div>
           ))}
@@ -424,11 +484,11 @@ export function AgentConfigEditor({
 
       <div style={formCardStyle}>
         <div style={{ fontWeight: 700, color: "var(--header-primary)" }}>
-          {providerForm.id ? "Edit provider" : "Add provider"}
+          {providerForm.id ? "Sửa nhà cung cấp" : "Thêm nhà cung cấp"}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <label style={labelStyle}>
-            Display name
+            Tên hiển thị
             <input
               value={providerForm.displayName}
               onChange={(e) => updateProviderForm({ displayName: e.target.value })}
@@ -437,7 +497,7 @@ export function AgentConfigEditor({
             />
           </label>
           <label style={labelStyle}>
-            Internal name
+            Tên nội bộ
             <input
               value={providerForm.name}
               onChange={(e) => updateProviderForm({ name: e.target.value })}
@@ -446,7 +506,7 @@ export function AgentConfigEditor({
             />
           </label>
           <label style={labelStyle}>
-            Provider type
+            Loại nhà cung cấp
             <select
               value={providerForm.providerType}
               onChange={(e) =>
@@ -462,12 +522,12 @@ export function AgentConfigEditor({
             </select>
           </label>
           <label style={labelStyle}>
-            API key
+            Khóa API
             <input
               type="password"
               value={providerForm.apiKey}
               onChange={(e) => updateProviderForm({ apiKey: e.target.value })}
-              placeholder={providerForm.id ? "Leave blank to keep current key" : "sk-..."}
+              placeholder={providerForm.id ? "Để trống để giữ khóa hiện tại" : "sk-..."}
               style={inputStyle}
             />
           </label>
@@ -483,7 +543,7 @@ export function AgentConfigEditor({
             </label>
           )}
           <label style={labelStyle}>
-            Test model ID
+            Model ID để kiểm tra
             <ModelInput
               providerType={providerForm.providerType}
               value={providerForm.testModelId}
@@ -497,14 +557,14 @@ export function AgentConfigEditor({
                 checked={providerForm.enabled}
                 onChange={(e) => updateProviderForm({ enabled: e.target.checked })}
               />
-              Enabled
+              Bật
             </span>
           </label>
         </div>
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
           {providerForm.id && (
             <button type="button" onClick={() => setProviderForm(emptyProviderForm())} style={btnSecondary}>
-              New provider
+              Nhà cung cấp mới
             </button>
           )}
           <button
@@ -513,7 +573,7 @@ export function AgentConfigEditor({
             disabled={testStatus === "checking" || !providerForm.testModelId.trim()}
             style={btnSecondary}
           >
-            {testStatus === "checking" ? "Testing..." : testStatus === "valid" ? "Valid" : "Test"}
+            {testStatus === "checking" ? "Đang kiểm tra..." : testStatus === "valid" ? "Hợp lệ" : "Kiểm tra"}
           </button>
           <button
             type="button"
@@ -533,31 +593,31 @@ export function AgentConfigEditor({
                   : 1,
             }}
           >
-            {providerPending ? "Saving..." : "Save provider"}
+            {providerPending ? "Đang lưu..." : "Lưu nhà cung cấp"}
           </button>
         </div>
-        <ErrorBox msg={testStatus === "error" ? testErr : null} />
-        <ErrorBox msg={providerErr} />
+        <ErrorBox msg={formatAgentSettingsError(testStatus === "error" ? testErr : null)} />
+        <ErrorBox msg={formatAgentSettingsError(providerErr)} />
         <SuccessBox shown={providerSaved} />
       </div>
 
       <Divider />
 
       <SectionHeader
-        title="Agent brains"
-        subtitle="Chat and submission review can use different provider instances and models."
+        title="Bộ não của Agent"
+        subtitle="Chat và duyệt bài nộp có thể dùng nhà cung cấp/model khác nhau."
       />
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <BrainPicker
-          title="Chat brain"
+          title="Bộ não chat"
           providers={enabledProviders}
           selectedProviderId={chatProviderId}
           model={chatModel}
           fallbackText={
             initial.hasApiKey
-              ? `Legacy fallback: ${AI_PROVIDER_TYPES[initial.provider].label} / ${initial.model ?? "default"}`
-              : "No provider selected"
+              ? `Dự phòng cũ: ${AI_PROVIDER_TYPES[initial.provider].label} / ${initial.model ?? "mặc định"}`
+              : "Chưa chọn nhà cung cấp"
           }
           onProviderChange={(id) => {
             setChatProviderId(id);
@@ -568,14 +628,14 @@ export function AgentConfigEditor({
           provider={chatProvider}
         />
         <BrainPicker
-          title="Review brain default"
+          title="Bộ não duyệt bài mặc định"
           providers={enabledProviders}
           selectedProviderId={reviewProviderId}
           model={reviewModel}
           fallbackText={
             chatProvider
-              ? `Uses chat brain if empty: ${chatProvider.displayName}`
-              : "Uses legacy/chat fallback if empty"
+              ? `Để trống sẽ dùng bộ não chat: ${chatProvider.displayName}`
+              : "Để trống sẽ dùng dự phòng cũ/bộ não chat"
           }
           onProviderChange={(id) => {
             setReviewProviderId(id);
@@ -593,17 +653,17 @@ export function AgentConfigEditor({
           disabled={brainPending}
           style={{ ...btnPrimary, marginLeft: "auto", opacity: brainPending ? 0.6 : 1 }}
         >
-          {brainPending ? "Saving..." : "Save brains"}
+          {brainPending ? "Đang lưu..." : "Lưu bộ não"}
         </button>
       </div>
-      <ErrorBox msg={brainErr} />
+      <ErrorBox msg={formatAgentSettingsError(brainErr)} />
       <SuccessBox shown={brainSaved} />
 
       <Divider />
 
       <SectionHeader
-        title="Instructions"
-        subtitle="Leave empty to use the default Agent prompt."
+        title="Chỉ dẫn"
+        subtitle="Để trống nếu muốn dùng prompt mặc định của Agent."
       />
       <textarea
         value={prompt}
@@ -611,7 +671,7 @@ export function AgentConfigEditor({
         rows={8}
         maxLength={4000}
         disabled={promptPending}
-        placeholder="You are the community AI Agent..."
+        placeholder="Bạn là AI Agent của cộng đồng..."
         style={{
           ...inputStyle,
           resize: "vertical",
@@ -629,10 +689,10 @@ export function AgentConfigEditor({
           disabled={promptPending}
           style={{ ...btnPrimary, marginLeft: "auto", opacity: promptPending ? 0.6 : 1 }}
         >
-          {promptPending ? "Saving..." : "Save prompt"}
+          {promptPending ? "Đang lưu..." : "Lưu prompt"}
         </button>
       </div>
-      <ErrorBox msg={promptErr} />
+      <ErrorBox msg={formatAgentSettingsError(promptErr)} />
       <SuccessBox shown={promptSaved} />
     </section>
   );
@@ -661,7 +721,7 @@ function BrainPicker({
     <div style={formCardStyle}>
       <div style={{ fontWeight: 700, color: "var(--header-primary)" }}>{title}</div>
       <label style={labelStyle}>
-        Provider instance
+        Nhà cung cấp
         <select
           value={selectedProviderId}
           onChange={(e) => onProviderChange(e.target.value)}
