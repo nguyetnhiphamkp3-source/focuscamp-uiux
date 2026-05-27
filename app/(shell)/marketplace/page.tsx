@@ -258,7 +258,7 @@ export default async function GlobalMarketplacePage({
                     )}
                     <div style={{ display: "flex", gap: 12, fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 2 }}>
                       <span>⏱ {c.requiredDays} ngày</span>
-                      <span>👥 {c._count.members} đang tham gia</span>
+                      <span>👥 {c._count.members} thành viên</span>
                     </div>
                   </div>
                 </Link>

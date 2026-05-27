@@ -39,7 +39,7 @@ export function ChallengeSalesIntro({ challenge, effectivePrice, joinButton }: S
       {/* ── Social proof bar ── */}
       <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
         {[
-          { icon: "👥", value: String(challenge._count.members), label: "thành viên đang tham gia" },
+          { icon: "👥", value: String(challenge._count.members), label: "thành viên" },
           { icon: "📅", value: String(challenge.requiredDays), label: "ngày hoàn thành" },
           { icon: "📋", value: String(challenge.tasks.length), label: "nhiệm vụ hàng ngày" },
           { icon: "🏷️", value: diffLabel, label: "độ khó" },

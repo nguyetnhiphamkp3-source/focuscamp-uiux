@@ -1106,10 +1106,10 @@ export default async function ChallengeDetailPage({
                   {showGift && (
                     <TaskGiftStrip
                       taskId={t.id}
+                      dayNumber={t.dayNumber}
                       label={t.giftLabel ?? ""}
                       fileUrl={t.giftFileUrl}
                       linkUrl={t.giftLinkUrl}
-                      adminPreview={!giftUnlocked}
                     />
                   )}
                   </Fragment>

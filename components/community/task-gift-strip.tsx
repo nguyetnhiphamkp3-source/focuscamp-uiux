@@ -8,22 +8,22 @@ import type { CSSProperties } from "react";
  */
 export function TaskGiftStrip({
   taskId,
+  dayNumber,
   label,
   fileUrl,
   linkUrl,
-  adminPreview = false,
 }: {
   taskId: string;
+  dayNumber: number;
   label: string;
   fileUrl?: string | null;
   linkUrl?: string | null;
-  adminPreview?: boolean;
 }) {
   return (
     <div
       style={{
-        margin: "calc(-1 * var(--space-2)) 0 var(--space-3) 28px",
-        padding: "var(--space-3) var(--space-4)",
+        margin: "var(--space-3) 0 var(--space-5) 0",
+        padding: "var(--space-4) var(--space-5)",
         borderRadius: "var(--r-md)",
         border: "1px solid var(--brand-green)",
         background: "rgba(27,158,117,0.08)",
@@ -44,7 +44,7 @@ export function TaskGiftStrip({
             letterSpacing: "0.08em",
           }}
         >
-          Quà hoàn thành
+          Quà hoàn thành Day {dayNumber}
         </div>
         <div
           style={{
@@ -57,11 +57,6 @@ export function TaskGiftStrip({
         >
           {label}
         </div>
-        {adminPreview && (
-          <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 2 }}>
-            (preview — member thấy sau khi hoàn thành)
-          </div>
-        )}
       </div>
       {fileUrl && (
         <a href={`/api/challenges/tasks/${taskId}/gift`} style={giftBtnStyle}>

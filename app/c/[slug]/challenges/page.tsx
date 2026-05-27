@@ -745,7 +745,7 @@ function ChallengeCard({
         <div className="ch-card-meta">
           <span>{challenge.requiredDays} ngày</span>
           <span className="meta-sep">·</span>
-          <span>{challenge._count.members} đang tham gia</span>
+          <span>{challenge._count.members} thành viên</span>
         </div>
         <span className="ch-card-cta primary">{cta}</span>
       </div>

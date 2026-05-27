@@ -91,7 +91,7 @@ export function ChallengeMarketCard({
           </div>
         )}
         <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: "auto", paddingTop: 6 }}>
-          👥 {challenge._count.members} thành viên đang tham gia
+          👥 {challenge._count.members} thành viên
         </div>
 
         {/* Price row */}
