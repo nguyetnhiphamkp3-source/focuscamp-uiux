@@ -113,6 +113,7 @@ Key: ✅ done · 🟡 partial · ❌ not started · 🚫 deferred (Phase 2+)
 | Admin edit/delete course/lesson/product | 🟡 | Services ready, UI Phase 2 |
 | Free vs paid gating | ✅ | via `Product.isFree` |
 | Cart item removal + cart bump add-on | ✅ | Cookie cart; free bump add-on supported |
+| Affiliate commission ledger | ✅ | Per-community config; product, cart item, bump product, and paid challenge each create commission rows |
 
 ### Chat
 | Item | Status | Notes |

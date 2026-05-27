@@ -3,7 +3,7 @@
  * - User generates per-community AffiliateLink (unique code).
  * - Click increments AffiliateLink.clicks (best-effort, no IP block).
  * - On signup, cookie-attribution creates Referral row (status=PENDING).
- * - On Purchase COMPLETED, mark referral CONVERTED with commissionVnd.
+ * - On qualifying paid order COMPLETED, mark referral CONVERTED with commissionVnd.
  */
 import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
@@ -174,6 +174,80 @@ export async function attributeReferralOnSignup(input: {
   return ref;
 }
 
+async function convertPendingReferralForCommunity(input: {
+  buyerUserId: string;
+  communityId: string;
+  amountVnd: number;
+  sourceType: "PRODUCT" | "CHALLENGE";
+  sourceId: string;
+  itemTitle?: string | null;
+}) {
+  const ref = await prisma.referral.findFirst({
+    where: {
+      referredUserId: input.buyerUserId,
+      status: { in: ["PENDING", "CONVERTED"] }, // SUSPICIOUS deliberately excluded
+      link: { communityId: input.communityId },
+    },
+    select: { id: true, linkId: true, commissionVnd: true, status: true },
+    orderBy: { createdAt: "asc" },
+  });
+  if (!ref) return null;
+
+  const community = await prisma.community.findUnique({
+    where: { id: input.communityId },
+    select: { affiliateConfig: true },
+  });
+  const cfg = getAffiliateConfig({ affiliateConfig: community?.affiliateConfig });
+  if (!cfg.enabled) return null;
+
+  const amount = Math.max(0, Math.floor(input.amountVnd));
+  if (amount <= 0) return null;
+  const commission = Math.floor((amount * cfg.commissionPercent) / 100);
+
+  const existing = await prisma.affiliateCommission.findUnique({
+    where: {
+      referralId_sourceType_sourceId: {
+        referralId: ref.id,
+        sourceType: input.sourceType,
+        sourceId: input.sourceId,
+      },
+    },
+  });
+  if (existing) return existing;
+
+  const created = await prisma.$transaction(async (tx) => {
+    const row = await tx.affiliateCommission.create({
+      data: {
+        referralId: ref.id,
+        linkId: ref.linkId,
+        communityId: input.communityId,
+        referredUserId: input.buyerUserId,
+        sourceType: input.sourceType,
+        sourceId: input.sourceId,
+        itemTitle: input.itemTitle ?? null,
+        grossAmountVnd: amount,
+        commissionPercent: cfg.commissionPercent,
+        commissionVnd: commission,
+      },
+    });
+    await tx.referral.update({
+      where: { id: ref.id },
+      data: {
+        status: "CONVERTED",
+        convertedAt: ref.status === "PENDING" ? new Date() : undefined,
+        commissionVnd: Number(ref.commissionVnd ?? 0) + commission,
+      },
+    });
+    return row;
+  });
+
+  logger.info(
+    { referralId: ref.id, commissionId: created.id, commission, amount, sourceType: input.sourceType },
+    "[affiliate] referral converted"
+  );
+  return created;
+}
+
 /**
  * Called from payment match: when a user makes a successful purchase, find
  * a pending referral attributed to them in the purchased product's community
@@ -185,47 +259,68 @@ export async function attributeReferralOnSignup(input: {
 export async function convertReferralFromPurchase(
   purchaseId: string,
   buyerUserId: string,
+  options?: { amountVnd?: number },
 ) {
   const purchase = await prisma.purchase.findUnique({
     where: { id: purchaseId },
     select: {
       amountVnd: true,
-      product: { select: { communityId: true } },
+      product: { select: { communityId: true, title: true } },
     },
   });
   if (!purchase) return null;
 
-  const ref = await prisma.referral.findFirst({
-    where: {
-      referredUserId: buyerUserId,
-      status: "PENDING", // SUSPICIOUS deliberately excluded
-      link: { communityId: purchase.product.communityId },
+  return convertPendingReferralForCommunity({
+    buyerUserId,
+    communityId: purchase.product.communityId,
+    amountVnd: options?.amountVnd ?? Number(purchase.amountVnd),
+    sourceType: "PRODUCT",
+    sourceId: purchaseId,
+    itemTitle: purchase.product.title,
+  });
+}
+
+/**
+ * Convert a pending referral when a paid challenge entry succeeds. The
+ * payment refId is a ChallengeMember id; commission uses only the challenge
+ * entry amount, excluding an optional bump product add-on.
+ */
+export async function convertReferralFromChallengePayment(
+  paymentId: string,
+  buyerUserId: string,
+) {
+  const payment = await prisma.payment.findUnique({
+    where: { id: paymentId },
+    select: {
+      amountVnd: true,
+      metadata: true,
+      refId: true,
+      refType: true,
     },
   });
-  if (!ref) return null;
+  if (!payment || payment.refType !== "challenge") return null;
 
-  const community = await prisma.community.findUnique({
-    where: { id: purchase.product.communityId },
-    select: { affiliateConfig: true },
+  const member = await prisma.challengeMember.findUnique({
+    where: { id: payment.refId },
+    select: { challenge: { select: { communityId: true, title: true } } },
   });
-  const cfg = getAffiliateConfig({ affiliateConfig: community?.affiliateConfig });
-  if (!cfg.enabled) return null;
+  if (!member) return null;
 
-  const amount = Number(purchase.amountVnd);
-  const commission = Math.floor((amount * cfg.commissionPercent) / 100);
-  const updated = await prisma.referral.update({
-    where: { id: ref.id },
-    data: {
-      status: "CONVERTED",
-      convertedAt: new Date(),
-      commissionVnd: commission,
-    },
+  const meta =
+    payment.metadata && typeof payment.metadata === "object" && !Array.isArray(payment.metadata)
+      ? (payment.metadata as Record<string, unknown>)
+      : {};
+  const bumpPrice = Number(meta.bumpPriceVnd ?? 0);
+  const amount = Number(payment.amountVnd) - (Number.isFinite(bumpPrice) ? bumpPrice : 0);
+
+  return convertPendingReferralForCommunity({
+    buyerUserId,
+    communityId: member.challenge.communityId,
+    amountVnd: amount,
+    sourceType: "CHALLENGE",
+    sourceId: paymentId,
+    itemTitle: member.challenge.title,
   });
-  logger.info(
-    { referralId: ref.id, commission, amount },
-    "[affiliate] referral converted"
-  );
-  return updated;
 }
 
 export async function listMyReferrals(userId: string) {
@@ -242,41 +337,84 @@ export async function listMyReferrals(userId: string) {
     },
     orderBy: { createdAt: "desc" },
   });
+  const linkIds = links.map((link) => link.id);
+  const commissions = linkIds.length
+    ? await prisma.affiliateCommission.findMany({
+        where: { linkId: { in: linkIds } },
+        orderBy: { createdAt: "desc" },
+      })
+    : [];
+  const commissionsByLink = new Map<string, typeof commissions>();
+  const commissionsByReferral = new Map<string, typeof commissions>();
+  for (const commission of commissions) {
+    commissionsByLink.set(commission.linkId, [
+      ...(commissionsByLink.get(commission.linkId) ?? []),
+      commission,
+    ]);
+    commissionsByReferral.set(commission.referralId, [
+      ...(commissionsByReferral.get(commission.referralId) ?? []),
+      commission,
+    ]);
+  }
+
   return links.map((link) => {
-    const conversions = link.referrals.filter((r) => r.status === "CONVERTED").length;
-    const totalCommission = link.referrals
-      .filter((r) => r.status === "CONVERTED")
-      .reduce((sum, r) => sum + Number(r.commissionVnd ?? 0), 0);
+    const linkCommissions = commissionsByLink.get(link.id) ?? [];
+    const conversions = linkCommissions.length;
+    const totalCommission = linkCommissions.reduce(
+      (sum, c) => sum + Number(c.commissionVnd ?? 0),
+      0,
+    );
     return {
       community: link.community,
       link: { id: link.id, code: link.code, clicks: link.clicks, createdAt: link.createdAt },
-      referrals: link.referrals,
+      referrals: link.referrals.map((r) => {
+        const referralCommissions = commissionsByReferral.get(r.id) ?? [];
+        const referralCommissionTotal = referralCommissions.reduce(
+          (sum, c) => sum + Number(c.commissionVnd ?? 0),
+          0,
+        );
+        const hasUnpaid = referralCommissions.some((c) => c.payoutStatus === "UNPAID");
+        const hasRejected = referralCommissions.some((c) => c.payoutStatus === "REJECTED");
+        return {
+          ...r,
+          commissionVnd: referralCommissionTotal || r.commissionVnd,
+          payoutStatus: hasUnpaid
+            ? "UNPAID"
+            : hasRejected
+              ? "REJECTED"
+              : referralCommissions.length > 0
+                ? "PAID"
+                : r.payoutStatus,
+          commissionCount: referralCommissions.length,
+        };
+      }),
       stats: { clicks: link.clicks, signups: link.referrals.length, conversions, totalCommission },
     };
   });
 }
 
-/** Mark a CONVERTED referral's payout status (PAID or REJECTED) */
-export async function markReferralPayout(input: {
-  referralId: string;
+/** Mark a commission row's payout status (PAID or REJECTED). */
+export async function markAffiliateCommissionPayout(input: {
+  commissionId: string;
   ownerId: string;
   communityId: string;
   status: "PAID" | "REJECTED";
   note?: string;
 }) {
   await assertCommunityPermission(input.ownerId, input.communityId, "manage_settings");
-  const referral = await prisma.referral.findUnique({
-    where: { id: input.referralId },
+  const commission = await prisma.affiliateCommission.findUnique({
+    where: { id: input.commissionId },
   });
-  if (!referral) {
-    throw new Error("referral_not_found");
+  if (!commission || commission.communityId !== input.communityId) {
+    throw new Error("commission_not_found");
   }
-  if (referral.status !== "CONVERTED") {
-    throw new Error("not_converted");
-  }
-  return prisma.referral.update({
-    where: { id: input.referralId },
-    data: { payoutStatus: input.status, payoutNote: input.note ?? null },
+  return prisma.affiliateCommission.update({
+    where: { id: input.commissionId },
+    data: {
+      payoutStatus: input.status,
+      payoutNote: input.note ?? null,
+      paidAt: input.status === "PAID" ? new Date() : null,
+    },
   });
 }
 
@@ -306,20 +444,35 @@ export async function listCommunityAffiliates(communityId: string) {
     where: { communityId },
     include: {
       user: { select: { id: true, name: true, image: true } },
-      referrals: { select: { status: true, commissionVnd: true } },
+      referrals: { select: { id: true } },
     },
     orderBy: { createdAt: "desc" },
   });
+  const linkIds = links.map((link) => link.id);
+  const commissions = linkIds.length
+    ? await prisma.affiliateCommission.findMany({
+        where: { linkId: { in: linkIds } },
+        select: { linkId: true, commissionVnd: true },
+      })
+    : [];
+  const commissionsByLink = new Map<string, typeof commissions>();
+  for (const commission of commissions) {
+    commissionsByLink.set(commission.linkId, [
+      ...(commissionsByLink.get(commission.linkId) ?? []),
+      commission,
+    ]);
+  }
   const affiliates = links.map((link) => ({
     link,
     user: link.user,
     stats: {
       clicks: link.clicks,
       signups: link.referrals.length,
-      conversions: link.referrals.filter((r) => r.status === "CONVERTED").length,
-      totalCommission: link.referrals
-        .filter((r) => r.status === "CONVERTED")
-        .reduce((sum, r) => sum + Number(r.commissionVnd ?? 0), 0),
+      conversions: (commissionsByLink.get(link.id) ?? []).length,
+      totalCommission: (commissionsByLink.get(link.id) ?? []).reduce(
+        (sum, c) => sum + Number(c.commissionVnd ?? 0),
+        0,
+      ),
     },
   }));
   const totals = {
@@ -331,13 +484,17 @@ export async function listCommunityAffiliates(communityId: string) {
   return { affiliates, totals };
 }
 
-/** List all referrals for a community */
-export async function listCommunityReferrals(communityId: string) {
-  return prisma.referral.findMany({
-    where: { link: { communityId } },
+/** List all commission ledger rows for a community. */
+export async function listCommunityCommissions(communityId: string) {
+  return prisma.affiliateCommission.findMany({
+    where: { communityId },
     include: {
-      referredUser: { select: { id: true, name: true, image: true } },
-      link: { select: { code: true, user: { select: { id: true, name: true, image: true } } } },
+      referral: {
+        include: {
+          referredUser: { select: { id: true, name: true, image: true } },
+          link: { select: { code: true, user: { select: { id: true, name: true, image: true } } } },
+        },
+      },
     },
     orderBy: { createdAt: "desc" },
   });

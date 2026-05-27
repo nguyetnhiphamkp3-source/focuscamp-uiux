@@ -71,8 +71,9 @@ export async function fulfillBumpInTx(
         select: { id: true },
       }))
     : false;
+  let purchaseId: string | null = null;
   if (!alreadyOwned) {
-    await tx.purchase.create({
+    const purchase = await tx.purchase.create({
       data: {
         userId,
         productId: bumpProductId,
@@ -81,11 +82,13 @@ export async function fulfillBumpInTx(
         paymentRef: transactionId,
       },
     });
+    purchaseId = purchase.id;
   }
   await tx.payment.update({
     where: { id: paymentId },
     data: { metadata: { ...meta, bumpFulfilled: true, bumpSkipped: alreadyOwned || undefined } },
   });
+  return { purchaseId, skipped: alreadyOwned };
 }
 
 export async function startProductPurchase(params: {
@@ -303,6 +306,8 @@ export async function matchSePayTransactionToPayment(params: {
     };
   }
 
+  const productCommissionSources: Array<{ purchaseId: string; amountVnd?: number }> = [];
+
   await prisma.$transaction(async (tx) => {
     await tx.payment.update({
       where: { id: payment.id },
@@ -328,8 +333,14 @@ export async function matchSePayTransactionToPayment(params: {
         data: { status: "COMPLETED", paymentRef: transactionId } as unknown as Prisma.PurchaseUpdateManyMutationInput,
       });
       const meta = (payment.metadata ?? {}) as Record<string, unknown>;
+      const bumpPrice = Number(meta.bumpPriceVnd ?? 0);
+      const mainAmount = paymentAmount - (Number.isFinite(bumpPrice) ? bumpPrice : 0);
+      productCommissionSources.push({
+        purchaseId: payment.refId,
+        amountVnd: Math.max(0, mainAmount),
+      });
       if (meta.bumpProductId && !meta.bumpFulfilled) {
-        await fulfillBumpInTx(tx, {
+        const bump = await fulfillBumpInTx(tx, {
           userId: payment.userId,
           paymentId: payment.id,
           bumpProductId: String(meta.bumpProductId),
@@ -337,6 +348,12 @@ export async function matchSePayTransactionToPayment(params: {
           transactionId,
           meta,
         });
+        if (bump.purchaseId) {
+          productCommissionSources.push({
+            purchaseId: bump.purchaseId,
+            amountVnd: Number(meta.bumpPriceVnd ?? 0),
+          });
+        }
       }
     } else if (payment.refType === "challenge") {
       // Always activate on successful payment. Start timing is controlled by
@@ -347,7 +364,7 @@ export async function matchSePayTransactionToPayment(params: {
       });
       const meta = (payment.metadata ?? {}) as Record<string, unknown>;
       if (meta.bumpProductId && !meta.bumpFulfilled) {
-        await fulfillBumpInTx(tx, {
+        const bump = await fulfillBumpInTx(tx, {
           userId: payment.userId,
           paymentId: payment.id,
           bumpProductId: String(meta.bumpProductId),
@@ -355,6 +372,12 @@ export async function matchSePayTransactionToPayment(params: {
           transactionId,
           meta,
         });
+        if (bump.purchaseId) {
+          productCommissionSources.push({
+            purchaseId: bump.purchaseId,
+            amountVnd: Number(meta.bumpPriceVnd ?? 0),
+          });
+        }
       }
     } else if (payment.refType === "subscription") {
       const subscription = await tx.subscription.findUnique({
@@ -398,6 +421,10 @@ export async function matchSePayTransactionToPayment(params: {
       type CartBreakdownItem = { productId: string; amountVnd: number };
       const meta = (payment.metadata ?? {}) as { breakdown?: CartBreakdownItem[] };
       if (Array.isArray(meta.breakdown) && payment.userId) {
+        const originalTotal = meta.breakdown.reduce(
+          (sum, item) => sum + Number(item.amountVnd ?? 0),
+          0,
+        );
         // Defense-in-depth: a Payment created from the cart filter may sit pending
         // while the user buys the same product standalone in another tab. Skip any
         // non-subscription product the user already owns at fulfillment time.
@@ -413,7 +440,7 @@ export async function matchSePayTransactionToPayment(params: {
               }))
             : false;
           if (owned) continue;
-          await tx.purchase.create({
+          const purchase = await tx.purchase.create({
             data: {
               userId: payment.userId,
               productId: item.productId,
@@ -421,6 +448,13 @@ export async function matchSePayTransactionToPayment(params: {
               status: "COMPLETED",
               paymentRef: transactionId,
             },
+          });
+          productCommissionSources.push({
+            purchaseId: purchase.id,
+            amountVnd:
+              originalTotal > 0
+                ? (paymentAmount * Number(item.amountVnd ?? 0)) / originalTotal
+                : Number(item.amountVnd ?? 0),
           });
         }
       }
@@ -471,12 +505,6 @@ export async function matchSePayTransactionToPayment(params: {
         }
       } catch { /* non-critical */ }
     }
-    try {
-      const { convertReferralFromPurchase } = await import("./affiliate");
-      await convertReferralFromPurchase(payment.refId, payment.userId);
-    } catch (err) {
-      logger.warn({ err, purchaseId: payment.refId }, "[payment] referral conversion failed");
-    }
     // External notif: purchase completed
     try {
       const purchase = await prisma.purchase.findUnique({
@@ -510,6 +538,29 @@ export async function matchSePayTransactionToPayment(params: {
       }
     } catch {
       /* swallow */
+    }
+  }
+
+  for (const source of productCommissionSources) {
+    try {
+      const { convertReferralFromPurchase } = await import("./affiliate");
+      await convertReferralFromPurchase(source.purchaseId, payment.userId, {
+        amountVnd: source.amountVnd,
+      });
+    } catch (err) {
+      logger.warn(
+        { err, purchaseId: source.purchaseId },
+        "[payment] product referral commission failed",
+      );
+    }
+  }
+
+  if (payment.refType === "challenge") {
+    try {
+      const { convertReferralFromChallengePayment } = await import("./affiliate");
+      await convertReferralFromChallengePayment(payment.id, payment.userId);
+    } catch (err) {
+      logger.warn({ err, paymentId: payment.id }, "[payment] challenge referral conversion failed");
     }
   }
 

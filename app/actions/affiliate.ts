@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import {
   getOrCreateAffiliateLink,
   updateAffiliateConfig,
-  markReferralPayout,
+  markAffiliateCommissionPayout,
 } from "@/lib/services/affiliate";
 import { logError } from "@/lib/logger";
 
@@ -60,8 +60,8 @@ export async function updateAffiliateConfigAction(input: {
   }
 }
 
-export async function markReferralPayoutAction(input: {
-  referralId: string;
+export async function markAffiliateCommissionPayoutAction(input: {
+  commissionId: string;
   communityId: string;
   communitySlug: string;
   status: "PAID" | "REJECTED";
@@ -70,8 +70,8 @@ export async function markReferralPayoutAction(input: {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
   try {
-    await markReferralPayout({
-      referralId: input.referralId,
+    await markAffiliateCommissionPayout({
+      commissionId: input.commissionId,
       ownerId: s.user.id,
       communityId: input.communityId,
       status: input.status,

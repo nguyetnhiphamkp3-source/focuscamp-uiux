@@ -8,15 +8,19 @@ interface AffiliateItem {
   stats: { clicks: number; signups: number; conversions: number; totalCommission: number };
 }
 
-interface ReferralItem {
+interface CommissionItem {
   id: string;
-  status: string;
   createdAt: Date;
-  commissionVnd: number | string | null;
+  sourceType: string;
+  itemTitle: string | null;
+  grossAmountVnd: number | string;
+  commissionVnd: number | string;
   payoutStatus: string;
   payoutNote: string | null;
-  referredUser: { id: string; name: string | null; image: string | null };
-  link: { code: string; user: { id: string; name: string | null; image: string | null } };
+  referral: {
+    referredUser: { id: string; name: string | null; image: string | null };
+    link: { code: string; user: { id: string; name: string | null; image: string | null } };
+  };
 }
 
 interface Totals {
@@ -30,7 +34,7 @@ interface Props {
   communityId: string;
   communitySlug: string;
   affiliates: AffiliateItem[];
-  referrals: ReferralItem[];
+  commissions: CommissionItem[];
   totals: Totals;
 }
 
@@ -43,7 +47,7 @@ const statCardStyle: React.CSSProperties = {
   borderRadius: "var(--r-md)",
 };
 
-export function OwnerAffiliateDashboard({ communityId, communitySlug, affiliates, referrals, totals }: Props) {
+export function OwnerAffiliateDashboard({ communityId, communitySlug, affiliates, commissions, totals }: Props) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
       {/* Stats row */}
@@ -77,9 +81,9 @@ export function OwnerAffiliateDashboard({ communityId, communitySlug, affiliates
       {/* Referrals section */}
       <section>
         <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 600, color: "var(--header-primary)", marginBottom: "var(--space-3)" }}>
-          Referrals ({totals.referrals})
+          Commissions ({totals.conversions})
         </h2>
-        <ReferralTable referrals={referrals} communityId={communityId} communitySlug={communitySlug} />
+        <ReferralTable commissions={commissions} communityId={communityId} communitySlug={communitySlug} />
       </section>
     </div>
   );

@@ -60,7 +60,7 @@ export function AffiliatePanel({
         🔗 Affiliate link của bạn
       </h3>
       <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginBottom: 12 }}>
-        Share link này. Người dùng signup + mua sản phẩm community này → bạn nhận hoa hồng.
+        Share link này. Người dùng signup + mua product, bump, cart item hoặc paid challenge của community này → bạn nhận hoa hồng.
       </p>
 
       {url ? (

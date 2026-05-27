@@ -57,7 +57,7 @@ export function AffiliateConfigEditor({
     >
       <SectionHeader
         title="Affiliate Program"
-        subtitle="Cho phép bất kỳ user nào share affiliate link của community này. Khi referral mua sản phẩm → owner trả hoa hồng % của giá trị giao dịch."
+        subtitle="Cho phép bất kỳ user nào share affiliate link của community này. Product, bump, cart item và paid challenge đều tạo commission row riêng."
       />
       <label
         style={{

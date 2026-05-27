@@ -7,6 +7,7 @@ import { logError, logger } from "@/lib/logger";
 import { canCommunity, effectiveCommunityRole } from "@/lib/community-permissions";
 import { isSuperAdmin } from "@/lib/platform-admin";
 import { activateCommunityPlan } from "@/lib/services/community";
+import { fulfillBumpInTx } from "@/lib/services/payment";
 
 type ActionResult = { ok: true } | { ok: false; reason: string };
 
@@ -35,6 +36,7 @@ export async function approveOrderAction(input: {
         },
       },
       user: { select: { name: true, email: true } },
+      userId: true,
       amountVnd: true,
     },
   });
@@ -66,6 +68,13 @@ export async function approveOrderAction(input: {
     await assignLicenseKey(purchase.id);
   } catch (err) {
     logger.warn({ err, purchaseId: purchase.id }, "[orders] manual approve: license assign failed");
+  }
+
+  try {
+    const { convertReferralFromPurchase } = await import("@/lib/services/affiliate");
+    await convertReferralFromPurchase(purchase.id, purchase.userId);
+  } catch (err) {
+    logger.warn({ err, purchaseId: purchase.id }, "[orders] manual approve: referral commission failed");
   }
 
   // Send notification
@@ -133,6 +142,8 @@ export async function approvePaymentAction(input: {
   }
 
   const manualRef = `MANUAL-${Date.now()}`;
+  const meta = (payment.metadata ?? {}) as Record<string, unknown>;
+  const productCommissionSources: Array<{ purchaseId: string; amountVnd?: number }> = [];
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -147,6 +158,22 @@ export async function approvePaymentAction(input: {
           where: { id: payment.refId },
           data: { status: "ACTIVE", approvedAt: new Date() },
         });
+        if (meta.bumpProductId && !meta.bumpFulfilled) {
+          const bump = await fulfillBumpInTx(tx, {
+            userId: payment.userId,
+            paymentId: payment.id,
+            bumpProductId: String(meta.bumpProductId),
+            bumpPriceVnd: Number(meta.bumpPriceVnd ?? 0),
+            transactionId: manualRef,
+            meta,
+          });
+          if (bump.purchaseId) {
+            productCommissionSources.push({
+              purchaseId: bump.purchaseId,
+              amountVnd: Number(meta.bumpPriceVnd ?? 0),
+            });
+          }
+        }
       } else if (payment.refType === "subscription") {
         const subscription = await tx.subscription.findUnique({
           where: { id: payment.refId },
@@ -188,6 +215,28 @@ export async function approvePaymentAction(input: {
     logError(err, { paymentId: payment.id });
     if (err instanceof Error) return { ok: false, reason: err.message };
     return { ok: false, reason: "unknown" };
+  }
+
+  if (payment.refType === "challenge") {
+    for (const source of productCommissionSources) {
+      try {
+        const { convertReferralFromPurchase } = await import("@/lib/services/affiliate");
+        await convertReferralFromPurchase(source.purchaseId, payment.userId, {
+          amountVnd: source.amountVnd,
+        });
+      } catch (err) {
+        logger.warn(
+          { err, purchaseId: source.purchaseId },
+          "[orders] bump referral commission failed",
+        );
+      }
+    }
+    try {
+      const { convertReferralFromChallengePayment } = await import("@/lib/services/affiliate");
+      await convertReferralFromChallengePayment(payment.id, payment.userId);
+    } catch (err) {
+      logger.warn({ err, paymentId: payment.id }, "[orders] challenge referral conversion failed");
+    }
   }
 
   logger.info({ paymentId: payment.id, refType: payment.refType, adminId: s.user.id }, "[orders] payment manually approved");

@@ -1037,8 +1037,34 @@ model Referral {
   payoutNote     String?
   createdAt      DateTime  @default(now())
 
-  link         AffiliateLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
-  referredUser User          @relation(fields: [referredUserId], references: [id])
+  link         AffiliateLink         @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  referredUser User                  @relation(fields: [referredUserId], references: [id])
+  commissions  AffiliateCommission[]
+}
+
+model AffiliateCommission {
+  id                String    @id @default(cuid())
+  referralId        String
+  linkId            String
+  communityId       String
+  referredUserId    String
+  sourceType        String
+  sourceId          String
+  itemTitle         String?
+  grossAmountVnd    Decimal   @db.Decimal(15, 2)
+  commissionPercent Decimal   @db.Decimal(5, 2)
+  commissionVnd     Decimal   @db.Decimal(15, 2)
+  payoutStatus      String    @default("UNPAID") // UNPAID | PAID | REJECTED
+  payoutNote        String?
+  paidAt            DateTime?
+  createdAt         DateTime  @default(now())
+
+  referral Referral @relation(fields: [referralId], references: [id], onDelete: Cascade)
+
+  @@unique([referralId, sourceType, sourceId])
+  @@index([communityId, payoutStatus])
+  @@index([linkId])
+  @@index([referredUserId])
 }
 
 // ============= AI AGENT =============

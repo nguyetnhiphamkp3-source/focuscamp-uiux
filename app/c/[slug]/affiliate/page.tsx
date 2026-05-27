@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { listCommunityAffiliates, listCommunityReferrals } from "@/lib/services/affiliate";
+import { listCommunityAffiliates, listCommunityCommissions } from "@/lib/services/affiliate";
 import { canCommunity, effectiveCommunityRole } from "@/lib/community-permissions";
 import { OwnerAffiliateDashboard } from "@/components/affiliate/owner-affiliate-dashboard";
 
@@ -35,10 +35,11 @@ export default async function AffiliatePage({
   if (!canCommunity(role, "manage_settings")) redirect(`/c/${slug}`);
 
   const { affiliates, totals } = await listCommunityAffiliates(community.id);
-  const rawReferrals = await listCommunityReferrals(community.id);
-  const referrals = rawReferrals.map((r) => ({
-    ...r,
-    commissionVnd: r.commissionVnd ? Number(r.commissionVnd) : null,
+  const rawCommissions = await listCommunityCommissions(community.id);
+  const commissions = rawCommissions.map((c) => ({
+    ...c,
+    grossAmountVnd: Number(c.grossAmountVnd),
+    commissionVnd: Number(c.commissionVnd),
   }));
 
   return (
@@ -53,7 +54,7 @@ export default async function AffiliatePage({
             communityId={community.id}
             communitySlug={slug}
             affiliates={affiliates}
-            referrals={referrals}
+            commissions={commissions}
             totals={totals}
           />
         </div>

@@ -318,6 +318,7 @@ export async function simulatePaymentCompletedAction(
 
   const fakeTransactionId = `SIM_${Date.now()}`;
   const meta = (payment.metadata ?? {}) as Record<string, unknown>;
+  const productCommissionSources: Array<{ purchaseId: string; amountVnd?: number }> = [];
 
   await prisma.$transaction(async (tx) => {
     await tx.payment.update({
@@ -330,6 +331,11 @@ export async function simulatePaymentCompletedAction(
         where: { id: payment.refId },
         data: { status: "COMPLETED", paymentRef: fakeTransactionId },
       });
+      const bumpPrice = Number(meta.bumpPriceVnd ?? 0);
+      productCommissionSources.push({
+        purchaseId: payment.refId,
+        amountVnd: Math.max(0, Number(payment.amountVnd) - (Number.isFinite(bumpPrice) ? bumpPrice : 0)),
+      });
     } else if (payment.refType === "challenge") {
       // Activate the member; start timing is controlled by Challenge.autoStartAfterHours.
       await tx.challengeMember.update({
@@ -339,7 +345,7 @@ export async function simulatePaymentCompletedAction(
     }
 
     if (meta.bumpProductId && !meta.bumpFulfilled) {
-      await fulfillBumpInTx(tx, {
+      const bump = await fulfillBumpInTx(tx, {
         userId: payment.userId,
         paymentId: payment.id,
         bumpProductId: String(meta.bumpProductId),
@@ -347,8 +353,34 @@ export async function simulatePaymentCompletedAction(
         transactionId: fakeTransactionId,
         meta,
       });
+      if (bump.purchaseId) {
+        productCommissionSources.push({
+          purchaseId: bump.purchaseId,
+          amountVnd: Number(meta.bumpPriceVnd ?? 0),
+        });
+      }
     }
   });
+
+  for (const source of productCommissionSources) {
+    try {
+      const { convertReferralFromPurchase } = await import("@/lib/services/affiliate");
+      await convertReferralFromPurchase(source.purchaseId, payment.userId, {
+        amountVnd: source.amountVnd,
+      });
+    } catch {
+      // Non-critical in the owner simulate flow.
+    }
+  }
+
+  if (payment.refType === "challenge") {
+    try {
+      const { convertReferralFromChallengePayment } = await import("@/lib/services/affiliate");
+      await convertReferralFromChallengePayment(payment.id, payment.userId);
+    } catch {
+      // Non-critical in the owner simulate flow.
+    }
+  }
 
   revalidatePath(`/pay/${paymentCode}`);
   return { ok: true };

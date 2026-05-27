@@ -1,17 +1,22 @@
 "use client";
 
 import { useTransition } from "react";
-import { markReferralPayoutAction } from "@/app/actions/affiliate";
+import { markAffiliateCommissionPayoutAction } from "@/app/actions/affiliate";
 import { fmtVnd, fmtRelativeTime } from "@/lib/brand";
 
-interface ReferralRow {
+interface CommissionRow {
   id: string;
-  status: string;
   payoutStatus: string;
   payoutNote: string | null;
-  commissionVnd: number | string | null;
+  commissionVnd: number | string;
+  grossAmountVnd: number | string;
+  sourceType: string;
+  itemTitle: string | null;
   createdAt: Date | string;
-  referredUser: { id: string; name: string | null; email?: string | null; image: string | null } | null;
+  referral: {
+    referredUser: { id: string; name: string | null; email?: string | null; image: string | null } | null;
+    link: { code: string; user: { id: string; name: string | null; image: string | null } };
+  };
 }
 
 function PayoutBadge({ status }: { status: string }) {
@@ -38,20 +43,20 @@ function PayoutBadge({ status }: { status: string }) {
 }
 
 export function ReferralTable({
-  referrals,
+  commissions,
   communityId,
   communitySlug,
 }: {
-  referrals: ReferralRow[];
+  commissions: CommissionRow[];
   communityId: string;
   communitySlug: string;
 }) {
   const [pending, start] = useTransition();
 
-  function handlePayout(referralId: string, status: "PAID" | "REJECTED") {
+  function handlePayout(commissionId: string, status: "PAID" | "REJECTED") {
     start(async () => {
-      await markReferralPayoutAction({
-        referralId,
+      await markAffiliateCommissionPayoutAction({
+        commissionId,
         communityId,
         communitySlug,
         status,
@@ -59,7 +64,7 @@ export function ReferralTable({
     });
   }
 
-  if (referrals.length === 0) {
+  if (commissions.length === 0) {
     return (
       <div
         style={{
@@ -71,7 +76,7 @@ export function ReferralTable({
           borderRadius: 8,
         }}
       >
-        Chua co referral nao.
+        Chua co commission nao.
       </div>
     );
   }
@@ -84,17 +89,16 @@ export function ReferralTable({
         overflow: "hidden",
       }}
     >
-      {referrals.map((r) => (
+      {commissions.map((c) => (
         <div
-          key={r.id}
+          key={c.id}
           style={{
             display: "flex",
             alignItems: "center",
             gap: 10,
             padding: "10px 14px",
             borderBottom: "1px solid var(--border-subtle)",
-            background:
-              r.status === "CONVERTED" ? "rgba(27,158,117,0.04)" : "transparent",
+            background: "rgba(27,158,117,0.04)",
             opacity: pending ? 0.6 : 1,
           }}
         >
@@ -106,71 +110,70 @@ export function ReferralTable({
                 color: "var(--header-primary)",
               }}
             >
-              {r.referredUser?.name || r.referredUser?.email || "An danh"}
+              {c.referral.referredUser?.name || c.referral.referredUser?.email || "An danh"}
             </div>
             <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
-              {fmtRelativeTime(r.createdAt)} — {r.status}
+              {fmtRelativeTime(c.createdAt)} - {c.sourceType}
+              {c.itemTitle ? ` - ${c.itemTitle}` : ""}
             </div>
           </div>
 
-          {r.status === "CONVERTED" && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ textAlign: "right" }}>
               <span
                 style={{
+                  display: "block",
                   fontSize: "var(--text-sm)",
                   fontWeight: 700,
                   color: "var(--brand-green)",
                 }}
               >
-                +{fmtVnd(Number(r.commissionVnd ?? 0))}d
+                +{fmtVnd(Number(c.commissionVnd ?? 0))}d
               </span>
-              <PayoutBadge status={r.payoutStatus} />
-              {r.payoutStatus === "UNPAID" && (
-                <>
-                  <button
-                    type="button"
-                    disabled={pending}
-                    onClick={() => handlePayout(r.id, "PAID")}
-                    style={{
-                      padding: "4px 10px",
-                      borderRadius: 6,
-                      border: "1px solid var(--brand-green)",
-                      background: "transparent",
-                      color: "var(--brand-green)",
-                      fontSize: "var(--text-xs)",
-                      fontWeight: 600,
-                      cursor: pending ? "not-allowed" : "pointer",
-                    }}
-                  >
-                    Thanh toan
-                  </button>
-                  <button
-                    type="button"
-                    disabled={pending}
-                    onClick={() => handlePayout(r.id, "REJECTED")}
-                    style={{
-                      padding: "4px 10px",
-                      borderRadius: 6,
-                      border: "1px solid var(--danger)",
-                      background: "transparent",
-                      color: "var(--danger)",
-                      fontSize: "var(--text-xs)",
-                      fontWeight: 600,
-                      cursor: pending ? "not-allowed" : "pointer",
-                    }}
-                  >
-                    Tu choi
-                  </button>
-                </>
-              )}
+              <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+                tren {fmtVnd(Number(c.grossAmountVnd ?? 0))}d
+              </span>
             </div>
-          )}
-
-          {r.status !== "CONVERTED" && (
-            <span style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>
-              {r.status === "SUSPICIOUS" ? "Nghi ngo" : "Pending"}
-            </span>
-          )}
+            <PayoutBadge status={c.payoutStatus} />
+            {c.payoutStatus === "UNPAID" && (
+              <>
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => handlePayout(c.id, "PAID")}
+                  style={{
+                    padding: "4px 10px",
+                    borderRadius: 6,
+                    border: "1px solid var(--brand-green)",
+                    background: "transparent",
+                    color: "var(--brand-green)",
+                    fontSize: "var(--text-xs)",
+                    fontWeight: 600,
+                    cursor: pending ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Thanh toan
+                </button>
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => handlePayout(c.id, "REJECTED")}
+                  style={{
+                    padding: "4px 10px",
+                    borderRadius: 6,
+                    border: "1px solid var(--danger)",
+                    background: "transparent",
+                    color: "var(--danger)",
+                    fontSize: "var(--text-xs)",
+                    fontWeight: 600,
+                    cursor: pending ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Tu choi
+                </button>
+              </>
+            )}
+          </div>
         </div>
       ))}
     </div>
