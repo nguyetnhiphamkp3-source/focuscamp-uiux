@@ -12,10 +12,11 @@ export type UserRow = {
 /** Reusable row for followers/following lists. */
 export function UserListRow({ user }: { user: UserRow }) {
   const name = user.name ?? "Ẩn danh";
-  const handle = user.handle ?? user.id.slice(0, 8);
+  const profileKey = user.handle ?? user.id;
+  const displayHandle = user.handle ?? user.id.slice(0, 8);
   return (
     <Link
-      href={`/u/${handle}`}
+      href={`/u/${profileKey}`}
       style={{
         display: "flex",
         gap: 12,
@@ -71,7 +72,7 @@ export function UserListRow({ user }: { user: UserRow }) {
           {name}
         </div>
         <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
-          @{handle}
+          @{displayHandle}
         </div>
         {user.bio && (
           <div

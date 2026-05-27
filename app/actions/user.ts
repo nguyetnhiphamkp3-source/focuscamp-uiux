@@ -6,7 +6,9 @@ import { updateOwnProfile } from "@/lib/services/user";
 import { UpdateProfileSchema } from "@/lib/validations";
 import { logError } from "@/lib/logger";
 
-type ActionResult = { ok: true } | { ok: false; reason: string };
+type ActionResult =
+  | { ok: true; profilePath: string }
+  | { ok: false; reason: string };
 
 export async function updateProfileAction(input: {
   name?: string;
@@ -32,7 +34,7 @@ export async function updateProfileAction(input: {
   }
 
   try {
-    await updateOwnProfile({
+    const updated = await updateOwnProfile({
       userId: s.user.id,
       name: parsed.data.name || undefined,
       bio: parsed.data.bio || undefined,
@@ -44,7 +46,9 @@ export async function updateProfileAction(input: {
       revalidatePath(`/c/${input.communitySlug}/profile`);
       revalidatePath(`/c/${input.communitySlug}/profile/${s.user.id}`);
     }
-    return { ok: true };
+    const profileKey = encodeURIComponent(updated.handle ?? updated.id);
+    revalidatePath(`/u/${profileKey}`);
+    return { ok: true, profilePath: `/u/${profileKey}` };
   } catch (err) {
     logError(err, { userId: s.user.id });
     if (err instanceof Error) return { ok: false, reason: err.message };

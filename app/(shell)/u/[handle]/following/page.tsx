@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { resolveUserHandleParam, userProfilePath } from "@/lib/services/user";
 import { UserListRow } from "@/components/profile/user-list-row";
 import { EmptyState } from "@/components/ui/empty-state";
 
@@ -12,9 +13,14 @@ export default async function FollowingPage({
   params: Promise<{ handle: string }>;
 }) {
   const { handle } = await params;
-  const clean = decodeURIComponent(handle).replace(/^@/, "");
-  const user = await prisma.user.findFirst({
-    where: { OR: [{ handle: clean }, { id: clean }] },
+  const resolved = await resolveUserHandleParam(handle);
+  if (!resolved) notFound();
+  if (resolved.shouldRedirect) {
+    redirect(userProfilePath(resolved, "/following"));
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: resolved.userId },
     select: {
       id: true,
       name: true,

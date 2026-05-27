@@ -1,14 +1,33 @@
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { listMyReferrals } from "@/lib/services/affiliate";
+import { resolveUserHandleParam, userProfilePath } from "@/lib/services/user";
 import { fmtVnd } from "@/lib/brand";
 import { CommunityAffiliateCard } from "@/components/affiliate/community-affiliate-card";
 
 export const dynamic = "force-dynamic";
 
-export default async function MyAffiliatesPage() {
+export default async function MyAffiliatesPage({
+  params,
+}: {
+  params: Promise<{ handle: string }>;
+}) {
   const s = await auth();
   if (!s?.user?.id) redirect("/login");
+
+  const { handle } = await params;
+  const requested = await resolveUserHandleParam(handle);
+  if (!requested) notFound();
+
+  const self = await resolveUserHandleParam(s.user.id);
+  if (!self) redirect("/settings");
+
+  if (requested.userId !== s.user.id) {
+    redirect(userProfilePath(self, "/affiliates"));
+  }
+  if (requested.shouldRedirect) {
+    redirect(userProfilePath(requested, "/affiliates"));
+  }
 
   const communities = await listMyReferrals(s.user.id);
 

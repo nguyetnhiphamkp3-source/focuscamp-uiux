@@ -16,6 +16,7 @@ model User {
   name               String?
   image              String?
   handle             String?   @unique
+  handleChangeCount  Int       @default(0)
   bio                String?
   location           String?
   isSuperAdmin       Boolean   @default(false)
@@ -33,6 +34,7 @@ model User {
 
   accounts           Account[]
   sessions           Session[]
+  handleHistory      UserHandleHistory[]
   memberships        Membership[]
   ownedCommunities   Community[]         @relation("CommunityOwner")
   posts              Post[]
@@ -65,6 +67,17 @@ model User {
   couponRedemptions  CouponRedemption[]
   reportsFiled       ContentReport[]     @relation("ReportReporter")
   reportsResolved    ContentReport[]     @relation("ReportResolver")
+}
+
+model UserHandleHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  handle    String   @unique
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Account {

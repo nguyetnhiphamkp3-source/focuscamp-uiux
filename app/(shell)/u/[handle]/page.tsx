@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { avatarColorFor, initials, fmtRelativeTime } from "@/lib/brand";
 import { followCounts, isFollowing } from "@/lib/services/follow";
+import { resolveUserHandleParam, userProfilePath } from "@/lib/services/user";
 import { FollowButton } from "@/components/profile/follow-button";
 import { EditProfileButton } from "@/components/profile/edit-profile-modal";
 
@@ -23,12 +24,12 @@ export default async function UserGlobalPage({
   params: Promise<{ handle: string }>;
 }) {
   const { handle } = await params;
-  const clean = decodeURIComponent(handle).replace(/^@/, "");
+  const resolved = await resolveUserHandleParam(handle);
+  if (!resolved) notFound();
+  if (resolved.shouldRedirect) redirect(userProfilePath(resolved));
 
-  const user = await prisma.user.findFirst({
-    where: {
-      OR: [{ handle: clean }, { id: clean }],
-    },
+  const user = await prisma.user.findUnique({
+    where: { id: resolved.userId },
     select: {
       id: true,
       name: true,
@@ -76,6 +77,7 @@ export default async function UserGlobalPage({
 
   const name = user.name || "Ẩn danh";
   const displayHandle = user.handle ?? user.id.slice(0, 8);
+  const profileKey = user.handle ?? user.id;
 
   return (
     <div
@@ -158,7 +160,7 @@ export default async function UserGlobalPage({
               }}
             >
               <Link
-                href={`/u/${displayHandle}/followers`}
+                href={`/u/${profileKey}/followers`}
                 style={{ color: "inherit", textDecoration: "none" }}
               >
                 <strong style={{ color: "var(--header-primary)" }}>
@@ -167,7 +169,7 @@ export default async function UserGlobalPage({
                 <span style={{ color: "var(--text-muted)" }}>Followers</span>
               </Link>
               <Link
-                href={`/u/${displayHandle}/following`}
+                href={`/u/${profileKey}/following`}
                 style={{ color: "inherit", textDecoration: "none" }}
               >
                 <strong style={{ color: "var(--header-primary)" }}>

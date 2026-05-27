@@ -22,6 +22,7 @@ export function EditProfileButton({
   communitySlug?: string;
 }) {
   const router = useRouter();
+  const initialProfilePath = `/u/${encodeURIComponent(initial.handle ?? initial.userId)}`;
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(initial.name ?? "");
   const [handle, setHandle] = useState(initial.handle ?? "");
@@ -44,7 +45,13 @@ export function EditProfileButton({
       });
       if (res.ok) {
         setOpen(false);
-        router.refresh();
+        if (communitySlug) {
+          router.refresh();
+        } else if (res.profilePath !== initialProfilePath) {
+          router.replace(res.profilePath);
+        } else {
+          router.refresh();
+        }
       } else {
         setErr(res.reason);
       }

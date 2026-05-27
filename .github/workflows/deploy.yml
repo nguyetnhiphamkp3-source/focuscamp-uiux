@@ -84,6 +84,8 @@ jobs:
             cd /opt/focus-camp
             echo "=== Pulling new image ==="
             docker compose pull app
+            echo "=== Applying database migrations ==="
+            docker compose run --rm app npx prisma@6.19.3 migrate deploy
             echo "=== Starting all services ==="
             docker compose up -d
             echo "=== Waiting for app to be ready ==="
@@ -94,9 +96,6 @@ jobs:
               fi
               sleep 2
             done
-
-            echo "=== Syncing database schema ==="
-            docker compose exec -T app npx prisma@6.19.3 db push --skip-generate || echo "db push failed (check schema)"
 
             echo "=== Grandfathering pre-launch communities (idempotent) ==="
             docker compose exec -T app node -e "
