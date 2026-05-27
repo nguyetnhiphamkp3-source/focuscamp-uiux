@@ -17,6 +17,7 @@ export async function createApiKeyAction(input: {
   communitySlug: string;
   name: string;
   expiresInDays?: number | null;
+  scopes?: string[];
 }): Promise<ActionResult<{ plain: string; id: string; prefix: string }>> {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
@@ -25,6 +26,7 @@ export async function createApiKeyAction(input: {
     communityId: input.communityId,
     name: input.name,
     expiresInDays: input.expiresInDays ?? null,
+    scopes: input.scopes,
   });
   if (!parsed.success) {
     return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
@@ -44,6 +46,7 @@ export async function createApiKeyAction(input: {
         name: parsed.data.name,
         keyHash: hash,
         keyPrefix: keyPrefix(plain),
+        scopes: parsed.data.scopes,
         expiresAt,
       },
       select: { id: true, keyPrefix: true },
@@ -108,6 +111,7 @@ export async function listApiKeys(communityId: string) {
       id: true,
       name: true,
       keyPrefix: true,
+      scopes: true,
       lastUsedAt: true,
       expiresAt: true,
       revokedAt: true,

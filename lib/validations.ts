@@ -482,10 +482,13 @@ export const RenewCommunityPlanSchema = z.object({
   communityId: z.string().cuid(),
 });
 
+export const ApiKeyScopeSchema = z.enum(["read", "write", "admin"]);
+
 export const CreateApiKeySchema = z.object({
   communityId: z.string().cuid(),
   name: z.string().trim().min(1).max(60),
   expiresInDays: z.number().int().positive().max(365 * 5).optional().nullable(),
+  scopes: z.array(ApiKeyScopeSchema).min(1).max(3).default(["read"]),
 });
 
 export const RevokeApiKeySchema = z.object({

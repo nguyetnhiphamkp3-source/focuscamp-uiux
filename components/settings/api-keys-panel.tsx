@@ -20,6 +20,7 @@ interface ApiKeyRow {
   id: string;
   name: string;
   keyPrefix: string;
+  scopes: string[];
   lastUsedAt: Date | null;
   expiresAt: Date | null;
   revokedAt: Date | null;
@@ -39,6 +40,7 @@ export function ApiKeysPanel({
   const [showCreate, setShowCreate] = useState(false);
   const [name, setName] = useState("");
   const [expiresInDays, setExpiresInDays] = useState<string>("");
+  const [scopes, setScopes] = useState<string[]>(["read"]);
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const [revealedPlain, setRevealedPlain] = useState<string | null>(null);
@@ -54,11 +56,13 @@ export function ApiKeysPanel({
         communitySlug,
         name: name.trim(),
         expiresInDays: expiresInDays ? parseInt(expiresInDays, 10) : null,
+        scopes,
       });
       if (res.ok && res.data) {
         setRevealedPlain(res.data.plain);
         setName("");
         setExpiresInDays("");
+        setScopes(["read"]);
         router.refresh();
       } else if (!res.ok) {
         setErr(res.reason);
@@ -68,6 +72,21 @@ export function ApiKeysPanel({
 
   function revoke(id: string) {
     setRevokeTargetId(id);
+  }
+
+  function toggleScope(scope: "write" | "admin", checked: boolean) {
+    setScopes((current) => {
+      const next = new Set(current);
+      next.add("read");
+      if (checked) {
+        if (scope === "admin") next.add("write");
+        next.add(scope);
+      } else {
+        next.delete(scope);
+        if (scope === "write") next.delete("admin");
+      }
+      return Array.from(next);
+    });
   }
 
   function confirmRevoke() {
@@ -206,6 +225,39 @@ export function ApiKeysPanel({
               style={inputStyle}
             />
           </label>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+              Quyền của key
+            </span>
+            <label style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: "var(--text-sm)" }}>
+              <input type="checkbox" checked disabled />
+              <span>
+                <strong>Read</strong> — xem community, posts, challenges, members, XP
+              </span>
+            </label>
+            <label style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: "var(--text-sm)" }}>
+              <input
+                type="checkbox"
+                checked={scopes.includes("write")}
+                disabled={pending}
+                onChange={(e) => toggleScope("write", e.target.checked)}
+              />
+              <span>
+                <strong>Write</strong> — tạo/sửa content, duyệt submission, gửi notification
+              </span>
+            </label>
+            <label style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: "var(--text-sm)" }}>
+              <input
+                type="checkbox"
+                checked={scopes.includes("admin")}
+                disabled={pending}
+                onChange={(e) => toggleScope("admin", e.target.checked)}
+              />
+              <span>
+                <strong>Admin</strong> — xoá post, quản lý member, course, community info
+              </span>
+            </label>
+          </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button
               type="button"
@@ -213,6 +265,7 @@ export function ApiKeysPanel({
                 setShowCreate(false);
                 setName("");
                 setExpiresInDays("");
+                setScopes(["read"]);
                 setErr(null);
               }}
               disabled={pending}
@@ -290,6 +343,23 @@ export function ApiKeysPanel({
                     }}
                   >
                     {k.keyPrefix}
+                  </div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+                    {k.scopes.map((scope) => (
+                      <span
+                        key={scope}
+                        style={{
+                          padding: "2px 6px",
+                          borderRadius: 6,
+                          border: "1px solid var(--border-subtle)",
+                          color: "var(--text-muted)",
+                          fontSize: "var(--text-xs)",
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {scope}
+                      </span>
+                    ))}
                   </div>
                   <div
                     style={{

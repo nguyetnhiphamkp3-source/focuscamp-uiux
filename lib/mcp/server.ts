@@ -1,6 +1,6 @@
 /**
  * MCP server factory — creates a fresh McpServer per HTTP request,
- * registering all 22 tools with the request's authenticated context.
+ * registering only the tools allowed by the request's authenticated context.
  *
  * This pattern (per-request server) keeps state simple in a serverless
  * Next.js environment. Stateless transport, no session reuse.
@@ -9,7 +9,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { withTelemetry } from "./telemetry";
-import type { McpContext } from "./auth";
+import { hasScope, type McpContext } from "./auth";
 
 import { listFeed, createPost, updatePost, deletePost, getPostWithComments } from "@/lib/services/post";
 import {
@@ -46,6 +46,7 @@ export function buildMcpServer(ctx: McpContext): McpServer {
 
   /* ─────────────────────────── READ TOOLS ─────────────────────────── */
 
+  if (hasScope(ctx, "read")) {
   server.tool(
     "community_get_info",
     "Fetch core info + plan status for the connected community.",
@@ -296,9 +297,11 @@ export function buildMcpServer(ctx: McpContext): McpServer {
         },
       })
   );
+  }
 
   /* ─────────────────────────── WRITE TOOLS ─────────────────────────── */
 
+  if (hasScope(ctx, "write")) {
   server.tool(
     "posts_create",
     "Create a new post in the community feed/cot/qa/signals.",
@@ -350,6 +353,7 @@ export function buildMcpServer(ctx: McpContext): McpServer {
       })
   );
 
+  if (hasScope(ctx, "admin")) {
   server.tool(
     "posts_delete",
     "Delete a post.",
@@ -365,6 +369,7 @@ export function buildMcpServer(ctx: McpContext): McpServer {
         },
       })
   );
+  }
 
   server.tool(
     "challenges_create",
@@ -543,6 +548,9 @@ export function buildMcpServer(ctx: McpContext): McpServer {
 
   /* ─────────────────────────── ADMIN TOOLS ─────────────────────────── */
 
+  }
+
+  if (hasScope(ctx, "admin")) {
   server.tool(
     "members_update_role",
     "Change a member's role (MEMBER / MOD / ADMIN). Owner cannot self-demote.",
@@ -649,13 +657,11 @@ export function buildMcpServer(ctx: McpContext): McpServer {
 
   server.tool(
     "community_update_info",
-    "Update community name/tagline/description/banner/icon (NOT slug, NOT owner).",
+    "Update community name/tagline/description (NOT slug, owner, banner, or icon).",
     {
       name: z.string().min(2).max(80).optional(),
       tagline: z.string().max(160).optional(),
       description: z.string().max(5000).optional(),
-      bannerUrl: z.string().url().nullable().optional(),
-      iconUrl: z.string().url().nullable().optional(),
     },
     async (args) =>
       withTelemetry({
@@ -669,13 +675,13 @@ export function buildMcpServer(ctx: McpContext): McpServer {
             name: args.name,
             tagline: args.tagline,
             description: args.description,
-            bannerUrl: args.bannerUrl ?? undefined,
-            iconUrl: args.iconUrl ?? undefined,
           });
           return ok({ updated: true });
         },
       })
   );
+
+  }
 
   return server;
 }

@@ -26,7 +26,7 @@ export default function McpDocsPage() {
   return (
     <LegalPage title="MCP API" updatedAt="2026-04-29">
       <p style={legalStyles.p}>
-        focus.camp expose <strong>22 tools</strong> qua <a href="https://modelcontextprotocol.io" style={{ color: "var(--brand-green)" }}>MCP (Model Context Protocol)</a> để
+        focus.camp expose tối đa <strong>22 tools</strong> qua <a href="https://modelcontextprotocol.io" style={{ color: "var(--brand-green)" }}>MCP (Model Context Protocol)</a> để
         agent ngoài (vd <a href="https://goclaw.sh" style={{ color: "var(--brand-green)" }}>goclaw.sh</a>, Claude Desktop, custom agents)
         đọc data + thực thi action trên cộng đồng của bạn.
       </p>
@@ -34,7 +34,7 @@ export default function McpDocsPage() {
       <h2 style={legalStyles.h2}>Quickstart</h2>
       <ol style={legalStyles.ul}>
         <li>Vào <code>Settings</code> của community → section <strong>API Keys (MCP)</strong></li>
-        <li>Click <strong>+ Tạo API key mới</strong>, đặt tên (vd &quot;Goclaw production&quot;)</li>
+        <li>Click <strong>+ Tạo API key mới</strong>, đặt tên (vd &quot;Goclaw production&quot;) và chọn scope tối thiểu cần dùng</li>
         <li>Copy plaintext key (chỉ hiện 1 lần — lưu chỗ an toàn)</li>
         <li>Trong goclaw / MCP client, thêm server với:
           <ul style={legalStyles.ul}>
@@ -53,6 +53,13 @@ export default function McpDocsPage() {
         AS owner của community.
       </p>
       <pre style={codeStyle}>{`Authorization: Bearer fc_live_<32 ký tự>`}</pre>
+
+      <h2 style={legalStyles.h2}>Scopes</h2>
+      <ul style={legalStyles.ul}>
+        <li><strong>read</strong> — xem dữ liệu community, posts, challenges, members, XP</li>
+        <li><strong>write</strong> — tạo/sửa content, duyệt submission, gửi notification</li>
+        <li><strong>admin</strong> — xoá post, quản lý member, course, community info</li>
+      </ul>
 
       <h2 style={legalStyles.h2}>Rate limits</h2>
       <ul style={legalStyles.ul}>
@@ -77,24 +84,24 @@ export default function McpDocsPage() {
         <li><code>xp_list_recent</code> — recent XP ledger (community or per-user)</li>
       </ul>
 
-      <h3 style={legalStyles.h3}>Write (7)</h3>
+      <h3 style={legalStyles.h3}>Write (6)</h3>
       <ul style={legalStyles.ul}>
         <li><code>posts_create</code> — new POST/QUESTION/SIGNAL</li>
         <li><code>posts_update</code> — edit body/title/pillar</li>
-        <li><code>posts_delete</code></li>
         <li><code>challenges_create</code> — challenge + N tasks (software factory pattern: spec → instance)</li>
         <li><code>challenges_update</code> — settings + freeze + banner</li>
         <li><code>checkins_review</code> — APPROVE / REJECT</li>
         <li><code>notifications_send</code> — inbox notification to specific member</li>
       </ul>
 
-      <h3 style={legalStyles.h3}>Admin (5)</h3>
+      <h3 style={legalStyles.h3}>Admin (6)</h3>
       <ul style={legalStyles.ul}>
+        <li><code>posts_delete</code></li>
         <li><code>members_update_role</code> — MEMBER / MOD / ADMIN</li>
         <li><code>members_remove</code></li>
         <li><code>courses_create</code></li>
         <li><code>courses_add_lesson</code></li>
-        <li><code>community_update_info</code> — name/tagline/description/banner/icon</li>
+        <li><code>community_update_info</code> — name/tagline/description</li>
       </ul>
 
       <h2 style={legalStyles.h2}>Goclaw setup</h2>
@@ -104,12 +111,12 @@ export default function McpDocsPage() {
         <li>Type: Streamable HTTP</li>
         <li>Endpoint: <code>https://focus.camp/api/mcp</code></li>
         <li>Auth header: <code>Authorization: Bearer fc_live_…</code></li>
-        <li>Save → agent của bạn sẽ thấy 22 tools mới</li>
+        <li>Save → agent của bạn sẽ thấy các tools tương ứng với scope của key</li>
       </ol>
 
       <h2 style={legalStyles.h2}>System prompt mẫu cho agent</h2>
       <pre style={codeStyle}>{`Bạn là community manager của focus.camp.
-Bạn có quyền truy cập 22 tools của community qua MCP.
+Bạn có quyền truy cập các tools của community qua MCP, tuỳ theo scope của API key.
 
 Khi user yêu cầu hành động trên community:
 - Đọc state hiện tại trước (community_get_info, community_get_stats)
@@ -131,6 +138,7 @@ Khi tạo challenge:
       <h2 style={legalStyles.h2}>Security</h2>
       <ul style={legalStyles.ul}>
         <li>Plaintext key chỉ hiện 1 lần — sau đó chỉ lưu sha256 hash</li>
+        <li>Tạo key theo quyền tối thiểu: dùng <code>read</code> trước, chỉ bật <code>write</code>/<code>admin</code> khi agent thật sự cần</li>
         <li>Revoke ngay lập tức tại Settings nếu nghi key leak</li>
         <li>Set expiresIn để key tự hết hạn</li>
         <li>Tool calls được log 30 ngày — owner audit được</li>

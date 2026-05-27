@@ -25,5 +25,11 @@ export async function authenticateRequest(req: Request): Promise<McpContext | nu
 }
 
 export function hasScope(ctx: McpContext, needed: "read" | "write" | "admin"): boolean {
-  return ctx.scopes.includes(needed);
+  if (needed === "read") {
+    return ctx.scopes.some((scope) => scope === "read" || scope === "write" || scope === "admin");
+  }
+  if (needed === "write") {
+    return ctx.scopes.some((scope) => scope === "write" || scope === "admin");
+  }
+  return ctx.scopes.includes("admin");
 }

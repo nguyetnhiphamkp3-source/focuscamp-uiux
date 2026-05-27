@@ -1,6 +1,6 @@
 # focus.camp — Roadmap & Module Spec
 
-_Updated: 2026-05-18. Source of truth for "what's shipped / what's next"._
+_Updated: 2026-05-27. Source of truth for "what's shipped / what's next"._
 
 ## Positioning
 
@@ -127,9 +127,12 @@ Key: ✅ done · 🟡 partial · ❌ not started · 🚫 deferred (Phase 2+)
 | Item | Status | Notes |
 |---|---|---|
 | Agent hub page (mockup, 6 agent cards) | ✅ | Static |
-| Chat UI + streaming via Vercel AI SDK | ❌ | User brief khi tỉnh táo |
-| System prompts per agent (Learning Coach / Challenge Coach / …) | ❌ | |
-| MCP for Community Manager agent | ❌ | |
+| Chat UI + streaming via Vercel AI SDK | ✅ | Admin-only `/c/<slug>/agent`, persisted conversations |
+| System prompts per community agent | ✅ | Configurable in Settings → Integrations |
+| Multi-provider LLM config | ✅ | OpenAI, Anthropic, Google, Groq, xAI, OpenAI-compatible |
+| MCP/tools for Community Manager agent | ✅ | Read tools + role-gated Tier 1 challenge write tools |
+| AI submission review | ✅ | Per-challenge toggle, per-task guidelines/red flags, review badges |
+| Public MCP endpoint + API keys | 🟡 | `/api/mcp`, key scopes, rate limit, activity log; full diff audit/API v1 still pending |
 | Telegram/Zalo bot integration | ❌ | |
 
 ### Search
