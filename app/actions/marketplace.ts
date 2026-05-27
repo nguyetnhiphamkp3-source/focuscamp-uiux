@@ -360,27 +360,23 @@ export async function simulatePaymentCompletedAction(
         });
       }
     }
+
+    // Affiliate commission MUST be atomic with completion (H1) — write inside
+    // this txn; errors roll the simulate back, idempotency key makes retries safe.
+    const { convertReferralFromPurchase, convertReferralFromChallengePayment } =
+      await import("@/lib/services/affiliate");
+    for (const source of productCommissionSources) {
+      await convertReferralFromPurchase(
+        source.purchaseId,
+        payment.userId,
+        { amountVnd: source.amountVnd },
+        tx,
+      );
+    }
+    if (payment.refType === "challenge") {
+      await convertReferralFromChallengePayment(payment.id, payment.userId, tx);
+    }
   });
-
-  for (const source of productCommissionSources) {
-    try {
-      const { convertReferralFromPurchase } = await import("@/lib/services/affiliate");
-      await convertReferralFromPurchase(source.purchaseId, payment.userId, {
-        amountVnd: source.amountVnd,
-      });
-    } catch {
-      // Non-critical in the owner simulate flow.
-    }
-  }
-
-  if (payment.refType === "challenge") {
-    try {
-      const { convertReferralFromChallengePayment } = await import("@/lib/services/affiliate");
-      await convertReferralFromChallengePayment(payment.id, payment.userId);
-    } catch {
-      // Non-critical in the owner simulate flow.
-    }
-  }
 
   revalidatePath(`/pay/${paymentCode}`);
   return { ok: true };

@@ -62,45 +62,63 @@ export async function approveOrderAction(input: {
   const meta = (payment?.metadata ?? {}) as Record<string, unknown>;
   const productCommissionSources: Array<{ purchaseId: string; amountVnd?: number }> = [];
 
-  await prisma.$transaction(async (tx) => {
-    await tx.purchase.update({
-      where: { id: purchase.id },
-      data: { status: "COMPLETED", paymentRef: manualRef },
-    });
-    if (payment) {
-      await tx.payment.update({
-        where: { id: payment.id },
-        data: { status: "COMPLETED", receivedAt: new Date(), transactionId: manualRef },
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.purchase.update({
+        where: { id: purchase.id },
+        data: { status: "COMPLETED", paymentRef: manualRef },
       });
-      const bumpPrice = Number(meta.bumpPriceVnd ?? 0);
-      const mainAmount = Number(payment.amountVnd) - (Number.isFinite(bumpPrice) ? bumpPrice : 0);
-      productCommissionSources.push({ purchaseId: purchase.id, amountVnd: Math.max(0, mainAmount) });
-      if (meta.bumpProductId && !meta.bumpFulfilled) {
-        const bump = await fulfillBumpInTx(tx, {
-          userId: payment.userId,
-          paymentId: payment.id,
-          bumpProductId: String(meta.bumpProductId),
-          bumpPriceVnd: Number(meta.bumpPriceVnd ?? 0),
-          transactionId: manualRef,
-          meta,
+      if (payment) {
+        await tx.payment.update({
+          where: { id: payment.id },
+          data: { status: "COMPLETED", receivedAt: new Date(), transactionId: manualRef },
         });
-        if (bump.purchaseId) {
-          productCommissionSources.push({
-            purchaseId: bump.purchaseId,
-            amountVnd: Number(meta.bumpPriceVnd ?? 0),
+        const bumpPrice = Number(meta.bumpPriceVnd ?? 0);
+        const mainAmount = Number(payment.amountVnd) - (Number.isFinite(bumpPrice) ? bumpPrice : 0);
+        productCommissionSources.push({ purchaseId: purchase.id, amountVnd: Math.max(0, mainAmount) });
+        if (meta.bumpProductId && !meta.bumpFulfilled) {
+          const bump = await fulfillBumpInTx(tx, {
+            userId: payment.userId,
+            paymentId: payment.id,
+            bumpProductId: String(meta.bumpProductId),
+            bumpPriceVnd: Number(meta.bumpPriceVnd ?? 0),
+            transactionId: manualRef,
+            meta,
           });
+          if (bump.purchaseId) {
+            productCommissionSources.push({
+              purchaseId: bump.purchaseId,
+              amountVnd: Number(meta.bumpPriceVnd ?? 0),
+            });
+          }
         }
+      } else {
+        // No payment row (edge case): complete any stray pending payment and fall
+        // back to the purchase's own amount for commission (no bump info available).
+        await tx.payment.updateMany({
+          where: { refType: "product", refId: purchase.id, status: "PENDING" },
+          data: { status: "COMPLETED", receivedAt: new Date(), transactionId: manualRef },
+        });
+        productCommissionSources.push({ purchaseId: purchase.id });
       }
-    } else {
-      // No payment row (edge case): complete any stray pending payment and fall
-      // back to the purchase's own amount for commission (no bump info available).
-      await tx.payment.updateMany({
-        where: { refType: "product", refId: purchase.id, status: "PENDING" },
-        data: { status: "COMPLETED", receivedAt: new Date(), transactionId: manualRef },
-      });
-      productCommissionSources.push({ purchaseId: purchase.id });
-    }
-  });
+
+      // Affiliate commission MUST be atomic with completion (H1) — write inside
+      // this txn; errors roll the approval back, idempotency key makes retries safe.
+      const { convertReferralFromPurchase } = await import("@/lib/services/affiliate");
+      for (const source of productCommissionSources) {
+        await convertReferralFromPurchase(
+          source.purchaseId,
+          purchase.userId,
+          { amountVnd: source.amountVnd },
+          tx,
+        );
+      }
+    });
+  } catch (err) {
+    logError(err, { purchaseId: purchase.id });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
 
   // Assign license key for main purchase (+ bump if fulfilled)
   try {
@@ -122,17 +140,6 @@ export async function approveOrderAction(input: {
       }
     } catch {
       /* non-critical */
-    }
-  }
-
-  for (const source of productCommissionSources) {
-    try {
-      const { convertReferralFromPurchase } = await import("@/lib/services/affiliate");
-      await convertReferralFromPurchase(source.purchaseId, purchase.userId, {
-        amountVnd: source.amountVnd,
-      });
-    } catch (err) {
-      logger.warn({ err, purchaseId: source.purchaseId }, "[orders] manual approve: referral commission failed");
     }
   }
 
@@ -269,33 +276,27 @@ export async function approvePaymentAction(input: {
           }
         }
       }
+
+      // Affiliate commission MUST be atomic with completion (H1) — write inside
+      // this txn; errors roll the approval back, idempotency key makes retries safe.
+      if (payment.refType === "challenge") {
+        const { convertReferralFromPurchase, convertReferralFromChallengePayment } =
+          await import("@/lib/services/affiliate");
+        for (const source of productCommissionSources) {
+          await convertReferralFromPurchase(
+            source.purchaseId,
+            payment.userId,
+            { amountVnd: source.amountVnd },
+            tx,
+          );
+        }
+        await convertReferralFromChallengePayment(payment.id, payment.userId, tx);
+      }
     });
   } catch (err) {
     logError(err, { paymentId: payment.id });
     if (err instanceof Error) return { ok: false, reason: err.message };
     return { ok: false, reason: "unknown" };
-  }
-
-  if (payment.refType === "challenge") {
-    for (const source of productCommissionSources) {
-      try {
-        const { convertReferralFromPurchase } = await import("@/lib/services/affiliate");
-        await convertReferralFromPurchase(source.purchaseId, payment.userId, {
-          amountVnd: source.amountVnd,
-        });
-      } catch (err) {
-        logger.warn(
-          { err, purchaseId: source.purchaseId },
-          "[orders] bump referral commission failed",
-        );
-      }
-    }
-    try {
-      const { convertReferralFromChallengePayment } = await import("@/lib/services/affiliate");
-      await convertReferralFromChallengePayment(payment.id, payment.userId);
-    } catch (err) {
-      logger.warn({ err, paymentId: payment.id }, "[orders] challenge referral conversion failed");
-    }
   }
 
   logger.info({ paymentId: payment.id, refType: payment.refType, adminId: s.user.id }, "[orders] payment manually approved");

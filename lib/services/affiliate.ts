@@ -6,6 +6,7 @@
  * - On qualifying paid order COMPLETED, mark referral CONVERTED with commissionVnd.
  */
 import { randomBytes } from "crypto";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { assertCommunityPermission } from "@/lib/services/community-settings";
@@ -198,15 +199,30 @@ export async function attributeReferralOnSignup(input: {
   return ref;
 }
 
-async function convertPendingReferralForCommunity(input: {
-  buyerUserId: string;
-  communityId: string;
-  amountVnd: number;
-  sourceType: "PRODUCT" | "CHALLENGE";
-  sourceId: string;
-  itemTitle?: string | null;
-}) {
-  const ref = await prisma.referral.findFirst({
+/**
+ * Convert a pending referral into a commission row.
+ *
+ * When `tx` is supplied the reads and the two writes (commission create +
+ * referral update) run on the CALLER's transaction — so the commission is
+ * atomic with the payment/order completion. The caller must NOT swallow errors
+ * in that case: a throw rolls the whole completion back, and on retry the
+ * idempotency key (referralId+sourceType+sourceId) makes it safe (existing row
+ * is returned, no dupe). Without `tx`, the two writes still run atomically in
+ * their own transaction.
+ */
+async function convertPendingReferralForCommunity(
+  input: {
+    buyerUserId: string;
+    communityId: string;
+    amountVnd: number;
+    sourceType: "PRODUCT" | "CHALLENGE";
+    sourceId: string;
+    itemTitle?: string | null;
+  },
+  tx?: Prisma.TransactionClient,
+) {
+  const db = tx ?? prisma;
+  const ref = await db.referral.findFirst({
     where: {
       referredUserId: input.buyerUserId,
       status: { in: ["PENDING", "CONVERTED"] }, // SUSPICIOUS deliberately excluded
@@ -217,7 +233,7 @@ async function convertPendingReferralForCommunity(input: {
   });
   if (!ref) return null;
 
-  const community = await prisma.community.findUnique({
+  const community = await db.community.findUnique({
     where: { id: input.communityId },
     select: { affiliateConfig: true },
   });
@@ -226,13 +242,14 @@ async function convertPendingReferralForCommunity(input: {
 
   const amount = Math.max(0, Math.floor(input.amountVnd));
   if (amount <= 0) return null;
-  // NOTE (L1, partial): clampPercent now rounds the stored percent to 2dp so the
-  // snapshot matches what's used here. But this integer floor still drifts ±1đ for
-  // FRACTIONAL percent (e.g. 50000 * 0.29 → floor 144 vs 145). A basis-points/
-  // Decimal-based exact computation is DEFERRED (LOW). Exact for integer percent.
-  const commission = Math.floor((amount * cfg.commissionPercent) / 100);
+  // L1: integer basis-points math avoids float drift. `amount * percent / 100`
+  // floors wrong for fractional percent (50000 * 0.29 → 144.999… → 144) because
+  // 0.29 isn't exact in float. commissionPercent is ≤2dp (clampPercent), so scale
+  // it to integer hundredths and divide by 10000 — fully integer, exact: → 145.
+  const percentHundredths = Math.round(cfg.commissionPercent * 100);
+  const commission = Math.floor((amount * percentHundredths) / 10000);
 
-  const existing = await prisma.affiliateCommission.findUnique({
+  const existing = await db.affiliateCommission.findUnique({
     where: {
       referralId_sourceType_sourceId: {
         referralId: ref.id,
@@ -243,8 +260,8 @@ async function convertPendingReferralForCommunity(input: {
   });
   if (existing) return existing;
 
-  const created = await prisma.$transaction(async (tx) => {
-    const row = await tx.affiliateCommission.create({
+  const write = async (client: Prisma.TransactionClient) => {
+    const row = await client.affiliateCommission.create({
       data: {
         referralId: ref.id,
         linkId: ref.linkId,
@@ -258,7 +275,7 @@ async function convertPendingReferralForCommunity(input: {
         commissionVnd: commission,
       },
     });
-    await tx.referral.update({
+    await client.referral.update({
       where: { id: ref.id },
       data: {
         status: "CONVERTED",
@@ -267,7 +284,9 @@ async function convertPendingReferralForCommunity(input: {
       },
     });
     return row;
-  });
+  };
+  // Inside a caller txn → run directly (atomic with completion). Otherwise own txn.
+  const created = tx ? await write(tx) : await prisma.$transaction(write);
 
   logger.info(
     { referralId: ref.id, commissionId: created.id, commission, amount, sourceType: input.sourceType },
@@ -288,8 +307,10 @@ export async function convertReferralFromPurchase(
   purchaseId: string,
   buyerUserId: string,
   options?: { amountVnd?: number },
+  tx?: Prisma.TransactionClient,
 ) {
-  const purchase = await prisma.purchase.findUnique({
+  const db = tx ?? prisma;
+  const purchase = await db.purchase.findUnique({
     where: { id: purchaseId },
     select: {
       amountVnd: true,
@@ -298,14 +319,17 @@ export async function convertReferralFromPurchase(
   });
   if (!purchase) return null;
 
-  return convertPendingReferralForCommunity({
-    buyerUserId,
-    communityId: purchase.product.communityId,
-    amountVnd: options?.amountVnd ?? Number(purchase.amountVnd),
-    sourceType: "PRODUCT",
-    sourceId: purchaseId,
-    itemTitle: purchase.product.title,
-  });
+  return convertPendingReferralForCommunity(
+    {
+      buyerUserId,
+      communityId: purchase.product.communityId,
+      amountVnd: options?.amountVnd ?? Number(purchase.amountVnd),
+      sourceType: "PRODUCT",
+      sourceId: purchaseId,
+      itemTitle: purchase.product.title,
+    },
+    tx,
+  );
 }
 
 /**
@@ -316,8 +340,10 @@ export async function convertReferralFromPurchase(
 export async function convertReferralFromChallengePayment(
   paymentId: string,
   buyerUserId: string,
+  tx?: Prisma.TransactionClient,
 ) {
-  const payment = await prisma.payment.findUnique({
+  const db = tx ?? prisma;
+  const payment = await db.payment.findUnique({
     where: { id: paymentId },
     select: {
       amountVnd: true,
@@ -328,7 +354,7 @@ export async function convertReferralFromChallengePayment(
   });
   if (!payment || payment.refType !== "challenge") return null;
 
-  const member = await prisma.challengeMember.findUnique({
+  const member = await db.challengeMember.findUnique({
     where: { id: payment.refId },
     select: { challenge: { select: { communityId: true, title: true } } },
   });
@@ -341,14 +367,17 @@ export async function convertReferralFromChallengePayment(
   const bumpPrice = Number(meta.bumpPriceVnd ?? 0);
   const amount = Number(payment.amountVnd) - (Number.isFinite(bumpPrice) ? bumpPrice : 0);
 
-  return convertPendingReferralForCommunity({
-    buyerUserId,
-    communityId: member.challenge.communityId,
-    amountVnd: amount,
-    sourceType: "CHALLENGE",
-    sourceId: paymentId,
-    itemTitle: member.challenge.title,
-  });
+  return convertPendingReferralForCommunity(
+    {
+      buyerUserId,
+      communityId: member.challenge.communityId,
+      amountVnd: amount,
+      sourceType: "CHALLENGE",
+      sourceId: paymentId,
+      itemTitle: member.challenge.title,
+    },
+    tx,
+  );
 }
 
 export async function listMyReferrals(userId: string) {

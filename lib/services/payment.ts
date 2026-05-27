@@ -459,6 +459,23 @@ export async function matchSePayTransactionToPayment(params: {
         }
       }
     }
+
+    // Affiliate commission MUST be atomic with the completion above (H1): write
+    // it inside this txn so a crash can't leave a COMPLETED order with no
+    // commission row. Idempotency key makes retries safe; errors roll back.
+    const { convertReferralFromPurchase, convertReferralFromChallengePayment } =
+      await import("./affiliate");
+    for (const source of productCommissionSources) {
+      await convertReferralFromPurchase(
+        source.purchaseId,
+        payment.userId,
+        { amountVnd: source.amountVnd },
+        tx,
+      );
+    }
+    if (payment.refType === "challenge") {
+      await convertReferralFromChallengePayment(payment.id, payment.userId, tx);
+    }
   });
 
   // Community plan activation runs OUTSIDE the txn because it reads + updates
@@ -538,29 +555,6 @@ export async function matchSePayTransactionToPayment(params: {
       }
     } catch {
       /* swallow */
-    }
-  }
-
-  for (const source of productCommissionSources) {
-    try {
-      const { convertReferralFromPurchase } = await import("./affiliate");
-      await convertReferralFromPurchase(source.purchaseId, payment.userId, {
-        amountVnd: source.amountVnd,
-      });
-    } catch (err) {
-      logger.warn(
-        { err, purchaseId: source.purchaseId },
-        "[payment] product referral commission failed",
-      );
-    }
-  }
-
-  if (payment.refType === "challenge") {
-    try {
-      const { convertReferralFromChallengePayment } = await import("./affiliate");
-      await convertReferralFromChallengePayment(payment.id, payment.userId);
-    } catch (err) {
-      logger.warn({ err, paymentId: payment.id }, "[payment] challenge referral conversion failed");
     }
   }
 

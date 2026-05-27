@@ -32,8 +32,9 @@ Moi member co the tao link gioi thieu rieng cho tung community. Khi nguoi duoc g
 - Moi order item tao 1 dong `AffiliateCommission`
 - Product/cart/bump: source = purchase id, amount = gia tri item thuc thu
 - Challenge: source = payment id, amount = entry fee thuc thu
-- Tinh commission: `floor(amountVnd * commissionPercent / 100)`
+- Tinh commission: integer basis-points `floor(amountVnd * round(percent*100) / 10000)` — tranh float drift (50000 * 0.29% = 145, khong bi floor thanh 144)
 - Referral status duoc set `CONVERTED` o commission dau tien; cac commission sau van duoc ghi vao ledger
+- **Atomic (H1):** commission row duoc ghi TRONG CUNG `$transaction` voi payment/order completion (truyen `tx` xuong) — crash giua chung khong the de lai order COMPLETED ma thieu commission. Idempotency key `(referralId, sourceType, sourceId)` dam bao retry an toan.
 
 ### 5. Payout (`markAffiliateCommissionPayout`)
 - Owner/Admin vao dashboard -> mark tung commission row `PAID` hoac `REJECTED`
