@@ -51,30 +51,89 @@ export async function approveOrderAction(input: {
 
   const manualRef = `MANUAL-${Date.now()}`;
 
+  // Load the pending product payment so commission is computed on the NET
+  // (post-coupon) amount and any order bump is fulfilled — mirroring the SePay
+  // webhook path (payment.ts). Without this, coupon orders overpay the affiliate
+  // (gross Purchase.amountVnd) and bump products are never fulfilled.
+  const payment = await prisma.payment.findFirst({
+    where: { refType: "product", refId: purchase.id, status: "PENDING" },
+    select: { id: true, amountVnd: true, metadata: true, userId: true },
+  });
+  const meta = (payment?.metadata ?? {}) as Record<string, unknown>;
+  const productCommissionSources: Array<{ purchaseId: string; amountVnd?: number }> = [];
+
   await prisma.$transaction(async (tx) => {
     await tx.purchase.update({
       where: { id: purchase.id },
       data: { status: "COMPLETED", paymentRef: manualRef },
     });
-    await tx.payment.updateMany({
-      where: { refType: "product", refId: purchase.id, status: "PENDING" },
-      data: { status: "COMPLETED", receivedAt: new Date(), transactionId: manualRef },
-    });
+    if (payment) {
+      await tx.payment.update({
+        where: { id: payment.id },
+        data: { status: "COMPLETED", receivedAt: new Date(), transactionId: manualRef },
+      });
+      const bumpPrice = Number(meta.bumpPriceVnd ?? 0);
+      const mainAmount = Number(payment.amountVnd) - (Number.isFinite(bumpPrice) ? bumpPrice : 0);
+      productCommissionSources.push({ purchaseId: purchase.id, amountVnd: Math.max(0, mainAmount) });
+      if (meta.bumpProductId && !meta.bumpFulfilled) {
+        const bump = await fulfillBumpInTx(tx, {
+          userId: payment.userId,
+          paymentId: payment.id,
+          bumpProductId: String(meta.bumpProductId),
+          bumpPriceVnd: Number(meta.bumpPriceVnd ?? 0),
+          transactionId: manualRef,
+          meta,
+        });
+        if (bump.purchaseId) {
+          productCommissionSources.push({
+            purchaseId: bump.purchaseId,
+            amountVnd: Number(meta.bumpPriceVnd ?? 0),
+          });
+        }
+      }
+    } else {
+      // No payment row (edge case): complete any stray pending payment and fall
+      // back to the purchase's own amount for commission (no bump info available).
+      await tx.payment.updateMany({
+        where: { refType: "product", refId: purchase.id, status: "PENDING" },
+        data: { status: "COMPLETED", receivedAt: new Date(), transactionId: manualRef },
+      });
+      productCommissionSources.push({ purchaseId: purchase.id });
+    }
   });
 
-  // Assign license key if applicable
+  // Assign license key for main purchase (+ bump if fulfilled)
   try {
     const { assignLicenseKey } = await import("@/lib/services/license");
     await assignLicenseKey(purchase.id);
   } catch (err) {
     logger.warn({ err, purchaseId: purchase.id }, "[orders] manual approve: license assign failed");
   }
+  if (meta.bumpProductId) {
+    try {
+      const bumpPurchase = await prisma.purchase.findFirst({
+        where: { userId: purchase.userId, productId: String(meta.bumpProductId), status: "COMPLETED" },
+        orderBy: { createdAt: "desc" },
+        select: { id: true },
+      });
+      if (bumpPurchase) {
+        const { assignLicenseKey } = await import("@/lib/services/license");
+        await assignLicenseKey(bumpPurchase.id);
+      }
+    } catch {
+      /* non-critical */
+    }
+  }
 
-  try {
-    const { convertReferralFromPurchase } = await import("@/lib/services/affiliate");
-    await convertReferralFromPurchase(purchase.id, purchase.userId);
-  } catch (err) {
-    logger.warn({ err, purchaseId: purchase.id }, "[orders] manual approve: referral commission failed");
+  for (const source of productCommissionSources) {
+    try {
+      const { convertReferralFromPurchase } = await import("@/lib/services/affiliate");
+      await convertReferralFromPurchase(source.purchaseId, purchase.userId, {
+        amountVnd: source.amountVnd,
+      });
+    } catch (err) {
+      logger.warn({ err, purchaseId: source.purchaseId }, "[orders] manual approve: referral commission failed");
+    }
   }
 
   // Send notification

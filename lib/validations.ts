@@ -676,6 +676,27 @@ export const ResolveReportSchema = z.object({
   note: z.string().trim().max(500).optional(),
 });
 
+/* ========== Affiliate ========== */
+export const AffiliateLinkCreateSchema = z.object({
+  communityId: z.string().cuid(),
+});
+
+export const AffiliateConfigUpdateSchema = z.object({
+  communityId: z.string().cuid(),
+  communitySlug: SlugSchema,
+  enabled: z.boolean(),
+  commissionPercent: z.number().min(0).max(100),
+  cookieDays: z.number().int().min(1).max(365),
+});
+
+export const AffiliateCommissionPayoutSchema = z.object({
+  commissionId: z.string().cuid(),
+  communityId: z.string().cuid(),
+  communitySlug: SlugSchema,
+  status: z.enum(["PAID", "REJECTED"]),
+  note: z.string().trim().max(500).optional(),
+});
+
 /* ========== Helper ========== */
 /** Parse FormData against a schema; throws with readable error if invalid. */
 export function parseFormData<T extends z.ZodTypeAny>(

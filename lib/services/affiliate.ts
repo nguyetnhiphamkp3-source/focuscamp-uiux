@@ -21,6 +21,12 @@ function genCode(len = 8): string {
 
 const DEFAULT_COMMISSION_PERCENT = 10;
 
+/** Clamp percent to [0,100] and round to 2 dp so the stored value matches the
+ * value used in commission math (commissionPercent is Decimal(5,2)). */
+function clampPercent(p: number): number {
+  return Math.round(Math.min(100, Math.max(0, p)) * 100) / 100;
+}
+
 export interface AffiliateConfig {
   enabled: boolean;
   commissionPercent: number; // 0-100
@@ -41,7 +47,7 @@ export function getAffiliateConfig(c: { affiliateConfig?: unknown }): AffiliateC
     enabled: !!raw.enabled,
     commissionPercent:
       typeof raw.commissionPercent === "number"
-        ? Math.min(100, Math.max(0, raw.commissionPercent))
+        ? clampPercent(raw.commissionPercent)
         : DEFAULT_COMMISSION_PERCENT,
     cookieDays:
       typeof raw.cookieDays === "number" ? Math.max(1, raw.cookieDays) : 30,
@@ -57,6 +63,20 @@ export async function getOrCreateAffiliateLink(input: {
     where: { userId_communityId: { userId: input.userId, communityId: input.communityId } },
   });
   if (existing) return existing;
+
+  // Only members (or the owner) of the community may mint an affiliate link.
+  const member = await prisma.membership.findUnique({
+    where: { userId_communityId: { userId: input.userId, communityId: input.communityId } },
+    select: { id: true },
+  });
+  if (!member) {
+    const community = await prisma.community.findUnique({
+      where: { id: input.communityId },
+      select: { ownerId: true },
+    });
+    if (!community) throw new Error("community_not_found");
+    if (community.ownerId !== input.userId) throw new Error("not_a_member");
+  }
   let code = genCode();
   while (await prisma.affiliateLink.findUnique({ where: { code } })) {
     code = genCode();
@@ -138,15 +158,19 @@ export async function attributeReferralOnSignup(input: {
 }) {
   const link = await prisma.affiliateLink.findUnique({
     where: { code: input.refCode },
-    select: { id: true, userId: true },
+    select: { id: true, userId: true, communityId: true },
   });
   if (!link) return null;
   if (link.userId === input.referredUserId) return null; // direct self-referral
+  // First-touch policy: one referral per user per community. Dedupe across ALL
+  // links of this community (not just this link) so a second link can't create
+  // an ambiguous duplicate that later credits the wrong affiliate at conversion.
   const existing = await prisma.referral.findFirst({
     where: {
-      linkId: link.id,
       referredUserId: input.referredUserId,
+      link: { communityId: link.communityId },
     },
+    orderBy: { createdAt: "asc" },
   });
   if (existing) return existing;
 
@@ -202,6 +226,10 @@ async function convertPendingReferralForCommunity(input: {
 
   const amount = Math.max(0, Math.floor(input.amountVnd));
   if (amount <= 0) return null;
+  // NOTE (L1, partial): clampPercent now rounds the stored percent to 2dp so the
+  // snapshot matches what's used here. But this integer floor still drifts ±1đ for
+  // FRACTIONAL percent (e.g. 50000 * 0.29 → floor 144 vs 145). A basis-points/
+  // Decimal-based exact computation is DEFERRED (LOW). Exact for integer percent.
   const commission = Math.floor((amount * cfg.commissionPercent) / 100);
 
   const existing = await prisma.affiliateCommission.findUnique({
@@ -360,24 +388,23 @@ export async function listMyReferrals(userId: string) {
   return links.map((link) => {
     const linkCommissions = commissionsByLink.get(link.id) ?? [];
     const conversions = linkCommissions.length;
-    const totalCommission = linkCommissions.reduce(
-      (sum, c) => sum + Number(c.commissionVnd ?? 0),
-      0,
-    );
+    // Exclude REJECTED from the owed/earned total (UNPAID + PAID only).
+    const totalCommission = linkCommissions
+      .filter((c) => c.payoutStatus !== "REJECTED")
+      .reduce((sum, c) => sum + Number(c.commissionVnd ?? 0), 0);
     return {
       community: link.community,
       link: { id: link.id, code: link.code, clicks: link.clicks, createdAt: link.createdAt },
       referrals: link.referrals.map((r) => {
         const referralCommissions = commissionsByReferral.get(r.id) ?? [];
-        const referralCommissionTotal = referralCommissions.reduce(
-          (sum, c) => sum + Number(c.commissionVnd ?? 0),
-          0,
-        );
+        const referralCommissionTotal = referralCommissions
+          .filter((c) => c.payoutStatus !== "REJECTED")
+          .reduce((sum, c) => sum + Number(c.commissionVnd ?? 0), 0);
         const hasUnpaid = referralCommissions.some((c) => c.payoutStatus === "UNPAID");
         const hasRejected = referralCommissions.some((c) => c.payoutStatus === "REJECTED");
         return {
           ...r,
-          commissionVnd: referralCommissionTotal || r.commissionVnd,
+          commissionVnd: referralCommissions.length > 0 ? referralCommissionTotal : r.commissionVnd,
           payoutStatus: hasUnpaid
             ? "UNPAID"
             : hasRejected
@@ -401,12 +428,19 @@ export async function markAffiliateCommissionPayout(input: {
   status: "PAID" | "REJECTED";
   note?: string;
 }) {
-  await assertCommunityPermission(input.ownerId, input.communityId, "manage_settings");
+  // Payout is a finance operation — gate on manage_orders, consistent with the
+  // rest of the money flows (orders.ts), not manage_settings.
+  await assertCommunityPermission(input.ownerId, input.communityId, "manage_orders");
   const commission = await prisma.affiliateCommission.findUnique({
     where: { id: input.commissionId },
   });
   if (!commission || commission.communityId !== input.communityId) {
     throw new Error("commission_not_found");
+  }
+  // Block re-marking an already-paid commission (prevents double-payout at the
+  // bank layer + paidAt refresh). REJECTED stays reversible.
+  if (commission.payoutStatus === "PAID") {
+    throw new Error("already_paid");
   }
   return prisma.affiliateCommission.update({
     where: { id: input.commissionId },
@@ -431,7 +465,7 @@ export async function updateAffiliateConfig(input: {
     data: {
       affiliateConfig: {
         enabled: input.enabled,
-        commissionPercent: Math.min(100, Math.max(0, input.commissionPercent)),
+        commissionPercent: clampPercent(input.commissionPercent),
         cookieDays: Math.max(1, input.cookieDays),
       },
     },
@@ -452,7 +486,7 @@ export async function listCommunityAffiliates(communityId: string) {
   const commissions = linkIds.length
     ? await prisma.affiliateCommission.findMany({
         where: { linkId: { in: linkIds } },
-        select: { linkId: true, commissionVnd: true },
+        select: { linkId: true, commissionVnd: true, payoutStatus: true },
       })
     : [];
   const commissionsByLink = new Map<string, typeof commissions>();
@@ -469,10 +503,9 @@ export async function listCommunityAffiliates(communityId: string) {
       clicks: link.clicks,
       signups: link.referrals.length,
       conversions: (commissionsByLink.get(link.id) ?? []).length,
-      totalCommission: (commissionsByLink.get(link.id) ?? []).reduce(
-        (sum, c) => sum + Number(c.commissionVnd ?? 0),
-        0,
-      ),
+      totalCommission: (commissionsByLink.get(link.id) ?? [])
+        .filter((c) => c.payoutStatus !== "REJECTED")
+        .reduce((sum, c) => sum + Number(c.commissionVnd ?? 0), 0),
     },
   }));
   const totals = {

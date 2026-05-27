@@ -37,7 +37,8 @@ Moi member co the tao link gioi thieu rieng cho tung community. Khi nguoi duoc g
 
 ### 5. Payout (`markAffiliateCommissionPayout`)
 - Owner/Admin vao dashboard -> mark tung commission row `PAID` hoac `REJECTED`
-- Can permission `manage_settings`
+- Can permission `manage_orders` (finance op, dong bo voi cac money flow khac)
+- Khong cho re-mark mot commission da `PAID` (chong double-payout); `REJECTED` van co the doi lai
 
 ### 6. Approve suspicious (`approveSuspiciousReferral`)
 - Owner approve -> set status ve `PENDING`

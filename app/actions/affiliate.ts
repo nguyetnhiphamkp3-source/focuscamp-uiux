@@ -7,6 +7,11 @@ import {
   updateAffiliateConfig,
   markAffiliateCommissionPayout,
 } from "@/lib/services/affiliate";
+import {
+  AffiliateLinkCreateSchema,
+  AffiliateConfigUpdateSchema,
+  AffiliateCommissionPayoutSchema,
+} from "@/lib/validations";
 import { logError } from "@/lib/logger";
 
 type ActionResult<T = unknown> =
@@ -18,10 +23,12 @@ export async function getOrCreateAffiliateLinkAction(input: {
 }): Promise<ActionResult<{ code: string }>> {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+  const parsed = AffiliateLinkCreateSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, reason: "invalid_input" };
   try {
     const link = await getOrCreateAffiliateLink({
       userId: s.user.id,
-      communityId: input.communityId,
+      communityId: parsed.data.communityId,
     });
     return { ok: true, data: { code: link.code } };
   } catch (err) {
@@ -40,18 +47,17 @@ export async function updateAffiliateConfigAction(input: {
 }): Promise<ActionResult> {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
-  if (input.commissionPercent < 0 || input.commissionPercent > 100) {
-    return { ok: false, reason: "commission_out_of_range" };
-  }
+  const parsed = AffiliateConfigUpdateSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, reason: "invalid_input" };
   try {
     await updateAffiliateConfig({
       userId: s.user.id,
-      communityId: input.communityId,
-      enabled: input.enabled,
-      commissionPercent: input.commissionPercent,
-      cookieDays: input.cookieDays,
+      communityId: parsed.data.communityId,
+      enabled: parsed.data.enabled,
+      commissionPercent: parsed.data.commissionPercent,
+      cookieDays: parsed.data.cookieDays,
     });
-    revalidatePath(`/c/${input.communitySlug}/settings`);
+    revalidatePath(`/c/${parsed.data.communitySlug}/settings`);
     return { ok: true };
   } catch (err) {
     logError(err, { userId: s.user.id });
@@ -69,15 +75,17 @@ export async function markAffiliateCommissionPayoutAction(input: {
 }): Promise<ActionResult> {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+  const parsed = AffiliateCommissionPayoutSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, reason: "invalid_input" };
   try {
     await markAffiliateCommissionPayout({
-      commissionId: input.commissionId,
+      commissionId: parsed.data.commissionId,
       ownerId: s.user.id,
-      communityId: input.communityId,
-      status: input.status,
-      note: input.note,
+      communityId: parsed.data.communityId,
+      status: parsed.data.status,
+      note: parsed.data.note,
     });
-    revalidatePath(`/c/${input.communitySlug}/affiliate`);
+    revalidatePath(`/c/${parsed.data.communitySlug}/affiliate`);
     return { ok: true };
   } catch (err) {
     logError(err, { userId: s.user.id });
