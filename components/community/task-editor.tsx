@@ -66,6 +66,33 @@ export function TaskEditorButton({
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  function resetForm() {
+    setTitle(initial.title);
+    setDescription(initial.description ?? "");
+    setSopContent(initial.sopContent ?? "");
+    setVideoUrl(initial.videoUrl ?? "");
+    setEvidenceType(initial.evidenceType);
+    setEvidenceLabel(initial.evidenceLabel ?? "");
+    setLabel(initial.label ?? "");
+    setUnlockAfterHours(
+      initial.unlockAfterHours != null ? String(initial.unlockAfterHours) : ""
+    );
+    setAiGuidelines(initial.aiReviewGuidelines ?? "");
+    setAiRedFlags(initial.aiReviewRedFlags ?? "");
+    setGiftLabel(initial.giftLabel ?? "");
+    setGiftType(
+      initial.giftFileUrl ? "file" : initial.giftLinkUrl ? "link" : "none"
+    );
+    setGiftFileUrl(initial.giftFileUrl ?? "");
+    setGiftLinkUrl(initial.giftLinkUrl ?? "");
+    setErr(null);
+  }
+
+  function closeWithoutSaving() {
+    resetForm();
+    setOpen(false);
+  }
+
   function deleteTask() {
     setShowDeleteConfirm(true);
   }
@@ -134,6 +161,7 @@ export function TaskEditorButton({
         type="button"
         onClick={(e) => {
           e.stopPropagation();
+          resetForm();
           setOpen(true);
         }}
         title="Sửa task (admin)"
@@ -429,7 +457,7 @@ export function TaskEditorButton({
               </button>
               <button
                 type="button"
-                onClick={() => !pending && setOpen(false)}
+                onClick={() => !pending && closeWithoutSaving()}
                 disabled={pending}
                 style={{
                   marginLeft: "auto",

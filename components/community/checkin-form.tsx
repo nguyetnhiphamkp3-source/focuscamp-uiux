@@ -188,6 +188,7 @@ export function CheckinForm({
                     color: "var(--text-muted)",
                     marginTop: "var(--space-1)",
                     lineHeight: "var(--lh-normal)",
+                    whiteSpace: "pre-line",
                   }}
                 >
                   {task.description}

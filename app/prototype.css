@@ -2816,6 +2816,7 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
   color: var(--text-normal);
   line-height: 1.6;
   margin-bottom: 12px;
+  white-space: pre-line;
 }
 .ch-task-sop {
   background: var(--bg-elevated);
