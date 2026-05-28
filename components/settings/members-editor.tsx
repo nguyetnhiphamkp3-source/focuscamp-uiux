@@ -14,8 +14,9 @@ import {
   type LevelTier,
   tierForLevel,
 } from "@/lib/community-config";
-import { SectionHeader, btnDanger, ErrorBox } from "./editor-shared";
+import { SectionHeader, ErrorBox } from "./editor-shared";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { MemberActionMenu } from "./member-action-menu";
 
 export type MemberRow = {
   userId: string;
@@ -261,38 +262,15 @@ export function MembersEditor({
                 </div>
 
                 <div
-                  style={{ display: "flex", gap: 6, alignItems: "center" }}
+                  style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}
                 >
                   {canManageRoles && !isSelfRow && !isOwnerRow ? (
-                    <>
-                      <select
-                        value={m.role}
-                        onChange={(e) => changeRole(m.userId, e.target.value)}
-                        disabled={pending}
-                        style={{
-                          padding: "6px 8px",
-                          borderRadius: 6,
-                          border: "1px solid var(--border-subtle)",
-                          background: "var(--bg-chat)",
-                          color: "var(--text-normal)",
-                          fontSize: "var(--text-xs)",
-                          outline: "none",
-                          cursor: "pointer",
-                        }}
-                      >
-                        <option value="MEMBER">MEMBER</option>
-                        <option value="MOD">MOD</option>
-                        <option value="ADMIN">ADMIN</option>
-                      </select>
-                      <button
-                        type="button"
-                        onClick={() => removeOne(m)}
-                        disabled={pending}
-                        style={btnDanger}
-                      >
-                        Xoá
-                      </button>
-                    </>
+                    <MemberActionMenu
+                      currentRole={m.role}
+                      pending={pending}
+                      onChangeRole={(role) => changeRole(m.userId, role)}
+                      onRemove={() => removeOne(m)}
+                    />
                   ) : (
                     <span
                       style={{
