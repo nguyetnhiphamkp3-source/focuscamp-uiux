@@ -278,3 +278,15 @@ h6 { font-size: var(--text-sm); font-weight: var(--fw-bold); line-height: var(--
   font-size: var(--text-xs);
   color: var(--text-muted);
 }
+
+/* iOS Safari auto-zooms inputs with computed font-size < 16px on focus and
+   never zooms back out. Force 16px on mobile to suppress this. !important
+   needed to win over inline style={{ fontSize: var(--text-sm|base) }} used
+   across composers and settings editors. */
+@media (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
