@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useTransition, useState } from "react";
+import { useEffect, useRef, useTransition, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -68,6 +68,19 @@ export function CommentItem({
   const canReply = !!currentUser && depth < 3; // cap nesting depth
   const canReport = !!currentUser && currentUser.id !== comment.user.id;
   const [showReportModal, setShowReportModal] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
+  const hasMenuActions = canEdit || canMarkBest || canDelete || canReport;
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onClick(e: MouseEvent) {
+      if (!menuBtnRef.current?.parentElement?.contains(e.target as Node))
+        setMenuOpen(false);
+    }
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
+  }, [menuOpen]);
 
   useEffect(() => {
     setDisplayBody(comment.body);
@@ -328,13 +341,14 @@ export function CommentItem({
             </div>
           )}
 
-          {!editing && (canMarkBest || canDelete || canReply || canEdit) && (
+          {!editing && (canReply || hasMenuActions) && (
             <div
               style={{
                 display: "flex",
                 gap: 12,
                 marginTop: 8,
                 fontSize: "var(--text-xs)",
+                alignItems: "center",
               }}
             >
               {canReply && (
@@ -346,55 +360,117 @@ export function CommentItem({
                   {replying ? "Huỷ trả lời" : "↩ Trả lời"}
                 </button>
               )}
-              {canEdit && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditBody(displayBody);
-                    setEditing(true);
+              {comment.isBestAnswer && canMarkBest && (
+                <span
+                  style={{
+                    color: "var(--success)",
+                    fontWeight: 600,
+                    fontSize: "var(--text-xs)",
                   }}
-                  style={actionBtnStyle("var(--interactive-normal)")}
                 >
-                  ✎ Sửa
-                </button>
+                  ✓ Đã đánh dấu
+                </span>
               )}
-              {canMarkBest && (
-                <button
-                  type="button"
-                  onClick={toggleBest}
-                  disabled={pending}
-                  style={actionBtnStyle(
-                    comment.isBestAnswer
-                      ? "var(--success)"
-                      : "var(--interactive-normal)",
-                    600
+              {hasMenuActions && (
+                <div style={{ position: "relative", marginLeft: "auto" }}>
+                  <button
+                    ref={menuBtnRef}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMenuOpen((v) => !v);
+                    }}
+                    aria-label="Tuỳ chọn comment"
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      padding: "2px 6px",
+                      cursor: "pointer",
+                      color: "var(--text-muted)",
+                      fontSize: "var(--text-md)",
+                      lineHeight: 1,
+                      borderRadius: 4,
+                    }}
+                  >
+                    ⋯
+                  </button>
+                  {menuOpen && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "calc(100% + 4px)",
+                        right: 0,
+                        background: "var(--bg-card)",
+                        border: "1px solid var(--border-subtle)",
+                        borderRadius: 8,
+                        padding: 4,
+                        minWidth: 180,
+                        boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
+                        zIndex: 10,
+                      }}
+                    >
+                      {canEdit && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMenuOpen(false);
+                            setEditBody(displayBody);
+                            setEditing(true);
+                          }}
+                          style={menuItemStyle("var(--text-normal)")}
+                        >
+                          ✎ Sửa
+                        </button>
+                      )}
+                      {canMarkBest && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMenuOpen(false);
+                            toggleBest();
+                          }}
+                          disabled={pending}
+                          style={menuItemStyle(
+                            comment.isBestAnswer
+                              ? "var(--success)"
+                              : "var(--text-normal)",
+                          )}
+                        >
+                          {comment.isBestAnswer
+                            ? "✓ Bỏ đánh dấu"
+                            : isQuestion
+                              ? "★ Đánh dấu best answer"
+                              : "★ Ghim comment"}
+                        </button>
+                      )}
+                      {canReport && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMenuOpen(false);
+                            setShowReportModal(true);
+                          }}
+                          style={menuItemStyle("var(--text-normal)")}
+                        >
+                          ⚑ Báo cáo
+                        </button>
+                      )}
+                      {canDelete && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMenuOpen(false);
+                            onDelete();
+                          }}
+                          disabled={pending}
+                          style={menuItemStyle("var(--danger)")}
+                        >
+                          🗑 Xoá
+                        </button>
+                      )}
+                    </div>
                   )}
-                >
-                  {comment.isBestAnswer
-                    ? "✓ Đã đánh dấu"
-                    : isQuestion
-                      ? "★ Đánh dấu best answer"
-                      : "★ Ghim comment"}
-                </button>
-              )}
-              {canDelete && (
-                <button
-                  type="button"
-                  onClick={onDelete}
-                  disabled={pending}
-                  style={actionBtnStyle("var(--danger)")}
-                >
-                  Xoá
-                </button>
-              )}
-              {canReport && (
-                <button
-                  type="button"
-                  onClick={() => setShowReportModal(true)}
-                  style={actionBtnStyle("var(--text-muted)")}
-                >
-                  ⚑ Báo cáo
-                </button>
+                </div>
               )}
             </div>
           )}
@@ -541,5 +617,21 @@ function actionBtnStyle(color: string, weight: number = 400): React.CSSPropertie
     cursor: "pointer",
     color,
     fontWeight: weight,
+  };
+}
+
+function menuItemStyle(color: string): React.CSSProperties {
+  return {
+    display: "block",
+    width: "100%",
+    padding: "8px 12px",
+    textAlign: "left",
+    background: "transparent",
+    border: "none",
+    borderRadius: 4,
+    cursor: "pointer",
+    fontSize: "var(--text-sm)",
+    color,
+    fontFamily: "inherit",
   };
 }
