@@ -202,7 +202,7 @@ export async function updateChallengeSettingsAction(input: {
   featuredOnGlobal?: boolean;
   requiredTier?: string | null;
   pricingConfig?: Record<string, unknown> | null;
-  taskUnlockMode?: "ALL" | "DAILY" | "SEQUENTIAL" | "MANUAL";
+  taskUnlockMode?: "ALL" | "DAILY" | "SEQUENTIAL" | "DAILY_SEQUENTIAL" | "MANUAL";
   unlockIntervalHours?: number;
   freezeWindows?: Array<{ label?: string; startsAt: string; endsAt: string }> | null;
   pitch?: string | null;
@@ -501,7 +501,7 @@ export async function createChallengeAction(input: {
   requiredDays?: number;
   autoStartAfterHours?: number | null;
   bannerUrl?: string;
-  taskUnlockMode?: "ALL" | "DAILY" | "SEQUENTIAL" | "MANUAL";
+  taskUnlockMode?: "ALL" | "DAILY" | "SEQUENTIAL" | "DAILY_SEQUENTIAL" | "MANUAL";
   unlockIntervalHours?: number;
 }): Promise<
   | { ok: true; slug: string }

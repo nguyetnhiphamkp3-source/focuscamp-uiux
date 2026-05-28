@@ -14,7 +14,7 @@ import type { PricingConfig } from "@/lib/services/pricing";
 import type { AIProviderClient } from "@/lib/services/ai-provider";
 import { parseChallengeVideoUrl, type ChallengeBannerMediaType } from "@/lib/challenge-video";
 
-type UnlockMode = "ALL" | "DAILY" | "SEQUENTIAL" | "MANUAL";
+type UnlockMode = "ALL" | "DAILY" | "SEQUENTIAL" | "DAILY_SEQUENTIAL" | "MANUAL";
 
 /**
  * Whether switching from `from` to `to` is a "restrictive" change —
@@ -23,6 +23,8 @@ type UnlockMode = "ALL" | "DAILY" | "SEQUENTIAL" | "MANUAL";
 function isRestrictiveModeChange(from: string, to: string): boolean {
   // MANUAL is the most restrictive — switching TO it from anything else is restrictive
   if (to === "MANUAL" && from !== "MANUAL") return true;
+  // DAILY_SEQUENTIAL adds BOTH gates → more restrictive than DAILY, SEQUENTIAL and ALL
+  if (to === "DAILY_SEQUENTIAL" && (from === "DAILY" || from === "SEQUENTIAL" || from === "ALL")) return true;
   // SEQUENTIAL is more restrictive than DAILY or ALL
   if (to === "SEQUENTIAL" && (from === "DAILY" || from === "ALL")) return true;
   // DAILY is more restrictive than ALL
@@ -34,6 +36,7 @@ const MODE_LABELS: Record<string, string> = {
   ALL: "Mở tất cả",
   DAILY: "Theo thời gian",
   SEQUENTIAL: "Tuần tự",
+  DAILY_SEQUENTIAL: "Lịch + Tuần tự",
   MANUAL: "Thủ công",
 };
 
@@ -248,7 +251,7 @@ export function ChallengeSettingsPanel({
       benefits: cleanedBenefits.length > 0 ? cleanedBenefits : null,
       difficulty,
       autoStartAfterHours,
-      taskUnlockMode: taskUnlockMode as "ALL" | "DAILY" | "SEQUENTIAL" | "MANUAL",
+      taskUnlockMode: taskUnlockMode as UnlockMode,
       unlockIntervalHours: parseInt(unlockIntervalHours, 10) || 24,
       bannerUrl: bannerUrl ?? "",
       bannerMediaType,
@@ -778,6 +781,7 @@ export function ChallengeSettingsPanel({
               <option value="ALL">Mở tất cả — Thành viên thấy toàn bộ task ngay</option>
               <option value="DAILY">Theo thời gian — Mở khóa sau N giờ kể từ ngày bắt đầu</option>
               <option value="SEQUENTIAL">Tuần tự — Hoàn thành task trước mới mở task sau</option>
+              <option value="DAILY_SEQUENTIAL">Lịch + Tuần tự — Mở sau N giờ VÀ task trước phải hoàn thành</option>
               <option value="MANUAL">Thủ công — Admin mở khóa từng task</option>
             </select>
             {isRestrictive && (
@@ -793,7 +797,7 @@ export function ChallengeSettingsPanel({
                 ⚠️ <strong>Cảnh báo:</strong> Chuyển từ "{MODE_LABELS[initial.taskUnlockMode]}" sang "{MODE_LABELS[taskUnlockMode]}" sẽ khóa lại các task mà thành viên đang xem được. Những người đang tham gia có thể bị mất quyền truy cập task đã mở. Hành động này áp dụng ngay lập tức cho tất cả thành viên.
               </div>
             )}
-            {taskUnlockMode === "DAILY" && (
+            {(taskUnlockMode === "DAILY" || taskUnlockMode === "DAILY_SEQUENTIAL") && (
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
                   Mỗi task mở sau:

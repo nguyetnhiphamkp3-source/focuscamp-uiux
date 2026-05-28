@@ -443,11 +443,11 @@ model Challenge {
    */
   hideFutureTasks     Boolean   @default(false)
   /**
-   * Task unlock mode: ALL (all visible), DAILY (time-based), SEQUENTIAL (complete prev first), MANUAL (admin unlocks)
+   * Task unlock mode: ALL (all visible), DAILY (time-based), SEQUENTIAL (complete prev first), DAILY_SEQUENTIAL (time-based AND complete prev first), MANUAL (admin unlocks)
    */
   taskUnlockMode      String    @default("DAILY")
   /**
-   * Default hours between task unlocks (used in DAILY mode). Default 24.
+   * Default hours between task unlocks (used in DAILY and DAILY_SEQUENTIAL modes). Default 24.
    */
   unlockIntervalHours Int       @default(24)
   /**

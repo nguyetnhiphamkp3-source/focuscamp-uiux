@@ -25,7 +25,7 @@ export function CreateChallengeButton({
   const [requiredDays, setRequiredDays] = useState("21");
   const [autoStartMode, setAutoStartMode] = useState<"manual" | "auto">("manual");
   const [autoStartHours, setAutoStartHours] = useState("24");
-  const [taskUnlockMode, setTaskUnlockMode] = useState<"ALL" | "DAILY" | "SEQUENTIAL" | "MANUAL">("DAILY");
+  const [taskUnlockMode, setTaskUnlockMode] = useState<"ALL" | "DAILY" | "SEQUENTIAL" | "DAILY_SEQUENTIAL" | "MANUAL">("DAILY");
   const [unlockIntervalHours, setUnlockIntervalHours] = useState("24");
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -199,17 +199,18 @@ export function CreateChallengeButton({
               <Field label="Chế độ mở khóa task">
                 <select
                   value={taskUnlockMode}
-                  onChange={(e) => setTaskUnlockMode(e.target.value as "ALL" | "DAILY" | "SEQUENTIAL" | "MANUAL")}
+                  onChange={(e) => setTaskUnlockMode(e.target.value as "ALL" | "DAILY" | "SEQUENTIAL" | "DAILY_SEQUENTIAL" | "MANUAL")}
                   disabled={pending}
                   style={inputStyle}
                 >
                   <option value="ALL">Mở tất cả</option>
                   <option value="DAILY">Theo thời gian (mặc định 24h)</option>
                   <option value="SEQUENTIAL">Tuần tự (hoàn thành trước mở sau)</option>
+                  <option value="DAILY_SEQUENTIAL">Lịch + Tuần tự (sau N giờ VÀ task trước phải xong)</option>
                   <option value="MANUAL">Thủ công (admin mở)</option>
                 </select>
               </Field>
-              {taskUnlockMode === "DAILY" && (
+              {(taskUnlockMode === "DAILY" || taskUnlockMode === "DAILY_SEQUENTIAL") && (
                 <Field label="Mỗi task mở sau (giờ)">
                   <input
                     type="number"

@@ -133,7 +133,7 @@ export const UpdateChallengeSettingsSchema = z.object({
   pricingConfig: PricingConfigSchema,
   // Deprecated — checkbox removed from UI; ignored if sent by old clients.
   hideFutureTasks: z.boolean().optional(),
-  taskUnlockMode: z.enum(["ALL", "DAILY", "SEQUENTIAL", "MANUAL"]).optional(),
+  taskUnlockMode: z.enum(["ALL", "DAILY", "SEQUENTIAL", "DAILY_SEQUENTIAL", "MANUAL"]).optional(),
   unlockIntervalHours: z.number().int().positive().max(720).optional(),
   freezeWindows: z
     .array(
@@ -183,7 +183,7 @@ export const CreateChallengeSchema = z.object({
   requiresApproval: z.boolean().optional(),
   autoStartAfterHours: z.number().int().min(1).max(8760).nullable().optional(),
   bannerUrl: z.string().url().max(500).optional().or(z.literal("")),
-  taskUnlockMode: z.enum(["ALL", "DAILY", "SEQUENTIAL", "MANUAL"]).optional(),
+  taskUnlockMode: z.enum(["ALL", "DAILY", "SEQUENTIAL", "DAILY_SEQUENTIAL", "MANUAL"]).optional(),
   unlockIntervalHours: z.number().int().positive().max(720).optional(),
 });
 
