@@ -83,10 +83,10 @@ export function AIReviewSettings({
     <>
       <ConfirmModal
         open={showConfirm}
-        title="Bat AI Review?"
-        message={`Hien co **${pendingCount} bai chua duyet**. AI se tu dong quet cac bai nay va tieu hao token tuong ung.\n\nBai nop moi tu bay gio cung se duoc AI duyet tu dong.`}
-        confirmLabel="Bat AI Review"
-        cancelLabel="Huy"
+        title="Bật AI Review?"
+        message={`Hiện có **${pendingCount} bài chưa duyệt**. AI sẽ tự động quét các bài này và tiêu hao token tương ứng.\n\nBài nộp mới từ bây giờ cũng sẽ được AI duyệt tự động.`}
+        confirmLabel="Bật AI Review"
+        cancelLabel="Huỷ"
         onConfirm={confirmEnable}
         onCancel={() => setShowConfirm(false)}
       />
@@ -103,28 +103,28 @@ export function AIReviewSettings({
             onChange={(e) => handleToggle(e.target.checked)}
           />
           <span style={{ fontSize: "var(--text-sm)", color: "var(--text-normal)" }}>
-            Bat AI tu dong duyet submission
+            Bật AI tự động duyệt submission
           </span>
         </label>
 
         {enabled && (
           <>
             <label style={labelStyle}>
-              Nguong tin cay
+              Ngưỡng tin cậy
               <select
                 value={threshold}
                 onChange={(e) => onChange({ aiReviewThreshold: parseFloat(e.target.value) })}
                 style={inputStyle}
               >
-                <option value="0.6">60% - Rat thoai mai</option>
-                <option value="0.7">70% - Thoai mai</option>
-                <option value="0.8">80% - Can bang</option>
-                <option value="0.9">90% - Nghiem ngat</option>
+                <option value="0.6">60% - Rất thoải mái</option>
+                <option value="0.7">70% - Thoải mái</option>
+                <option value="0.8">80% - Cân bằng</option>
+                <option value="0.9">90% - Nghiêm ngặt</option>
               </select>
             </label>
 
             <label style={labelStyle}>
-              Khi AI khong chac chan
+              Khi AI không chắc chắn
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <label style={radioStyle}>
                   <input
@@ -164,7 +164,7 @@ export function AIReviewSettings({
               {!hasOverride ? (
                 <>
                   <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", fontStyle: "italic" }}>
-                    Dang dung review brain mac dinh cua community Agent.
+                    Đang dùng review brain mặc định của community Agent.
                   </div>
                   <button
                     type="button"
@@ -172,11 +172,11 @@ export function AIReviewSettings({
                     disabled={enabledProviders.length === 0}
                     style={{ ...smallButtonStyle, width: "fit-content", opacity: enabledProviders.length === 0 ? 0.5 : 1 }}
                   >
-                    + Them override
+                    + Thêm override
                   </button>
                   {enabledProviders.length === 0 && (
                     <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
-                      Chua co AI Provider nao trong Community Settings.
+                      Chưa có AI Provider nào trong Community Settings.
                     </div>
                   )}
                 </>

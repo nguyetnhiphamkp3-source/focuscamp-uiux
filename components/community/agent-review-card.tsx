@@ -55,7 +55,7 @@ export function AgentReviewCard({
               {reviewerName}
             </strong>
             <span style={{ color: "var(--text-muted)", fontSize: "var(--text-xs)" }}>
-              da review bai nop{reviewedAt ? ` · ${reviewedAt}` : ""}
+              đã review bài nộp{reviewedAt ? ` · ${reviewedAt}` : ""}
             </span>
           </div>
 
@@ -67,7 +67,7 @@ export function AgentReviewCard({
               marginBottom: 6,
             }}
           >
-            Ket qua: {theme.label}
+            Kết quả: {theme.label}
             {confidence ? ` (${confidence})` : ""}
           </div>
 
@@ -79,7 +79,7 @@ export function AgentReviewCard({
               lineHeight: 1.55,
             }}
             dangerouslySetInnerHTML={{
-              __html: renderMarkdown(data.reasoning || "Chua co ly do cu the."),
+              __html: renderMarkdown(data.reasoning || "Chưa có lý do cụ thể."),
             }}
           />
         </div>
@@ -145,7 +145,7 @@ function normalizeDecision(decision: string, status?: string) {
 function reviewTheme(decision: "APPROVE" | "REJECT" | "FLAG") {
   if (decision === "APPROVE") {
     return {
-      label: "Da duyet",
+      label: "Đã duyệt",
       accent: "var(--success)",
       border: "rgba(36,128,70,0.22)",
       background: "rgba(36,128,70,0.06)",
@@ -153,14 +153,14 @@ function reviewTheme(decision: "APPROVE" | "REJECT" | "FLAG") {
   }
   if (decision === "REJECT") {
     return {
-      label: "Chua dat",
+      label: "Chưa đạt",
       accent: "var(--danger)",
       border: "rgba(218,55,60,0.24)",
       background: "rgba(218,55,60,0.06)",
     };
   }
   return {
-    label: "Can admin xem lai",
+    label: "Cần admin xem lại",
     accent: "var(--warning)",
     border: "rgba(240,178,50,0.28)",
     background: "rgba(240,178,50,0.08)",
