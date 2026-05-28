@@ -25,6 +25,7 @@ export type MemberRow = {
   xp: number;
   level: number;
   joinedAt: Date;
+  lastActiveAt: Date;
   user: {
     id: string;
     name: string | null;
@@ -254,6 +255,7 @@ export function MembersEditor({
                       </span>
                     )}
                     {tier && <span>· {tier.name}</span>}
+                    <span>· Online {fmtRelativeTime(m.lastActiveAt)}</span>
                     <span>· Tham gia {fmtRelativeTime(m.joinedAt)}</span>
                   </div>
                 </div>

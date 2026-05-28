@@ -475,6 +475,7 @@ export default async function SettingsPage({
                     xp: m.xp,
                     level: m.level,
                     joinedAt: m.joinedAt,
+                    lastActiveAt: m.lastActiveAt,
                     user: m.user,
                   }))}
                   total={total}
