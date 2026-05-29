@@ -7,6 +7,10 @@
  * tierPrices = per-tier override map { tierKey → amountVnd }
  * aipPrice   = price in AIP tokens (only available to members with AIP balance)
  * aipEnabled = whether AIP payment option is shown
+ *
+ * lateFeeEnabled      = whether a late fee applies when a member re-creates payment after the grace window
+ * lateFeeVnd          = surcharge amount in VND added on top of the base price
+ * lateFeeGraceMinutes = minutes after join during which NO late fee applies
  */
 
 export type PricingConfig = {
@@ -15,6 +19,9 @@ export type PricingConfig = {
   tierPrices?: Record<string, number>
   aipPrice?: number
   aipEnabled?: boolean
+  lateFeeEnabled?: boolean
+  lateFeeVnd?: number
+  lateFeeGraceMinutes?: number
 }
 
 export type EffectivePrice = {
@@ -35,7 +42,27 @@ export function parsePricingConfig(raw: unknown): PricingConfig | null {
     tierPrices: c.tierPrices && typeof c.tierPrices === "object"
       ? (c.tierPrices as Record<string, number>)
       : undefined,
+    lateFeeEnabled:      typeof c.lateFeeEnabled      === "boolean" ? c.lateFeeEnabled      : false,
+    lateFeeVnd:          typeof c.lateFeeVnd          === "number"  ? c.lateFeeVnd          : undefined,
+    lateFeeGraceMinutes: typeof c.lateFeeGraceMinutes === "number"  ? c.lateFeeGraceMinutes : undefined,
   }
+}
+
+/**
+ * Compute the late-fee surcharge (VND) for a challenge payment renewal.
+ * Single source of truth shared by the server action (actual charge) and the
+ * page (pre-click display) so the two never drift apart.
+ * Returns 0 unless the fee is enabled, positive, and the grace window has elapsed.
+ */
+export function computeChallengeLateFee(
+  config: PricingConfig | null,
+  minutesSinceJoin: number,
+): number {
+  if (!config || config.lateFeeEnabled !== true) return 0
+  const fee = config.lateFeeVnd ?? 0
+  const grace = config.lateFeeGraceMinutes ?? 30
+  if (fee <= 0) return 0
+  return minutesSinceJoin > grace ? fee : 0
 }
 
 /**

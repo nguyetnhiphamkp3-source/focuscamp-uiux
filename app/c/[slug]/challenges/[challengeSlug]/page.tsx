@@ -16,7 +16,7 @@ import { TaskGiftStrip } from "@/components/community/task-gift-strip";
 import { CreateTaskButton } from "@/components/community/create-task-button";
 import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
 import { checkGate, getTiersConfig, getUserTier } from "@/lib/services/subscription";
-import { parsePricingConfig, calculateEffectivePrice } from "@/lib/services/pricing";
+import { parsePricingConfig, calculateEffectivePrice, computeChallengeLateFee } from "@/lib/services/pricing";
 import { PayWithAipButton } from "@/components/community/pay-with-aip-button";
 import {
   getActiveChallenge,
@@ -249,7 +249,7 @@ export default async function ChallengeDetailPage({
 
   // Sequential — depends on myMembership.status
   let pendingPaymentCode: string | null = null;
-  let renewalInfo: { originalAmountVnd: number; hasLateFee: boolean } | null = null;
+  let renewalInfo: { originalAmountVnd: number; lateFeeVnd: number } | null = null;
   if (myMembership?.status === "PAYMENT_PENDING") {
     const now = new Date();
     // Find a still-valid PENDING payment (not expired)
@@ -270,7 +270,7 @@ export default async function ChallengeDetailPage({
       const minutesSinceJoin = (Date.now() - myMembership.joinedAt.getTime()) / 60000;
       renewalInfo = {
         originalAmountVnd: Number(originalPayment?.amountVnd ?? 0),
-        hasLateFee: minutesSinceJoin > 30,
+        lateFeeVnd: computeChallengeLateFee(parsePricingConfig(challenge.pricingConfig), minutesSinceJoin),
       };
     }
   }
@@ -557,7 +557,7 @@ export default async function ChallengeDetailPage({
                       communitySlug={slug}
                       challengeSlug={challengeSlug}
                       originalAmountVnd={renewalInfo.originalAmountVnd}
-                      hasLateFee={renewalInfo.hasLateFee}
+                      lateFeeVnd={renewalInfo.lateFeeVnd}
                     />
                   ) : null}
                 </div>

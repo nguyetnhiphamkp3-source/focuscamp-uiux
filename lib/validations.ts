@@ -100,6 +100,9 @@ const PricingConfigSchema = z.object({
   tierPrices: z.record(z.string(), z.number().nonnegative()).optional(),
   aipPrice: z.number().nonnegative().optional(),
   aipEnabled: z.boolean().optional(),
+  lateFeeEnabled: z.boolean().optional(),
+  lateFeeVnd: z.number().nonnegative().optional(),
+  lateFeeGraceMinutes: z.number().int().nonnegative().optional(),
 }).nullable().optional();
 
 /**

@@ -21,7 +21,7 @@ import {
 import { startChallengePurchase } from "@/lib/services/payment";
 import { createPayment } from "@/lib/sepay";
 import { getPaymentConfig } from "@/lib/community-config";
-import { parsePricingConfig, calculateEffectivePrice } from "@/lib/services/pricing";
+import { parsePricingConfig, calculateEffectivePrice, computeChallengeLateFee } from "@/lib/services/pricing";
 import { getUserTier } from "@/lib/services/subscription";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
@@ -756,13 +756,13 @@ export async function renewChallengePaymentAction(input: {
   challengeId: string;
   communitySlug: string;
   challengeSlug: string;
-}): Promise<{ ok: true; paymentCode: string; amountVnd: number } | { ok: false; reason: string }> {
+}): Promise<{ ok: true; paymentCode: string; amountVnd: number; lateFeeVnd: number } | { ok: false; reason: string }> {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
 
   const member = await prisma.challengeMember.findFirst({
     where: { challengeId: input.challengeId, userId: s.user.id, status: "PAYMENT_PENDING" },
-    include: { challenge: { select: { community: { select: { id: true } } } } },
+    include: { challenge: { select: { pricingConfig: true, community: { select: { id: true } } } } },
   });
   if (!member) return { ok: false, reason: "not_found" };
 
@@ -774,10 +774,13 @@ export async function renewChallengePaymentAction(input: {
   });
   if (!originalPayment) return { ok: false, reason: "no_original_payment" };
 
-  // +500k late fee if registration was > 30 minutes ago
+  // Opt-in per-challenge late fee — computeChallengeLateFee is the single source
+  // of truth (same logic drives the pre-click display on the challenge page).
   const minutesSinceJoin = (Date.now() - member.joinedAt.getTime()) / 60000;
+  const pricing = parsePricingConfig(member.challenge.pricingConfig);
   const basePriceVnd = Number(originalPayment.amountVnd);
-  const newAmount = minutesSinceJoin > 30 ? basePriceVnd + 500000 : basePriceVnd;
+  const lateFeeVnd = computeChallengeLateFee(pricing, minutesSinceJoin);
+  const newAmount = basePriceVnd + lateFeeVnd;
 
   const community = await prisma.community.findUnique({
     where: { id: member.challenge.community.id },
@@ -793,13 +796,14 @@ export async function renewChallengePaymentAction(input: {
     refType: "challenge",
     refId: member.id,
     amountVnd: newAmount,
+    ...(lateFeeVnd > 0 ? { metadata: { lateFeeVnd } } : {}),
     bankCode: bankCfg.bankCode,
     bankAccount: bankCfg.bankAccount,
     bankHolder: bankCfg.bankHolder,
     bankName: bankCfg.bankName,
   });
 
-  return { ok: true, paymentCode: payment.paymentCode, amountVnd: newAmount };
+  return { ok: true, paymentCode: payment.paymentCode, amountVnd: newAmount, lateFeeVnd };
 }
 
 export async function toggleAIReviewAction(input: {

@@ -8,19 +8,20 @@ export function RenewPaymentButton({
   communitySlug,
   challengeSlug,
   originalAmountVnd,
-  hasLateFee,
+  lateFeeVnd,
 }: {
   challengeId: string;
   communitySlug: string;
   challengeSlug: string;
   originalAmountVnd: number;
-  hasLateFee: boolean;
+  /** Surcharge (VND) already applied per the challenge's late-fee config. 0 = none. */
+  lateFeeVnd: number;
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  const lateFee = hasLateFee ? 500_000 : 0;
-  const displayAmount = originalAmountVnd + lateFee;
+  const hasLateFee = lateFeeVnd > 0;
+  const displayAmount = originalAmountVnd + lateFeeVnd;
 
   function handleRenew() {
     setError(null);
@@ -35,9 +36,9 @@ export function RenewPaymentButton({
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {hasLateFee ? (
         <div style={{ padding: "12px 16px", background: "rgba(251,191,36,0.12)", border: "1px solid rgba(217,119,6,0.4)", borderRadius: 10, fontSize: "var(--text-sm)", color: "#92400e", lineHeight: 1.5, fontWeight: 600 }}>
-          ⏰ Đã quá 30 phút kể từ khi đăng ký. Giá cập nhật lên{" "}
+          ⏰ Đã quá thời gian ân hạn thanh toán. Giá cập nhật lên{" "}
           <strong>{displayAmount.toLocaleString("vi-VN")}đ</strong>
-          <span style={{ color: "#a16207", fontWeight: 500 }}> (+500.000đ phí trễ)</span>
+          <span style={{ color: "#a16207", fontWeight: 500 }}> (+{lateFeeVnd.toLocaleString("vi-VN")}đ phí trễ)</span>
         </div>
       ) : (
         <div style={{ padding: "12px 16px", background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 10, fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>

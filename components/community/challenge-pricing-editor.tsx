@@ -19,6 +19,9 @@ export function ChallengePricingEditor({ value, onChange, tiers = [] }: Props) {
   const [memberVnd, setMemberVnd] = useState(numOrEmpty(value?.memberVnd));
   const [aipEnabled, setAipEnabled] = useState(value?.aipEnabled ?? false);
   const [aipPrice, setAipPrice] = useState(numOrEmpty(value?.aipPrice));
+  const [lateFeeEnabled, setLateFeeEnabled] = useState(value?.lateFeeEnabled ?? false);
+  const [lateFeeVnd, setLateFeeVnd] = useState(numOrEmpty(value?.lateFeeVnd));
+  const [lateFeeGraceMinutes, setLateFeeGraceMinutes] = useState(numOrEmpty(value?.lateFeeGraceMinutes));
   const [tierPrices, setTierPrices] = useState<Record<string, string>>(
     () => Object.fromEntries(tiers.map((t) => [t.key, numOrEmpty(value?.tierPrices?.[t.key])]))
   );
@@ -26,6 +29,7 @@ export function ChallengePricingEditor({ value, onChange, tiers = [] }: Props) {
   function emit(overrides: Partial<{
     enabled: boolean; guestVnd: string; memberVnd: string;
     aipEnabled: boolean; aipPrice: string; tierPrices: Record<string, string>;
+    lateFeeEnabled: boolean; lateFeeVnd: string; lateFeeGraceMinutes: string;
   }> = {}) {
     const e = overrides.enabled ?? enabled;
     if (!e) { onChange(null); return; }
@@ -34,15 +38,32 @@ export function ChallengePricingEditor({ value, onChange, tiers = [] }: Props) {
     const ae = overrides.aipEnabled ?? aipEnabled;
     const ap = overrides.aipPrice ?? aipPrice;
     const tp = overrides.tierPrices ?? tierPrices;
+    const lfEnabled = overrides.lateFeeEnabled ?? lateFeeEnabled;
+    const lfVnd = overrides.lateFeeVnd ?? lateFeeVnd;
+    const lfGrace = overrides.lateFeeGraceMinutes ?? lateFeeGraceMinutes;
     const config: PricingConfig = {
       ...(g !== "" ? { guestVnd: Number(g) } : {}),
       ...(m !== "" ? { memberVnd: Number(m) } : {}),
       ...(ae && ap !== "" ? { aipEnabled: true, aipPrice: Number(ap) } : { aipEnabled: false }),
+      ...(lfEnabled ? { lateFeeEnabled: true, lateFeeVnd: lfVnd !== "" ? Number(lfVnd) : 0, lateFeeGraceMinutes: lfGrace !== "" ? Number(lfGrace) : 0 } : { lateFeeEnabled: false }),
       tierPrices: Object.fromEntries(
         Object.entries(tp).filter(([, v]) => v !== "").map(([k, v]) => [k, Number(v)])
       ),
     };
     onChange(config);
+  }
+
+  function toggleLateFee(checked: boolean) {
+    if (checked && lateFeeVnd === "" && lateFeeGraceMinutes === "") {
+      // Sensible defaults so the toggle is immediately meaningful
+      setLateFeeEnabled(true);
+      setLateFeeVnd("500000");
+      setLateFeeGraceMinutes("30");
+      emit({ lateFeeEnabled: true, lateFeeVnd: "500000", lateFeeGraceMinutes: "30" });
+      return;
+    }
+    setLateFeeEnabled(checked);
+    emit({ lateFeeEnabled: checked });
   }
 
   const inputStyle = {
@@ -129,6 +150,43 @@ export function ChallengePricingEditor({ value, onChange, tiers = [] }: Props) {
                   onChange={(e) => { setAipPrice(e.target.value); emit({ aipPrice: e.target.value }); }}
                   placeholder="Số AIP cần trả"
                 />
+              </div>
+            )}
+          </div>
+
+          <div style={{ borderTop: "1px solid var(--border-subtle)", paddingTop: "var(--space-3)" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+              <input
+                type="checkbox" checked={lateFeeEnabled}
+                onChange={(e) => toggleLateFee(e.target.checked)}
+              />
+              <span style={{ fontSize: "var(--text-sm)", color: "var(--text-normal)", fontWeight: 600 }}>
+                Tính phí trễ hạn thanh toán
+              </span>
+            </label>
+            <p style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", margin: "4px 0 0 24px" }}>
+              Cộng thêm phí nếu member tạo lại đơn sau thời gian ân hạn.
+            </p>
+            {lateFeeEnabled && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)", marginTop: "var(--space-3)" }}>
+                <div>
+                  <label style={labelStyle}>Phí trễ hạn (đ)</label>
+                  <input
+                    type="number" min={0} style={inputStyle}
+                    value={lateFeeVnd}
+                    onChange={(e) => { setLateFeeVnd(e.target.value); emit({ lateFeeVnd: e.target.value }); }}
+                    placeholder="vd: 500000"
+                  />
+                </div>
+                <div>
+                  <label style={labelStyle}>Ân hạn (phút)</label>
+                  <input
+                    type="number" min={0} style={inputStyle}
+                    value={lateFeeGraceMinutes}
+                    onChange={(e) => { setLateFeeGraceMinutes(e.target.value); emit({ lateFeeGraceMinutes: e.target.value }); }}
+                    placeholder="vd: 30"
+                  />
+                </div>
               </div>
             )}
           </div>
