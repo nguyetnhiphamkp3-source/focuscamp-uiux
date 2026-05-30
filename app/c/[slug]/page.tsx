@@ -107,11 +107,6 @@ export default async function CommunityHomePage({
                   Khám phá các khóa học
                 </Link>
               )}
-              {community.description && (
-                <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", lineHeight: "var(--lh-relaxed)", margin: 0, paddingTop: "var(--space-2)", borderTop: "1px solid var(--border-subtle)" }}>
-                  {community.description}
-                </p>
-              )}
             </div>
           </section>
 

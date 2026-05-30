@@ -766,19 +766,29 @@ export async function renewChallengePaymentAction(input: {
   });
   if (!member) return { ok: false, reason: "not_found" };
 
-  // Get original price from the first payment attempt
+  // Get original price from the first payment attempt; fall back to challenge price if not found
   const originalPayment = await prisma.payment.findFirst({
     where: { refType: "challenge", refId: member.id },
     orderBy: { createdAt: "asc" },
     select: { amountVnd: true },
   });
-  if (!originalPayment) return { ok: false, reason: "no_original_payment" };
+
+  let basePriceVnd: number;
+  if (originalPayment) {
+    basePriceVnd = Number(originalPayment.amountVnd);
+  } else {
+    const challenge = await prisma.challenge.findUnique({
+      where: { id: input.challengeId },
+      select: { priceVnd: true },
+    });
+    basePriceVnd = challenge?.priceVnd ? Number(challenge.priceVnd) : 0;
+    if (!basePriceVnd) return { ok: false, reason: "no_original_payment" };
+  }
 
   // Opt-in per-challenge late fee — computeChallengeLateFee is the single source
   // of truth (same logic drives the pre-click display on the challenge page).
   const minutesSinceJoin = (Date.now() - member.joinedAt.getTime()) / 60000;
   const pricing = parsePricingConfig(member.challenge.pricingConfig);
-  const basePriceVnd = Number(originalPayment.amountVnd);
   const lateFeeVnd = computeChallengeLateFee(pricing, minutesSinceJoin);
   const newAmount = basePriceVnd + lateFeeVnd;
 

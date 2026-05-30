@@ -222,9 +222,11 @@ export function CheckinForm({
                         borderRadius: "var(--r-md)",
                         fontSize: "var(--text-sm)",
                         lineHeight: "var(--lh-relaxed)",
+                        whiteSpace: "pre-wrap",
                       }}
-                      dangerouslySetInnerHTML={{ __html: task.sopContent }}
-                    />
+                    >
+                      {task.sopContent}
+                    </div>
                   )}
                 </>
               )}
