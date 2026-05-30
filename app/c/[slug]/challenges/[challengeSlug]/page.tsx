@@ -269,7 +269,7 @@ export default async function ChallengeDetailPage({
       });
       const minutesSinceJoin = (Date.now() - myMembership.joinedAt.getTime()) / 60000;
       renewalInfo = {
-        originalAmountVnd: Number(originalPayment?.amountVnd ?? challenge.priceVnd ?? 0),
+        originalAmountVnd: Number(originalPayment?.amountVnd ?? parsePricingConfig(challenge.pricingConfig)?.guestVnd ?? challenge.priceVnd ?? 0),
         lateFeeVnd: computeChallengeLateFee(parsePricingConfig(challenge.pricingConfig), minutesSinceJoin),
       };
     }

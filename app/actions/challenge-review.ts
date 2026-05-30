@@ -777,11 +777,8 @@ export async function renewChallengePaymentAction(input: {
   if (originalPayment) {
     basePriceVnd = Number(originalPayment.amountVnd);
   } else {
-    const challenge = await prisma.challenge.findUnique({
-      where: { id: input.challengeId },
-      select: { priceVnd: true },
-    });
-    basePriceVnd = challenge?.priceVnd ? Number(challenge.priceVnd) : 0;
+    const pricingCfg = parsePricingConfig(member.challenge.pricingConfig);
+    basePriceVnd = pricingCfg?.guestVnd ?? 0;
     if (!basePriceVnd) return { ok: false, reason: "no_original_payment" };
   }
 
