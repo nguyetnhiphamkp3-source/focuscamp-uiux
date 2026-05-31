@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { joinCommunityAction, subscribeCommunityTierAction } from "@/app/actions/community";
 import type { ClassConfig } from "@/lib/community-config";
 import type { TierConfigItem } from "@/lib/services/subscription";
@@ -23,7 +22,6 @@ export function JoinButton({
   label?: string;
   variant?: "primary" | "secondary";
 }) {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [picked, setPicked] = useState<string>(currentClassKey ?? "");
   const [pickedTier, setPickedTier] = useState<string>("");
@@ -37,7 +35,7 @@ export function JoinButton({
     setErr(null);
     start(async () => {
       const res = await joinCommunityAction({ communityId, communitySlug });
-      if (res.ok) router.refresh();
+      if (res.ok) window.location.reload();
       else setErr(res.reason);
     });
   }
@@ -47,7 +45,7 @@ export function JoinButton({
     if (!picked) { setErr("Hãy chọn một class trước khi tham gia"); return; }
     start(async () => {
       const res = await joinCommunityAction({ communityId, communitySlug, className: picked });
-      if (res.ok) { setOpen(false); router.refresh(); }
+      if (res.ok) window.location.reload();
       else setErr(res.reason);
     });
   }
