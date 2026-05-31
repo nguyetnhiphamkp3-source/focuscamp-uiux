@@ -3,7 +3,8 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { resubmitCheckinAction } from "@/app/actions/challenge-resubmit";
-import { ImageUploadField } from "@/components/shared/image-upload-field";
+import { MultiImageUploadField } from "@/components/shared/multi-image-upload-field";
+import { MAX_CHECKIN_IMAGES } from "@/lib/checkin-images";
 
 export function ResubmitForm({
   checkinId,
@@ -17,7 +18,7 @@ export function ResubmitForm({
   checkinId: string;
   communitySlug: string;
   challengeSlug: string;
-  initial: { content: string; linkUrl: string | null; imageUrl: string | null };
+  initial: { content: string; linkUrl: string | null; imageUrls: string[] };
   evidenceType: string;
   rejectCount: number;
   maxRejects?: number;
@@ -26,21 +27,21 @@ export function ResubmitForm({
   const [open, setOpen] = useState(false);
   const [content, setContent] = useState(initial.content);
   const [linkUrl, setLinkUrl] = useState(initial.linkUrl ?? "");
-  const [imageUrl, setImageUrl] = useState(initial.imageUrl ?? "");
+  const [imageUrls, setImageUrls] = useState<string[]>(initial.imageUrls ?? []);
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
 
   const atCap = rejectCount >= maxRejects;
   const trimmedLen = content.trim().length;
   const hasText = trimmedLen >= 5;
-  const hasImage = imageUrl.trim().length > 0;
+  const hasImage = imageUrls.length > 0;
   const needsLink = evidenceType === "LINK";
   const needsImage = evidenceType === "IMAGE";
   const allowsImage = evidenceType === "IMAGE" || evidenceType === "TEXT_IMAGE";
   const isTextImage = evidenceType === "TEXT_IMAGE";
   const canSubmit =
     !pending &&
-    content.length <= 1000 &&
+    content.length <= 2000 &&
     (isTextImage
       ? (trimmedLen === 0 || hasText) && (hasText || hasImage)
       : hasText) &&
@@ -54,7 +55,7 @@ export function ResubmitForm({
         checkinId,
         content,
         linkUrl: linkUrl.trim() || undefined,
-        imageUrl: imageUrl.trim() || undefined,
+        imageUrls: imageUrls.length ? imageUrls : undefined,
         communitySlug,
         challengeSlug,
       });
@@ -132,7 +133,7 @@ export function ResubmitForm({
         value={content}
         onChange={(e) => setContent(e.target.value)}
         rows={3}
-        maxLength={1000}
+        maxLength={2000}
         disabled={pending}
         style={inputStyle}
         placeholder="Nội dung check-in…"
@@ -155,11 +156,11 @@ export function ResubmitForm({
         />
         )}
         {allowsImage && (
-          <ImageUploadField
-            value={imageUrl || null}
-            onChange={(url) => setImageUrl(url ?? "")}
+          <MultiImageUploadField
+            values={imageUrls}
+            onChange={setImageUrls}
             context="checkin"
-            shape="banner"
+            max={MAX_CHECKIN_IMAGES}
             disabled={pending}
             maxSizeNote="Tối đa 10MB"
           />

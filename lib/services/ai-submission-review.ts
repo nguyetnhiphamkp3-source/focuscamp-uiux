@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { buildModel } from "@/lib/ai-model";
 import { getAgentProfile, getAgentReviewModelConfig } from "@/lib/services/agent";
 import { reviewSubmission } from "@/lib/services/challenge-member";
+import { checkinImages } from "@/lib/checkin-images";
 import { rateLimit } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 
@@ -87,14 +88,19 @@ export async function runAIReview({ checkinId }: { checkinId: string }) {
   const agentProfile = await getAgentProfile(challenge.communityId);
 
   // Build prompt
-  const useVision = (checkin.task.evidenceType === "IMAGE" || checkin.task.evidenceType === "TEXT_IMAGE") && checkin.imageUrl;
+  const images = checkinImages(checkin);
+  const useVision =
+    (checkin.task.evidenceType === "IMAGE" || checkin.task.evidenceType === "TEXT_IMAGE") &&
+    images.length > 0;
   const systemPrompt = buildReviewPrompt(checkin.task.aiReviewGuidelines, checkin.task.aiReviewRedFlags);
 
   const userContent: Array<{ type: "text"; text: string } | { type: "image"; image: URL }> = [
     { type: "text", text: `Task: ${checkin.task.title}\n\nSubmission:\n${checkin.content}${checkin.linkUrl ? `\nLink: ${checkin.linkUrl}` : ""}` },
   ];
-  if (useVision && checkin.imageUrl) {
-    userContent.push({ type: "image", image: new URL(checkin.imageUrl) });
+  if (useVision) {
+    for (const img of images) {
+      userContent.push({ type: "image", image: new URL(img) });
+    }
   }
 
   try {

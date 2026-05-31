@@ -35,6 +35,7 @@ import { SopContent } from "@/components/community/sop-content";
 import { AgentReviewCard } from "@/components/community/agent-review-card";
 import type { AIReviewData } from "@/lib/ai-review-data";
 import { listAIProviders } from "@/lib/services/ai-provider";
+import { checkinImages } from "@/lib/checkin-images";
 
 export const dynamic = "force-dynamic";
 
@@ -168,7 +169,7 @@ export default async function ChallengeDetailPage({
               id: r.id,
               content: r.content,
               linkUrl: r.linkUrl,
-              imageUrl: r.imageUrl,
+              imageUrls: checkinImages(r),
               status: r.status,
               reviewNote: r.reviewNote,
               reviewedAt: r.reviewedAt,
@@ -195,7 +196,7 @@ export default async function ChallengeDetailPage({
           // asc so the latest check-in per dayNumber wins the checkinByDay Map (last-write-wins);
           // keeps isPending/isRejected (and the gift gate) deterministic when a day has >1 check-in.
           orderBy: { createdAt: "asc" },
-          select: { id: true, taskId: true, dayNumber: true, createdAt: true, updatedAt: true, content: true, linkUrl: true, imageUrl: true, status: true, reviewedAt: true, reviewNote: true, rejectCount: true, aiReviewData: true },
+          select: { id: true, taskId: true, dayNumber: true, createdAt: true, updatedAt: true, content: true, linkUrl: true, imageUrl: true, imageUrls: true, status: true, reviewedAt: true, reviewNote: true, rejectCount: true, aiReviewData: true },
         })
       : Promise.resolve([]),
 
@@ -1093,9 +1094,9 @@ export default async function ChallengeDetailPage({
                                     {checkinData.linkUrl}
                                   </a>
                                 )}
-                                {checkinData.imageUrl && (
-                                  <img src={checkinData.imageUrl} alt="Submission" className="ch-submission-image" style={{ marginTop: "var(--space-2)" }} />
-                                )}
+                                {checkinImages(checkinData).map((img, i) => (
+                                  <img key={img} src={img} alt={`Submission ${i + 1}`} className="ch-submission-image" style={{ marginTop: "var(--space-2)" }} />
+                                ))}
                               </div>
                             )}
                             {/* Submission detail for rejected/pending/admin */}
@@ -1132,7 +1133,7 @@ export default async function ChallengeDetailPage({
                                     initial={{
                                       content: checkinData.content,
                                       linkUrl: checkinData.linkUrl,
-                                      imageUrl: checkinData.imageUrl,
+                                      imageUrls: checkinImages(checkinData),
                                     }}
                                     evidenceType={t.evidenceType}
                                     rejectCount={checkinData.rejectCount}

@@ -24,3 +24,19 @@ export async function deleteReplacedMediaUrl(
   if (!oldUrl || oldUrl === newUrl) return;
   await deleteStoredMediaUrl(oldUrl, context);
 }
+
+/**
+ * Delete any media URLs present in `oldUrls` but absent from `newUrls`.
+ * Used when an edit replaces a multi-image set (e.g. checkin resubmit).
+ */
+export async function deleteRemovedMediaUrls(
+  oldUrls: string[] | null | undefined,
+  newUrls: string[] | null | undefined,
+  context: Record<string, unknown> = {},
+): Promise<void> {
+  if (!oldUrls?.length) return;
+  const keep = new Set(newUrls ?? []);
+  for (const url of oldUrls) {
+    if (!keep.has(url)) await deleteStoredMediaUrl(url, context);
+  }
+}

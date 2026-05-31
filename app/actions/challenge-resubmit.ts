@@ -14,7 +14,7 @@ export async function resubmitCheckinAction(input: {
   checkinId: string;
   content: string;
   linkUrl?: string;
-  imageUrl?: string;
+  imageUrls?: string[];
   communitySlug: string;
   challengeSlug: string;
 }): Promise<ActionResult> {
@@ -24,7 +24,7 @@ export async function resubmitCheckinAction(input: {
     checkinId: input.checkinId,
     content: input.content,
     linkUrl: input.linkUrl,
-    imageUrl: input.imageUrl,
+    imageUrls: input.imageUrls?.length ? input.imageUrls : undefined,
   });
   if (!parsed.success) {
     return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
@@ -35,7 +35,7 @@ export async function resubmitCheckinAction(input: {
       checkinId: parsed.data.checkinId,
       content: parsed.data.content,
       linkUrl: parsed.data.linkUrl || undefined,
-      imageUrl: parsed.data.imageUrl || undefined,
+      imageUrls: parsed.data.imageUrls,
     });
     revalidatePath(`/c/${input.communitySlug}/challenges/${input.challengeSlug}`);
     after(() => triggerAIReviewIfEnabled(parsed.data.checkinId));

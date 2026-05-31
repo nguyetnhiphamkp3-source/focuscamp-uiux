@@ -170,9 +170,9 @@ export async function submitCheckin(params: {
   taskId?: string;
   dayNumber?: number;
   linkUrl?: string;
-  imageUrl?: string;
+  imageUrls?: string[];
 }) {
-  const { userId, challengeId, content, taskId, dayNumber, linkUrl, imageUrl } =
+  const { userId, challengeId, content, taskId, dayNumber, linkUrl, imageUrls } =
     params;
   const normalizedContent = content.trim();
 
@@ -202,7 +202,7 @@ export async function submitCheckin(params: {
   const hasPartialText =
     normalizedContent.length > 0 && normalizedContent.length < 5;
   const hasLink = !!linkUrl?.trim();
-  const hasImage = !!imageUrl?.trim();
+  const hasImage = (imageUrls?.length ?? 0) > 0;
 
   if (hasPartialText) throw new Error("Nội dung tối thiểu 5 ký tự");
   if (evidenceType === "TEXT" && !hasText) {
@@ -254,7 +254,7 @@ export async function submitCheckin(params: {
         taskId: taskId ?? null,
         dayNumber: dayNumber ?? null,
         linkUrl: linkUrl ?? null,
-        imageUrl: imageUrl ?? null,
+        imageUrls: imageUrls ?? [],
         status: "PENDING",
       },
     });

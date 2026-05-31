@@ -9,7 +9,8 @@ import { createNotification } from "./notification";
 import { awardXp } from "./xp";
 import { assertCommunityCanWrite } from "./community";
 import { canCommunity, effectiveCommunityRole } from "@/lib/community-permissions";
-import { deleteReplacedMediaUrl } from "@/lib/media-cleanup";
+import { deleteReplacedMediaUrl, deleteRemovedMediaUrls } from "@/lib/media-cleanup";
+import { checkinImages } from "@/lib/checkin-images";
 
 export type SubmissionStatus = "PENDING" | "APPROVED" | "REJECTED";
 
@@ -479,7 +480,7 @@ export async function resubmitCheckin(input: {
   checkinId: string;
   content: string;
   linkUrl?: string;
-  imageUrl?: string;
+  imageUrls?: string[];
 }) {
   const checkin = await prisma.checkin.findUnique({
     where: { id: input.checkinId },
@@ -507,7 +508,7 @@ export async function resubmitCheckin(input: {
   const hasPartialText =
     normalizedContent.length > 0 && normalizedContent.length < 5;
   const hasLink = !!input.linkUrl?.trim();
-  const hasImage = !!input.imageUrl?.trim();
+  const hasImage = (input.imageUrls?.length ?? 0) > 0;
 
   if (hasPartialText) throw new Error("Nội dung tối thiểu 5 ký tự");
   if (evidenceType === "TEXT" && !hasText) {
@@ -528,16 +529,19 @@ export async function resubmitCheckin(input: {
     data: {
       content: normalizedContent || "Đã upload ảnh bằng chứng",
       linkUrl: input.linkUrl?.trim() || null,
-      imageUrl: input.imageUrl?.trim() || null,
+      imageUrls: input.imageUrls ?? [],
+      // Migrate legacy single column off this row so a zero-image resubmit
+      // can't resurrect a stale image via the checkinImages() fallback.
+      imageUrl: null,
       status: "PENDING",
       reviewedById: null,
       reviewedAt: null,
       reviewNote: null,
     },
   });
-  await deleteReplacedMediaUrl(checkin.imageUrl, updated.imageUrl, {
+  await deleteRemovedMediaUrls(checkinImages(checkin), updated.imageUrls, {
     checkinId: input.checkinId,
-    field: "imageUrl",
+    field: "imageUrls",
   });
   logger.info(
     { checkinId: input.checkinId, by: input.userId, rejectCount: checkin.rejectCount },
