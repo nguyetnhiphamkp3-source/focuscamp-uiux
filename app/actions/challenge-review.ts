@@ -778,7 +778,19 @@ export async function renewChallengePaymentAction(input: {
     basePriceVnd = Number(originalPayment.amountVnd);
   } else {
     const pricingCfg = parsePricingConfig(member.challenge.pricingConfig);
-    basePriceVnd = pricingCfg?.guestVnd ?? 0;
+    if (!pricingCfg) return { ok: false, reason: "no_original_payment" };
+    const membership = await prisma.membership.findUnique({
+      where: { userId_communityId: { userId: s.user.id, communityId: member.challenge.community.id } },
+      select: { aip: true },
+    });
+    const { tierKey } = membership
+      ? await getUserTier({ userId: s.user.id, communityId: member.challenge.community.id })
+      : { tierKey: null };
+    basePriceVnd = calculateEffectivePrice(pricingCfg, {
+      isMember: !!membership,
+      tierKey,
+      aipBalance: membership?.aip ?? 0,
+    }).vnd;
     if (!basePriceVnd) return { ok: false, reason: "no_original_payment" };
   }
 
