@@ -331,26 +331,44 @@ export default async function ChallengeDetailPage({
   const personalStart = effStart?.getTime() ?? 0;
 
   const tasks = challenge.tasks;
+
+  // Cumulative hours from the member's personal start until task[idx] should open.
+  const cumulativeUnlockHours = (idx: number): number => {
+    let hours = 0;
+    for (let i = 0; i < idx; i++) hours += tasks[i].unlockAfterHours ?? defaultInterval;
+    return hours;
+  };
+
+  // Time gate (DAILY / DAILY_SEQUENTIAL): has the scheduled unlock moment passed?
+  const isTimeGateOpen = (idx: number): boolean => {
+    const cumulativeHours = cumulativeUnlockHours(idx);
+    // For whole-day intervals, compare against midnight-normalized dayNow
+    // so unlock is consistent with the displayed day number.
+    const unlockAfterDays = cumulativeHours / 24;
+    if (Number.isInteger(unlockAfterDays)) {
+      return dayNow > unlockAfterDays;
+    }
+    // Non-whole-day intervals: fall back to raw timestamp comparison
+    return Date.now() >= personalStart + cumulativeHours * 60 * 60 * 1000;
+  };
+
+  // Wall-clock moment (ms) task[idx]'s time gate opens — mirrors isTimeGateOpen
+  // so the displayed time matches the actual unlock behavior exactly.
+  const taskUnlockMomentMs = (idx: number): number => {
+    const cumulativeHours = cumulativeUnlockHours(idx);
+    const unlockAfterDays = cumulativeHours / 24;
+    if (Number.isInteger(unlockAfterDays) && effStart) {
+      // Whole-day intervals open at local midnight of (start day + N days).
+      const midnightStart = new Date(effStart);
+      midnightStart.setHours(0, 0, 0, 0);
+      return midnightStart.getTime() + unlockAfterDays * 24 * 60 * 60 * 1000;
+    }
+    return personalStart + cumulativeHours * 60 * 60 * 1000;
+  };
+
   function isTaskUnlocked(task: { dayNumber: number; unlockAfterHours: number | null }, taskIndex: number): boolean {
     if (!effStart) return false;
     if (myMembership?.completedAt) return true;
-
-    // Shared helper: time-based gate (same math as DAILY mode)
-    const isTimeGateOpen = (idx: number): boolean => {
-      let cumulativeHours = 0;
-      for (let i = 0; i < idx; i++) {
-        cumulativeHours += tasks[i].unlockAfterHours ?? defaultInterval;
-      }
-      // For whole-day intervals, compare against midnight-normalized dayNow
-      // so unlock is consistent with the displayed day number.
-      const unlockAfterDays = cumulativeHours / 24;
-      if (Number.isInteger(unlockAfterDays)) {
-        return dayNow > unlockAfterDays;
-      }
-      // Non-whole-day intervals: fall back to raw timestamp comparison
-      const unlockTime = personalStart + cumulativeHours * 60 * 60 * 1000;
-      return Date.now() >= unlockTime;
-    };
 
     switch (unlockMode) {
       case "ALL":
@@ -377,6 +395,33 @@ export default async function ChallengeDetailPage({
         return true;
     }
   }
+
+  // Member-facing "mở lúc HH:mm DD/MM" for a task's scheduled unlock.
+  const formatUnlockAt = (idx: number): string => {
+    const ms = taskUnlockMomentMs(idx);
+    const time = new Date(ms).toLocaleTimeString("vi-VN", {
+      timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit", hour12: false,
+    });
+    const date = new Date(ms).toLocaleDateString("vi-VN", {
+      timeZone: "Asia/Ho_Chi_Minh", day: "2-digit", month: "2-digit",
+    });
+    return `${time} ${date}`;
+  };
+
+  // Reason a locked task is still locked, shown to the member.
+  function lockReason(taskIndex: number): string {
+    if (unlockMode === "SEQUENTIAL") return "hoàn thành task trước để tiếp tục";
+    if (unlockMode === "MANUAL") return "chờ admin mở khóa";
+    // Time-based modes: DAILY and DAILY_SEQUENTIAL.
+    if (!effStart) return "chưa đến thời gian";
+    if (unlockMode === "DAILY_SEQUENTIAL") {
+      const prevDone = taskIndex === 0 || doneDayNumbers.has(tasks[taskIndex - 1].dayNumber);
+      // Time already reached → the remaining blocker is the previous task.
+      if (isTimeGateOpen(taskIndex) && !prevDone) return "hoàn thành task trước để tiếp tục";
+    }
+    return `mở lúc ${formatUnlockAt(taskIndex)}`;
+  }
+
   const progressPct =
     challenge.requiredDays > 0
       ? Math.round((dayNow / challenge.requiredDays) * 100)
@@ -805,7 +850,7 @@ export default async function ChallengeDetailPage({
                         <div className="ch-task-info">
                           <div className="ch-task-label">Day {t.dayNumber}{t.label ? ` · ${t.label}` : ""}</div>
                           <div className="ch-task-title" style={{ color: "var(--text-muted)", fontStyle: "italic" }}>
-                            🔒 Chưa mở khóa{unlockMode === "SEQUENTIAL" ? " — hoàn thành task trước để tiếp tục" : unlockMode === "MANUAL" ? " — chờ admin mở khóa" : unlockMode === "DAILY_SEQUENTIAL" ? " — chờ đến lịch hoặc hoàn thành task trước" : " — chưa đến thời gian"}
+                            🔒 Chưa mở khóa — {lockReason(taskIndex)}
                           </div>
                         </div>
                       </div>
