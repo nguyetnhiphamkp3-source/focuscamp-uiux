@@ -1,10 +1,5 @@
-/**
- * "Nâng cấp" prompt shown when a user hits a tier gate.
- * Purely UI — does not handle payment (that's the SePay flow).
- *
- * Future: link to a /c/<slug>/upgrade page with pricing cards + payment.
- * For now shows the message + required tier.
- */
+import Link from "next/link";
+
 export function UpgradePrompt({
   message,
   requiredTier,
@@ -54,26 +49,32 @@ export function UpgradePrompt({
           gap: 4,
           alignItems: "center",
           padding: "6px 14px",
-          background: "var(--brand-green)",
-          color: "#fff",
+          background: "var(--bg-elevated)",
+          color: "var(--text-muted)",
           borderRadius: 999,
           fontSize: "var(--text-sm)",
           fontWeight: 600,
+          marginBottom: 16,
         }}
       >
         Yêu cầu tier:{" "}
-        <strong style={{ textTransform: "uppercase" }}>{requiredTier}</strong>
+        <strong style={{ textTransform: "uppercase", color: "var(--brand-green)" }}>{requiredTier}</strong>
       </div>
-      <p
+      <Link
+        href={`/c/${communitySlug}/upgrade`}
         style={{
-          fontSize: "var(--text-xs)",
-          color: "var(--text-muted)",
-          marginTop: 14,
+          display: "inline-block",
+          padding: "10px 24px",
+          background: "var(--brand-green)",
+          color: "#fff",
+          borderRadius: 10,
+          fontSize: "var(--text-sm)",
+          fontWeight: 700,
+          textDecoration: "none",
         }}
       >
-        Liên hệ admin cộng đồng hoặc chờ tính năng thanh toán tự động (đang
-        hoàn thiện).
-      </p>
+        Nâng cấp ngay →
+      </Link>
     </div>
   );
 }
