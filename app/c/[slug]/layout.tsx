@@ -224,7 +224,7 @@ export default async function CommunityLayout({
                 </FeatureLink>
               )}
 
-              {(visible("marketplace") || showAgentFeature || showUpgradeLink) && (
+              {(visible("marketplace") || showAgentFeature) && (
                 <div className="features-section-title">Khác</div>
               )}
               {visible("marketplace") && (
@@ -237,12 +237,6 @@ export default async function CommunityLayout({
                 <FeatureLink href={`/c/${slug}/agent`}>
                   <span className="feature-icon"><svg viewBox="0 0 24 24"><path d="M12 2C9.24 2 7 4.24 7 7c0 2.85 2.92 7.21 4.5 9.5.24.35.76.35 1 0C14.08 14.21 17 9.85 17 7c0-2.76-2.24-5-5-5zm0 7c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm0 9.15L6 15l-1.45 1.45C2.85 17.15 1 18.4 1 20.5 1 21.88 2.12 23 3.5 23h17c1.38 0 2.5-1.12 2.5-2.5 0-2.1-1.85-3.35-3.55-4.05L18 15l-6 3.15z"/></svg></span>
                   <span className="feature-name">AI Agent</span>
-                </FeatureLink>
-              )}
-              {showUpgradeLink && (
-                <FeatureLink href={`/c/${slug}/upgrade`}>
-                  <span className="feature-icon"><svg viewBox="0 0 24 24"><path d="M4 16v2h16v-2H4zm0-6l8-8 8 8h-5v4H9v-4H4z"/></svg></span>
-                  <span className="feature-name">Nâng cấp</span>
                 </FeatureLink>
               )}
               {(permissions.canManageOrders || permissions.canModerateContent) && !previewAsMember && (
@@ -271,6 +265,38 @@ export default async function CommunityLayout({
             </div>
           </aside>
         </div>{/* end left-section-top */}
+
+        {/* Upgrade banner — Discord Nitro pattern */}
+        {showUpgradeLink && (
+          <a
+            href={`/c/${slug}/upgrade`}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              margin: "0 8px 8px",
+              padding: "10px 12px",
+              background: "linear-gradient(135deg, #1B9E75 0%, #0d7a5a 100%)",
+              borderRadius: 8,
+              textDecoration: "none",
+              cursor: "pointer",
+              flexShrink: 0,
+            }}
+          >
+            <span style={{ fontSize: 18, lineHeight: 1 }}>⭐</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "#fff", lineHeight: 1.2 }}>
+                Nâng cấp gói
+              </div>
+              <div style={{ fontSize: "var(--text-xs)", color: "rgba(255,255,255,0.75)", marginTop: 2 }}>
+                Mở khoá tính năng premium
+              </div>
+            </div>
+            <svg viewBox="0 0 24 24" style={{ width: 16, height: 16, fill: "rgba(255,255,255,0.7)", flexShrink: 0 }}>
+              <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+            </svg>
+          </a>
+        )}
 
         {/* User Panel */}
         <UserPanel
