@@ -21,7 +21,7 @@ export async function getChallengeLeaderboard(
   });
   const memberUserIds = members.map((m) => m.userId);
   const checkins = await prisma.checkin.findMany({
-    where: { challengeId, userId: { in: memberUserIds } },
+    where: { challengeId, userId: { in: memberUserIds }, status: "APPROVED" },
     select: { userId: true, dayNumber: true, createdAt: true },
   });
   const byUser = new Map<string, number[]>();

@@ -57,12 +57,7 @@ export async function checkinAction(input: {
     if (res.checkinId) {
       after(() => triggerAIReviewIfEnabled(res.checkinId));
     }
-    if ("completed" in res && res.completed) {
-      return {
-        ok: true,
-        redirectTo: `/c/${input.communitySlug}/challenges/${input.challengeSlug}/completed`,
-      };
-    }
+    // No auto-complete on submit — completion is granted on approval (reviewSubmission).
     return res;
   } catch (err) {
     logError(err, { userId: s.user.id, challengeId: input.challengeId });

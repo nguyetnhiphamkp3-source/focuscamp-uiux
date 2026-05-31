@@ -232,32 +232,18 @@ export async function submitCheckin(params: {
     return { ok: false, reason: "already_checked_in_today" };
   }
 
-  // Calculate if this check-in completes the challenge
   const challenge = await prisma.challenge.findUnique({
     where: { id: challengeId },
-    select: { requiredDays: true, autoStartAfterHours: true, aiReviewEnabled: true },
+    select: { autoStartAfterHours: true },
   });
   if (!challenge) throw new Error("challenge_not_found");
 
   const effStart = effectivePersonalStartsAt(member, challenge);
   if (!effStart) throw new Error("challenge_not_started");
 
-  // "Completed" means the user has actually checked in for `requiredDays`
-  // distinct days — not just wall-clock-expired. Counting distinct dayNumbers
-  // prevents marking COMPLETED when a late checkin happens past the deadline.
-  const existingDayCheckins = await prisma.checkin.findMany({
-    where: { userId, challengeId, dayNumber: { not: null } },
-    select: { dayNumber: true },
-    distinct: ["dayNumber"],
-  });
-  const existingDayCount = existingDayCheckins.length;
-  const thisAddsNewDay =
-    dayNumber != null &&
-    !existingDayCheckins.some((c) => c.dayNumber === dayNumber);
-  const totalCheckedDays = existingDayCount + (thisAddsNewDay ? 1 : 0);
-  const isFinalDay = totalCheckedDays >= challenge.requiredDays;
-  const shouldAIReview = challenge.aiReviewEnabled && !!task?.aiReviewGuidelines?.trim();
-
+  // Every submission lands as PENDING — completion is granted only when a reviewer
+  // (AI or admin) approves it (see reviewSubmission in challenge-member.ts). Applies
+  // to all unlock modes; nothing auto-completes on submit.
   let checkinId = "";
   await prisma.$transaction(async (tx) => {
     const created = await tx.checkin.create({
@@ -269,7 +255,7 @@ export async function submitCheckin(params: {
         dayNumber: dayNumber ?? null,
         linkUrl: linkUrl ?? null,
         imageUrl: imageUrl ?? null,
-        status: shouldAIReview ? "PENDING" : "APPROVED",
+        status: "PENDING",
       },
     });
     checkinId = created.id;
@@ -278,16 +264,13 @@ export async function submitCheckin(params: {
       data: {
         lastCheckinAt: new Date(),
         consecutiveMissed: 0,
-        ...(isFinalDay
-          ? { status: "COMPLETED", completedAt: new Date() }
-          : {}),
       },
     });
   });
 
   logger.info(
-    { userId, challengeId, completed: isFinalDay },
-    "[challenge] checkin submitted"
+    { userId, challengeId },
+    "[challenge] checkin submitted (pending review)"
   );
 
   // Bump streak first, then award XP (multiplier uses the freshly bumped streak)
@@ -311,5 +294,5 @@ export async function submitCheckin(params: {
     }
   }
 
-  return { ok: true, completed: isFinalDay, checkinId };
+  return { ok: true, checkinId };
 }

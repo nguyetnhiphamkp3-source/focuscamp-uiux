@@ -234,10 +234,17 @@ export default async function ChallengeDetailPage({
       : Promise.resolve([]),
   ]);
 
-  // Only count non-rejected checkins as done
+  // Only count non-rejected checkins as done (PENDING+APPROVED = submitted)
   const doneDayNumbers = new Set(
     myCheckins
       .filter((c) => c.status !== "REJECTED")
+      .map((c) => c.dayNumber ?? null)
+      .filter((n): n is number => n !== null)
+  );
+  // Only APPROVED checkins count as truly completed (for SEQUENTIAL-gate + progress).
+  const approvedDayNumbers = new Set(
+    myCheckins
+      .filter((c) => c.status === "APPROVED")
       .map((c) => c.dayNumber ?? null)
       .filter((n): n is number => n !== null)
   );
@@ -378,7 +385,8 @@ export default async function ChallengeDetailPage({
       case "SEQUENTIAL": {
         if (taskIndex === 0) return true;
         const prevTask = tasks[taskIndex - 1];
-        return doneDayNumbers.has(prevTask.dayNumber);
+        // Prev task must be APPROVED (not just submitted) to gate next in sequential mode.
+        return approvedDayNumbers.has(prevTask.dayNumber);
       }
       case "DAILY_SEQUENTIAL": {
         // Both gates must pass: scheduled time reached AND previous task completed.
@@ -410,7 +418,12 @@ export default async function ChallengeDetailPage({
 
   // Reason a locked task is still locked, shown to the member.
   function lockReason(taskIndex: number): string {
-    if (unlockMode === "SEQUENTIAL") return "hoàn thành task trước để tiếp tục";
+    if (unlockMode === "SEQUENTIAL") {
+      if (taskIndex > 0 && checkinByDay.get(tasks[taskIndex - 1].dayNumber)?.status === "PENDING") {
+        return "chờ duyệt task trước để tiếp tục";
+      }
+      return "hoàn thành task trước để tiếp tục";
+    }
     if (unlockMode === "MANUAL") return "chờ admin mở khóa";
     // Time-based modes: DAILY and DAILY_SEQUENTIAL.
     if (!effStart) return "chưa đến thời gian";

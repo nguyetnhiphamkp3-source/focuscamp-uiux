@@ -249,6 +249,35 @@ export async function listChallengeSubmissions(input: {
 }
 
 /**
+ * Recompute a member's COMPLETED status from their APPROVED distinct-day count.
+ * Marks COMPLETED when approved days >= requiredDays; revokes back to ACTIVE if a
+ * rejection dropped them below. Idempotent — safe to call after any review decision.
+ */
+async function recomputeMemberCompletion(userId: string, challengeId: string) {
+  const challengeRow = await prisma.challenge.findUnique({
+    where: { id: challengeId },
+    select: { requiredDays: true },
+  });
+  if (!challengeRow) return;
+  const approvedDays = await prisma.checkin.findMany({
+    where: { userId, challengeId, dayNumber: { not: null }, status: "APPROVED" },
+    select: { dayNumber: true },
+    distinct: ["dayNumber"],
+  });
+  if (approvedDays.length >= challengeRow.requiredDays) {
+    await prisma.challengeMember.updateMany({
+      where: { challengeId, userId, completedAt: null },
+      data: { status: "COMPLETED", completedAt: new Date() },
+    });
+  } else {
+    await prisma.challengeMember.updateMany({
+      where: { challengeId, userId, status: "COMPLETED" },
+      data: { status: "ACTIVE", completedAt: null },
+    });
+  }
+}
+
+/**
  * Review a submission — approve or reject. Admin/owner only.
  * On reject, a non-empty note is required (explain why so user can resubmit).
  */
@@ -290,6 +319,9 @@ export async function reviewSubmission(input: {
     },
     "[challenge] submission reviewed"
   );
+
+  // Completion is driven by APPROVED count — recompute after every review decision.
+  await recomputeMemberCompletion(checkin.userId, checkin.challengeId);
 
   // Notify the submitter
   const ctx = await prisma.challenge.findUnique({
@@ -375,6 +407,12 @@ export async function approveAllPending(input: {
   challengeId: string;
 }) {
   await assertChallengeReviewer(input.userId, input.challengeId);
+  // Capture affected submitters before flipping status so completion can be recomputed.
+  const pendingUsers = await prisma.checkin.findMany({
+    where: { challengeId: input.challengeId, status: "PENDING" },
+    select: { userId: true },
+    distinct: ["userId"],
+  });
   const res = await prisma.checkin.updateMany({
     where: { challengeId: input.challengeId, status: "PENDING" },
     data: {
@@ -383,6 +421,9 @@ export async function approveAllPending(input: {
       reviewedAt: new Date(),
     },
   });
+  for (const u of pendingUsers) {
+    await recomputeMemberCompletion(u.userId, input.challengeId);
+  }
   logger.info(
     { challengeId: input.challengeId, count: res.count, by: input.userId },
     "[challenge] bulk approve pending"
