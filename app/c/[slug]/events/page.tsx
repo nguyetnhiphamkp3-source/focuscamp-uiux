@@ -54,7 +54,12 @@ export default async function EventsListPage({
   });
   const canCreateEvent = canCommunity(role, "manage_events");
 
-  const result = await listEvents({ communityId: community.id, scope: activeTab, page: currentPage });
+  const result = await listEvents({
+    communityId: community.id,
+    viewerUserId: session?.user?.id,
+    scope: activeTab,
+    page: currentPage,
+  });
   const { events, totalPages } = result;
 
   return (
@@ -106,6 +111,7 @@ export default async function EventsListPage({
                   const startsAt = new Date(e.startsAt);
                   const full = e._count.bookings >= e.capacity;
                   const isPast = activeTab === "past";
+                  const myBooking = Array.isArray(e.bookings) ? e.bookings[0] : null;
                   return (
                     <div
                       key={e.id}
@@ -251,6 +257,7 @@ export default async function EventsListPage({
                             isFree={free}
                             priceVnd={e.priceVnd ?? 0}
                             full={full}
+                            bookingStatus={myBooking?.status}
                           />
                         )}
                       </div>
