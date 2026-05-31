@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { fmtDuration, ytThumb } from "@/lib/brand";
+import { Play } from "lucide-react";
 import { EditLessonButton } from "@/components/community/edit-lesson-button";
 import { getEffectiveOwnership } from "@/lib/preview-mode";
 import { communityPermissionFlags, effectiveCommunityRole } from "@/lib/community-permissions";
@@ -232,9 +233,7 @@ export default async function CoursePlaylistSidebar({
                         justifyContent: "center",
                       }}
                     >
-                      <svg width="12" height="14" viewBox="0 0 12 14" fill="var(--text-heading)" style={{ marginLeft: 1 }}>
-                        <path d="M0 0v14l12-7z" />
-                      </svg>
+                      <Play size={12} style={{ color: "var(--text-heading)", marginLeft: 1 }} fill="currentColor" />
                     </div>
                   </div>
                 )}

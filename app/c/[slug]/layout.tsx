@@ -21,6 +21,11 @@ import { getTiersConfig } from "@/lib/services/subscription";
 import { getPlanStatus } from "@/lib/platform-plans";
 import { PlanStatusBanner } from "@/components/community/plan-status-banner";
 import { communityPermissionFlags, effectiveCommunityRole } from "@/lib/community-permissions";
+import {
+  MessageSquare, Trophy, Zap, HelpCircle, BookOpen, Star,
+  Calendar, BarChart2, ShoppingCart, MapPin, Flag, FileText,
+  Users, Bot,
+} from "lucide-react";
 
 import { PREVIEW_MEMBER_COOKIE } from "@/lib/preview-mode";
 
@@ -145,7 +150,7 @@ export default async function CommunityLayout({
               )}
               {visible("feed") && (
                 <FeatureLink href={`/c/${slug}/feed`}>
-                  <span className="feature-icon"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg></span>
+                  <span className="feature-icon"><MessageSquare size={18} /></span>
                   <span className="feature-name">Bảng tin</span>
                   {showFeatureBadges && (
                     <FeatureUnreadBadge
@@ -158,7 +163,7 @@ export default async function CommunityLayout({
               )}
               {visible("cot") && (
                 <FeatureLink href={`/c/${slug}/cot`}>
-                  <span className="feature-icon"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></span>
+                  <span className="feature-icon"><Trophy size={18} /></span>
                   <span className="feature-name">CỐT</span>
                   {showFeatureBadges && (
                     <FeatureUnreadBadge
@@ -171,7 +176,7 @@ export default async function CommunityLayout({
               )}
               {visible("signals") && (
                 <FeatureLink href={`/c/${slug}/signals`}>
-                  <span className="feature-icon"><svg viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l3-8z"/></svg></span>
+                  <span className="feature-icon"><Zap size={18} /></span>
                   <span className="feature-name">Tín hiệu</span>
                   {showFeatureBadges && (
                     <FeatureUnreadBadge
@@ -184,7 +189,7 @@ export default async function CommunityLayout({
               )}
               {visible("qa") && (
                 <FeatureLink href={`/c/${slug}/qa`}>
-                  <span className="feature-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg></span>
+                  <span className="feature-icon"><HelpCircle size={18} /></span>
                   <span className="feature-name">Hỏi đáp</span>
                   {showFeatureBadges && (
                     <FeatureUnreadBadge
@@ -201,25 +206,25 @@ export default async function CommunityLayout({
               )}
               {visible("courses") && (
                 <FeatureLink href={`/c/${slug}/courses`}>
-                  <span className="feature-icon"><svg viewBox="0 0 24 24"><path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1zm0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z"/></svg></span>
+                  <span className="feature-icon"><BookOpen size={18} /></span>
                   <span className="feature-name">Khóa học</span>
                 </FeatureLink>
               )}
               {visible("challenges") && (
                 <FeatureLink href={`/c/${slug}/challenges`}>
-                  <span className="feature-icon"><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></span>
+                  <span className="feature-icon"><Star size={18} /></span>
                   <span className="feature-name">Challenge</span>
                 </FeatureLink>
               )}
               {visible("events") && (
                 <FeatureLink href={`/c/${slug}/events`}>
-                  <span className="feature-icon"><svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg></span>
+                  <span className="feature-icon"><Calendar size={18} /></span>
                   <span className="feature-name">Events</span>
                 </FeatureLink>
               )}
               {visible("leaderboard") && (
                 <FeatureLink href={`/c/${slug}/leaderboard`}>
-                  <span className="feature-icon"><svg viewBox="0 0 24 24"><path d="M3 3h18v2H3V3zm2 4h14v4H5V7zm-2 6h18v2H3v-2zm4 4h10v4H7v-4z"/></svg></span>
+                  <span className="feature-icon"><BarChart2 size={18} /></span>
                   <span className="feature-name">Bảng xếp hạng</span>
                 </FeatureLink>
               )}
@@ -229,13 +234,13 @@ export default async function CommunityLayout({
               )}
               {visible("marketplace") && (
                 <FeatureLink href={`/c/${slug}/marketplace`}>
-                  <span className="feature-icon"><svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg></span>
+                  <span className="feature-icon"><ShoppingCart size={18} /></span>
                   <span className="feature-name">Marketplace</span>
                 </FeatureLink>
               )}
               {showAgentFeature && (
                 <FeatureLink href={`/c/${slug}/agent`}>
-                  <span className="feature-icon"><svg viewBox="0 0 24 24"><path d="M12 2C9.24 2 7 4.24 7 7c0 2.85 2.92 7.21 4.5 9.5.24.35.76.35 1 0C14.08 14.21 17 9.85 17 7c0-2.76-2.24-5-5-5zm0 7c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm0 9.15L6 15l-1.45 1.45C2.85 17.15 1 18.4 1 20.5 1 21.88 2.12 23 3.5 23h17c1.38 0 2.5-1.12 2.5-2.5 0-2.1-1.85-3.35-3.55-4.05L18 15l-6 3.15z"/></svg></span>
+                  <span className="feature-icon"><Bot size={18} /></span>
                   <span className="feature-name">AI Agent</span>
                 </FeatureLink>
               )}
@@ -244,19 +249,19 @@ export default async function CommunityLayout({
                   <div className="features-section-title">Quản lý</div>
                   {permissions.canModerateContent && (
                     <FeatureLink href={`/c/${slug}/reports`}>
-                      <span className="feature-icon"><svg viewBox="0 0 24 24"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg></span>
+                      <span className="feature-icon"><Flag size={18} /></span>
                       <span className="feature-name">Báo cáo</span>
                     </FeatureLink>
                   )}
                   {permissions.canManageOrders && (
                     <FeatureLink href={`/c/${slug}/orders`}>
-                      <span className="feature-icon"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg></span>
+                      <span className="feature-icon"><FileText size={18} /></span>
                       <span className="feature-name">Đơn hàng</span>
                     </FeatureLink>
                   )}
                   {permissions.canManageOrders && (
                     <FeatureLink href={`/c/${slug}/affiliate`}>
-                      <span className="feature-icon"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></span>
+                      <span className="feature-icon"><Users size={18} /></span>
                       <span className="feature-name">Affiliate</span>
                     </FeatureLink>
                   )}

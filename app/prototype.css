@@ -262,7 +262,7 @@ body[data-theme="luxury"] .settings-panel-title {
   background: var(--white);
   color: var(--text-normal);
 }
-.server-icon.dm-button svg { width: 24px; height: 24px; fill: currentColor; }
+.server-icon.dm-button svg { width: 24px; height: 24px; fill: none; stroke: currentColor; }
 
 .server-icon-wrapper {
   position: relative;
@@ -500,7 +500,8 @@ body[data-theme="luxury"] .settings-panel-title {
 .feature-item .feature-icon svg {
   width: 18px;
   height: 18px;
-  fill: currentColor;
+  fill: none;
+  stroke: currentColor;
 }
 .feature-item .feature-name {
   flex: 1;
@@ -582,7 +583,7 @@ body[data-theme="luxury"] .settings-panel-title {
   border-radius: 4px;
 }
 .channel-browse:hover { background: var(--bg-modifier-hover); color: var(--interactive-hover); }
-.channel-browse svg { width: 20px; height: 20px; fill: currentColor; flex-shrink: 0; }
+.channel-browse svg { width: 20px; height: 20px; fill: none; stroke: currentColor; flex-shrink: 0; }
 
 .channel-category {
   display: flex;
@@ -619,7 +620,7 @@ body[data-theme="luxury"] .settings-panel-title {
 .channel-item .channel-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .channel-item .channel-icons { display: flex; gap: 4px; opacity: 0; transition: opacity 150ms; }
 .channel-item:hover .channel-icons, .channel-item.active .channel-icons { opacity: 1; }
-.channel-item .channel-icons svg { width: 16px; height: 16px; fill: var(--interactive-normal); }
+.channel-item .channel-icons svg { width: 16px; height: 16px; fill: none; stroke: var(--interactive-normal); }
 .channel-icon-special { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: var(--text-md); flex-shrink: 0; }
 
 /* ==========================================
@@ -728,7 +729,7 @@ body[data-theme="luxury"] .settings-panel-title {
   justify-content: center;
 }
 .user-panel-actions button:hover { background: var(--bg-modifier-hover); color: var(--interactive-hover); }
-.user-panel-actions button svg { width: 20px; height: 20px; fill: currentColor; }
+.user-panel-actions button svg { width: 20px; height: 20px; fill: none; stroke: currentColor; }
 
 .mute-btn-group {
   display: flex;
@@ -740,7 +741,7 @@ body[data-theme="luxury"] .settings-panel-title {
   color: var(--dnd-red) !important;
   border-radius: 4px 0 0 4px !important;
 }
-.mute-btn-red svg { fill: var(--dnd-red) !important; }
+.mute-btn-red svg { stroke: var(--dnd-red) !important; fill: none !important; }
 .mute-dropdown {
   width: 18px !important;
   height: 32px;
@@ -807,7 +808,7 @@ body[data-theme="luxury"] .settings-panel-title {
   justify-content: center;
 }
 .icon-btn:hover { color: var(--interactive-hover); }
-.icon-btn svg { width: 24px; height: 24px; fill: currentColor; }
+.icon-btn svg { width: 24px; height: 24px; fill: none; stroke: currentColor; }
 
 .search-box {
   background: var(--bg-input);
@@ -1053,7 +1054,7 @@ body[data-theme="luxury"] .settings-panel-title {
   color: var(--interactive-normal);
 }
 .view-header .back-btn:hover { background: var(--bg-modifier-hover); color: var(--interactive-hover); }
-.view-header .back-btn svg { width: 20px; height: 20px; fill: currentColor; }
+.view-header .back-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; }
 .view-header .view-title {
   font-size: var(--text-md);
   font-weight: 700;
@@ -1255,7 +1256,7 @@ body[data-theme="luxury"] .settings-panel-title {
   color: var(--interactive-normal);
 }
 .icon-btn-plain:hover { background: var(--bg-modifier-hover); color: var(--interactive-hover); }
-.icon-btn-plain svg { width: 18px; height: 18px; fill: currentColor; }
+.icon-btn-plain svg { width: 18px; height: 18px; fill: none; stroke: currentColor; }
 
 /* Affiliates stats */
 .stat-cards {
@@ -1828,7 +1829,7 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
   font-family: var(--font-primary);
 }
 .course-action-btn:hover { background: var(--bg-modifier-hover); }
-.course-action-btn svg { width: 16px; height: 16px; fill: currentColor; }
+.course-action-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; }
 .course-action-btn.primary {
   background: var(--online-green);
   color: #fff;
@@ -5380,7 +5381,7 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
 }
 .rs-toggle.active { color: var(--interactive-active); }
 .rs-toggle:hover { color: var(--interactive-hover); }
-.rs-toggle svg { width: 24px; height: 24px; fill: currentColor; }
+.rs-toggle svg { width: 24px; height: 24px; fill: none; stroke: currentColor; }
 
 /* Right sidebar content sections */
 .rs-banner {

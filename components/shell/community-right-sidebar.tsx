@@ -3,6 +3,7 @@ import { CommunitySearchBar } from "./community-search-bar";
 import { InviteCopyButton } from "./invite-copy-button";
 import { CartIcon } from "@/components/marketplace/cart-icon";
 import { classByKey } from "@/lib/community-config";
+import { ChevronRight } from "lucide-react";
 import type { ClassConfig } from "@/lib/community-config";
 import type { TierConfigItem } from "@/lib/services/subscription";
 
@@ -236,9 +237,7 @@ function MemberView({
               Mở khoá tính năng premium
             </div>
           </div>
-          <svg viewBox="0 0 24 24" style={{ width: 16, height: 16, fill: "rgba(255,255,255,0.7)", flexShrink: 0 }}>
-            <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
-          </svg>
+          <ChevronRight size={16} style={{ color: "rgba(255,255,255,0.7)", flexShrink: 0 }} />
         </a>
       )}
       <CommunitySearchBar name={community.name} slug={community.slug} />
