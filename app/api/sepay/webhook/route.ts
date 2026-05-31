@@ -79,10 +79,16 @@ export async function POST(req: NextRequest) {
     content,
     transferType,
     amount,
+    transferAmount,
     referenceCode,
     accumulated,
     subAccount,
   } = payload;
+
+  // SePay gửi số tiền ở field `transferAmount`; giữ `amount` làm fallback cho
+  // cấu hình cũ. Trước đây code chỉ đọc `amount` (không có trong payload) nên
+  // luôn lưu 0 → matcher reject `amount_mismatch` → không đơn nào tự khớp được.
+  const txAmount = Number(transferAmount ?? amount) || 0;
 
   const transactionId = String(id ?? referenceCode ?? "");
   if (!transactionId) {
@@ -122,7 +128,7 @@ export async function POST(req: NextRequest) {
         paymentCode,
         content: content ?? "",
         transferType: transferTypeNormalized,
-        amount: Number(amount) || 0,
+        amount: txAmount,
         accumulated: accumulated ? Number(accumulated) : null,
         transactionDate: transactionDate
           ? new Date(transactionDate)
@@ -135,7 +141,7 @@ export async function POST(req: NextRequest) {
     if (transferTypeNormalized === "credit" && paymentCode) {
       const matchResult = await matchSePayTransactionToPayment({
         paymentCode,
-        amount: Number(amount) || 0,
+        amount: txAmount,
         transactionId,
         rawTxId: tx.id,
       });
