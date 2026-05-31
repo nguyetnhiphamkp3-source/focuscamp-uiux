@@ -266,38 +266,6 @@ export default async function CommunityLayout({
           </aside>
         </div>{/* end left-section-top */}
 
-        {/* Upgrade banner — Discord Nitro pattern */}
-        {showUpgradeLink && (
-          <a
-            href={`/c/${slug}/upgrade`}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              margin: "0 8px 8px",
-              padding: "10px 12px",
-              background: "linear-gradient(135deg, #1B9E75 0%, #0d7a5a 100%)",
-              borderRadius: 8,
-              textDecoration: "none",
-              cursor: "pointer",
-              flexShrink: 0,
-            }}
-          >
-            <span style={{ fontSize: 18, lineHeight: 1 }}>⭐</span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "#fff", lineHeight: 1.2 }}>
-                Nâng cấp gói
-              </div>
-              <div style={{ fontSize: "var(--text-xs)", color: "rgba(255,255,255,0.75)", marginTop: 2 }}>
-                Mở khoá tính năng premium
-              </div>
-            </div>
-            <svg viewBox="0 0 24 24" style={{ width: 16, height: 16, fill: "rgba(255,255,255,0.7)", flexShrink: 0 }}>
-              <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
-            </svg>
-          </a>
-        )}
-
         {/* User Panel */}
         <UserPanel
           user={user}
