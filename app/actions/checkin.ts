@@ -15,7 +15,7 @@ export async function checkinAction(input: {
   taskId?: string;
   dayNumber?: number;
   linkUrl?: string;
-  imageUrl?: string;
+  imageUrls?: string[];
   communitySlug: string;
   challengeSlug: string;
 }): Promise<{ ok: boolean; reason?: string; redirectTo?: string }> {
@@ -36,7 +36,7 @@ export async function checkinAction(input: {
     taskId: input.taskId,
     dayNumber: input.dayNumber,
     linkUrl: input.linkUrl || undefined,
-    imageUrl: input.imageUrl || undefined,
+    imageUrls: input.imageUrls?.length ? input.imageUrls : undefined,
   });
   if (!parsed.success) {
     return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
@@ -50,7 +50,7 @@ export async function checkinAction(input: {
       taskId: parsed.data.taskId,
       dayNumber: parsed.data.dayNumber,
       linkUrl: parsed.data.linkUrl || undefined,
-      imageUrl: parsed.data.imageUrl || undefined,
+      imageUrls: parsed.data.imageUrls,
     });
     revalidatePath(`/c/${input.communitySlug}/challenges/${input.challengeSlug}`);
     revalidatePath(`/c/${input.communitySlug}`);

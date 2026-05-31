@@ -3,6 +3,7 @@
  * Every external input should be parsed through one of these.
  */
 import { z } from "zod";
+import { MAX_CHECKIN_IMAGES } from "@/lib/checkin-images";
 import { COMMUNITY_CATEGORIES } from "@/lib/community-categories";
 import { parseChallengeVideoUrl } from "@/lib/challenge-video";
 
@@ -242,18 +243,18 @@ export const FlagSubmissionSchema = z.object({
 
 export const ResubmitCheckinSchema = z.object({
   checkinId: z.string().cuid(),
-  content: z.string().trim().max(1000),
+  content: z.string().trim().max(2000),
   linkUrl: z.string().url().optional().or(z.literal("")),
-  imageUrl: z.string().url().optional().or(z.literal("")),
+  imageUrls: z.array(z.string().url()).max(MAX_CHECKIN_IMAGES).optional(),
 });
 
 export const ChallengeCheckinSchema = z.object({
   challengeId: z.string().cuid(),
-  content: z.string().trim().max(1000),
+  content: z.string().trim().max(2000),
   taskId: z.string().cuid().optional(),
   dayNumber: z.number().int().positive().optional(),
   linkUrl: z.string().url().optional().or(z.literal("")),
-  imageUrl: z.string().url().optional().or(z.literal("")),
+  imageUrls: z.array(z.string().url()).max(MAX_CHECKIN_IMAGES).optional(),
 });
 
 /* ========== Posts (Feed / Cốt / Q&A / Signals) ========== */

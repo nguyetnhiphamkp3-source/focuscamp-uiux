@@ -617,7 +617,13 @@ model Checkin {
   dayNumber    Int? // redundant cache for querying by day
   content      String    @db.Text
   linkUrl      String? // external evidence URL (e.g. screenshot host, notion, miro)
-  imageUrl     String? // inline image URL (uploaded/pasted)
+  /**
+   * @deprecated single-image legacy column. New code writes `imageUrls`; this is
+   * kept (backfilled into imageUrls) as a one-release safety net and read only as
+   * a fallback via lib/checkin-images.ts. Drop in a follow-up migration.
+   */
+  imageUrl     String?
+  imageUrls    String[]  @default([]) // inline evidence images (uploaded), max enforced in app layer
   status       String    @default("APPROVED") // PENDING | APPROVED | REJECTED
   reviewedById String?
   reviewedAt   DateTime?

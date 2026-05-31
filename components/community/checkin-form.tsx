@@ -3,7 +3,8 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { checkinAction } from "@/app/actions/checkin";
-import { ImageUploadField } from "@/components/shared/image-upload-field";
+import { MultiImageUploadField } from "@/components/shared/multi-image-upload-field";
+import { MAX_CHECKIN_IMAGES } from "@/lib/checkin-images";
 
 interface TodayTask {
   id: string;
@@ -42,7 +43,7 @@ export function CheckinForm({
   const router = useRouter();
   const [content, setContent] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -56,12 +57,12 @@ export function CheckinForm({
   const len = content.length;
   const trimmedLen = content.trim().length;
   const hasText = trimmedLen >= 5;
-  const hasImage = imageUrl.trim().length > 0 && /^https?:\/\//.test(imageUrl);
+  const hasImage = imageUrls.length > 0;
   const contentOk = isTextImage ? trimmedLen === 0 || hasText : hasText;
   const linkOk = !needsLink || (linkUrl.trim().length > 0 && /^https?:\/\//.test(linkUrl));
   const imageOk = !needsImage || hasImage;
   const textImageOk = !isTextImage || hasText || hasImage;
-  const canSubmit = contentOk && len <= 1000 && linkOk && imageOk && textImageOk && !pending;
+  const canSubmit = contentOk && len <= 2000 && linkOk && imageOk && textImageOk && !pending;
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -73,7 +74,7 @@ export function CheckinForm({
         taskId: task?.id,
         dayNumber: task?.dayNumber,
         linkUrl: linkUrl.trim() || undefined,
-        imageUrl: imageUrl.trim() || undefined,
+        imageUrls: imageUrls.length ? imageUrls : undefined,
         communitySlug,
         challengeSlug,
       });
@@ -85,7 +86,7 @@ export function CheckinForm({
         setDone(true);
         setContent("");
         setLinkUrl("");
-        setImageUrl("");
+        setImageUrls([]);
       } else {
         setError(res.reason || "unknown_error");
       }
@@ -328,14 +329,14 @@ export function CheckinForm({
             style={{
               fontSize: "var(--text-xs)",
               color:
-                (trimmedLen > 0 && trimmedLen < 5) || len > 1000
+                (trimmedLen > 0 && trimmedLen < 5) || len > 2000
                   ? "var(--danger)"
                   : "var(--text-muted)",
               marginTop: 4,
               textAlign: "right",
             }}
           >
-            {len} / 1000
+            {len} / 2000
           </div>
         </div>
 
@@ -393,11 +394,11 @@ export function CheckinForm({
               {task?.evidenceLabel || "Ảnh chứng cứ"}{" "}
               {needsImage && <span style={{ color: "var(--danger)" }}>*</span>}
             </label>
-            <ImageUploadField
-              value={imageUrl || null}
-              onChange={(url) => setImageUrl(url ?? "")}
+            <MultiImageUploadField
+              values={imageUrls}
+              onChange={setImageUrls}
               context="checkin"
-              shape="banner"
+              max={MAX_CHECKIN_IMAGES}
               disabled={pending}
               maxSizeNote="Tối đa 10MB"
             />
