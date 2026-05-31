@@ -247,12 +247,30 @@ export default async function ChallengeDetailPage({
       .map((c) => [c.dayNumber!, c] as const)
   );
 
+  // Effective price for current user — computed first so renewalInfo can use it as fallback
+  const pricingConfig = parsePricingConfig(challenge.pricingConfig) ??
+    (challenge.priceVnd
+      ? { guestVnd: Number(challenge.priceVnd), memberVnd: Number(challenge.priceVnd) }
+      : null);
+  let effectivePrice: { vnd: number; canPayAip: boolean; aipPrice: number; aipBalance: number } | null = null;
+  if (pricingConfig && session?.user?.id) {
+    const { tierKey } = communityMembership
+      ? await getUserTier({ userId: session.user.id, communityId: challenge.community.id })
+      : { tierKey: null };
+    effectivePrice = calculateEffectivePrice(pricingConfig, {
+      isMember: !!communityMembership,
+      tierKey,
+      aipBalance: communityMembership?.aip ?? 0,
+    });
+  } else if (pricingConfig && !session?.user?.id) {
+    effectivePrice = calculateEffectivePrice(pricingConfig, { isMember: false, tierKey: null, aipBalance: 0 });
+  }
+
   // Sequential — depends on myMembership.status
   let pendingPaymentCode: string | null = null;
   let renewalInfo: { originalAmountVnd: number; lateFeeVnd: number } | null = null;
   if (myMembership?.status === "PAYMENT_PENDING") {
     const now = new Date();
-    // Find a still-valid PENDING payment (not expired)
     const validPayment = await prisma.payment.findFirst({
       where: { refType: "challenge", refId: myMembership.id, status: "PENDING", expiresAt: { gt: now } },
       select: { paymentCode: true },
@@ -261,7 +279,6 @@ export default async function ChallengeDetailPage({
     pendingPaymentCode = validPayment?.paymentCode ?? null;
 
     if (!pendingPaymentCode) {
-      // Payment expired — fetch original amount for renewal UI
       const originalPayment = await prisma.payment.findFirst({
         where: { refType: "challenge", refId: myMembership.id },
         orderBy: { createdAt: "asc" },
@@ -269,8 +286,8 @@ export default async function ChallengeDetailPage({
       });
       const minutesSinceJoin = (Date.now() - myMembership.joinedAt.getTime()) / 60000;
       renewalInfo = {
-        originalAmountVnd: Number(originalPayment?.amountVnd ?? parsePricingConfig(challenge.pricingConfig)?.guestVnd ?? challenge.priceVnd ?? 0),
-        lateFeeVnd: computeChallengeLateFee(parsePricingConfig(challenge.pricingConfig), minutesSinceJoin),
+        originalAmountVnd: Number(originalPayment?.amountVnd ?? effectivePrice?.vnd ?? 0),
+        lateFeeVnd: computeChallengeLateFee(pricingConfig, minutesSinceJoin),
       };
     }
   }
@@ -290,26 +307,6 @@ export default async function ChallengeDetailPage({
     communitySlug: slug,
     challengeSlug,
   });
-
-  // Effective price for current user — fall back to priceVnd if no pricingConfig
-  const pricingConfig = parsePricingConfig(challenge.pricingConfig) ??
-    (challenge.priceVnd
-      ? { guestVnd: Number(challenge.priceVnd), memberVnd: Number(challenge.priceVnd) }
-      : null);
-  let effectivePrice: { vnd: number; canPayAip: boolean; aipPrice: number; aipBalance: number } | null = null;
-  if (pricingConfig && session?.user?.id) {
-    const { tierKey } = communityMembership
-      ? await getUserTier({ userId: session.user.id, communityId: challenge.community.id })
-      : { tierKey: null };
-    effectivePrice = calculateEffectivePrice(pricingConfig, {
-      isMember: !!communityMembership,
-      tierKey,
-      aipBalance: communityMembership?.aip ?? 0,
-    });
-  } else if (pricingConfig && !session?.user?.id) {
-    // Guest — show guest price without AIP
-    effectivePrice = calculateEffectivePrice(pricingConfig, { isMember: false, tierKey: null, aipBalance: 0 });
-  }
 
   const dayNow = (() => {
     if (myMembership?.completedAt) return challenge.requiredDays;
