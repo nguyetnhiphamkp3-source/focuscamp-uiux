@@ -980,6 +980,7 @@ export default async function ChallengeDetailPage({
                     </summary>
                     {hasBody && (
                       <div className="ch-task-body">
+                        <div className="ch-task-body-title">{t.title}</div>
                         {t.description && <SopContent content={t.description} className="ch-task-desc" />}
                         {t.videoUrl && (() => {
                           const embedUrl = toEmbedUrl(t.videoUrl);

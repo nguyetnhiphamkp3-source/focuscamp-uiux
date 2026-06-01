@@ -2855,6 +2855,9 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
   border-top: 1px solid var(--border-subtle);
   padding-top: 14px;
 }
+.ch-task-body-title {
+  display: none;
+}
 
 .ch-task-desc {
   font-size: var(--text-base);
@@ -6460,14 +6463,12 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
     flex: 0 1 auto;
   }
   .ch-task-title {
+    display: block;
     font-size: var(--text-md);
     line-height: 1.25;
-  }
-  .ch-task:not([open]) .ch-task-title {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
     overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .ch-task-status {
     grid-area: status;
@@ -6496,6 +6497,15 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
   }
   .ch-task-body {
     padding: var(--space-3) var(--space-4) var(--space-4);
+  }
+  .ch-task-body-title {
+    display: block;
+    margin-bottom: var(--space-3);
+    color: var(--header-primary);
+    font-size: var(--text-md);
+    font-weight: var(--fw-bold);
+    line-height: 1.35;
+    overflow-wrap: anywhere;
   }
   .ch-active-card {
     grid-template-columns: 1fr !important;
