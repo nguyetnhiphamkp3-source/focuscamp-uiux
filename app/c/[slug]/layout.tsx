@@ -102,6 +102,15 @@ export default async function CommunityLayout({
     visible("agent") && permissions.canManageAiAgent && !previewAsMember;
   const hasPaidTiers = getTiersConfig(community.tiersConfig).some((t) => !t.isFree);
   const showUpgradeLink = !!membership && !isOwner && !previewAsMember && hasPaidTiers;
+  const panelRole = role === "MEMBER" ? "Member" : role;
+  const panelSubtitle =
+    user && (membership || isOwner)
+      ? membership?.tier
+        ? `${panelRole} · ${membership.tier}`
+        : panelRole
+      : user
+        ? "Online"
+        : "Cần đăng nhập";
 
   return (
     <div className="community-shell">
@@ -274,7 +283,7 @@ export default async function CommunityLayout({
         {/* User Panel */}
         <UserPanel
           user={user}
-          subtitle={membership ? `Member · ${membership.tier}` : user ? "Online" : "Cần đăng nhập"}
+          subtitle={panelSubtitle}
           profileHref={`/c/${slug}/profile`}
           notifUnread={notifUnread}
           chatHref={visible("chat") ? `/c/${slug}` : undefined}

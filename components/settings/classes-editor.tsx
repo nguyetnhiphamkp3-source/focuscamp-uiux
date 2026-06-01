@@ -6,7 +6,6 @@ import type { ClassConfig } from "@/lib/community-config";
 import {
   inputStyle,
   btnDanger,
-  rowCard,
   ErrorBox,
   SuccessBox,
   SectionHeader,
@@ -84,15 +83,16 @@ export function ClassesEditor({
       {items.map((c, i) => (
         <div
           key={i}
-          style={{ ...rowCard, flexDirection: "column", alignItems: "stretch" }}
+          className="settings-taxonomy-row settings-taxonomy-row--classes"
         >
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <div className="settings-taxonomy-row-head settings-taxonomy-row-head--classes">
             <input
               type="text"
               placeholder="key (vd: hustler)"
               value={c.key}
               onChange={(e) => update(i, { key: e.target.value.toLowerCase() })}
-              style={{ ...inputStyle, flex: "0 0 160px" }}
+              className="settings-taxonomy-input settings-taxonomy-input--key"
+              style={inputStyle}
               disabled={disabled || pending}
             />
             <input
@@ -100,7 +100,8 @@ export function ClassesEditor({
               placeholder="Label hiển thị"
               value={c.label}
               onChange={(e) => update(i, { label: e.target.value })}
-              style={{ ...inputStyle, flex: "1 1 180px" }}
+              className="settings-taxonomy-input settings-taxonomy-input--label"
+              style={inputStyle}
               disabled={disabled || pending}
             />
             <input
@@ -108,11 +109,13 @@ export function ClassesEditor({
               placeholder="Emoji"
               value={c.emoji ?? ""}
               onChange={(e) => update(i, { emoji: e.target.value })}
-              style={{ ...inputStyle, flex: "0 0 70px", textAlign: "center" }}
+              className="settings-taxonomy-input settings-taxonomy-input--emoji"
+              style={{ ...inputStyle, textAlign: "center" }}
               maxLength={4}
               disabled={disabled || pending}
             />
             <button
+              className="settings-taxonomy-delete"
               type="button"
               onClick={() => remove(i)}
               style={btnDanger}
@@ -126,6 +129,7 @@ export function ClassesEditor({
             placeholder="Mô tả ngắn (tuỳ chọn — hiển thị khi user chọn class)"
             value={c.description ?? ""}
             onChange={(e) => update(i, { description: e.target.value })}
+            className="settings-taxonomy-input"
             style={inputStyle}
             disabled={disabled || pending}
           />

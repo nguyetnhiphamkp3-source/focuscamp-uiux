@@ -6,7 +6,6 @@ import type { LevelTier } from "@/lib/community-config";
 import {
   inputStyle,
   btnDanger,
-  rowCard,
   ErrorBox,
   SuccessBox,
   SectionHeader,
@@ -85,7 +84,7 @@ export function LevelsEditor({
       )}
 
       {items.map((t, i) => (
-        <div key={i} style={rowCard}>
+        <div key={i} className="settings-taxonomy-row settings-taxonomy-row--levels">
           <input
             type="number"
             min={0}
@@ -94,7 +93,8 @@ export function LevelsEditor({
             onChange={(e) =>
               update(i, { minLevel: Math.max(0, parseInt(e.target.value) || 0) })
             }
-            style={{ ...inputStyle, flex: "0 0 100px" }}
+            className="settings-taxonomy-input settings-taxonomy-input--level"
+            style={inputStyle}
             disabled={disabled || pending}
           />
           <input
@@ -102,7 +102,8 @@ export function LevelsEditor({
             placeholder="Tên bậc (vd: Novice)"
             value={t.name}
             onChange={(e) => update(i, { name: e.target.value })}
-            style={{ ...inputStyle, flex: "1 1 160px" }}
+            className="settings-taxonomy-input settings-taxonomy-input--label"
+            style={inputStyle}
             disabled={disabled || pending}
           />
           <input
@@ -110,11 +111,13 @@ export function LevelsEditor({
             placeholder="Emoji"
             value={t.emoji ?? ""}
             onChange={(e) => update(i, { emoji: e.target.value })}
-            style={{ ...inputStyle, flex: "0 0 70px", textAlign: "center" }}
+            className="settings-taxonomy-input settings-taxonomy-input--emoji"
+            style={{ ...inputStyle, textAlign: "center" }}
             maxLength={4}
             disabled={disabled || pending}
           />
           <button
+            className="settings-taxonomy-delete"
             type="button"
             onClick={() => remove(i)}
             style={btnDanger}

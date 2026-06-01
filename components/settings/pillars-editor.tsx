@@ -6,7 +6,6 @@ import type { PillarConfig } from "@/lib/community-config";
 import {
   inputStyle,
   btnDanger,
-  rowCard,
   ErrorBox,
   SuccessBox,
   SectionHeader,
@@ -82,13 +81,14 @@ export function PillarsEditor({
       )}
 
       {items.map((p, i) => (
-        <div key={i} style={rowCard}>
+        <div key={i} className="settings-taxonomy-row settings-taxonomy-row--pillars">
           <input
             type="text"
             placeholder="key (vd: offer)"
             value={p.key}
             onChange={(e) => update(i, { key: e.target.value.toLowerCase() })}
-            style={{ ...inputStyle, flex: "0 0 140px" }}
+            className="settings-taxonomy-input settings-taxonomy-input--key"
+            style={inputStyle}
             disabled={disabled || pending}
           />
           <input
@@ -96,7 +96,8 @@ export function PillarsEditor({
             placeholder="Label hiển thị"
             value={p.label}
             onChange={(e) => update(i, { label: e.target.value })}
-            style={{ ...inputStyle, flex: "1 1 160px" }}
+            className="settings-taxonomy-input settings-taxonomy-input--label"
+            style={inputStyle}
             disabled={disabled || pending}
           />
           <input
@@ -104,7 +105,8 @@ export function PillarsEditor({
             placeholder="Emoji"
             value={p.emoji ?? ""}
             onChange={(e) => update(i, { emoji: e.target.value })}
-            style={{ ...inputStyle, flex: "0 0 70px", textAlign: "center" }}
+            className="settings-taxonomy-input settings-taxonomy-input--emoji"
+            style={{ ...inputStyle, textAlign: "center" }}
             maxLength={4}
             disabled={disabled || pending}
           />
@@ -113,10 +115,12 @@ export function PillarsEditor({
             placeholder="CSS class (tuỳ chọn)"
             value={p.cssClass ?? ""}
             onChange={(e) => update(i, { cssClass: e.target.value })}
-            style={{ ...inputStyle, flex: "0 0 180px" }}
+            className="settings-taxonomy-input settings-taxonomy-input--class"
+            style={inputStyle}
             disabled={disabled || pending}
           />
           <button
+            className="settings-taxonomy-delete"
             type="button"
             onClick={() => remove(i)}
             style={btnDanger}

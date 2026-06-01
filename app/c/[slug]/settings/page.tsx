@@ -363,8 +363,9 @@ export default async function SettingsPage({
 
           {/* Tab: Nội dung */}
           {tab === "content" && (
-            <>
+            <div className="settings-content-tab">
               <div
+                className="settings-content-intro"
                 style={{
                   fontSize: "var(--text-sm)",
                   color: "var(--text-muted)",
@@ -402,7 +403,7 @@ export default async function SettingsPage({
                   initial={getAffiliateConfig(community)}
                 />
               )}
-            </>
+            </div>
           )}
 
           {/* Tab: Tích hợp */}

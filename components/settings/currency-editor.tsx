@@ -58,6 +58,7 @@ export function CurrencyEditor({
       />
 
       <div
+        className="settings-currency-grid"
         style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 10, marginBottom: 10 }}
       >
         <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -90,7 +91,7 @@ export function CurrencyEditor({
         </label>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 10 }}>
+      <div className="settings-currency-grid" style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 10 }}>
         <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
             Đồng phụ (gems / secondary — tuỳ chọn)

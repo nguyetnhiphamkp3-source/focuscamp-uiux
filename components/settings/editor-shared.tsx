@@ -147,7 +147,7 @@ export function EditorToolbar({
   addLabel?: string;
 }) {
   return (
-    <div style={{ display: "flex", gap: 8, marginTop: 12, alignItems: "center" }}>
+    <div className="settings-editor-toolbar" style={{ display: "flex", gap: 8, marginTop: 12, alignItems: "center" }}>
       <button type="button" onClick={onAdd} style={btnSecondary}>
         {addLabel}
       </button>

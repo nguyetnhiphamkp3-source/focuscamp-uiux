@@ -36,6 +36,19 @@ export type MemberRow = {
   };
 };
 
+function roleForMember(m: MemberRow, isOwnerRow: boolean) {
+  return isOwnerRow ? "OWNER" : m.role;
+}
+
+function RoleBadge({ role }: { role: string }) {
+  if (role !== "OWNER" && role !== "ADMIN" && role !== "MOD") return null;
+  return (
+    <span className={`member-role-badge member-role-badge--${role.toLowerCase()}`}>
+      {role}
+    </span>
+  );
+}
+
 export function MembersEditor({
   communityId,
   communitySlug,
@@ -158,9 +171,11 @@ export function MembersEditor({
             const myClass = classByKey(m.className, classes);
             const tier = tierForLevel(m.level, levelTiers);
             const name = m.user.name || m.user.email;
+            const displayRole = roleForMember(m, isOwnerRow);
             return (
               <div
                 key={m.userId}
+                className="settings-member-row"
                 style={{
                   display: "flex",
                   gap: 10,
@@ -170,11 +185,12 @@ export function MembersEditor({
                   border: "1px solid var(--border-subtle)",
                   borderRadius: 8,
                 }}
-              >
-                <Link
-                  href={`/c/${communitySlug}/profile/${m.userId}`}
-                  style={{ flexShrink: 0 }}
                 >
+                  <Link
+                    href={`/c/${communitySlug}/profile/${m.userId}`}
+                    className="settings-member-avatar"
+                    style={{ flexShrink: 0 }}
+                  >
                   {m.user.image ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -208,12 +224,17 @@ export function MembersEditor({
                   )}
                 </Link>
 
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="settings-member-info" style={{ flex: 1, minWidth: 0 }}>
                   <div
+                    className="settings-member-name-line"
                     style={{
                       fontSize: "var(--text-sm)",
                       fontWeight: 600,
                       color: "var(--header-primary)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      minWidth: 0,
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
@@ -221,24 +242,15 @@ export function MembersEditor({
                   >
                     <Link
                       href={`/c/${communitySlug}/profile/${m.userId}`}
+                      className="settings-member-name-link"
                       style={{ color: "inherit", textDecoration: "none" }}
                     >
                       {name}
                     </Link>
-                    {isOwnerRow && (
-                      <span
-                        style={{
-                          marginLeft: 6,
-                          fontSize: "var(--text-xs)",
-                          color: "var(--premium-gold)",
-                          fontWeight: 700,
-                        }}
-                      >
-                        ★ OWNER
-                      </span>
-                    )}
+                    <RoleBadge role={displayRole} />
                   </div>
                   <div
+                    className="settings-member-meta"
                     style={{
                       fontSize: "var(--text-xs)",
                       color: "var(--text-muted)",
@@ -262,6 +274,7 @@ export function MembersEditor({
                 </div>
 
                 <div
+                  className="settings-member-actions"
                   style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}
                 >
                   {canManageRoles && !isSelfRow && !isOwnerRow ? (
@@ -281,7 +294,7 @@ export function MembersEditor({
                         borderRadius: 10,
                       }}
                     >
-                      {m.role}
+                      {displayRole}
                     </span>
                   )}
                 </div>
