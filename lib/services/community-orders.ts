@@ -1,5 +1,13 @@
 import { prisma } from "@/lib/prisma";
 
+export type ApprovalSource = "MANUAL" | "SEPAY_WEBHOOK";
+
+export interface OrderApproval {
+  source: ApprovalSource;
+  /** Admin display name for MANUAL approvals; null for auto or unknown admin. */
+  adminName: string | null;
+}
+
 export interface OrderRow {
   orderId: string;
   orderType: "product" | "challenge" | "subscription" | "community" | "other";
@@ -13,9 +21,35 @@ export interface OrderRow {
   licenseKey?: string | null;
   paymentCode: string;
   receivedAt: Date | null;
+  /** How a COMPLETED order was confirmed. Null for non-completed orders. */
+  approval: OrderApproval | null;
 }
 
 const VALID_STATUSES = ["PENDING", "COMPLETED", "EXPIRED", "REFUNDED"];
+
+/**
+ * Derive how a payment was confirmed. Prefers the explicit `approvalSource`
+ * metadata; falls back to the `MANUAL-` transactionId prefix so orders confirmed
+ * before the label existed still display correctly.
+ */
+function buildApproval(
+  pay: { status: string; metadata: unknown; transactionId: string | null },
+  userMap: Map<string, { name: string | null; email: string }>,
+): OrderApproval | null {
+  if (pay.status !== "COMPLETED") return null;
+  const meta = (pay.metadata ?? {}) as Record<string, unknown>;
+  const raw = meta.approvalSource;
+  const source: ApprovalSource =
+    raw === "MANUAL" || raw === "SEPAY_WEBHOOK"
+      ? raw
+      : pay.transactionId?.startsWith("MANUAL-")
+        ? "MANUAL"
+        : "SEPAY_WEBHOOK";
+  if (source !== "MANUAL") return { source, adminName: null };
+  const adminId = typeof meta.approvedBy === "string" ? meta.approvedBy : null;
+  const admin = adminId ? userMap.get(adminId) : null;
+  return { source, adminName: admin ? (admin.name ?? admin.email) : null };
+}
 
 export async function listCommunityOrders(
   communityId: string,
@@ -46,7 +80,11 @@ export async function listCommunityOrders(
     return { orders: [], total, totalRevenue: Number(revenueAgg._sum.amountVnd ?? 0), pendingCount };
   }
 
-  const userIds = [...new Set(payments.map((p) => p.userId))];
+  // Include approving-admin ids so manual approvals can show the admin's name.
+  const adminIds = payments
+    .map((p) => ((p.metadata ?? {}) as Record<string, unknown>).approvedBy)
+    .filter((x): x is string => typeof x === "string");
+  const userIds = [...new Set([...payments.map((p) => p.userId), ...adminIds])];
   const users = await prisma.user.findMany({
     where: { id: { in: userIds } },
     select: { id: true, name: true, image: true, email: true },
@@ -98,6 +136,7 @@ export async function listCommunityOrders(
       buyer,
       paymentCode: pay.paymentCode,
       receivedAt: pay.receivedAt,
+      approval: buildApproval(pay, userMap),
     };
 
     if (pay.refType === "product") {
@@ -146,9 +185,12 @@ export async function listPlatformOrders(
     return { orders: [], total, totalRevenue: Number(revenueAgg._sum.amountVnd ?? 0), pendingCount };
   }
 
+  const adminIds = payments
+    .map((p) => ((p.metadata ?? {}) as Record<string, unknown>).approvedBy)
+    .filter((x): x is string => typeof x === "string");
   const [users, communities] = await Promise.all([
     prisma.user.findMany({
-      where: { id: { in: [...new Set(payments.map((p) => p.userId))] } },
+      where: { id: { in: [...new Set([...payments.map((p) => p.userId), ...adminIds])] } },
       select: { id: true, name: true, image: true, email: true },
     }),
     prisma.community.findMany({
@@ -178,6 +220,7 @@ export async function listPlatformOrders(
       buyer,
       paymentCode: pay.paymentCode,
       receivedAt: pay.receivedAt,
+      approval: buildApproval(pay, userMap),
     };
   });
 

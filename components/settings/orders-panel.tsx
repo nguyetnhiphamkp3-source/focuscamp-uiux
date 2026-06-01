@@ -86,6 +86,38 @@ const ORDER_TYPE_COLORS: Record<string, string> = {
   other: "var(--text-muted)",
 };
 
+function ApprovalChip({ approval }: { approval: OrderRow["approval"] }) {
+  if (!approval) return null;
+  const isAuto = approval.source === "SEPAY_WEBHOOK";
+  const label = isAuto
+    ? "⚡ Tự động"
+    : `✋ ${approval.adminName ?? "Thủ công"}`;
+  const title = isAuto
+    ? "Tự động xác nhận qua SePay"
+    : approval.adminName
+      ? `Duyệt thủ công bởi ${approval.adminName}`
+      : "Duyệt thủ công";
+  return (
+    <span
+      title={title}
+      style={{
+        borderRadius: 3,
+        padding: "1px 5px",
+        fontWeight: 600,
+        flexShrink: 0,
+        maxWidth: 160,
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+        background: isAuto ? "rgba(14,165,233,0.12)" : "rgba(240,178,50,0.15)",
+        color: isAuto ? "#0ea5e9" : "var(--warning)",
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
 function StatusBadge({ status }: { status: string }) {
   const style = STATUS_COLORS[status] ?? STATUS_COLORS.PENDING;
   return (
@@ -237,6 +269,7 @@ export function OrdersPanel({
                       <span style={{ background: "var(--bg-elevated)", borderRadius: 3, padding: "1px 5px", fontWeight: 600, flexShrink: 0 }}>
                         {order.paymentCode}
                       </span>
+                      <ApprovalChip approval={order.approval} />
                     </div>
                   </div>
 

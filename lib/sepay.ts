@@ -14,9 +14,9 @@ import type { Prisma } from "@prisma/client";
 
 /**
  * Generate a unique payment code with crypto-grade randomness.
- * Example: FC1A2B3C4D (10 chars, A-Z0-9, no 0/O/1/I).
+ * Example: DHFCABCDEFGH (prefix + 8 chars, A-Z2-9, no 0/O/1/I).
  */
-export function generatePaymentCode(prefix = "FC"): string {
+export function generatePaymentCode(prefix = "DHFC"): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   const buf = randomBytes(8);
   let suffix = "";
@@ -132,8 +132,9 @@ export async function createPayment(
  */
 export function extractPaymentCode(content: string): string | null {
   if (!content) return null;
-  // Look for FC followed by 8 uppercase alphanumeric chars
-  const match = content.match(/\bFC[A-Z0-9]{8}\b/);
+  // Match new DHFC prefix (DHFC first so it wins over the legacy FC branch on a
+  // DHFC code) and legacy FC prefix, each followed by 8 alphanumeric chars.
+  const match = content.match(/\b(?:DHFC|FC)[A-Z0-9]{8}\b/);
   return match ? match[0] : null;
 }
 

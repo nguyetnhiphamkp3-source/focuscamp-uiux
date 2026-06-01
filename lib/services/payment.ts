@@ -315,6 +315,11 @@ export async function matchSePayTransactionToPayment(params: {
         status: "COMPLETED",
         receivedAt: new Date(),
         transactionId,
+        // Label auto-confirmation so it's distinguishable from manual approval.
+        metadata: {
+          ...((payment.metadata as Record<string, unknown> | null) ?? {}),
+          approvalSource: "SEPAY_WEBHOOK",
+        },
       },
     });
     await tx.sePayTransaction.update({

@@ -108,11 +108,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, note: "already_processed" });
     }
 
-    // 4. Extract payment code
-    const paymentCode =
-      (code as string | undefined) ??
-      extractPaymentCode(content ?? "") ??
-      null;
+    // 4. Extract payment code.
+    // SePay only fills `code` when a payment-code prefix is configured in its
+    // dashboard. With no config it sends null/"" — treat empty as absent and fall
+    // back to parsing the transfer content ourselves.
+    const codeFromSePay = typeof code === "string" && code.trim() ? code.trim() : null;
+    const paymentCode = codeFromSePay ?? extractPaymentCode(content ?? "") ?? null;
 
     const transferTypeNormalized =
       transferType === "in" || transferType === "credit" ? "credit" : "debit";

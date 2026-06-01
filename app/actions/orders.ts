@@ -17,6 +17,7 @@ export async function approveOrderAction(input: {
 }): Promise<ActionResult> {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+  const adminId = s.user.id;
 
   const purchase = await prisma.purchase.findUnique({
     where: { id: input.purchaseId },
@@ -71,7 +72,18 @@ export async function approveOrderAction(input: {
       if (payment) {
         await tx.payment.update({
           where: { id: payment.id },
-          data: { status: "COMPLETED", receivedAt: new Date(), transactionId: manualRef },
+          data: {
+            status: "COMPLETED",
+            receivedAt: new Date(),
+            transactionId: manualRef,
+            // Persist who approved manually (survives log rotation, unlike pino logs).
+            metadata: {
+              ...meta,
+              approvalSource: "MANUAL",
+              approvedBy: adminId,
+              approvedAt: new Date().toISOString(),
+            },
+          },
         });
         const bumpPrice = Number(meta.bumpPriceVnd ?? 0);
         const mainAmount = Number(payment.amountVnd) - (Number.isFinite(bumpPrice) ? bumpPrice : 0);
@@ -97,7 +109,12 @@ export async function approveOrderAction(input: {
         // back to the purchase's own amount for commission (no bump info available).
         await tx.payment.updateMany({
           where: { refType: "product", refId: purchase.id, status: "PENDING" },
-          data: { status: "COMPLETED", receivedAt: new Date(), transactionId: manualRef },
+          data: {
+            status: "COMPLETED",
+            receivedAt: new Date(),
+            transactionId: manualRef,
+            metadata: { approvalSource: "MANUAL", approvedBy: adminId, approvedAt: new Date().toISOString() },
+          },
         });
         productCommissionSources.push({ purchaseId: purchase.id });
       }
@@ -183,6 +200,7 @@ export async function approvePaymentAction(input: {
 }): Promise<ActionResult> {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+  const adminId = s.user.id;
 
   const community = await prisma.community.findUnique({
     where: { slug: input.communitySlug },
@@ -215,7 +233,18 @@ export async function approvePaymentAction(input: {
     await prisma.$transaction(async (tx) => {
       await tx.payment.update({
         where: { id: payment.id },
-        data: { status: "COMPLETED", receivedAt: new Date(), transactionId: manualRef },
+        data: {
+          status: "COMPLETED",
+          receivedAt: new Date(),
+          transactionId: manualRef,
+          // Persist who approved manually (survives log rotation, unlike pino logs).
+          metadata: {
+            ...meta,
+            approvalSource: "MANUAL",
+            approvedBy: adminId,
+            approvedAt: new Date().toISOString(),
+          },
+        },
       });
 
       if (payment.refType === "challenge") {
@@ -319,11 +348,23 @@ export async function approvePlatformPaymentAction(input: {
   }
 
   const manualRef = `MANUAL-${Date.now()}`;
+  const meta = (payment.metadata ?? {}) as Record<string, unknown>;
 
   try {
     await prisma.payment.update({
       where: { id: payment.id },
-      data: { status: "COMPLETED", receivedAt: new Date(), transactionId: manualRef },
+      data: {
+        status: "COMPLETED",
+        receivedAt: new Date(),
+        transactionId: manualRef,
+        // Persist who approved manually (survives log rotation, unlike pino logs).
+        metadata: {
+          ...meta,
+          approvalSource: "MANUAL",
+          approvedBy: s.user.id,
+          approvedAt: new Date().toISOString(),
+        },
+      },
     });
     await activateCommunityPlan(payment.refId, {
       paymentCode: payment.paymentCode,
