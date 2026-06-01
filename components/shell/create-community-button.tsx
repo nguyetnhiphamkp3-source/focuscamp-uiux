@@ -9,7 +9,7 @@ import { COMMUNITY_CATEGORIES } from "@/lib/community-categories";
 import { PLATFORM_PLANS } from "@/lib/platform-plans";
 
 // Tạm thời disable luồng tạo community public. Flip về false để bật lại modal full.
-const CREATION_DISABLED = true;
+const CREATION_DISABLED = false;
 const DISABLED_AVATAR_URL =
   "https://pub-8cc0aba616ff4e23a1298f6aa8b318d8.r2.dev/community/cmnzkjmx10000cb7zui6cjdrc/1778573696488-80b7ce.png";
 
