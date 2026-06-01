@@ -601,6 +601,7 @@ export const UpdateProductSettingsSchema = z.object({
   fileUrl: z.string().url().optional().nullable().or(z.literal("")),
   externalUrl: z.string().url().optional().nullable().or(z.literal("")),
   licenseKeyTemplate: z.string().trim().max(80).optional().nullable().or(z.literal("")),
+  featuredOnGlobal: z.boolean().optional(),
 });
 
 /* ========== Coupon ========== */

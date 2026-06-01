@@ -3,7 +3,7 @@ import { CommunitySearchBar } from "./community-search-bar";
 import { InviteCopyButton } from "./invite-copy-button";
 import { CartIcon } from "@/components/marketplace/cart-icon";
 import { classByKey } from "@/lib/community-config";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Star } from "lucide-react";
 import type { ClassConfig } from "@/lib/community-config";
 import type { TierConfigItem } from "@/lib/services/subscription";
 
@@ -228,7 +228,7 @@ function MemberView({
             textDecoration: "none",
           }}
         >
-          <span style={{ fontSize: 18, lineHeight: 1 }}>⭐</span>
+          <Star size={18} color="gold" strokeWidth={1.5} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "#fff", lineHeight: 1.2 }}>
               Nâng cấp gói

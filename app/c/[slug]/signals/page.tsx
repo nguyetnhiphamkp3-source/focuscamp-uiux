@@ -8,6 +8,7 @@ import { FeedList } from "@/components/feed/feed-list";
 import { EmptyState } from "@/components/ui/empty-state";
 import { getEffectiveOwnership } from "@/lib/preview-mode";
 import { communityPermissionFlags, effectiveCommunityRole } from "@/lib/community-permissions";
+import { Zap } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -77,7 +78,7 @@ export default async function SignalsPage({
               marginBottom: 20,
             }}
           >
-            <div style={{ fontSize: 28 }}>⚡</div>
+            <Zap size={28} color="var(--info)" strokeWidth={1.5} />
             <div style={{ flex: 1 }}>
               <div
                 style={{
@@ -117,7 +118,7 @@ export default async function SignalsPage({
 
           {signals.length === 0 ? (
             <EmptyState
-              icon="⚡"
+              icon={<Zap size={40} color="var(--info)" strokeWidth={1.5} />}
               title="Chưa có tín hiệu nào"
               description={
                 permissions.canPublishSignals

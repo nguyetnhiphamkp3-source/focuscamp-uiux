@@ -163,6 +163,7 @@ export default async function ProductDetailPage({
                   fileUrl: (product as Record<string, unknown>).fileUrl as string | null ?? null,
                   externalUrl: (product as Record<string, unknown>).externalUrl as string | null ?? null,
                   licenseKeyTemplate: (product as Record<string, unknown>).licenseKeyTemplate as string | null ?? null,
+                  featuredOnGlobal: (product as Record<string, unknown>).featuredOnGlobal as boolean ?? false,
                 }}
                 communityProducts={communityProducts.map((cp) => ({
                   id: cp.id,

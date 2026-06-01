@@ -7,6 +7,7 @@ import { FeedList } from "@/components/feed/feed-list";
 import { EmptyState } from "@/components/ui/empty-state";
 import { getEffectiveOwnership } from "@/lib/preview-mode";
 import { communityPermissionFlags, effectiveCommunityRole } from "@/lib/community-permissions";
+import { Star } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -77,7 +78,7 @@ export default async function CotPage({
               marginBottom: 20,
             }}
           >
-            <div style={{ fontSize: 28 }}>⭐</div>
+            <Star size={28} color="var(--premium-gold)" strokeWidth={1.5} />
             <div>
               <div
                 style={{
@@ -98,7 +99,7 @@ export default async function CotPage({
 
           {posts.length === 0 ? (
             <EmptyState
-              icon="⭐"
+              icon={<Star size={40} color="var(--premium-gold)" strokeWidth={1.5} />}
               title="Chưa có bài CỐT nào"
               description={
                 permissions.canModerateContent

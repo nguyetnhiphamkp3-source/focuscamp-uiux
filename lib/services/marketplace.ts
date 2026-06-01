@@ -91,6 +91,7 @@ export async function updateProductSettings(input: {
   fileUrl?: string | null;
   externalUrl?: string | null;
   licenseKeyTemplate?: string | null;
+  featuredOnGlobal?: boolean;
 }): Promise<void> {
   // 1. Load product + community to check ownership
   const product = await prisma.product.findUnique({
@@ -129,6 +130,7 @@ export async function updateProductSettings(input: {
       ...(input.fileUrl !== undefined && { fileUrl: input.fileUrl || null }),
       ...(input.externalUrl !== undefined && { externalUrl: input.externalUrl || null }),
       ...(input.licenseKeyTemplate !== undefined && { licenseKeyTemplate: input.licenseKeyTemplate || null }),
+      ...(input.featuredOnGlobal !== undefined && { featuredOnGlobal: input.featuredOnGlobal }),
     },
   });
   logger.info({ productId: input.productId, by: input.userId }, "[product] settings updated");

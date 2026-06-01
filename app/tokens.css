@@ -216,7 +216,7 @@ h6 { font-size: var(--text-sm); font-weight: var(--fw-bold); line-height: var(--
   text-align: center;
   color: var(--text-muted);
 }
-.ui-empty-icon { font-size: 40px; margin-bottom: var(--space-2); }
+.ui-empty-icon { font-size: 40px; margin-bottom: var(--space-2); display: flex; align-items: center; justify-content: center; }
 .ui-empty-title { color: var(--text-heading); font-weight: var(--fw-bold); margin-bottom: var(--space-1); }
 
 /* Touch-target safety for all interactive items ≥ 40px */
