@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { rowCard, SectionHeader } from "./editor-shared";
 import { fmtVnd, avatarColorFor, initials, fmtRelativeTime } from "@/lib/brand";
@@ -9,6 +10,7 @@ import {
   approveOrderAction,
   approvePaymentAction,
   approvePlatformPaymentAction,
+  deleteExpiredOrderAction,
 } from "@/app/actions/orders";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 
@@ -30,7 +32,7 @@ interface OrdersPanelProps {
 const TABS = [
   { key: "ALL", label: "Tất cả" },
   { key: "COMPLETED", label: "Đã thanh toán" },
-  { key: "PENDING", label: "Cho TT" },
+  { key: "PENDING", label: "Pending" },
   { key: "EXPIRED", label: "Hết hạn" },
 ];
 
@@ -43,7 +45,7 @@ const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
 
 const STATUS_LABELS: Record<string, string> = {
   COMPLETED: "Đã TT",
-  PENDING: "Cho TT",
+  PENDING: "Pending",
   EXPIRED: "Hết hạn",
   REFUNDED: "Hoàn tiền",
 };
@@ -179,6 +181,53 @@ function ApproveButton({
   );
 }
 
+function DeleteExpiredButton({
+  order,
+  communitySlug,
+  mode,
+}: {
+  order: OrderRow;
+  communitySlug: string;
+  mode: "community" | "platform";
+}) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  function confirmDelete() {
+    setShowConfirm(false);
+    startTransition(async () => {
+      const res = await deleteExpiredOrderAction({
+        paymentId: order.orderId,
+        communitySlug,
+        mode,
+      });
+      if (res.ok) router.refresh();
+      else alert("Lỗi: " + res.reason);
+    });
+  }
+
+  return (
+    <>
+      <ConfirmModal
+        open={showConfirm}
+        title="Xóa đơn hết hạn"
+        message="Xóa vĩnh viễn đơn này cùng các bản ghi treo (chưa hoàn tất) mà nó tạo ra? Không thể hoàn tác."
+        confirmLabel="Xóa"
+        onConfirm={confirmDelete}
+        onCancel={() => setShowConfirm(false)}
+      />
+      <button
+        disabled={pending}
+        onClick={() => setShowConfirm(true)}
+        style={{ fontSize: "var(--text-xs)", fontWeight: 600, padding: "3px 10px", borderRadius: 5, border: "1px solid var(--danger)", background: "transparent", color: "var(--danger)", cursor: pending ? "not-allowed" : "pointer", opacity: pending ? 0.6 : 1 }}
+      >
+        {pending ? "Đang xóa..." : "Xóa"}
+      </button>
+    </>
+  );
+}
+
 export function OrdersPanel({
   orders,
   total,
@@ -278,6 +327,7 @@ export function OrdersPanel({
                     <StatusBadge status={order.status} />
                     <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{fmtRelativeTime(order.createdAt)}</span>
                     {order.status === "PENDING" && <ApproveButton order={order} communitySlug={communitySlug} mode={mode} />}
+                    {order.status === "EXPIRED" && <DeleteExpiredButton order={order} communitySlug={communitySlug} mode={mode} />}
                   </div>
                 </div>
 

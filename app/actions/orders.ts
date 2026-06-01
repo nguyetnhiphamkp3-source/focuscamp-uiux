@@ -384,3 +384,66 @@ export async function approvePlatformPaymentAction(input: {
   revalidatePath("/admin/orders");
   return { ok: true };
 }
+
+/**
+ * Hard-delete an EXPIRED order and the dangling records it spawned.
+ * Only touches not-yet-completed siblings (PENDING purchase / PAYMENT_PENDING
+ * member / PENDING subscription) so nothing live is removed.
+ */
+export async function deleteExpiredOrderAction(input: {
+  paymentId: string;
+  communitySlug: string;
+  mode?: "community" | "platform";
+}): Promise<ActionResult> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+
+  const payment = await prisma.payment.findUnique({ where: { id: input.paymentId } });
+  if (!payment) return { ok: false, reason: "not_found" };
+  if (payment.status !== "EXPIRED") return { ok: false, reason: "not_expired" };
+
+  // Authorize: platform orders need super admin; community orders need manage_orders.
+  if (input.mode === "platform" || payment.purpose === "community_plan") {
+    if (!(await isSuperAdmin(s.user.id))) return { ok: false, reason: "unauthorized" };
+  } else {
+    const community = await prisma.community.findUnique({
+      where: { slug: input.communitySlug },
+      select: {
+        id: true,
+        ownerId: true,
+        memberships: { where: { userId: s.user.id }, select: { role: true } },
+      },
+    });
+    if (!community || community.id !== payment.communityId) return { ok: false, reason: "unauthorized" };
+    const role = effectiveCommunityRole({
+      isOwner: community.ownerId === s.user.id,
+      membershipRole: community.memberships[0]?.role,
+    });
+    if (!canCommunity(role, "manage_orders")) return { ok: false, reason: "unauthorized" };
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      // CouponRedemption has a non-cascading FK to Payment — remove it first.
+      await tx.couponRedemption.deleteMany({ where: { paymentId: payment.id } });
+      if (payment.refType === "product") {
+        await tx.purchase.deleteMany({ where: { id: payment.refId, status: "PENDING" } });
+      } else if (payment.refType === "challenge") {
+        await tx.challengeMember.deleteMany({
+          where: { id: payment.refId, status: { in: ["PAYMENT_PENDING", "PENDING"] } },
+        });
+      } else if (payment.refType === "subscription") {
+        await tx.subscription.deleteMany({ where: { id: payment.refId, status: "PENDING" } });
+      }
+      await tx.payment.delete({ where: { id: payment.id } });
+    });
+  } catch (err) {
+    logError(err, { paymentId: payment.id });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+
+  logger.info({ paymentId: payment.id, refType: payment.refType, adminId: s.user.id }, "[orders] expired order deleted");
+  revalidatePath(input.mode === "platform" ? "/admin/orders" : `/c/${input.communitySlug}/orders`);
+  return { ok: true };
+}
