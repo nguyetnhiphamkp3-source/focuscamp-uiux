@@ -53,8 +53,8 @@ export default async function OrdersPage({
         <span className="view-title">Đơn hàng</span>
         <span className="view-subtitle">{community.name}</span>
       </header>
-      <div style={{ flex: 1, overflowY: "auto", padding: "var(--space-6) var(--space-8)" }}>
-        <div style={{ maxWidth: 860 }}>
+      <div className="orders-page-scroll">
+        <div className="orders-page-inner">
           <OrdersPanel
             orders={orders}
             total={total}

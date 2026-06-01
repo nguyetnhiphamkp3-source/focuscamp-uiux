@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { rowCard, SectionHeader } from "./editor-shared";
+import { SectionHeader } from "./editor-shared";
 import { fmtVnd, avatarColorFor, initials, fmtRelativeTime } from "@/lib/brand";
 import type { OrderRow } from "@/lib/services/community-orders";
 import {
@@ -251,27 +251,27 @@ export function OrdersPanel({
   };
 
   return (
-    <div>
+    <div className="orders-panel">
       <SectionHeader title={title} subtitle={subtitle} />
 
-      <div style={{ display: "flex", gap: 10, marginBottom: "var(--space-5)", flexWrap: "wrap" }}>
+      <div className="orders-stats">
         {[
           { label: "Tổng đơn", value: total },
           { label: "Doanh thu", value: `${fmtVnd(totalRevenue)}đ` },
           { label: "Chờ thanh toán", value: pendingCount },
         ].map(({ label, value }) => (
-          <div key={label} style={{ flex: 1, minWidth: 120, background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 10, padding: "12px 16px" }}>
-            <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: 600 }}>{label}</div>
-            <div style={{ fontSize: "var(--text-xl)", fontWeight: 800, color: "var(--header-primary)", marginTop: 4 }}>{value}</div>
+          <div key={label} className="orders-stat-card">
+            <div className="orders-stat-label">{label}</div>
+            <div className="orders-stat-value">{value}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ display: "flex", gap: 4, marginBottom: "var(--space-4)", borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="orders-tabs">
         {TABS.map(({ key, label }) => {
           const active = currentStatus === key;
           return (
-            <Link key={key} href={tabUrl(key)} style={{ padding: "8px 14px", fontSize: "var(--text-sm)", fontWeight: active ? 700 : 500, color: active ? "var(--brand-green)" : "var(--text-muted)", borderBottom: active ? "2px solid var(--brand-green)" : "2px solid transparent", textDecoration: "none", whiteSpace: "nowrap" }}>
+            <Link key={key} href={tabUrl(key)} className={`orders-tab${active ? " active" : ""}`}>
               {label}
             </Link>
           );
@@ -281,7 +281,7 @@ export function OrdersPanel({
       {orders.length === 0 ? (
         <div style={{ padding: "40px 20px", textAlign: "center", color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>Chưa có đơn hàng nào</div>
       ) : (
-        <div>
+        <div className="orders-list">
           {orders.map((order) => {
             const subtypeLabel =
               order.orderType === "product" ? (PRODUCT_TYPE_LABELS[order.itemSubtype] ?? order.itemSubtype) :
@@ -290,51 +290,51 @@ export function OrdersPanel({
               order.itemSubtype;
 
             return (
-              <div key={order.orderId} style={{ ...rowCard, flexDirection: "column", alignItems: "stretch", gap: 0 }}>
-                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+              <div key={order.orderId} className="orders-card">
+                <div className="orders-card-main">
                   {order.buyer.image ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={order.buyer.image} alt="" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                    <img src={order.buyer.image} alt="" className="orders-avatar" />
                   ) : (
-                    <div style={{ width: 36, height: 36, borderRadius: "50%", flexShrink: 0, background: avatarColorFor(order.buyer.id), display: "flex", alignItems: "center", justifyContent: "center", fontSize: "var(--text-xs)", fontWeight: 700, color: "#fff" }}>
+                    <div className="orders-avatar orders-avatar-fallback" style={{ background: avatarColorFor(order.buyer.id) }}>
                       {initials(order.buyer.name ?? order.buyer.email)}
                     </div>
                   )}
 
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, color: "var(--header-primary)", fontSize: "var(--text-sm)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <div className="orders-info">
+                    <div className="orders-buyer">
                       {order.buyer.name ?? order.buyer.email}
                     </div>
-                    <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 2, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 260 }}>{order.itemTitle}</span>
-                      <span style={{ background: "var(--bg-elevated)", borderRadius: 3, padding: "1px 5px", fontWeight: 600, flexShrink: 0, color: ORDER_TYPE_COLORS[order.orderType] }}>
+                    <div className="orders-meta">
+                      <span className="orders-item-title">{order.itemTitle}</span>
+                      <span className="orders-chip" style={{ color: ORDER_TYPE_COLORS[order.orderType] }}>
                         {ORDER_TYPE_LABELS[order.orderType]}
                       </span>
                       {subtypeLabel && (
-                        <span style={{ background: "var(--bg-elevated)", borderRadius: 3, padding: "1px 5px", fontWeight: 600, flexShrink: 0 }}>
+                        <span className="orders-chip">
                           {subtypeLabel}
                         </span>
                       )}
-                      <span style={{ background: "var(--bg-elevated)", borderRadius: 3, padding: "1px 5px", fontWeight: 600, flexShrink: 0 }}>
+                      <span className="orders-chip">
                         {order.paymentCode}
                       </span>
                       <ApprovalChip approval={order.approval} />
                     </div>
                   </div>
 
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
-                    <span style={{ fontWeight: 700, color: "var(--success)", fontSize: "var(--text-sm)" }}>{fmtVnd(order.amountVnd)}đ</span>
+                  <div className="orders-side">
+                    <span className="orders-amount">{fmtVnd(order.amountVnd)}đ</span>
                     <StatusBadge status={order.status} />
-                    <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{fmtRelativeTime(order.createdAt)}</span>
+                    <span className="orders-time">{fmtRelativeTime(order.createdAt)}</span>
                     {order.status === "PENDING" && <ApproveButton order={order} communitySlug={communitySlug} mode={mode} />}
                     {order.status === "EXPIRED" && <DeleteExpiredButton order={order} communitySlug={communitySlug} mode={mode} />}
                   </div>
                 </div>
 
                 {order.licenseKey && (
-                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--border-subtle)" }}>
-                    <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>License key: </span>
-                    <code style={{ fontSize: "var(--text-xs)", background: "var(--bg-elevated)", padding: "2px 6px", borderRadius: 4, letterSpacing: "0.05em" }}>{order.licenseKey}</code>
+                  <div className="orders-license">
+                    <span>License key: </span>
+                    <code>{order.licenseKey}</code>
                   </div>
                 )}
               </div>
