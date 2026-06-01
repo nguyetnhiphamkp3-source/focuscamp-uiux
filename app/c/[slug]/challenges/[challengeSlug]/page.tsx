@@ -383,7 +383,13 @@ export default async function ChallengeDetailPage({
         return approvedDayNumbers.has(prevTask.dayNumber);
       }
       case "DAILY_SEQUENTIAL": {
-        // Both gates must pass: scheduled time reached AND previous task completed.
+        // Both gates must pass: scheduled time reached AND previous task done.
+        // "Done" here = submitted (doneDayNumbers = PENDING+APPROVED), NOT approved —
+        // intentionally looser than SEQUENTIAL above. The time gate already paces
+        // progress, so also requiring approval would stall learners on reviewer
+        // latency. Challenge completion (COMPLETED) is still gated on APPROVED count
+        // (recomputeMemberCompletion), so this can't shortcut finishing.
+        // Do NOT "fix" this to approvedDayNumbers — the difference is deliberate.
         if (!isTimeGateOpen(taskIndex)) return false;
         if (taskIndex === 0) return true;
         const prevTask = tasks[taskIndex - 1];
