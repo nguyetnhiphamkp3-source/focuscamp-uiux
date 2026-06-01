@@ -16,9 +16,17 @@ export type ExternalEventType =
   | "purchase_completed"
   | "challenge_completed";
 
+export type TemplateVars = Record<string, string>;
+
+interface EventTemplate {
+  title?: string;
+  description?: string;
+}
+
 interface ChannelConfig {
   discord?: { webhookUrl: string; eventTypes: string[] };
   telegram?: { botToken: string; chatId: string; eventTypes: string[] };
+  templates?: Record<string, EventTemplate>;
 }
 
 function parseConfig(raw: unknown): ChannelConfig {
@@ -30,13 +38,34 @@ export interface DispatchPayload {
   title: string;
   description?: string;
   url?: string;
+  thumbnail?: string;
   fields?: Array<{ name: string; value: string }>;
+}
+
+/** Replace {{key}} placeholders in a template string with vars values. */
+function sub(tmpl: string, vars: TemplateVars): string {
+  return tmpl.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? "");
+}
+
+/** Merge custom template (if any) into the payload using provided vars. */
+function applyTemplateOverride(
+  payload: DispatchPayload,
+  tmpl: EventTemplate | undefined,
+  vars: TemplateVars | undefined
+): DispatchPayload {
+  if (!tmpl || !vars) return payload;
+  return {
+    ...payload,
+    title: tmpl.title ? sub(tmpl.title, vars) : payload.title,
+    description: tmpl.description !== undefined ? sub(tmpl.description, vars) : payload.description,
+  };
 }
 
 export async function dispatchToChannels(
   communityId: string,
   eventType: ExternalEventType,
-  payload: DispatchPayload
+  payload: DispatchPayload,
+  vars?: TemplateVars
 ) {
   const community = await prisma.community.findUnique({
     where: { id: communityId },
@@ -44,6 +73,9 @@ export async function dispatchToChannels(
   });
   if (!community) return;
   const cfg = parseConfig(community.channelConfig);
+
+  const tmpl = cfg.templates?.[eventType];
+  const p = applyTemplateOverride(payload, tmpl, vars);
 
   const tasks: Array<Promise<unknown>> = [];
 
@@ -53,10 +85,11 @@ export async function dispatchToChannels(
   ) {
     tasks.push(
       sendDiscordEmbed(cfg.discord.webhookUrl, {
-        title: payload.title,
-        description: payload.description,
-        url: payload.url,
-        fields: payload.fields,
+        title: p.title,
+        description: p.description,
+        url: p.url,
+        thumbnail: p.thumbnail,
+        fields: p.fields,
       }).catch(() => false)
     );
   }
@@ -69,9 +102,9 @@ export async function dispatchToChannels(
     const token = decryptSecret(cfg.telegram.botToken);
     if (token) {
       const text = [
-        `*${payload.title}*`,
-        payload.description ?? "",
-        payload.url ? `\n${payload.url}` : "",
+        `*${p.title}*`,
+        p.description ?? "",
+        p.url ? `\n${p.url}` : "",
       ]
         .filter(Boolean)
         .join("\n");

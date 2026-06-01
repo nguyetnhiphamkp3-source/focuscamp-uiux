@@ -432,6 +432,7 @@ export default async function SettingsPage({
                   const cfg = (community.channelConfig ?? {}) as {
                     discord?: { webhookUrl: string; eventTypes: string[] };
                     telegram?: { chatId: string; eventTypes: string[] };
+                    templates?: Record<string, { title?: string; description?: string }>;
                   };
                   return (
                     <ChannelConfigEditor
@@ -445,6 +446,7 @@ export default async function SettingsPage({
                               eventTypes: cfg.telegram.eventTypes,
                             }
                           : null,
+                        templates: cfg.templates ?? {},
                       }}
                     />
                   );

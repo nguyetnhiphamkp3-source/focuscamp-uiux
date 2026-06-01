@@ -313,7 +313,12 @@ export async function submitCheckin(params: {
   // Bump streak first, then award XP (multiplier uses the freshly bumped streak)
   const challengeCommunity = await prisma.challenge.findUnique({
     where: { id: challengeId },
-    select: { communityId: true },
+    select: {
+      communityId: true,
+      title: true,
+      slug: true,
+      community: { select: { slug: true } },
+    },
   });
   if (challengeCommunity) {
     try {
@@ -329,6 +334,26 @@ export async function submitCheckin(params: {
     } catch (err) {
       logger.warn({ err }, "[checkin] streak/XP update failed");
     }
+    // External notification — fire-and-forget
+    void (async () => {
+      try {
+        const u = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { name: true, email: true },
+        });
+        const displayName = u?.name || u?.email?.split("@")[0] || "Thành viên";
+        const { dispatchToChannels } = await import("./external-notify");
+        await dispatchToChannels(challengeCommunity.communityId, "checkin_submitted", {
+          title: `✅ ${displayName} vừa check-in`,
+          description: `${challengeCommunity.title}${dayNumber ? ` · Ngày ${dayNumber}` : ""}`,
+          url: `/c/${challengeCommunity.community.slug}/challenges/${challengeCommunity.slug}`,
+        }, {
+          name: displayName,
+          challenge: challengeCommunity.title,
+          day: String(dayNumber ?? ""),
+        });
+      } catch { /* non-blocking */ }
+    })();
   }
 
   return { ok: true, checkinId };

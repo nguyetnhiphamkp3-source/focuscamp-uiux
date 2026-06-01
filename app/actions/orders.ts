@@ -163,13 +163,16 @@ export async function approveOrderAction(input: {
   // Send notification
   try {
     const { dispatchToChannels } = await import("@/lib/services/external-notify");
+    const buyerName = purchase.user.name ?? purchase.user.email?.split("@")[0] ?? "Khách";
+    const amountStr = Number(purchase.amountVnd).toLocaleString("vi-VN");
     await dispatchToChannels(
       purchase.product.communityId,
       "purchase_completed",
       {
         title: `💰 Duyệt thủ công: ${purchase.product.title}`,
-        description: `${Number(purchase.amountVnd).toLocaleString("vi-VN")}đ — ${purchase.user.name ?? purchase.user.email}`,
+        description: `${buyerName} · ${amountStr}đ`,
       },
+      { product: purchase.product.title, buyer: buyerName, amount: amountStr },
     ).catch(() => {});
   } catch (err) {
     logger.warn({ err, purchaseId: purchase.id }, "[orders] manual approve: notify failed");

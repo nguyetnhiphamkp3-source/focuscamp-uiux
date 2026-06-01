@@ -290,6 +290,7 @@ export async function updateChannelConfig(input: {
   communityId: string;
   discord: { webhookUrl: string; eventTypes: string[] } | null;
   telegram: { botToken: string; chatId: string; eventTypes: string[] } | null;
+  templates?: Record<string, { title?: string; description?: string }>;
 }) {
   await assertCommunityPermission(input.userId, input.communityId, "manage_api_keys");
   const { encryptSecret } = await import("@/lib/integrations/encryption");
@@ -311,6 +312,16 @@ export async function updateChannelConfig(input: {
       chatId: input.telegram.chatId.trim(),
       eventTypes: input.telegram.eventTypes,
     };
+  }
+  // Strip empty strings so config stays clean
+  if (input.templates && Object.keys(input.templates).length > 0) {
+    const cleaned: Record<string, { title?: string; description?: string }> = {};
+    for (const [k, v] of Object.entries(input.templates)) {
+      const t = v.title?.trim();
+      const d = v.description?.trim();
+      if (t || d !== undefined) cleaned[k] = { ...(t ? { title: t } : {}), ...(d !== undefined ? { description: d } : {}) };
+    }
+    if (Object.keys(cleaned).length > 0) config.templates = cleaned;
   }
 
   await prisma.community.update({

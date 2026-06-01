@@ -266,10 +266,35 @@ async function recomputeMemberCompletion(userId: string, challengeId: string) {
     distinct: ["dayNumber"],
   });
   if (approvedDays.length >= challengeRow.requiredDays) {
-    await prisma.challengeMember.updateMany({
+    const completion = await prisma.challengeMember.updateMany({
       where: { challengeId, userId, completedAt: null },
       data: { status: "COMPLETED", completedAt: new Date() },
     });
+    // Only dispatch when this is a fresh completion (not already completed)
+    if (completion.count > 0) {
+      void (async () => {
+        try {
+          const [challenge, user] = await Promise.all([
+            prisma.challenge.findUnique({
+              where: { id: challengeId },
+              select: { title: true, slug: true, communityId: true, community: { select: { slug: true } } },
+            }),
+            prisma.user.findUnique({
+              where: { id: userId },
+              select: { name: true, email: true },
+            }),
+          ]);
+          if (!challenge) return;
+          const displayName = user?.name || user?.email?.split("@")[0] || "Thành viên";
+          const { dispatchToChannels } = await import("./external-notify");
+          await dispatchToChannels(challenge.communityId, "challenge_completed", {
+            title: `🏆 ${displayName} hoàn thành challenge!`,
+            description: challenge.title,
+            url: `/c/${challenge.community.slug}/challenges/${challenge.slug}`,
+          }, { name: displayName, challenge: challenge.title });
+        } catch { /* non-blocking */ }
+      })();
+    }
   } else {
     await prisma.challengeMember.updateMany({
       where: { challengeId, userId, status: "COMPLETED" },

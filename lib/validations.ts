@@ -445,6 +445,11 @@ export const ExternalEventTypeSchema = z.enum([
   "challenge_completed",
 ]);
 
+const EventTemplateSchema = z.object({
+  title: z.string().max(256).optional(),
+  description: z.string().max(1000).optional(),
+});
+
 export const UpdateChannelConfigSchema = z.object({
   communityId: z.string().cuid(),
   discord: z
@@ -460,6 +465,7 @@ export const UpdateChannelConfigSchema = z.object({
       eventTypes: z.array(ExternalEventTypeSchema),
     })
     .nullable(),
+  templates: z.record(ExternalEventTypeSchema, EventTemplateSchema).optional(),
 });
 
 export const UpdateMemberRoleSchema = z.object({

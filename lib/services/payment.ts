@@ -175,10 +175,11 @@ export async function startProductPurchase(params: {
       });
       if (purchaseData) {
         const { dispatchToChannels } = await import("./external-notify");
+        const buyerName = purchaseData.user.name ?? purchaseData.user.email?.split("@")[0] ?? "Khách";
         await dispatchToChannels(purchaseData.product.communityId, "purchase_completed", {
           title: `💰 Đơn hàng mới: ${purchaseData.product.title}`,
-          description: `0đ (miễn phí qua coupon)`,
-        }).catch(() => {});
+          description: `${buyerName} · 0đ (miễn phí qua coupon)`,
+        }, { product: purchaseData.product.title, buyer: buyerName, amount: "0" }).catch(() => {});
         const { notifyGettimePurchase } = await import("@/lib/integrations/gettime-crm");
         await notifyGettimePurchase({ name: purchaseData.user.name, email: purchaseData.user.email, productName: purchaseData.product.title, amountVnd: 0, orderId: purchase.id });
       }
@@ -632,13 +633,16 @@ export async function matchSePayTransactionToPayment(params: {
       });
       if (purchase) {
         const { dispatchToChannels } = await import("./external-notify");
+        const buyerName = purchase.user.name ?? purchase.user.email?.split("@")[0] ?? "Khách";
+        const amountStr = Number(purchase.amountVnd).toLocaleString("vi-VN");
         await dispatchToChannels(
           purchase.product.communityId,
           "purchase_completed",
           {
             title: `💰 Đơn hàng mới: ${purchase.product.title}`,
-            description: `${Number(purchase.amountVnd).toLocaleString("vi-VN")}đ`,
+            description: `${buyerName} · ${amountStr}đ`,
           },
+          { product: purchase.product.title, buyer: buyerName, amount: amountStr },
         ).catch(() => {});
 
         // Sync to gettime.money CRM

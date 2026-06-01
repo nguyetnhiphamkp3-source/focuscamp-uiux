@@ -493,6 +493,8 @@ export async function toggleCot(input: { userId: string; postId: string }) {
       select: {
         userId: true,
         title: true,
+        body: true,
+        imageUrl: true,
         community: { select: { slug: true, name: true } },
       },
     });
@@ -507,6 +509,21 @@ export async function toggleCot(input: { userId: string; postId: string }) {
         communitySlug: postFull.community.slug,
         postId: input.postId,
       });
+      // External notification — fire-and-forget
+      const postTitle = postFull.title ?? "Untitled";
+      const content = postFull.body ? postFull.body.slice(0, 300) : "";
+      void import("./external-notify").then((m) =>
+        m.dispatchToChannels(post.communityId, "post_cot", {
+          title: `⭐ Bài CỐT mới: ${postTitle}`,
+          description: content || `Cộng đồng ${postFull.community.name}`,
+          url: `/c/${postFull.community.slug}/p/${input.postId}`,
+          thumbnail: postFull.imageUrl ?? undefined,
+        }, {
+          postTitle,
+          content,
+          community: postFull.community.name,
+        }).catch(() => {})
+      ).catch(() => {});
     }
   }
 

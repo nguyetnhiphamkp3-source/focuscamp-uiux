@@ -114,7 +114,7 @@ export async function joinCommunity(
         m.dispatchToChannels(communityId, "new_member", {
           title: `🎉 ${displayName} vừa join cộng đồng`,
           description: `Welcome ${displayName}!`,
-        }).catch(() => {})
+        }, { name: displayName }).catch(() => {})
       );
       return { created: true, membership };
     });

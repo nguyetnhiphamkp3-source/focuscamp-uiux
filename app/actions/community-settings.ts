@@ -232,6 +232,7 @@ export async function updateChannelConfigAction(input: {
   communitySlug: string;
   discord: { webhookUrl: string; eventTypes: string[] } | null;
   telegram: { botToken: string; chatId: string; eventTypes: string[] } | null;
+  templates?: Record<string, { title?: string; description?: string }>;
 }): Promise<ActionResult> {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
@@ -240,6 +241,7 @@ export async function updateChannelConfigAction(input: {
     communityId: input.communityId,
     discord: input.discord,
     telegram: input.telegram,
+    templates: input.templates,
   });
   if (!parsed.success) {
     return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
@@ -251,6 +253,7 @@ export async function updateChannelConfigAction(input: {
       communityId: parsed.data.communityId,
       discord: parsed.data.discord,
       telegram: parsed.data.telegram,
+      templates: parsed.data.templates,
     });
     bump(input.communitySlug);
     return { ok: true };
