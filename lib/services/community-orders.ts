@@ -8,24 +8,91 @@ export interface OrderApproval {
   adminName: string | null;
 }
 
+export interface AffiliateInfo {
+  linkCode: string;
+  affiliateName: string | null;
+  affiliateEmail: string;
+  commissionVnd: number;
+  commissionPercent: number;
+  payoutStatus: string; // UNPAID | PAID | REJECTED
+}
+
 export interface OrderRow {
   orderId: string;
   orderType: "product" | "challenge" | "subscription" | "community" | "other";
   status: string;
   createdAt: Date;
   amountVnd: number;
+  /** Pre-discount total. Null when no coupon was applied. */
+  originalAmountVnd: number | null;
+  /** Discount amount from coupon. Null when no coupon was applied. */
+  discountVnd: number | null;
+  couponCode: string | null;
   itemTitle: string;
   itemSubtype: string;
   buyer: { id: string; name: string | null; image: string | null; email: string };
+  /** IP address captured at checkout time. */
+  buyerIp: string | null;
   purchaseId?: string;
   licenseKey?: string | null;
   paymentCode: string;
+  provider: string;
+  bankName: string | null;
+  bankAccount: string | null;
+  transactionId: string | null;
   receivedAt: Date | null;
+  expiresAt: Date;
+  /** Affiliate commission record for this order, if the buyer came via an affiliate link. */
+  affiliate: AffiliateInfo | null;
   /** How a COMPLETED order was confirmed. Null for non-completed orders. */
   approval: OrderApproval | null;
 }
 
 const VALID_STATUSES = ["PENDING", "COMPLETED", "EXPIRED", "REFUNDED"];
+
+/**
+ * Build a paymentId → AffiliateInfo map for a batch of payments.
+ *
+ * Commission `sourceId` differs by source type (see lib/services/affiliate.ts):
+ *   - PRODUCT   → sourceId = purchaseId (the payment's refId)
+ *   - CHALLENGE → sourceId = paymentId
+ * We collect both keys, query once, then map each commission back to its payment.
+ */
+async function buildAffiliateMap(
+  payments: { id: string; refType: string; refId: string }[],
+): Promise<Map<string, AffiliateInfo>> {
+  const map = new Map<string, AffiliateInfo>();
+  if (!payments.length) return map;
+
+  // sourceId → paymentId reverse lookup, covering both keying schemes.
+  const sourceToPayment = new Map<string, string>();
+  for (const p of payments) {
+    sourceToPayment.set(p.id, p.id); // CHALLENGE keys by paymentId
+    if (p.refType === "product") sourceToPayment.set(p.refId, p.id); // PRODUCT keys by purchaseId
+  }
+
+  const commissions = await prisma.affiliateCommission.findMany({
+    where: { sourceId: { in: [...sourceToPayment.keys()] } },
+    include: {
+      referral: {
+        include: { link: { include: { user: { select: { name: true, email: true } } } } },
+      },
+    },
+  });
+  for (const c of commissions) {
+    const paymentId = sourceToPayment.get(c.sourceId);
+    if (!paymentId) continue;
+    map.set(paymentId, {
+      linkCode: c.referral.link.code,
+      affiliateName: c.referral.link.user.name,
+      affiliateEmail: c.referral.link.user.email,
+      commissionVnd: Number(c.commissionVnd),
+      commissionPercent: Number(c.commissionPercent),
+      payoutStatus: c.payoutStatus,
+    });
+  }
+  return map;
+}
 
 /**
  * Derive how a payment was confirmed. Prefers the explicit `approvalSource`
@@ -85,10 +152,13 @@ export async function listCommunityOrders(
     .map((p) => ((p.metadata ?? {}) as Record<string, unknown>).approvedBy)
     .filter((x): x is string => typeof x === "string");
   const userIds = [...new Set([...payments.map((p) => p.userId), ...adminIds])];
-  const users = await prisma.user.findMany({
-    where: { id: { in: userIds } },
-    select: { id: true, name: true, image: true, email: true },
-  });
+  const [users, affiliateMap] = await Promise.all([
+    prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, name: true, image: true, email: true },
+    }),
+    buildAffiliateMap(payments),
+  ]);
   const userMap = new Map(users.map((u) => [u.id, u]));
 
   // Product: refId = purchaseId
@@ -128,14 +198,25 @@ export async function listCommunityOrders(
     const buyer = userMap.get(pay.userId) ?? {
       id: pay.userId, name: null, image: null, email: pay.userId,
     };
+    const meta = (pay.metadata ?? {}) as Record<string, unknown>;
     const base = {
       orderId: pay.id,
       status: pay.status,
       createdAt: pay.createdAt,
       amountVnd: Number(pay.amountVnd),
+      originalAmountVnd: pay.originalAmountVnd != null ? Number(pay.originalAmountVnd) : null,
+      discountVnd: pay.discountVnd != null ? Number(pay.discountVnd) : null,
+      couponCode: pay.couponCode ?? null,
       buyer,
+      buyerIp: typeof meta.buyerIp === "string" ? meta.buyerIp : null,
       paymentCode: pay.paymentCode,
+      provider: pay.provider,
+      bankName: pay.bankName ?? null,
+      bankAccount: pay.bankAccount ?? null,
+      transactionId: pay.transactionId ?? null,
       receivedAt: pay.receivedAt,
+      expiresAt: pay.expiresAt,
+      affiliate: affiliateMap.get(pay.id) ?? null,
       approval: buildApproval(pay, userMap),
     };
 
@@ -188,7 +269,7 @@ export async function listPlatformOrders(
   const adminIds = payments
     .map((p) => ((p.metadata ?? {}) as Record<string, unknown>).approvedBy)
     .filter((x): x is string => typeof x === "string");
-  const [users, communities] = await Promise.all([
+  const [users, communities, affiliateMap] = await Promise.all([
     prisma.user.findMany({
       where: { id: { in: [...new Set([...payments.map((p) => p.userId), ...adminIds])] } },
       select: { id: true, name: true, image: true, email: true },
@@ -197,6 +278,7 @@ export async function listPlatformOrders(
       where: { id: { in: [...new Set(payments.map((p) => p.refId))] } },
       select: { id: true, name: true, slug: true, planTier: true },
     }),
+    buildAffiliateMap(payments),
   ]);
   const userMap = new Map(users.map((u) => [u.id, u]));
   const communityMap = new Map(communities.map((c) => [c.id, c]));
@@ -209,17 +291,28 @@ export async function listPlatformOrders(
       email: pay.userId,
     };
     const community = communityMap.get(pay.refId);
+    const meta = (pay.metadata ?? {}) as Record<string, unknown>;
     return {
       orderId: pay.id,
-      orderType: "community",
+      orderType: "community" as const,
       status: pay.status,
       createdAt: pay.createdAt,
       amountVnd: Number(pay.amountVnd),
+      originalAmountVnd: pay.originalAmountVnd != null ? Number(pay.originalAmountVnd) : null,
+      discountVnd: pay.discountVnd != null ? Number(pay.discountVnd) : null,
+      couponCode: pay.couponCode ?? null,
       itemTitle: community ? `${community.name} (${community.slug})` : "Community plan",
       itemSubtype: community?.planTier ?? pay.refType,
       buyer,
+      buyerIp: typeof meta.buyerIp === "string" ? meta.buyerIp : null,
       paymentCode: pay.paymentCode,
+      provider: pay.provider,
+      bankName: pay.bankName ?? null,
+      bankAccount: pay.bankAccount ?? null,
+      transactionId: pay.transactionId ?? null,
       receivedAt: pay.receivedAt,
+      expiresAt: pay.expiresAt,
+      affiliate: affiliateMap.get(pay.id) ?? null,
       approval: buildApproval(pay, userMap),
     };
   });

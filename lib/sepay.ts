@@ -9,6 +9,7 @@
  */
 
 import { randomBytes } from "crypto";
+import { headers } from "next/headers";
 import { prisma } from "./prisma";
 import type { Prisma } from "@prisma/client";
 
@@ -93,10 +94,22 @@ export async function createPayment(
     paymentCode = generatePaymentCode();
   }
 
+  // Capture buyer IP from request headers when available (server actions / route handlers).
+  // Falls back silently when called outside of a request context (e.g. cron, tests).
+  let buyerIp: string | undefined;
+  try {
+    const hdrs = await headers();
+    const xff = hdrs.get("x-forwarded-for");
+    buyerIp = xff ? xff.split(",")[0].trim() : (hdrs.get("x-real-ip") ?? undefined);
+  } catch {
+    buyerIp = undefined;
+  }
+
   const meta = {
     ...(params.metadata ?? {}),
     ...(params.bankCode ? { bankCode: params.bankCode } : {}),
     ...(params.bankHolder ? { bankHolder: params.bankHolder } : {}),
+    ...(buyerIp ? { buyerIp } : {}),
   };
   const hasMetadata = Object.keys(meta).length > 0;
 

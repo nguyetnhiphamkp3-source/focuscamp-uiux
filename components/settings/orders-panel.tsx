@@ -13,6 +13,7 @@ import {
   deleteExpiredOrderAction,
 } from "@/app/actions/orders";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { OrderDetailModal } from "./order-detail-modal";
 
 interface OrdersPanelProps {
   orders: OrderRow[];
@@ -133,11 +134,14 @@ function ApproveButton({
   order,
   communitySlug,
   mode,
+  onSuccess,
 }: {
   order: OrderRow;
   communitySlug: string;
   mode: "community" | "platform";
+  onSuccess?: () => void;
 }) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [done, setDone] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -155,8 +159,12 @@ function ApproveButton({
       } else {
         res = await approvePaymentAction({ paymentId: order.orderId, communitySlug });
       }
-      if (res.ok) setDone(true);
-      else alert("Lỗi: " + res.reason);
+      if (res.ok) {
+        router.refresh();
+        onSuccess?.();
+      } else {
+        alert("Lỗi: " + res.reason);
+      }
     });
   }
 
@@ -185,10 +193,12 @@ function DeleteExpiredButton({
   order,
   communitySlug,
   mode,
+  onSuccess,
 }: {
   order: OrderRow;
   communitySlug: string;
   mode: "community" | "platform";
+  onSuccess?: () => void;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -202,8 +212,12 @@ function DeleteExpiredButton({
         communitySlug,
         mode,
       });
-      if (res.ok) router.refresh();
-      else alert("Lỗi: " + res.reason);
+      if (res.ok) {
+        router.refresh();
+        onSuccess?.();
+      } else {
+        alert("Lỗi: " + res.reason);
+      }
     });
   }
 
@@ -242,6 +256,7 @@ export function OrdersPanel({
   title = "Đơn hàng",
   subtitle = "Tất cả đơn hàng của cộng đồng: sản phẩm, challenge, membership.",
 }: OrdersPanelProps) {
+  const [selectedOrder, setSelectedOrder] = useState<OrderRow | null>(null);
   const totalPages = Math.ceil(total / limit);
   const rootPath = basePath ?? `/c/${communitySlug}/orders`;
   const tabUrl = (key: string) => key === "ALL" ? rootPath : `${rootPath}?status=${key}`;
@@ -278,6 +293,33 @@ export function OrdersPanel({
         })}
       </div>
 
+      {selectedOrder && (
+        <OrderDetailModal
+          order={selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+          actionSlot={
+            <>
+              {selectedOrder.status === "PENDING" && (
+                <ApproveButton
+                  order={selectedOrder}
+                  communitySlug={communitySlug}
+                  mode={mode}
+                  onSuccess={() => setSelectedOrder(null)}
+                />
+              )}
+              {selectedOrder.status === "EXPIRED" && (
+                <DeleteExpiredButton
+                  order={selectedOrder}
+                  communitySlug={communitySlug}
+                  mode={mode}
+                  onSuccess={() => setSelectedOrder(null)}
+                />
+              )}
+            </>
+          }
+        />
+      )}
+
       {orders.length === 0 ? (
         <div style={{ padding: "40px 20px", textAlign: "center", color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>Chưa có đơn hàng nào</div>
       ) : (
@@ -290,7 +332,11 @@ export function OrdersPanel({
               order.itemSubtype;
 
             return (
-              <div key={order.orderId} className="orders-card">
+              <div
+                key={order.orderId}
+                className="orders-card orders-card-clickable"
+                onClick={() => setSelectedOrder(order)}
+              >
                 <div className="orders-card-main">
                   {order.buyer.image ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -322,12 +368,20 @@ export function OrdersPanel({
                     </div>
                   </div>
 
-                  <div className="orders-side">
+                  <div className="orders-side" onClick={(e) => e.stopPropagation()}>
                     <span className="orders-amount">{fmtVnd(order.amountVnd)}đ</span>
                     <StatusBadge status={order.status} />
                     <span className="orders-time">{fmtRelativeTime(order.createdAt)}</span>
                     {order.status === "PENDING" && <ApproveButton order={order} communitySlug={communitySlug} mode={mode} />}
                     {order.status === "EXPIRED" && <DeleteExpiredButton order={order} communitySlug={communitySlug} mode={mode} />}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setSelectedOrder(order); }}
+                      aria-label={`Xem chi tiết đơn ${order.paymentCode}`}
+                      title="Xem chi tiết"
+                      style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 16, padding: "2px 4px", borderRadius: 4, lineHeight: 1 }}
+                    >
+                      ↗
+                    </button>
                   </div>
                 </div>
 

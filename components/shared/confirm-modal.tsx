@@ -39,9 +39,15 @@ export function ConfirmModal({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === "Escape") { onCancel(); return; }
+      if (e.key === "Escape") {
+        // Stop bubbling so a parent modal (e.g. order detail) doesn't also close.
+        e.stopPropagation();
+        onCancel();
+        return;
+      }
       // Focus trap between cancel and confirm buttons
       if (e.key === "Tab") {
+        e.stopPropagation();
         const first = cancelRef.current;
         const last = confirmRef.current;
         if (!first || !last) return;

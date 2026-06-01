@@ -5513,6 +5513,14 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
   margin-bottom: var(--space-2);
   padding: var(--space-3);
 }
+.orders-card-clickable {
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.orders-card-clickable:hover {
+  border-color: var(--brand-green);
+  background: var(--bg-modifier-hover);
+}
 .orders-card-main {
   align-items: center;
   display: flex;
