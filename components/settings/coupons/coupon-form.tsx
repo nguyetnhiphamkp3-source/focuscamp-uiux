@@ -77,6 +77,7 @@ export function CouponForm({ communityId, communitySlug, products, challenges, i
   );
   const [validFrom, setValidFrom] = useState<string>(toLocalInput(initial?.validFrom ?? null));
   const [validUntil, setValidUntil] = useState<string>(toLocalInput(initial?.validUntil ?? null));
+  const [hasExpiry, setHasExpiry] = useState<boolean>(Boolean(initial?.validUntil));
   const [maxRedemptions, setMaxRedemptions] = useState<string>(
     initial?.maxRedemptions != null ? String(initial.maxRedemptions) : "",
   );
@@ -113,7 +114,7 @@ export function CouponForm({ communityId, communitySlug, products, challenges, i
         discountType === "FIXED" ? parseInt(fixedAmountVnd || "0", 10) : null,
       minOrderVnd: minOrderVnd ? parseInt(minOrderVnd, 10) : null,
       validFrom: validFrom ? new Date(validFrom).toISOString() : null,
-      validUntil: validUntil ? new Date(validUntil).toISOString() : null,
+      validUntil: hasExpiry && validUntil ? new Date(validUntil).toISOString() : null,
       maxRedemptions: maxRedemptions ? parseInt(maxRedemptions, 10) : null,
       perUserLimit: parseInt(perUserLimit, 10),
       allowedRefTypes: refTypes,
@@ -252,7 +253,7 @@ export function CouponForm({ communityId, communitySlug, products, challenges, i
         />
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: 16 }}>
         <Field label="Hiệu lực từ (optional)">
           <input
             type="datetime-local"
@@ -261,14 +262,27 @@ export function CouponForm({ communityId, communitySlug, products, challenges, i
             style={inputStyle}
           />
         </Field>
-        <Field label="Hết hạn (optional)">
-          <input
-            type="datetime-local"
-            value={validUntil}
-            onChange={(e) => setValidUntil(e.target.value)}
-            style={inputStyle}
-          />
-        </Field>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <label style={radioStyle}>
+            <input
+              type="checkbox"
+              checked={hasExpiry}
+              onChange={(e) => {
+                setHasExpiry(e.target.checked);
+                if (!e.target.checked) setValidUntil("");
+              }}
+            />
+            Đặt ngày hết hạn
+          </label>
+          {hasExpiry && (
+            <input
+              type="datetime-local"
+              value={validUntil}
+              onChange={(e) => setValidUntil(e.target.value)}
+              style={inputStyle}
+            />
+          )}
+        </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
@@ -340,6 +354,8 @@ export function CouponForm({ communityId, communitySlug, products, challenges, i
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
+  minWidth: 0,
+  boxSizing: "border-box",
   padding: "10px 12px",
   border: "1px solid var(--border)",
   borderRadius: 8,
