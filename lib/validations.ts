@@ -450,20 +450,34 @@ const EventTemplateSchema = z.object({
   description: z.string().max(1000).optional(),
 });
 
+const ChallengeIdsSchema = z.array(z.string().cuid()).max(100).optional();
+
 export const UpdateChannelConfigSchema = z.object({
   communityId: z.string().cuid(),
   discord: z
-    .object({
-      webhookUrl: z.string().url().or(z.literal("")),
-      eventTypes: z.array(ExternalEventTypeSchema),
-    })
+    .array(
+      z.object({
+        webhookUrl: z.string().url().or(z.literal("")),
+        eventTypes: z.array(ExternalEventTypeSchema),
+        challengeIds: ChallengeIdsSchema,
+      }),
+    )
+    .max(20)
     .nullable(),
   telegram: z
-    .object({
-      botToken: z.string().trim().min(0).max(200),
-      chatId: z.string().trim().min(0).max(80),
-      eventTypes: z.array(ExternalEventTypeSchema),
-    })
+    .array(
+      z.object({
+        // Stable id for existing channels (omitted for new ones).
+        id: z.string().max(64).optional(),
+        // Empty/omitted = keep previously saved token for this channel.
+        botToken: z.string().trim().max(200).optional(),
+        chatId: z.string().trim().min(1).max(80),
+        topicId: z.string().trim().regex(/^\d*$/, "Topic ID phải là số").max(20).optional(),
+        eventTypes: z.array(ExternalEventTypeSchema),
+        challengeIds: ChallengeIdsSchema,
+      }),
+    )
+    .max(20)
     .nullable(),
   templates: z.record(ExternalEventTypeSchema, EventTemplateSchema).optional(),
 });

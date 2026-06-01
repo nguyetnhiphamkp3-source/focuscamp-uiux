@@ -288,31 +288,68 @@ export async function updateLevelsConfig(input: {
 export async function updateChannelConfig(input: {
   userId: string;
   communityId: string;
-  discord: { webhookUrl: string; eventTypes: string[] } | null;
-  telegram: { botToken: string; chatId: string; eventTypes: string[] } | null;
+  discord: Array<{ webhookUrl: string; eventTypes: string[]; challengeIds?: string[] }> | null;
+  telegram: Array<{
+    id?: string;
+    botToken?: string;
+    chatId: string;
+    topicId?: string;
+    eventTypes: string[];
+    challengeIds?: string[];
+  }> | null;
   templates?: Record<string, { title?: string; description?: string }>;
 }) {
   await assertCommunityPermission(input.userId, input.communityId, "manage_api_keys");
   const { encryptSecret } = await import("@/lib/integrations/encryption");
+  const { randomUUID } = await import("crypto");
+  const { normalizeChannelConfig } = await import("@/lib/channel-config");
+
+  // Load existing telegram channels so we can preserve encrypted bot tokens
+  // for channels the client did not re-enter (token is never sent to client).
+  const existing = await prisma.community.findUnique({
+    where: { id: input.communityId },
+    select: { channelConfig: true },
+  });
+  const prev = normalizeChannelConfig(existing?.channelConfig);
+  const tokenById = new Map(prev.telegram.map((t) => [t.id, t.botToken]));
+  const tokenByChat = new Map(prev.telegram.map((t) => [t.chatId, t.botToken]));
+
+  const optionalIds = (ids?: string[]) =>
+    ids && ids.length ? { challengeIds: ids } : {};
 
   const config: Record<string, unknown> = {};
-  if (input.discord && input.discord.webhookUrl.trim()) {
-    config.discord = {
-      webhookUrl: input.discord.webhookUrl.trim(),
-      eventTypes: input.discord.eventTypes,
-    };
+
+  const discord = (input.discord ?? [])
+    .filter((d) => d.webhookUrl.trim())
+    .map((d) => ({
+      webhookUrl: d.webhookUrl.trim(),
+      eventTypes: d.eventTypes,
+      ...optionalIds(d.challengeIds),
+    }));
+  if (discord.length) config.discord = discord;
+
+  const telegram: Array<Record<string, unknown>> = [];
+  for (const t of input.telegram ?? []) {
+    const chatId = t.chatId.trim();
+    if (!chatId) continue;
+    // Resolve the encrypted token: re-entered > preserved by id > preserved by chatId.
+    const entered = t.botToken?.trim();
+    let stored = "";
+    if (entered) stored = encryptSecret(entered);
+    else if (t.id && tokenById.has(t.id)) stored = tokenById.get(t.id) ?? "";
+    else if (tokenByChat.has(chatId)) stored = tokenByChat.get(chatId) ?? "";
+    if (!stored) continue; // no token available for this channel — drop it
+    telegram.push({
+      id: t.id || randomUUID(),
+      botToken: stored,
+      chatId,
+      eventTypes: t.eventTypes,
+      ...(t.topicId?.trim() ? { topicId: t.topicId.trim() } : {}),
+      ...optionalIds(t.challengeIds),
+    });
   }
-  if (
-    input.telegram &&
-    input.telegram.botToken.trim() &&
-    input.telegram.chatId.trim()
-  ) {
-    config.telegram = {
-      botToken: encryptSecret(input.telegram.botToken.trim()),
-      chatId: input.telegram.chatId.trim(),
-      eventTypes: input.telegram.eventTypes,
-    };
-  }
+  if (telegram.length) config.telegram = telegram;
+
   // Strip empty strings so config stays clean
   if (input.templates && Object.keys(input.templates).length > 0) {
     const cleaned: Record<string, { title?: string; description?: string }> = {};
@@ -333,8 +370,8 @@ export async function updateChannelConfig(input: {
   logger.info(
     {
       communityId: input.communityId,
-      hasDiscord: !!config.discord,
-      hasTelegram: !!config.telegram,
+      discordCount: discord.length,
+      telegramCount: telegram.length,
     },
     "[community-settings] channel config updated"
   );

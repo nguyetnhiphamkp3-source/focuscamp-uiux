@@ -230,8 +230,15 @@ export async function removeMemberAction(input: {
 export async function updateChannelConfigAction(input: {
   communityId: string;
   communitySlug: string;
-  discord: { webhookUrl: string; eventTypes: string[] } | null;
-  telegram: { botToken: string; chatId: string; eventTypes: string[] } | null;
+  discord: Array<{ webhookUrl: string; eventTypes: string[]; challengeIds?: string[] }> | null;
+  telegram: Array<{
+    id?: string;
+    botToken?: string;
+    chatId: string;
+    topicId?: string;
+    eventTypes: string[];
+    challengeIds?: string[];
+  }> | null;
   templates?: Record<string, { title?: string; description?: string }>;
 }): Promise<ActionResult> {
   const s = await auth();

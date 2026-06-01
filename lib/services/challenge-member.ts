@@ -291,7 +291,7 @@ async function recomputeMemberCompletion(userId: string, challengeId: string) {
             title: `🏆 ${displayName} hoàn thành challenge!`,
             description: challenge.title,
             url: `/c/${challenge.community.slug}/challenges/${challenge.slug}`,
-          }, { name: displayName, challenge: challenge.title });
+          }, { name: displayName, challenge: challenge.title }, { challengeId });
         } catch { /* non-blocking */ }
       })();
     }

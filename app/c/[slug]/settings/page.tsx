@@ -32,6 +32,7 @@ import { listApiKeys } from "@/app/actions/api-keys";
 import { AffiliateConfigEditor } from "@/components/settings/affiliate-config-editor";
 import { getAffiliateConfig } from "@/lib/services/affiliate";
 import { ChannelConfigEditor } from "@/components/settings/channel-config-editor";
+import { normalizeChannelConfig } from "@/lib/channel-config";
 import { PaymentConfigEditor } from "@/components/settings/payment-config-editor";
 import { getPlanStatus } from "@/lib/platform-plans";
 import { getTiersConfig } from "@/lib/services/subscription";
@@ -107,6 +108,15 @@ export default async function SettingsPage({
     tab === "members" && perms.canViewMembers
       ? await listMembers({ communityId: community.id, limit: 100 })
       : { members: [], total: 0 };
+  // Challenge list for per-channel notification routing
+  const notifyChallenges =
+    tab === "integrations" && perms.canManageApiKeys
+      ? await prisma.challenge.findMany({
+          where: { communityId: community.id },
+          select: { id: true, title: true },
+          orderBy: { createdAt: "desc" },
+        })
+      : [];
 
   return (
     <>
@@ -429,23 +439,27 @@ export default async function SettingsPage({
 
               {perms.canManageApiKeys &&
                 (() => {
-                  const cfg = (community.channelConfig ?? {}) as {
-                    discord?: { webhookUrl: string; eventTypes: string[] };
-                    telegram?: { chatId: string; eventTypes: string[] };
-                    templates?: Record<string, { title?: string; description?: string }>;
-                  };
+                  const cfg = normalizeChannelConfig(community.channelConfig);
                   return (
                     <ChannelConfigEditor
                       communityId={community.id}
                       communitySlug={slug}
+                      challenges={notifyChallenges}
                       initial={{
-                        discord: cfg.discord ?? null,
-                        telegram: cfg.telegram
-                          ? {
-                              chatId: cfg.telegram.chatId,
-                              eventTypes: cfg.telegram.eventTypes,
-                            }
-                          : null,
+                        discord: cfg.discord.map((d) => ({
+                          webhookUrl: d.webhookUrl,
+                          eventTypes: d.eventTypes,
+                          challengeIds: d.challengeIds ?? [],
+                        })),
+                        // Never send bot tokens to the client — only a "hasToken" flag.
+                        telegram: cfg.telegram.map((t) => ({
+                          id: t.id,
+                          hasToken: !!t.botToken,
+                          chatId: t.chatId,
+                          topicId: t.topicId ?? "",
+                          eventTypes: t.eventTypes,
+                          challengeIds: t.challengeIds ?? [],
+                        })),
                         templates: cfg.templates ?? {},
                       }}
                     />

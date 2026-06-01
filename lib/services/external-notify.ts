@@ -1,6 +1,7 @@
 /**
- * Dispatch focus.camp events to external channels (Discord webhook + Telegram bot).
- * Reads Community.channelConfig + per-event whitelist + sends in parallel.
+ * Dispatch focus.camp events to external channels (Discord webhooks + Telegram bots).
+ * Reads Community.channelConfig (multiple channels per platform, each with its own
+ * event whitelist + optional per-challenge filter) and sends in parallel.
  * Best-effort: failures logged, never block the originating flow.
  */
 import { prisma } from "@/lib/prisma";
@@ -8,6 +9,11 @@ import { logger } from "@/lib/logger";
 import { sendDiscordEmbed } from "@/lib/integrations/discord";
 import { sendTelegramMessage } from "@/lib/integrations/telegram";
 import { decryptSecret } from "@/lib/integrations/encryption";
+import {
+  normalizeChannelConfig,
+  channelReceives,
+  type EventTemplate,
+} from "@/lib/channel-config";
 
 export type ExternalEventType =
   | "new_member"
@@ -18,28 +24,17 @@ export type ExternalEventType =
 
 export type TemplateVars = Record<string, string>;
 
-interface EventTemplate {
-  title?: string;
-  description?: string;
-}
-
-interface ChannelConfig {
-  discord?: { webhookUrl: string; eventTypes: string[] };
-  telegram?: { botToken: string; chatId: string; eventTypes: string[] };
-  templates?: Record<string, EventTemplate>;
-}
-
-function parseConfig(raw: unknown): ChannelConfig {
-  if (!raw || typeof raw !== "object") return {};
-  return raw as ChannelConfig;
-}
-
 export interface DispatchPayload {
   title: string;
   description?: string;
   url?: string;
   thumbnail?: string;
   fields?: Array<{ name: string; value: string }>;
+}
+
+/** Optional event scope — e.g. the originating challenge, used for per-challenge routing. */
+export interface DispatchScope {
+  challengeId?: string;
 }
 
 /** Replace {{key}} placeholders in a template string with vars values. */
@@ -65,26 +60,25 @@ export async function dispatchToChannels(
   communityId: string,
   eventType: ExternalEventType,
   payload: DispatchPayload,
-  vars?: TemplateVars
+  vars?: TemplateVars,
+  scope?: DispatchScope
 ) {
   const community = await prisma.community.findUnique({
     where: { id: communityId },
     select: { name: true, channelConfig: true },
   });
   if (!community) return;
-  const cfg = parseConfig(community.channelConfig);
+  const cfg = normalizeChannelConfig(community.channelConfig);
 
   const tmpl = cfg.templates?.[eventType];
   const p = applyTemplateOverride(payload, tmpl, vars);
 
   const tasks: Array<Promise<unknown>> = [];
 
-  if (
-    cfg.discord?.webhookUrl &&
-    cfg.discord.eventTypes?.includes(eventType)
-  ) {
+  for (const d of cfg.discord) {
+    if (!channelReceives(d, eventType, scope?.challengeId)) continue;
     tasks.push(
-      sendDiscordEmbed(cfg.discord.webhookUrl, {
+      sendDiscordEmbed(d.webhookUrl, {
         title: p.title,
         description: p.description,
         url: p.url,
@@ -94,26 +88,22 @@ export async function dispatchToChannels(
     );
   }
 
-  if (
-    cfg.telegram?.botToken &&
-    cfg.telegram.chatId &&
-    cfg.telegram.eventTypes?.includes(eventType)
-  ) {
-    const token = decryptSecret(cfg.telegram.botToken);
-    if (token) {
-      const text = [
-        `*${p.title}*`,
-        p.description ?? "",
-        p.url ? `\n${p.url}` : "",
-      ]
-        .filter(Boolean)
-        .join("\n");
-      tasks.push(
-        sendTelegramMessage(token, cfg.telegram.chatId, {
-          text,
-        }).catch(() => false)
-      );
-    }
+  // Telegram message body is identical across channels — build once.
+  const tgText = [`*${p.title}*`, p.description ?? "", p.url ? `\n${p.url}` : ""]
+    .filter(Boolean)
+    .join("\n");
+
+  for (const t of cfg.telegram) {
+    if (!t.botToken || !channelReceives(t, eventType, scope?.challengeId)) continue;
+    const token = decryptSecret(t.botToken);
+    if (!token) continue;
+    const threadId = t.topicId ? Number(t.topicId) : undefined;
+    tasks.push(
+      sendTelegramMessage(token, t.chatId, {
+        text: tgText,
+        ...(threadId && Number.isFinite(threadId) ? { messageThreadId: threadId } : {}),
+      }).catch(() => false)
+    );
   }
 
   if (tasks.length === 0) return;

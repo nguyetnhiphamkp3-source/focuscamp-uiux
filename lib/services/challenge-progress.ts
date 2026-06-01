@@ -351,7 +351,7 @@ export async function submitCheckin(params: {
           name: displayName,
           challenge: challengeCommunity.title,
           day: String(dayNumber ?? ""),
-        });
+        }, { challengeId });
       } catch { /* non-blocking */ }
     })();
   }

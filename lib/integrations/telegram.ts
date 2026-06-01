@@ -7,6 +7,8 @@ export interface TelegramMessage {
   text: string;
   url?: string;
   parseMode?: "HTML" | "MarkdownV2";
+  /** Forum topic thread to post into (Telegram message_thread_id). */
+  messageThreadId?: number;
 }
 
 export async function sendTelegramMessage(
@@ -20,6 +22,8 @@ export async function sendTelegramMessage(
       text: message.text.slice(0, 4096),
       disable_web_page_preview: true,
     };
+    if (message.messageThreadId !== undefined)
+      params.message_thread_id = message.messageThreadId;
     if (message.parseMode) params.parse_mode = message.parseMode;
     const res = await fetch(
       `https://api.telegram.org/bot${botToken}/sendMessage`,
