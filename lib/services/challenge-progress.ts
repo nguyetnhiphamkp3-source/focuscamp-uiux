@@ -51,6 +51,44 @@ export function effectivePersonalStartsAt(
 }
 
 /**
+ * Day-anchor (Option B): the local-midnight at which "Day 1" officially begins.
+ *
+ * Rounds the personal start UP to the next local midnight. The remainder of the
+ * day a member presses "Bắt đầu" is warm-up — Day-1's task is already visible and
+ * can be checked in early, but the day counter and missed-day tally only start
+ * ticking at this anchor. So an evening starter isn't shortchanged on Day 1 (and
+ * is never flagged "missed" for the partial first day). Starting exactly at
+ * midnight keeps that midnight as Day 1 (no push).
+ */
+export function challengeDayAnchor(effStart: Date): Date {
+  const anchor = new Date(effStart);
+  anchor.setHours(0, 0, 0, 0);
+  if (effStart.getTime() > anchor.getTime()) {
+    anchor.setDate(anchor.getDate() + 1);
+  }
+  return anchor;
+}
+
+/**
+ * Current 1-based day number for a member, per Option B (see challengeDayAnchor).
+ * During warm-up (before the anchor) this clamps to 1, so Day-1's task shows but
+ * no earlier day is ever counted as missed.
+ */
+export function challengeCurrentDay(
+  effStart: Date,
+  requiredDays: number,
+  now: Date = new Date()
+): number {
+  const anchor = challengeDayAnchor(effStart);
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+  const elapsedDays = Math.floor(
+    (today.getTime() - anchor.getTime()) / (1000 * 60 * 60 * 24)
+  );
+  return Math.min(requiredDays, Math.max(1, elapsedDays + 1));
+}
+
+/**
  * Compute consecutive-day streak ending at the most recent check-in.
  * Given checkins sorted asc, returns the longest run of consecutive days
  * ending at the last check-in day.
@@ -103,15 +141,10 @@ export async function getActiveChallenge(
       .catch(() => {});
   }
 
-  const startDay = new Date(effStart);
-  startDay.setHours(0, 0, 0, 0);
   const now = new Date();
   const today = new Date(now);
   today.setHours(0, 0, 0, 0);
-  const elapsedDays = Math.floor(
-    (today.getTime() - startDay.getTime()) / (1000 * 60 * 60 * 24)
-  );
-  const currentDay = Math.min(ch.requiredDays, Math.max(1, elapsedDays + 1));
+  const currentDay = challengeCurrentDay(effStart, ch.requiredDays, now);
   const progressPct = Math.round((currentDay / ch.requiredDays) * 100);
 
   const todayTask = ch.tasks.find((t) => t.dayNumber === currentDay) || null;
@@ -119,14 +152,18 @@ export async function getActiveChallenge(
   // Load all my check-ins for this challenge (lightweight)
   const myCheckins = await prisma.checkin.findMany({
     where: { userId, challengeId: ch.id },
-    select: { dayNumber: true, createdAt: true },
+    select: { dayNumber: true, createdAt: true, status: true },
   });
   const dayNumbers = myCheckins
     .map((c) => c.dayNumber ?? null)
     .filter((n): n is number => n !== null);
-  const checkedInToday = myCheckins.some(
-    (c) => c.createdAt.getTime() >= today.getTime()
-  );
+  // "Done for now" if submitted since local midnight (normal daily flow) OR the
+  // current day already has a non-rejected submission. The 2nd clause matters in
+  // warm-up: Day 1 spans the start evening + the anchor day (2 calendar dates),
+  // so a midnight-only check would re-show the form and allow a duplicate Day-1.
+  const checkedInToday =
+    myCheckins.some((c) => c.createdAt.getTime() >= today.getTime()) ||
+    myCheckins.some((c) => c.dayNumber === currentDay && c.status !== "REJECTED");
   const streak = computeStreak(dayNumbers);
   // Missed days = days from 1..(currentDay-1) that have no check-in
   const doneSet = new Set(dayNumbers);

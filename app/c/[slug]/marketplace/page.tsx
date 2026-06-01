@@ -215,6 +215,7 @@ export default async function MarketplacePage({
                           fileUrl: (p as Record<string, unknown>).fileUrl as string | null ?? null,
                           externalUrl: (p as Record<string, unknown>).externalUrl as string | null ?? null,
                           licenseKeyTemplate: (p as Record<string, unknown>).licenseKeyTemplate as string | null ?? null,
+                          featuredOnGlobal: p.featuredOnGlobal ?? false,
                         },
                         communityProducts: communityProductsList,
                       } : undefined}

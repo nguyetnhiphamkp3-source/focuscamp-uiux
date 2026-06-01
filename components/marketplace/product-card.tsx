@@ -49,6 +49,7 @@ export type ProductSettingsData = {
     fileUrl: string | null;
     externalUrl: string | null;
     licenseKeyTemplate: string | null;
+    featuredOnGlobal: boolean;
   };
   communityProducts: { id: string; title: string; isVisible: boolean }[];
 };

@@ -7,7 +7,7 @@ import { joinChallengeAction, startChallengeAction } from "@/app/actions/challen
 import { CheckinForm } from "@/components/community/checkin-form";
 import { SubmissionReviewPanel } from "@/components/community/submission-review-panel";
 import type { SubmissionRow } from "@/components/community/submission-review-panel";
-import { effectivePersonalStartsAt } from "@/lib/services/challenge-progress";
+import { effectivePersonalStartsAt, challengeDayAnchor, challengeCurrentDay } from "@/lib/services/challenge-progress";
 import { ChallengeSettingsPanel } from "@/components/community/challenge-settings-panel";
 import { ChallengeEditButton } from "@/components/community/challenge-edit-button";
 import { ResubmitForm } from "@/components/community/resubmit-form";
@@ -319,16 +319,11 @@ export default async function ChallengeDetailPage({
   const dayNow = (() => {
     if (myMembership?.completedAt) return challenge.requiredDays;
     if (!effStart) return 0;
-    const startDay = new Date(effStart);
-    startDay.setHours(0, 0, 0, 0);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const elapsedDays = Math.floor((today.getTime() - startDay.getTime()) / (1000 * 60 * 60 * 24));
-    return Math.min(challenge.requiredDays, Math.max(1, elapsedDays + 1));
+    return challengeCurrentDay(effStart, challenge.requiredDays);
   })();
 
   const currentTaskDeadlineLabel = effStart && dayNow > 0
-    ? new Date(effStart.getTime() + dayNow * 24 * 60 * 60 * 1000).toLocaleString("vi-VN", {
+    ? new Date(challengeDayAnchor(effStart).getTime() + dayNow * 24 * 60 * 60 * 1000).toLocaleString("vi-VN", {
         timeZone: "Asia/Ho_Chi_Minh", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false,
       })
     : undefined;
@@ -366,10 +361,8 @@ export default async function ChallengeDetailPage({
     const cumulativeHours = cumulativeUnlockHours(idx);
     const unlockAfterDays = cumulativeHours / 24;
     if (Number.isInteger(unlockAfterDays) && effStart) {
-      // Whole-day intervals open at local midnight of (start day + N days).
-      const midnightStart = new Date(effStart);
-      midnightStart.setHours(0, 0, 0, 0);
-      return midnightStart.getTime() + unlockAfterDays * 24 * 60 * 60 * 1000;
+      // Whole-day intervals open at the day-anchor (next midnight after start) + N days.
+      return challengeDayAnchor(effStart).getTime() + unlockAfterDays * 24 * 60 * 60 * 1000;
     }
     return personalStart + cumulativeHours * 60 * 60 * 1000;
   };
@@ -390,7 +383,13 @@ export default async function ChallengeDetailPage({
         return approvedDayNumbers.has(prevTask.dayNumber);
       }
       case "DAILY_SEQUENTIAL": {
-        // Both gates must pass: scheduled time reached AND previous task completed.
+        // Both gates must pass: scheduled time reached AND previous task done.
+        // "Done" here = submitted (doneDayNumbers = PENDING+APPROVED), NOT approved —
+        // intentionally looser than SEQUENTIAL above. The time gate already paces
+        // progress, so also requiring approval would stall learners on reviewer
+        // latency. Challenge completion (COMPLETED) is still gated on APPROVED count
+        // (recomputeMemberCompletion), so this can't shortcut finishing.
+        // Do NOT "fix" this to approvedDayNumbers — the difference is deliberate.
         if (!isTimeGateOpen(taskIndex)) return false;
         if (taskIndex === 0) return true;
         const prevTask = tasks[taskIndex - 1];
@@ -1424,7 +1423,7 @@ async function CheckinGate({
     },
   });
 
-  const deadlineMs = active.personalStartsAt.getTime() + active.currentDay * 24 * 60 * 60 * 1000;
+  const deadlineMs = challengeDayAnchor(active.personalStartsAt).getTime() + active.currentDay * 24 * 60 * 60 * 1000;
   const deadlineDate = new Date(deadlineMs);
   const deadlineStr = deadlineDate.toLocaleString("vi-VN", {
     timeZone: "Asia/Ho_Chi_Minh",

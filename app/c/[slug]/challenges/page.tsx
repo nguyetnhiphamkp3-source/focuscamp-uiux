@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { CreateChallengeButton } from "@/components/community/create-challenge-button";
 import { getEffectiveOwnership } from "@/lib/preview-mode";
 import { communityPermissionFlags, effectiveCommunityRole } from "@/lib/community-permissions";
-import { effectivePersonalStartsAt } from "@/lib/services/challenge-progress";
+import { effectivePersonalStartsAt, challengeCurrentDay } from "@/lib/services/challenge-progress";
 
 export const dynamic = "force-dynamic";
 
@@ -348,16 +348,7 @@ function ActiveTab({
         const isPending = m.status === "PAYMENT_PENDING";
         const effStart = effectivePersonalStartsAt(m, m.challenge);
         const day = effStart
-          ? Math.min(
-              m.challenge.requiredDays,
-              Math.max(
-                1,
-                Math.floor(
-                  (Date.now() - effStart.getTime()) /
-                    (1000 * 60 * 60 * 24)
-                ) + 1
-              )
-            )
+          ? challengeCurrentDay(effStart, m.challenge.requiredDays)
           : 1;
         const pct = Math.round((day / m.challenge.requiredDays) * 100);
         const accent = isPending ? "#d97706" : diffColor(m.challenge.difficulty);
