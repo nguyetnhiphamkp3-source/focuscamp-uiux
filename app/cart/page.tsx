@@ -113,7 +113,11 @@ export default async function CartPage() {
           </span>
         </div>
 
-        <CartCheckoutButton communityId={communityId} totalVnd={totalVnd} />
+        <CartCheckoutButton
+          communityId={communityId}
+          totalVnd={totalVnd}
+          lineItems={eligibleProducts.map((p) => ({ productId: p.id, amountVnd: Number(p.priceVnd) }))}
+        />
       </div>
     </main>
   );

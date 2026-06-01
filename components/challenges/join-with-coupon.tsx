@@ -5,6 +5,7 @@ import { CouponInput, type CouponApplied } from "@/components/checkout/coupon-in
 
 type Props = {
   communityId: string;
+  challengeId: string;
   priceVnd: number;
   buyLabel: string;
   action: (formData: FormData) => void | Promise<void>;
@@ -12,7 +13,7 @@ type Props = {
 
 const fmtVnd = (n: number) => n.toLocaleString("vi-VN") + "đ";
 
-export function JoinChallengeWithCoupon({ communityId, priceVnd, buyLabel, action }: Props) {
+export function JoinChallengeWithCoupon({ communityId, challengeId, priceVnd, buyLabel, action }: Props) {
   const [applied, setApplied] = useState<CouponApplied | null>(null);
 
   return (
@@ -21,6 +22,7 @@ export function JoinChallengeWithCoupon({ communityId, priceVnd, buyLabel, actio
         communityId={communityId}
         refType="challenge"
         orderAmountVnd={priceVnd}
+        refId={challengeId}
         applied={applied}
         onApply={(r) =>
           setApplied({

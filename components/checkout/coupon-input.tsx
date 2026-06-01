@@ -14,6 +14,10 @@ type Props = {
   communityId: string;
   refType: "product" | "challenge" | "cart" | "event";
   orderAmountVnd: number;
+  /** Entity being purchased: productId (product) or challengeId (challenge). */
+  refId?: string;
+  /** Cart lines, so the preview discount matches the server's eligible-subtotal calc. */
+  lineItems?: { productId: string; amountVnd: number }[];
   applied: CouponApplied | null;
   onApply: (result: ApplyCouponSuccess) => void;
   onClear: () => void;
@@ -25,6 +29,8 @@ export function CouponInput({
   communityId,
   refType,
   orderAmountVnd,
+  refId,
+  lineItems,
   applied,
   onApply,
   onClear,
@@ -46,6 +52,8 @@ export function CouponInput({
         communityId,
         refType,
         orderAmountVnd,
+        refId,
+        lineItems,
       });
       if (res.ok) {
         onApply(res);

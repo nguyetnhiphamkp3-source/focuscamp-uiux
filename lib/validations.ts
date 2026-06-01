@@ -634,6 +634,8 @@ const baseCouponSchema = z.object({
   maxRedemptions: z.coerce.number().int().positive().optional().nullable(),
   perUserLimit: z.coerce.number().int().positive().default(1),
   allowedRefTypes: z.array(CouponRefTypeSchema).min(1, "Chọn ít nhất 1 loại checkout"),
+  allowedProductIds: z.array(z.string().cuid()).optional().default([]),
+  allowedChallengeIds: z.array(z.string().cuid()).optional().default([]),
   isActive: z.coerce.boolean().default(true),
 });
 
@@ -661,6 +663,15 @@ export const ApplyCouponInputSchema = z.object({
   communityId: z.string().cuid(),
   refType: CouponRefTypeSchema,
   orderAmountVnd: z.coerce.number().int().positive(),
+  refId: z.string().cuid().optional(),
+  lineItems: z
+    .array(
+      z.object({
+        productId: z.string().cuid(),
+        amountVnd: z.coerce.number().int().nonnegative(),
+      })
+    )
+    .optional(),
 });
 
 /* ========== Content Report ========== */

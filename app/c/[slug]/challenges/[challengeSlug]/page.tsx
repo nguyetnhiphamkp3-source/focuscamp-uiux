@@ -725,6 +725,7 @@ export default async function ChallengeDetailPage({
                   {effectivePrice && effectivePrice.vnd > 0 ? (
                     <JoinChallengeWithCoupon
                       communityId={challenge.community.id}
+                      challengeId={challenge.id}
                       priceVnd={effectivePrice.vnd}
                       buyLabel={`🚀 Đăng ký ngay — ${Number(effectivePrice.vnd).toLocaleString("vi-VN")}đ`}
                       action={joinAction}

@@ -41,6 +41,19 @@ export default async function NewCouponPage({
   );
   if (!perms.canManageCoupons) redirect(`/c/${slug}/settings`);
 
+  const [products, challenges] = await Promise.all([
+    prisma.product.findMany({
+      where: { communityId: community.id },
+      select: { id: true, title: true },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.challenge.findMany({
+      where: { communityId: community.id },
+      select: { id: true, title: true },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
+
   return (
     <>
       <header className="view-header">
@@ -49,7 +62,12 @@ export default async function NewCouponPage({
       </header>
       <div style={{ flex: 1, overflowY: "auto", padding: "var(--space-6) var(--space-8)" }}>
         <div style={{ maxWidth: 720 }} className="ui-card">
-          <CouponForm communityId={community.id} communitySlug={slug} />
+          <CouponForm
+            communityId={community.id}
+            communitySlug={slug}
+            products={products}
+            challenges={challenges}
+          />
         </div>
       </div>
     </>

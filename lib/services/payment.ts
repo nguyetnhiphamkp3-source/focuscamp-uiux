@@ -21,6 +21,8 @@ async function resolveCoupon(input: {
   userId: string;
   refType: "product" | "challenge" | "cart" | "event";
   orderAmountVnd: number;
+  refId?: string;
+  lineItems?: { productId: string; amountVnd: number }[];
 }) {
   if (!input.couponCode) return null;
   const res = await validateCoupon({
@@ -29,6 +31,8 @@ async function resolveCoupon(input: {
     userId: input.userId,
     refType: input.refType,
     orderAmountVnd: input.orderAmountVnd,
+    refId: input.refId,
+    lineItems: input.lineItems,
   });
   if (!res.ok) {
     const err = new Error(`coupon_invalid:${res.reason}`);
@@ -126,6 +130,7 @@ export async function startProductPurchase(params: {
     userId,
     refType: "product",
     orderAmountVnd: originalAmountVnd,
+    refId: product.id,
   });
   const finalAmountVnd = coupon ? coupon.finalAmountVnd : originalAmountVnd;
 
@@ -200,6 +205,7 @@ export async function startChallengePurchase(params: {
     userId,
     refType: "challenge",
     orderAmountVnd: amountVnd,
+    refId: challengeId,
   });
   const finalAmountVnd = coupon ? coupon.finalAmountVnd : amountVnd;
   const community = await prisma.community.findUnique({

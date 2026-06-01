@@ -8,11 +8,12 @@ import { CouponInput, type CouponApplied } from "@/components/checkout/coupon-in
 type Props = {
   communityId?: string;
   totalVnd: number;
+  lineItems: { productId: string; amountVnd: number }[];
 };
 
 const fmtVnd = (n: number) => n.toLocaleString("vi-VN") + "đ";
 
-export function CartCheckoutButton({ communityId, totalVnd }: Props) {
+export function CartCheckoutButton({ communityId, totalVnd, lineItems }: Props) {
   const [loading, setLoading] = useState(false);
   const [applied, setApplied] = useState<CouponApplied | null>(null);
   const router = useRouter();
@@ -37,6 +38,7 @@ export function CartCheckoutButton({ communityId, totalVnd }: Props) {
           communityId={communityId}
           refType="cart"
           orderAmountVnd={totalVnd}
+          lineItems={lineItems}
           applied={applied}
           onApply={(r) =>
             setApplied({

@@ -5,6 +5,7 @@ import { CouponInput, type CouponApplied } from "@/components/checkout/coupon-in
 
 type Props = {
   communityId: string;
+  productId: string;
   priceVnd: number;
   buyLabel: string;
   addToCart?: React.ReactNode;
@@ -13,7 +14,7 @@ type Props = {
 
 const fmtVnd = (n: number) => n.toLocaleString("vi-VN") + "đ";
 
-export function BuyWithCoupon({ communityId, priceVnd, buyLabel, addToCart, action }: Props) {
+export function BuyWithCoupon({ communityId, productId, priceVnd, buyLabel, addToCart, action }: Props) {
   const [applied, setApplied] = useState<CouponApplied | null>(null);
 
   return (
@@ -22,6 +23,7 @@ export function BuyWithCoupon({ communityId, priceVnd, buyLabel, addToCart, acti
         communityId={communityId}
         refType="product"
         orderAmountVnd={priceVnd}
+        refId={productId}
         applied={applied}
         onApply={(r) =>
           setApplied({

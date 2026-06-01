@@ -24,7 +24,12 @@ export type CouponRejectReason =
   | "per_user_limit_reached"
   | "min_order_not_met"
   | "min_amount_after_discount"
+  | "product_not_eligible"
+  | "challenge_not_eligible"
   | "feature_disabled";
+
+/** Single cart line for eligible-subtotal computation. */
+export type CouponLineItem = { productId: string; amountVnd: number };
 
 export type ValidateCouponInput = {
   code: string;
@@ -32,6 +37,10 @@ export type ValidateCouponInput = {
   userId: string;
   refType: "product" | "challenge" | "cart" | "event";
   orderAmountVnd: number;
+  /** Entity being purchased: productId (product) or challengeId (challenge). */
+  refId?: string;
+  /** Cart lines, used to compute the eligible subtotal when targeting products. */
+  lineItems?: CouponLineItem[];
 };
 
 export type ValidateCouponResult =
@@ -124,13 +133,61 @@ export async function validateCoupon(
     }
   }
 
-  const discountVnd = computeDiscount(coupon, input.orderAmountVnd);
+  // Entity targeting: narrow the discount base to the eligible portion of the order.
+  const eligible = resolveEligibleAmount(coupon, input);
+  if (!eligible.ok) return eligible;
+
+  const discountVnd = computeDiscount(coupon, eligible.eligibleAmountVnd);
   const finalAmountVnd = input.orderAmountVnd - discountVnd;
   if (finalAmountVnd < SEPAY_MIN_AMOUNT_VND) {
     return { ok: false, reason: "min_amount_after_discount" };
   }
 
   return { ok: true, coupon, discountVnd, finalAmountVnd };
+}
+
+/**
+ * Resolve the amount the discount is computed on, given the coupon's entity
+ * targeting (allowedProductIds / allowedChallengeIds). Empty target lists mean
+ * "all entities", so the base stays the full order amount (legacy behavior).
+ *
+ * - product/challenge: single-entity checkout → base = full order if refId is in
+ *   the target list, else the coupon is not eligible for this entity.
+ * - cart: base = sum of line items whose product is targeted; zero eligible → reject.
+ */
+function resolveEligibleAmount(
+  coupon: Coupon,
+  input: ValidateCouponInput
+): { ok: true; eligibleAmountVnd: number } | { ok: false; reason: CouponRejectReason } {
+  const products = coupon.allowedProductIds;
+  const challenges = coupon.allowedChallengeIds;
+
+  if (input.refType === "product" && products.length > 0) {
+    if (!input.refId || !products.includes(input.refId)) {
+      return { ok: false, reason: "product_not_eligible" };
+    }
+    return { ok: true, eligibleAmountVnd: input.orderAmountVnd };
+  }
+
+  if (input.refType === "challenge" && challenges.length > 0) {
+    if (!input.refId || !challenges.includes(input.refId)) {
+      return { ok: false, reason: "challenge_not_eligible" };
+    }
+    return { ok: true, eligibleAmountVnd: input.orderAmountVnd };
+  }
+
+  if (input.refType === "cart" && products.length > 0) {
+    const eligibleSubtotal = (input.lineItems ?? [])
+      .filter((it) => products.includes(it.productId))
+      .reduce((sum, it) => sum + it.amountVnd, 0);
+    if (eligibleSubtotal <= 0) {
+      return { ok: false, reason: "product_not_eligible" };
+    }
+    return { ok: true, eligibleAmountVnd: eligibleSubtotal };
+  }
+
+  // No targeting (or event): discount on the full order amount.
+  return { ok: true, eligibleAmountVnd: input.orderAmountVnd };
 }
 
 /**
@@ -175,5 +232,7 @@ export const COUPON_REJECT_LABELS: Record<CouponRejectReason, string> = {
   per_user_limit_reached: "Bạn đã dùng mã này rồi",
   min_order_not_met: "Đơn chưa đủ giá trị tối thiểu",
   min_amount_after_discount: "Số tiền sau giảm thấp hơn mức tối thiểu",
+  product_not_eligible: "Mã không áp dụng cho sản phẩm này",
+  challenge_not_eligible: "Mã không áp dụng cho challenge này",
   feature_disabled: "Tính năng coupon đang tắt",
 };

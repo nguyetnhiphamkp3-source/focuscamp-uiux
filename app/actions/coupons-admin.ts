@@ -64,6 +64,8 @@ export async function createCouponAction(input: {
         maxRedemptions: parsed.data.maxRedemptions ?? null,
         perUserLimit: parsed.data.perUserLimit,
         allowedRefTypes: parsed.data.allowedRefTypes,
+        allowedProductIds: parsed.data.allowedProductIds,
+        allowedChallengeIds: parsed.data.allowedChallengeIds,
         isActive: parsed.data.isActive,
       },
     });
@@ -106,6 +108,8 @@ export async function updateCouponAction(input: {
         ...(parsed.data.maxRedemptions !== undefined && { maxRedemptions: parsed.data.maxRedemptions }),
         ...(parsed.data.perUserLimit !== undefined && { perUserLimit: parsed.data.perUserLimit }),
         ...(parsed.data.allowedRefTypes !== undefined && { allowedRefTypes: parsed.data.allowedRefTypes }),
+        ...(parsed.data.allowedProductIds !== undefined && { allowedProductIds: parsed.data.allowedProductIds }),
+        ...(parsed.data.allowedChallengeIds !== undefined && { allowedChallengeIds: parsed.data.allowedChallengeIds }),
         ...(parsed.data.isActive !== undefined && { isActive: parsed.data.isActive }),
       },
     });

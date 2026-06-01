@@ -449,6 +449,7 @@ export default async function ProductDetailPage({
                   <>
                     <BuyWithCoupon
                       communityId={product.community.id}
+                      productId={product.id}
                       priceVnd={price}
                       buyLabel={product.isSubscription ? "Subscribe ngay" : "Mua ngay"}
                       action={buy}

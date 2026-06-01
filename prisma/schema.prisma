@@ -1261,6 +1261,14 @@ model Coupon {
    * Allowed checkout refTypes: subset of ["product","challenge","cart","event"].
    */
   allowedRefTypes String[]
+  /**
+   * Target specific products. Empty = applies to all products in the community.
+   */
+  allowedProductIds   String[]
+  /**
+   * Target specific challenges. Empty = applies to all challenges in the community.
+   */
+  allowedChallengeIds String[]
   isActive        Boolean   @default(true)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt

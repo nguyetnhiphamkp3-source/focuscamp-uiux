@@ -9,6 +9,8 @@ import {
 
 type RefType = "product" | "challenge" | "cart" | "event";
 
+export type EntityOption = { id: string; title: string };
+
 export type CouponFormInitial = {
   id?: string;
   code: string;
@@ -22,12 +24,16 @@ export type CouponFormInitial = {
   maxRedemptions: number | null;
   perUserLimit: number;
   allowedRefTypes: RefType[];
+  allowedProductIds: string[];
+  allowedChallengeIds: string[];
   isActive: boolean;
 };
 
 type Props = {
   communityId: string;
   communitySlug: string;
+  products: EntityOption[];
+  challenges: EntityOption[];
   initial?: CouponFormInitial;
 };
 
@@ -48,7 +54,7 @@ function toLocalInput(iso: string | null): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export function CouponForm({ communityId, communitySlug, initial }: Props) {
+export function CouponForm({ communityId, communitySlug, products, challenges, initial }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +86,17 @@ export function CouponForm({ communityId, communitySlug, initial }: Props) {
   const [refTypes, setRefTypes] = useState<RefType[]>(
     initial?.allowedRefTypes ?? ["product"],
   );
+  const [productIds, setProductIds] = useState<string[]>(
+    initial?.allowedProductIds ?? [],
+  );
+  const [challengeIds, setChallengeIds] = useState<string[]>(
+    initial?.allowedChallengeIds ?? [],
+  );
   const [isActive, setIsActive] = useState<boolean>(initial?.isActive ?? true);
+
+  // Targeting only makes sense for product/cart (products) and challenge (challenges).
+  const showProductTarget = refTypes.includes("product") || refTypes.includes("cart");
+  const showChallengeTarget = refTypes.includes("challenge");
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -101,6 +117,8 @@ export function CouponForm({ communityId, communitySlug, initial }: Props) {
       maxRedemptions: maxRedemptions ? parseInt(maxRedemptions, 10) : null,
       perUserLimit: parseInt(perUserLimit, 10),
       allowedRefTypes: refTypes,
+      allowedProductIds: showProductTarget ? productIds : [],
+      allowedChallengeIds: showChallengeTarget ? challengeIds : [],
       isActive,
     };
 
@@ -214,6 +232,26 @@ export function CouponForm({ communityId, communitySlug, initial }: Props) {
         </div>
       </Field>
 
+      {showProductTarget && (
+        <EntityTargetPicker
+          label="Áp dụng cho sản phẩm"
+          emptyHint="Cộng đồng chưa có sản phẩm nào."
+          options={products}
+          selected={productIds}
+          onChange={setProductIds}
+        />
+      )}
+
+      {showChallengeTarget && (
+        <EntityTargetPicker
+          label="Áp dụng cho challenge"
+          emptyHint="Cộng đồng chưa có challenge nào."
+          options={challenges}
+          selected={challengeIds}
+          onChange={setChallengeIds}
+        />
+      )}
+
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
         <Field label="Hiệu lực từ (optional)">
           <input
@@ -317,6 +355,84 @@ const radioStyle: React.CSSProperties = {
   fontSize: "var(--text-sm)",
   cursor: "pointer",
 };
+
+/**
+ * "Tất cả" / "Cụ thể" toggle + checklist for narrowing a coupon to specific
+ * entities. An empty `selected` array means the coupon applies to all entities.
+ */
+function EntityTargetPicker({
+  label,
+  emptyHint,
+  options,
+  selected,
+  onChange,
+}: {
+  label: string;
+  emptyHint: string;
+  options: EntityOption[];
+  selected: string[];
+  onChange: (next: string[]) => void;
+}) {
+  const specific = selected.length > 0;
+  return (
+    <Field label={label}>
+      <div style={{ display: "flex", gap: 12, marginBottom: specific ? 8 : 0 }}>
+        <label style={radioStyle}>
+          <input
+            type="radio"
+            checked={!specific}
+            onChange={() => onChange([])}
+          />
+          Tất cả
+        </label>
+        <label style={radioStyle}>
+          <input
+            type="radio"
+            checked={specific}
+            disabled={options.length === 0}
+            onChange={() => onChange(options[0] ? [options[0].id] : [])}
+          />
+          Cụ thể
+        </label>
+      </div>
+      {specific &&
+        (options.length === 0 ? (
+          <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{emptyHint}</div>
+        ) : (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 6,
+              maxHeight: 200,
+              overflowY: "auto",
+              padding: "8px 12px",
+              border: "1px solid var(--border)",
+              borderRadius: 8,
+              background: "var(--bg-elevated)",
+            }}
+          >
+            {options.map((o) => (
+              <label key={o.id} style={radioStyle}>
+                <input
+                  type="checkbox"
+                  checked={selected.includes(o.id)}
+                  onChange={(e) =>
+                    onChange(
+                      e.target.checked
+                        ? [...selected, o.id]
+                        : selected.filter((x) => x !== o.id),
+                    )
+                  }
+                />
+                {o.title}
+              </label>
+            ))}
+          </div>
+        ))}
+    </Field>
+  );
+}
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (

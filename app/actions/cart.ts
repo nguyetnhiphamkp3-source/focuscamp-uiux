@@ -113,6 +113,7 @@ export async function checkoutCartAction(
       userId: s.user.id,
       refType: "cart",
       orderAmountVnd: totalVnd,
+      lineItems: breakdown.map((b) => ({ productId: b.productId, amountVnd: b.amountVnd })),
     });
     if (!res.ok) return { ok: false, reason: `coupon_invalid:${res.reason}` };
     coupon = {

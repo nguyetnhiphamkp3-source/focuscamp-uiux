@@ -46,6 +46,19 @@ export default async function EditCouponPage({
   });
   if (!coupon) notFound();
 
+  const [products, challenges] = await Promise.all([
+    prisma.product.findMany({
+      where: { communityId: community.id },
+      select: { id: true, title: true },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.challenge.findMany({
+      where: { communityId: community.id },
+      select: { id: true, title: true },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
+
   const redemptionStats = await prisma.couponRedemption.groupBy({
     by: ["status"],
     where: { couponId: coupon.id },
@@ -78,6 +91,8 @@ export default async function EditCouponPage({
             <CouponForm
               communityId={community.id}
               communitySlug={slug}
+              products={products}
+              challenges={challenges}
               initial={{
                 id: coupon.id,
                 code: coupon.code,
@@ -91,6 +106,8 @@ export default async function EditCouponPage({
                 maxRedemptions: coupon.maxRedemptions,
                 perUserLimit: coupon.perUserLimit,
                 allowedRefTypes: coupon.allowedRefTypes as ("product" | "challenge" | "cart" | "event")[],
+                allowedProductIds: coupon.allowedProductIds,
+                allowedChallengeIds: coupon.allowedChallengeIds,
                 isActive: coupon.isActive,
               }}
             />

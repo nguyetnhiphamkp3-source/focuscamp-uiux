@@ -30,6 +30,8 @@ export async function applyCouponAction(input: {
   communityId: string;
   refType: "product" | "challenge" | "cart" | "event";
   orderAmountVnd: number;
+  refId?: string;
+  lineItems?: { productId: string; amountVnd: number }[];
 }): Promise<ApplyCouponResult> {
   const session = await auth();
   if (!session?.user?.id) {
@@ -51,6 +53,8 @@ export async function applyCouponAction(input: {
     userId: session.user.id,
     refType: parsed.data.refType,
     orderAmountVnd: parsed.data.orderAmountVnd,
+    refId: parsed.data.refId,
+    lineItems: parsed.data.lineItems,
   });
 
   if (!result.ok) {
