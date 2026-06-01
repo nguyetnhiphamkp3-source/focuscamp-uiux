@@ -54,6 +54,7 @@ export function ProductSettingsPanel({
     fileUrl: string | null;
     externalUrl: string | null;
     licenseKeyTemplate: string | null;
+    featuredOnGlobal: boolean;
   };
   communityProducts: { id: string; title: string; isVisible: boolean }[];
   /** When true, button is always visible (not hover-only). Use on detail pages. */
@@ -76,6 +77,7 @@ export function ProductSettingsPanel({
   const [fileUrl, setFileUrl] = useState<string | null>(initial.fileUrl);
   const [externalUrl, setExternalUrl] = useState(initial.externalUrl ?? "");
   const [licenseKeyTemplate, setLicenseKeyTemplate] = useState(initial.licenseKeyTemplate ?? "FC-{XXXX}-{XXXX}");
+  const [featuredOnGlobal, setFeaturedOnGlobal] = useState(initial.featuredOnGlobal);
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -108,6 +110,7 @@ export function ProductSettingsPanel({
         fileUrl: fileUrl || null,
         externalUrl: externalUrl.trim() || null,
         licenseKeyTemplate: type === "LICENSE" ? (licenseKeyTemplate.trim() || null) : null,
+        featuredOnGlobal,
       });
       if (res.ok) {
         setOpen(false);
@@ -269,7 +272,12 @@ export function ProductSettingsPanel({
 
               <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
                 <input type="checkbox" checked={isVisible} onChange={(e) => setIsVisible(e.target.checked)} disabled={pending} />
-                <span style={{ fontSize: "var(--text-sm)", color: "var(--text-normal)" }}>Hiển thị trên marketplace</span>
+                <span style={{ fontSize: "var(--text-sm)", color: "var(--text-normal)" }}>Hiển thị trên community marketplace</span>
+              </label>
+
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                <input type="checkbox" checked={featuredOnGlobal} onChange={(e) => setFeaturedOnGlobal(e.target.checked)} disabled={pending} />
+                <span style={{ fontSize: "var(--text-sm)", color: "var(--text-normal)" }}>🌐 Hiện trên Global Marketplace (focus.camp/marketplace)</span>
               </label>
 
               <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>

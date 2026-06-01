@@ -129,6 +129,7 @@ export async function updateProductSettingsAction(input: {
   fileUrl?: string | null;
   externalUrl?: string | null;
   licenseKeyTemplate?: string | null;
+  featuredOnGlobal?: boolean;
 }): Promise<ActionResult> {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
@@ -158,6 +159,7 @@ export async function updateProductSettingsAction(input: {
     revalidatePath(`/c/${input.communitySlug}/marketplace`);
     revalidatePath(`/c/${input.communitySlug}/marketplace/${input.productSlug}`);
     revalidatePath("/cart");
+    revalidatePath("/marketplace");
     return { ok: true };
   } catch (err) {
     logError(err, { userId: s.user.id, productId: input.productId });
