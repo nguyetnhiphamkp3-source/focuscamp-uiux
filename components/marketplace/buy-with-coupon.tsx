@@ -60,7 +60,11 @@ export function BuyWithCoupon({ communityId, productId, priceVnd, buyLabel, addT
             className="ui-btn ui-btn-primary ui-btn-lg"
             style={{ width: "100%" }}
           >
-            {buyLabel}
+            {applied
+              ? applied.finalAmountVnd === 0
+                ? "🎉 Nhận miễn phí"
+                : buyLabel
+              : buyLabel}
           </button>
         </form>
         {addToCart}

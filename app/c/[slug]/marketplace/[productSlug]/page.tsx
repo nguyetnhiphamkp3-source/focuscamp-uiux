@@ -92,14 +92,16 @@ export default async function ProductDetailPage({
         ? rawCouponCode.trim().toUpperCase()
         : undefined;
 
-    let paymentCode: string;
     try {
       const result = await startProductPurchase({
         userId: s.user!.id!,
         productId: product!.id,
         couponCode,
       });
-      paymentCode = result.payment.paymentCode;
+      if (result.free) {
+        redirect(`/c/${communitySlug}/marketplace/${productSlug}?purchased=1`);
+      }
+      redirect(`/pay/${result.payment.paymentCode}`);
     } catch (err) {
       if (err instanceof Error) {
         if (err.message === "not_a_member") redirect(`/c/${communitySlug}`);
@@ -116,7 +118,6 @@ export default async function ProductDetailPage({
       logError(err, { productId: product!.id, userId: s.user!.id! });
       throw err;
     }
-    redirect(`/pay/${paymentCode}`);
   }
 
   const price = Number(product.priceVnd);

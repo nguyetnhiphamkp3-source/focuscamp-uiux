@@ -58,7 +58,11 @@ export function JoinChallengeWithCoupon({ communityId, challengeId, priceVnd, bu
           className="ui-btn ui-btn-primary ui-btn-lg"
           style={{ width: "100%" }}
         >
-          {applied ? `🚀 Đăng ký ngay — ${fmtVnd(applied.finalAmountVnd)}` : buyLabel}
+          {applied
+            ? applied.finalAmountVnd === 0
+              ? "🎉 Tham gia miễn phí"
+              : `🚀 Đăng ký ngay — ${fmtVnd(applied.finalAmountVnd)}`
+            : buyLabel}
         </button>
       </form>
     </div>

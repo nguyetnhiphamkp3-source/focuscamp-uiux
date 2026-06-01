@@ -139,7 +139,8 @@ export async function validateCoupon(
 
   const discountVnd = computeDiscount(coupon, eligible.eligibleAmountVnd);
   const finalAmountVnd = input.orderAmountVnd - discountVnd;
-  if (finalAmountVnd < SEPAY_MIN_AMOUNT_VND) {
+  // 0 VND is allowed (free checkout path — bypasses SePay). Only block 1–999 range.
+  if (finalAmountVnd > 0 && finalAmountVnd < SEPAY_MIN_AMOUNT_VND) {
     return { ok: false, reason: "min_amount_after_discount" };
   }
 
@@ -207,15 +208,19 @@ export async function redeemCouponInTx(
     userId: string;
     paymentId: string;
     discountVnd: number;
+    /** Set true for free checkouts — no webhook will flip status to COMPLETED. */
+    completed?: boolean;
   }
 ): Promise<void> {
+  const now = new Date();
   await tx.couponRedemption.create({
     data: {
       couponId: input.couponId,
       userId: input.userId,
       paymentId: input.paymentId,
       discountVnd: input.discountVnd,
-      status: "PENDING",
+      status: input.completed ? "COMPLETED" : "PENDING",
+      ...(input.completed && { completedAt: now }),
     },
   });
 }

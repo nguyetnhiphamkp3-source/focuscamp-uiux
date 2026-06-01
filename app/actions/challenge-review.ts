@@ -666,14 +666,18 @@ export async function joinChallengeAction(
 
     if (price.vnd > 0) {
       try {
-        const { payment } = await startChallengePurchase({
+        const result = await startChallengePurchase({
           userId: s.user.id,
           challengeId: input.challengeId,
           communityId: input.communityId,
           amountVnd: price.vnd,
           couponCode,
         });
-        redirect(`/pay/${payment.paymentCode}?return=${encodeURIComponent(returnUrl)}`);
+        if (result.free) {
+          bumpChallenge(input.communitySlug, input.challengeSlug);
+          redirect(returnUrl);
+        }
+        redirect(`/pay/${result.payment.paymentCode}?return=${encodeURIComponent(returnUrl)}`);
       } catch (err) {
         if (err instanceof Error && err.message.startsWith("coupon_invalid:")) {
           redirect(

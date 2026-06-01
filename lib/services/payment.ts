@@ -134,6 +134,59 @@ export async function startProductPurchase(params: {
   });
   const finalAmountVnd = coupon ? coupon.finalAmountVnd : originalAmountVnd;
 
+  // Free path: coupon reduces to 0 — bypass SePay, activate immediately.
+  if (finalAmountVnd === 0) {
+    const now = new Date();
+    const { purchase, payment } = await prisma.$transaction(async (tx) => {
+      const purchase = await tx.purchase.create({
+        data: { userId, productId: product.id, amountVnd: originalAmountVnd, status: "COMPLETED" },
+      });
+      const payment = await createPayment(
+        {
+          userId,
+          communityId: product.communityId,
+          purpose: "product",
+          refType: "product",
+          refId: purchase.id,
+          amountVnd: 0,
+          coupon: coupon
+            ? { couponId: coupon.couponId, couponCode: coupon.couponCode, originalAmountVnd: coupon.originalAmountVnd, discountVnd: coupon.discountVnd }
+            : undefined,
+        },
+        tx,
+      );
+      await tx.payment.update({ where: { id: payment.id }, data: { status: "COMPLETED", receivedAt: now } });
+      if (coupon) {
+        await redeemCouponInTx(tx, { couponId: coupon.couponId, userId, paymentId: payment.id, discountVnd: coupon.discountVnd, completed: true });
+      }
+      return { purchase, payment };
+    });
+    // Side effects (same as webhook path)
+    try {
+      const { assignLicenseKey } = await import("./license");
+      await assignLicenseKey(purchase.id);
+    } catch (err) {
+      logger.warn({ err, purchaseId: purchase.id }, "[payment] license assign failed (free)");
+    }
+    try {
+      const purchaseData = await prisma.purchase.findUnique({
+        where: { id: purchase.id },
+        select: { product: { select: { title: true, communityId: true } }, user: { select: { name: true, email: true } } },
+      });
+      if (purchaseData) {
+        const { dispatchToChannels } = await import("./external-notify");
+        await dispatchToChannels(purchaseData.product.communityId, "purchase_completed", {
+          title: `💰 Đơn hàng mới: ${purchaseData.product.title}`,
+          description: `0đ (miễn phí qua coupon)`,
+        }).catch(() => {});
+        const { notifyGettimePurchase } = await import("@/lib/integrations/gettime-crm");
+        await notifyGettimePurchase({ name: purchaseData.user.name, email: purchaseData.user.email, productName: purchaseData.product.title, amountVnd: 0, orderId: purchase.id });
+      }
+    } catch { /* swallow */ }
+    logger.info({ userId, productId, couponCode: coupon?.couponCode }, "[payment] product free purchase via coupon");
+    return { purchase, payment, free: true as const };
+  }
+
   const community = await prisma.community.findUnique({
     where: { id: product.communityId },
     select: { billingModel: true },
@@ -208,6 +261,40 @@ export async function startChallengePurchase(params: {
     refId: challengeId,
   });
   const finalAmountVnd = coupon ? coupon.finalAmountVnd : amountVnd;
+
+  // Free path: coupon reduces to 0 — bypass SePay, activate immediately.
+  if (finalAmountVnd === 0) {
+    const now = new Date();
+    const { member, payment } = await prisma.$transaction(async (tx) => {
+      const member = await tx.challengeMember.upsert({
+        where: { challengeId_userId: { challengeId, userId } },
+        update: { status: "ACTIVE", approvedAt: now },
+        create: { challengeId, userId, status: "ACTIVE", approvedAt: now },
+      });
+      const payment = await createPayment(
+        {
+          userId,
+          communityId,
+          purpose: "challenge_entry",
+          refType: "challenge",
+          refId: member.id,
+          amountVnd: 0,
+          coupon: coupon
+            ? { couponId: coupon.couponId, couponCode: coupon.couponCode, originalAmountVnd: coupon.originalAmountVnd, discountVnd: coupon.discountVnd }
+            : undefined,
+        },
+        tx,
+      );
+      await tx.payment.update({ where: { id: payment.id }, data: { status: "COMPLETED", receivedAt: now } });
+      if (coupon) {
+        await redeemCouponInTx(tx, { couponId: coupon.couponId, userId, paymentId: payment.id, discountVnd: coupon.discountVnd, completed: true });
+      }
+      return { member, payment };
+    });
+    logger.info({ userId, challengeId, couponCode: coupon?.couponCode }, "[payment] challenge free entry via coupon");
+    return { member, payment, free: true as const };
+  }
+
   const community = await prisma.community.findUnique({
     where: { id: communityId },
     select: { billingModel: true },

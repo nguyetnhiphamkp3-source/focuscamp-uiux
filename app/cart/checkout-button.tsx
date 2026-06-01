@@ -24,7 +24,12 @@ export function CartCheckoutButton({ communityId, totalVnd, lineItems }: Props) 
       couponCode: applied?.couponCode,
     });
     if (res.ok) {
-      router.push(`/pay/${res.paymentCode}`);
+      if (res.free) {
+        router.refresh();
+      } else {
+        router.push(`/pay/${res.paymentCode}`);
+      }
+      return;
     } else {
       alert("Lỗi thanh toán: " + res.reason);
       setLoading(false);
@@ -83,7 +88,7 @@ export function CartCheckoutButton({ communityId, totalVnd, lineItems }: Props) 
           cursor: loading ? "not-allowed" : "pointer",
         }}
       >
-        {loading ? "Đang xử lý..." : "Thanh toán →"}
+        {loading ? "Đang xử lý..." : applied?.finalAmountVnd === 0 ? "🎉 Nhận miễn phí →" : "Thanh toán →"}
       </button>
     </div>
   );

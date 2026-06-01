@@ -51,7 +51,7 @@ export async function clearCartAction(): Promise<void> {
 export async function checkoutCartAction(
   productIdsOverride?: string[],
   options?: { couponCode?: string }
-): Promise<{ ok: true; paymentCode: string } | { ok: false; reason: string }> {
+): Promise<{ ok: true; paymentCode: string; free?: boolean } | { ok: false; reason: string }> {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
 
@@ -124,6 +124,29 @@ export async function checkoutCartAction(
     };
   }
   const finalAmountVnd = coupon ? coupon.finalAmountVnd : totalVnd;
+
+  // Free path: coupon reduces to 0 — create purchases directly, skip SePay.
+  if (finalAmountVnd === 0) {
+    const now = new Date();
+    await prisma.$transaction(async (tx) => {
+      for (const item of breakdown) {
+        await tx.purchase.create({
+          data: { userId: s.user!.id!, productId: item.productId, amountVnd: item.amountVnd, status: "COMPLETED" },
+        });
+      }
+      const pmt = await createPayment(
+        { userId: s.user!.id!, communityId, purpose: "product", refType: "cart", refId: "cart", amountVnd: 0, metadata: { productIds, breakdown }, coupon: coupon ? { couponId: coupon.couponId, couponCode: coupon.couponCode, originalAmountVnd: totalVnd, discountVnd: coupon.discountVnd } : undefined },
+        tx,
+      );
+      await tx.payment.update({ where: { id: pmt.id }, data: { status: "COMPLETED", receivedAt: now } });
+      if (coupon) {
+        await redeemCouponInTx(tx, { couponId: coupon.couponId, userId: s.user!.id!, paymentId: pmt.id, discountVnd: coupon.discountVnd, completed: true });
+      }
+    });
+    const c = await cookies();
+    c.set(CART_COOKIE, "[]", COOKIE_OPTS);
+    return { ok: true, paymentCode: "", free: true };
+  }
 
   let bankCfg: import("@/lib/community-config").PaymentConfig | null = null;
   if (communityId) {
