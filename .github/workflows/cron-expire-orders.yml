@@ -1,5 +1,10 @@
 name: Daily expire stale orders
 
+# Marks orders PENDING longer than 14 days as EXPIRED so the "Chờ thanh toán"
+# list and member counts stay clean. Run as a direct SQL UPDATE against the db
+# container because the production app image (Next.js standalone) does not bundle
+# scripts/, so `npx tsx scripts/...` is not available there.
+
 on:
   schedule:
     # 01:00 UTC = 08:00 ICT (Vietnam)
@@ -10,7 +15,7 @@ jobs:
   expire:
     runs-on: ubuntu-latest
     steps:
-      - name: Run expire-stale-orders script on VPS
+      - name: Expire stale pending orders on VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -20,4 +25,4 @@ jobs:
           script: |
             set -e
             cd /opt/focus-camp
-            docker compose exec -T app npx tsx scripts/expire-stale-orders.ts
+            docker compose exec -T db psql -U focuscamp -d focuscamp -c "UPDATE \"Payment\" SET status='EXPIRED' WHERE status='PENDING' AND \"createdAt\" < now() - interval '14 days';"
