@@ -37,18 +37,10 @@ export default async function SettingsPage() {
         <span className="view-subtitle">Profile, thông báo và tích hợp cá nhân</span>
       </header>
 
-      <div
-        style={{
-          padding: "var(--space-6)",
-          maxWidth: 760,
-          margin: "0 auto",
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--space-4)",
-        }}
-      >
+      <div className="settings-page-scroll account-settings-scroll">
+        <div className="settings-page-inner settings-page-inner-account">
         <section
-          className="ui-card"
+          className="ui-card account-settings-profile-card"
           style={{
             padding: "var(--space-5)",
             display: "flex",
@@ -117,6 +109,7 @@ export default async function SettingsPage() {
         </section>
 
         <div
+          className="account-settings-card-grid"
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
@@ -142,6 +135,7 @@ export default async function SettingsPage() {
                 : "Liên kết Telegram để dùng bot và AI Agent ngoài web."
             }
           />
+        </div>
         </div>
       </div>
     </div>

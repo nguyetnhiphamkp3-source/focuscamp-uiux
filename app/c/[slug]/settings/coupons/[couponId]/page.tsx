@@ -74,8 +74,11 @@ export default async function EditCouponPage({
         <span className="view-title">Coupon: {coupon.code}</span>
         <span className="view-subtitle">{community.name}</span>
       </header>
-      <div style={{ flex: 1, overflowY: "auto", padding: "var(--space-6) var(--space-8)" }}>
-        <div style={{ maxWidth: 720, display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+      <div className="settings-page-scroll">
+        <div
+          className="settings-page-inner settings-page-inner-narrow"
+          style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}
+        >
           <div className="ui-card" style={{ padding: "var(--space-4)" }}>
             <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginBottom: 8 }}>
               Thống kê sử dụng

@@ -24,13 +24,15 @@ export default async function IntegrationsPage() {
         <span className="view-title">Integrations</span>
         <span className="view-subtitle">Liên kết account với các kênh ngoài</span>
       </header>
-      <div style={{ padding: "var(--space-5) var(--space-6)", maxWidth: 720, margin: "0 auto" }}>
+      <div className="settings-page-scroll account-settings-scroll">
+        <div className="settings-page-inner settings-page-inner-narrow">
         <TelegramLinkPanel
           initial={{
             telegramUsername: user?.telegramUsername ?? null,
             isLinked: !!user?.telegramUserId,
           }}
         />
+        </div>
       </div>
     </div>
   );

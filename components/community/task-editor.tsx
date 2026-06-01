@@ -159,6 +159,7 @@ export function TaskEditorButton({
 
       <button
         type="button"
+        className="ch-task-edit-btn"
         onClick={(e) => {
           e.stopPropagation();
           resetForm();

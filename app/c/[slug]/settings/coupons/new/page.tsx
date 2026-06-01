@@ -60,8 +60,8 @@ export default async function NewCouponPage({
         <span className="view-title">Tạo coupon mới</span>
         <span className="view-subtitle">{community.name}</span>
       </header>
-      <div style={{ flex: 1, overflowY: "auto", padding: "var(--space-6) var(--space-8)" }}>
-        <div style={{ maxWidth: 720 }} className="ui-card">
+      <div className="settings-page-scroll">
+        <div className="ui-card settings-page-inner settings-page-inner-narrow">
           <CouponForm
             communityId={community.id}
             communitySlug={slug}

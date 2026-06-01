@@ -75,9 +75,10 @@ export default async function CouponsListPage({
         <span className="view-subtitle">{community.name}</span>
       </header>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "var(--space-6) var(--space-8)" }}>
-        <div style={{ maxWidth: 1000 }}>
+      <div className="settings-page-scroll">
+        <div className="settings-page-inner settings-page-inner-wide">
           <div
+            className="settings-page-toolbar"
             style={{
               display: "flex",
               justifyContent: "space-between",
@@ -112,8 +113,9 @@ export default async function CouponsListPage({
               Chưa có coupon nào. Tạo coupon đầu tiên để giảm giá cho thành viên.
             </div>
           ) : (
-            <div className="ui-card" style={{ padding: 0, overflow: "hidden" }}>
+            <div className="ui-card settings-table-card" style={{ padding: 0, overflow: "hidden" }}>
               <table
+                className="settings-coupons-table"
                 style={{
                   width: "100%",
                   borderCollapse: "collapse",

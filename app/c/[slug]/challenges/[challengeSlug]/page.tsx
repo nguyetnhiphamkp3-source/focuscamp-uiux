@@ -911,21 +911,14 @@ export default async function ChallengeDetailPage({
                         <div className="ch-task-label">
                           Day {t.dayNumber}
                           {t.label && (
-                            <span style={{
-                              marginLeft: 6,
-                              padding: "1px 6px",
-                              borderRadius: 4,
-                              background: "var(--brand-green)",
-                              color: "#fff",
-                              fontSize: "var(--text-xs)",
-                              fontWeight: 600,
-                            }}>
+                            <span className="ch-task-label-chip" title={t.label}>
                               {t.label}
                             </span>
                           )}
                         </div>
                         <div
                           className="ch-task-title"
+                          title={t.title}
                           style={
                             isDone || isRejected || isOverdue
                               ? { color: "var(--text-muted)" }

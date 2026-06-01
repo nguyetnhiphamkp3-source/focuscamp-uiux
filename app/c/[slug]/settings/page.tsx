@@ -127,14 +127,8 @@ export default async function SettingsPage({
         ))}
       </div>
 
-      <div
-        style={{
-          flex: 1,
-          overflowY: "auto",
-          padding: "var(--space-6) var(--space-8)",
-        }}
-      >
-        <div style={{ maxWidth: 860 }}>
+      <div className="settings-page-scroll">
+        <div className="settings-page-inner">
           {!isOwner && tab === "general" && (
             <div
               style={{
@@ -257,7 +251,7 @@ export default async function SettingsPage({
 
               {perms.canManageOrders && (
                 <div
-                  className="ui-card"
+                  className="ui-card settings-action-card"
                   style={{
                     marginBottom: "var(--space-4)",
                     padding: "var(--space-4) var(--space-5)",
@@ -296,7 +290,7 @@ export default async function SettingsPage({
 
               {perms.canManageCoupons && (
                 <div
-                  className="ui-card"
+                  className="ui-card settings-action-card"
                   style={{
                     marginBottom: "var(--space-4)",
                     padding: "var(--space-4) var(--space-5)",
