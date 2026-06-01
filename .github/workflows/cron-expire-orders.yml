@@ -1,0 +1,23 @@
+name: Daily expire stale orders
+
+on:
+  schedule:
+    # 01:00 UTC = 08:00 ICT (Vietnam)
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+
+jobs:
+  expire:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run expire-stale-orders script on VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          port: ${{ secrets.VPS_PORT }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/focus-camp
+            docker compose exec -T app npx tsx scripts/expire-stale-orders.ts
