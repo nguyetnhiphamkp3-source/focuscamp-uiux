@@ -64,14 +64,17 @@ export default async function NewCouponPage({
     }),
   ]);
   const memberMap = new Map(
-    [community.owner, ...memberships.map((m) => m.user)].map((user) => [
-      user.id,
-      {
-        id: user.id,
-        title: user.name ?? user.handle ?? user.email,
-        searchText: [user.name, user.handle, user.email].filter(Boolean).join(" "),
-      },
-    ]),
+    [community.owner, ...memberships.map((m) => m.user)].map((user) => {
+      const displayName = user.name ?? user.handle ?? user.email;
+      return [
+        user.id,
+        {
+          id: user.id,
+          title: user.email && displayName !== user.email ? `${displayName} (${user.email})` : displayName,
+          searchText: [user.name, user.handle, user.email].filter(Boolean).join(" "),
+        },
+      ] as const;
+    }),
   );
   const members = Array.from(memberMap.values());
 

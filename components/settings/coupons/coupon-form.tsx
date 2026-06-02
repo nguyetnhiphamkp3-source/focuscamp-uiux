@@ -607,6 +607,7 @@ function MemberTargetPicker({
                       border: "1px solid var(--border)",
                       borderRadius: 8,
                       background: "var(--bg-elevated)",
+                      fontSize: "var(--text-sm)",
                     }}
                   >
                     <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -616,7 +617,7 @@ function MemberTargetPicker({
                       type="button"
                       className="ui-btn"
                       onClick={() => onChange(selected.filter((id) => id !== o.id))}
-                      style={{ minHeight: 30, padding: "4px 10px" }}
+                      style={{ minHeight: 30, padding: "4px 10px", fontSize: "var(--text-sm)" }}
                     >
                       Bỏ
                     </button>
