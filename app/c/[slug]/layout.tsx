@@ -27,6 +27,8 @@ import {
   Users, Bot,
 } from "lucide-react";
 
+import { Suspense } from "react";
+import { BossChallengeCard } from "@/components/community/boss-challenge-card";
 import { PREVIEW_MEMBER_COOKIE } from "@/lib/preview-mode";
 
 export const dynamic = "force-dynamic";
@@ -220,10 +222,21 @@ export default async function CommunityLayout({
                 </FeatureLink>
               )}
               {visible("challenges") && (
-                <FeatureLink href={`/c/${slug}/challenges`}>
-                  <span className="feature-icon"><Star size={18} /></span>
-                  <span className="feature-name">Challenge</span>
-                </FeatureLink>
+                <>
+                  <FeatureLink href={`/c/${slug}/challenges`}>
+                    <span className="feature-icon"><Star size={18} /></span>
+                    <span className="feature-name">Challenge</span>
+                  </FeatureLink>
+                  {!!membership && !!session?.user?.id && (
+                    <Suspense fallback={null}>
+                      <BossChallengeCard
+                        userId={session.user.id}
+                        communityId={community.id}
+                        communitySlug={slug}
+                      />
+                    </Suspense>
+                  )}
+                </>
               )}
               {visible("events") && (
                 <FeatureLink href={`/c/${slug}/events`}>

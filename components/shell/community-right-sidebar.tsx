@@ -31,22 +31,19 @@ export async function CommunityRightSidebar({
   membership,
   classes,
   tiers = [],
-  bossCard,
 }: {
   community: Community;
   membership: Membership;
   isLoggedIn: boolean;
   classes: ClassConfig[];
   tiers?: TierConfigItem[];
-  boss?: unknown;
-  bossCard?: React.ReactNode;
 }) {
   const hasPaidTiers = tiers.some((t) => !t.isFree);
 
   return (
     <aside className="right-sidebar" id="rightSidebar">
       {membership ? (
-        <MemberView community={community} membership={membership} classes={classes} bossCard={bossCard} hasPaidTiers={hasPaidTiers} />
+        <MemberView community={community} membership={membership} classes={classes} hasPaidTiers={hasPaidTiers} />
       ) : (
         <GuestView community={community} classes={classes} tiers={tiers} />
       )}
@@ -180,13 +177,11 @@ function MemberView({
   community,
   membership,
   classes,
-  bossCard,
   hasPaidTiers,
 }: {
   community: Community;
   membership: NonNullable<Membership>;
   classes: ClassConfig[];
-  bossCard?: React.ReactNode;
   hasPaidTiers?: boolean;
 }) {
   const myClass = classByKey(membership.className, classes);
@@ -213,7 +208,6 @@ function MemberView({
           }}
         />
       </div>
-      {bossCard}
       {hasPaidTiers && (
         <a
           href={`/c/${community.slug}/upgrade`}
