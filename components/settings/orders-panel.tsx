@@ -374,6 +374,12 @@ export function OrdersPanel({
         })}
       </div>
 
+      {currentStatus === "EXPIRED" && (
+        <div style={{ marginTop: "var(--space-3)", marginBottom: "var(--space-4)", color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>
+          Đơn hết hạn sẽ được tự động xóa sau 7 ngày để giữ dữ liệu gọn.
+        </div>
+      )}
+
       {selectedOrder && (
         <OrderDetailModal
           order={selectedOrder}
