@@ -20,17 +20,31 @@ export const metadata = {
 };
 
 type Tab = "products" | "challenges" | "courses";
+type ProductType = "TEMPLATE" | "TOOL" | "BUNDLE" | "SOP" | "PROMPT";
 
 export default async function GlobalMarketplacePage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: Tab }>;
+  searchParams: Promise<{ tab?: Tab; q?: string; type?: ProductType }>;
 }) {
-  const { tab = "products" } = await searchParams;
+  const { tab = "products", q, type } = await searchParams;
+
+  const productWhere: Record<string, unknown> = { featuredOnGlobal: true };
+  if (q) productWhere.title = { contains: q, mode: "insensitive" };
+  if (type) productWhere.type = type;
+
+  const challengeWhere: Record<string, unknown> = {
+    featuredOnGlobal: true,
+    status: { in: ["OPEN", "ACTIVE"] },
+  };
+  if (q) challengeWhere.title = { contains: q, mode: "insensitive" };
+
+  const courseWhere: Record<string, unknown> = { featuredOnGlobal: true, isPublished: true };
+  if (q) courseWhere.title = { contains: q, mode: "insensitive" };
 
   const [products, challenges, courses] = await Promise.all([
     prisma.product.findMany({
-      where: { featuredOnGlobal: true },
+      where: productWhere,
       orderBy: { createdAt: "desc" },
       take: 60,
       include: {
@@ -38,10 +52,7 @@ export default async function GlobalMarketplacePage({
       },
     }),
     prisma.challenge.findMany({
-      where: {
-        featuredOnGlobal: true,
-        status: { in: ["OPEN", "ACTIVE"] },
-      },
+      where: challengeWhere,
       orderBy: { createdAt: "desc" },
       take: 60,
       include: {
@@ -50,7 +61,7 @@ export default async function GlobalMarketplacePage({
       },
     }),
     prisma.course.findMany({
-      where: { featuredOnGlobal: true, isPublished: true },
+      where: courseWhere,
       orderBy: { createdAt: "desc" },
       take: 60,
       include: {
@@ -70,6 +81,66 @@ export default async function GlobalMarketplacePage({
       </header>
 
       <div style={{ padding: "var(--space-5) var(--space-6)", maxWidth: 1100, margin: "0 auto" }}>
+        {/* Search bar */}
+        <form method="GET" style={{ marginBottom: "var(--space-4)", display: "flex", gap: 8 }}>
+          <input type="hidden" name="tab" value={tab} />
+          {type && <input type="hidden" name="type" value={type} />}
+          <input
+            name="q"
+            defaultValue={q ?? ""}
+            placeholder="Tìm kiếm sản phẩm, challenge, khoá học..."
+            style={{
+              flex: 1, padding: "10px 14px", borderRadius: 10,
+              border: "1px solid var(--border-subtle)", background: "var(--bg-elevated)",
+              fontSize: "var(--text-sm)", color: "var(--text-body)", outline: "none",
+            }}
+          />
+          <button type="submit" style={{
+            padding: "10px 18px", borderRadius: 10, border: "none",
+            background: "var(--brand-green)", color: "#fff",
+            fontWeight: 700, fontSize: "var(--text-sm)", cursor: "pointer",
+          }}>
+            Tìm
+          </button>
+          {q && (
+            <Link href={`/marketplace?tab=${tab}`} style={{
+              padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border-subtle)",
+              color: "var(--text-muted)", fontSize: "var(--text-sm)", textDecoration: "none",
+              display: "flex", alignItems: "center",
+            }}>✕</Link>
+          )}
+        </form>
+
+        {/* Type filter — chỉ hiện ở tab products */}
+        {tab === "products" && (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: "var(--space-4)" }}>
+            {[
+              { value: undefined, label: "Tất cả" },
+              { value: "TEMPLATE", label: "🎯 Template" },
+              { value: "TOOL", label: "🧠 Tool" },
+              { value: "BUNDLE", label: "📦 Bundle" },
+              { value: "PROMPT", label: "💬 Prompt" },
+              { value: "SOP", label: "👥 SOP" },
+            ].map((f) => {
+              const active = (f.value ?? "") === (type ?? "");
+              const href = f.value
+                ? `/marketplace?tab=products&type=${f.value}${q ? `&q=${encodeURIComponent(q)}` : ""}`
+                : `/marketplace?tab=products${q ? `&q=${encodeURIComponent(q)}` : ""}`;
+              return (
+                <Link key={f.label} href={href} style={{
+                  padding: "6px 12px", borderRadius: 20,
+                  border: `1px solid ${active ? "var(--brand-green)" : "var(--border-subtle)"}`,
+                  background: active ? "var(--brand-green)" : "var(--bg-elevated)",
+                  color: active ? "#fff" : "var(--text-muted)",
+                  fontSize: "var(--text-xs)", fontWeight: 600, textDecoration: "none",
+                }}>
+                  {f.label}
+                </Link>
+              );
+            })}
+          </div>
+        )}
+
         {/* Tabs */}
         <div
           style={{
@@ -79,9 +150,9 @@ export default async function GlobalMarketplacePage({
             borderBottom: "1px solid var(--border-subtle)",
           }}
         >
-          <TabLink current={tab} to="products" label={`🛒 Products (${products.length})`} />
-          <TabLink current={tab} to="courses" label={`📚 Courses (${courses.length})`} />
-          <TabLink current={tab} to="challenges" label={`⚔️ Challenges (${challenges.length})`} />
+          <TabLink current={tab} to="products" label={`🛒 Products (${products.length})`} q={q} />
+          <TabLink current={tab} to="courses" label={`📚 Courses (${courses.length})`} q={q} />
+          <TabLink current={tab} to="challenges" label={`⚔️ Challenges (${challenges.length})`} q={q} />
         </div>
 
         {tab === "products" && (
@@ -293,15 +364,18 @@ function TabLink({
   current,
   to,
   label,
+  q,
 }: {
   current: string;
   to: string;
   label: string;
+  q?: string;
 }) {
   const active = current === to;
+  const href = `/marketplace?tab=${to}${q ? `&q=${encodeURIComponent(q)}` : ""}`;
   return (
     <Link
-      href={`/marketplace?tab=${to}`}
+      href={href}
       style={{
         padding: "10px 14px",
         borderBottom: `2px solid ${active ? "var(--brand-green)" : "transparent"}`,
