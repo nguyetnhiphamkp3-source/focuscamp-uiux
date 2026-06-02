@@ -36,7 +36,6 @@ const TABS = [
   { key: "COMPLETED", label: "Đã thanh toán" },
   { key: "PENDING", label: "Pending" },
   { key: "EXPIRED", label: "Hết hạn" },
-  { key: "CANCELLED", label: "Đã hủy" },
 ];
 
 const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
@@ -121,6 +120,30 @@ function ApprovalChip({ approval }: { approval: OrderRow["approval"] }) {
       }}
     >
       {label}
+    </span>
+  );
+}
+
+function CancellationChip({ cancellation }: { cancellation: OrderRow["cancellation"] }) {
+  if (!cancellation) return null;
+  const name = cancellation.adminName ?? "Thủ công";
+  return (
+    <span
+      title={cancellation.adminName ? `Hủy bởi ${cancellation.adminName}` : "Hủy thủ công"}
+      style={{
+        borderRadius: 3,
+        padding: "1px 5px",
+        fontWeight: 600,
+        flexShrink: 0,
+        maxWidth: 160,
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+        background: "rgba(242,63,67,0.1)",
+        color: "var(--danger)",
+      }}
+    >
+      Hủy bởi {name}
     </span>
   );
 }
@@ -430,6 +453,7 @@ export function OrdersPanel({
                         {order.paymentCode}
                       </span>
                       <ApprovalChip approval={order.approval} />
+                      <CancellationChip cancellation={order.cancellation} />
                     </div>
                   </div>
 

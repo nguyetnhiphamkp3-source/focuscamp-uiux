@@ -8,6 +8,11 @@ export interface OrderApproval {
   adminName: string | null;
 }
 
+export interface OrderCancellation {
+  adminName: string | null;
+  cancelledAt: string | null;
+}
+
 export interface AffiliateInfo {
   linkCode: string;
   affiliateName: string | null;
@@ -46,6 +51,8 @@ export interface OrderRow {
   affiliate: AffiliateInfo | null;
   /** How a COMPLETED order was confirmed. Null for non-completed orders. */
   approval: OrderApproval | null;
+  /** Who manually cancelled a CANCELLED order. Null for non-cancelled orders. */
+  cancellation: OrderCancellation | null;
 }
 
 const VALID_STATUSES = ["PENDING", "COMPLETED", "EXPIRED", "REFUNDED", "CANCELLED"];
@@ -118,6 +125,20 @@ function buildApproval(
   return { source, adminName: admin ? (admin.name ?? admin.email) : null };
 }
 
+function buildCancellation(
+  pay: { status: string; metadata: unknown },
+  userMap: Map<string, { name: string | null; email: string }>,
+): OrderCancellation | null {
+  if (pay.status !== "CANCELLED") return null;
+  const meta = (pay.metadata ?? {}) as Record<string, unknown>;
+  const adminId = typeof meta.cancelledBy === "string" ? meta.cancelledBy : null;
+  const admin = adminId ? userMap.get(adminId) : null;
+  return {
+    adminName: admin ? (admin.name ?? admin.email) : null,
+    cancelledAt: typeof meta.cancelledAt === "string" ? meta.cancelledAt : null,
+  };
+}
+
 export async function listCommunityOrders(
   communityId: string,
   opts: { status?: string; limit?: number; offset?: number } = {}
@@ -147,9 +168,12 @@ export async function listCommunityOrders(
     return { orders: [], total, totalRevenue: Number(revenueAgg._sum.amountVnd ?? 0), pendingCount };
   }
 
-  // Include approving-admin ids so manual approvals can show the admin's name.
+  // Include manual action admin ids so approval/cancellation chips can show names.
   const adminIds = payments
-    .map((p) => ((p.metadata ?? {}) as Record<string, unknown>).approvedBy)
+    .flatMap((p) => {
+      const meta = (p.metadata ?? {}) as Record<string, unknown>;
+      return [meta.approvedBy, meta.cancelledBy];
+    })
     .filter((x): x is string => typeof x === "string");
   const userIds = [...new Set([...payments.map((p) => p.userId), ...adminIds])];
   const [users, affiliateMap] = await Promise.all([
@@ -218,6 +242,7 @@ export async function listCommunityOrders(
       expiresAt: pay.expiresAt,
       affiliate: affiliateMap.get(pay.id) ?? null,
       approval: buildApproval(pay, userMap),
+      cancellation: buildCancellation(pay, userMap),
     };
 
     if (pay.refType === "product") {
@@ -267,7 +292,10 @@ export async function listPlatformOrders(
   }
 
   const adminIds = payments
-    .map((p) => ((p.metadata ?? {}) as Record<string, unknown>).approvedBy)
+    .flatMap((p) => {
+      const meta = (p.metadata ?? {}) as Record<string, unknown>;
+      return [meta.approvedBy, meta.cancelledBy];
+    })
     .filter((x): x is string => typeof x === "string");
   const [users, communities, affiliateMap] = await Promise.all([
     prisma.user.findMany({
@@ -314,6 +342,7 @@ export async function listPlatformOrders(
       expiresAt: pay.expiresAt,
       affiliate: affiliateMap.get(pay.id) ?? null,
       approval: buildApproval(pay, userMap),
+      cancellation: buildCancellation(pay, userMap),
     };
   });
 

@@ -308,6 +308,13 @@ export function OrderDetailModal({ order, onClose, actionSlot }: OrderDetailModa
                 )}
               </Row>
             )}
+            {order.cancellation && (
+              <Row label="Hủy bởi">
+                <span style={{ color: "var(--danger)", fontWeight: 600 }}>
+                  {order.cancellation.adminName ?? "Thủ công"}
+                </span>
+              </Row>
+            )}
           </Section>
 
           {/* Transfer info */}
