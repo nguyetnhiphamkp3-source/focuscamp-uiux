@@ -21,10 +21,12 @@ export function CommunityHeader({
   return (
     <div
       style={{
-        padding: "var(--space-3) var(--space-3)",
+        padding: "0 var(--space-3)",
+        height: 52,
         display: "flex",
         alignItems: "center",
         gap: "var(--space-2)",
+        flexShrink: 0,
       }}
     >
       <Link
