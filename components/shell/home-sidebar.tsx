@@ -60,7 +60,7 @@ export function HomeSidebar({
         )}
 
         <div className="features-section-title">Tài khoản</div>
-        <FeatureLink href={profileHref}>
+        <FeatureLink href={profileHref} exact>
           <span className="feature-icon"><User size={18} /></span>
           <span className="feature-name">Profile</span>
         </FeatureLink>
