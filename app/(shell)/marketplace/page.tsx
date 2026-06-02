@@ -1,6 +1,15 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { fmtVnd } from "@/lib/brand";
+import { TYPE_THUMB } from "@/components/marketplace/product-card";
+
+const TYPE_BG: Record<string, string> = {
+  TEMPLATE: "linear-gradient(135deg, #5b7ba3, #2d4b72)",
+  SOP:      "linear-gradient(135deg, #7a9a5c, #4d6a33)",
+  TOOL:     "linear-gradient(135deg, #9b6ba3, #6a3d72)",
+  BUNDLE:   "linear-gradient(135deg, #c77a2d, #8a4f1e)",
+  PROMPT:   "linear-gradient(135deg, #a3905b, #6c5c2d)",
+};
 
 export const dynamic = "force-dynamic";
 
@@ -99,13 +108,22 @@ export default async function GlobalMarketplacePage({
                     transition: "transform 150ms",
                   }}
                 >
-                  {p.thumbnailUrl && (
+                  {p.thumbnailUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={p.thumbnailUrl}
                       alt={p.title}
                       style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover" }}
                     />
+                  ) : (
+                    <div style={{
+                      width: "100%", aspectRatio: "16 / 9",
+                      background: TYPE_BG[p.type] ?? "linear-gradient(135deg, #a3905b, #6c5c2d)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 40,
+                    }}>
+                      {TYPE_THUMB[p.type]?.icon ?? "📦"}
+                    </div>
                   )}
                   <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 6 }}>
                     <CommunityBadge community={p.community} />
