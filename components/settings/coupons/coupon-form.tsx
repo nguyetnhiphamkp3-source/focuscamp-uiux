@@ -594,7 +594,15 @@ function MemberTargetPicker({
             )}
 
             {selectedOptions.length > 0 ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 6,
+                  maxHeight: 220,
+                  overflowY: "auto",
+                }}
+              >
                 {selectedOptions.map((o) => (
                   <div
                     key={o.id}
