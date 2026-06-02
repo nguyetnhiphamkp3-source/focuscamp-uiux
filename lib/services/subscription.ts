@@ -33,6 +33,8 @@ export const TierConfigItemSchema = z.object({
   emoji: z.string().max(8).optional(),
   priceVndWeekly: z.number().nonnegative().optional(),
   priceVndMonthly: z.number().nonnegative().optional(),
+  priceVnd3Months: z.number().nonnegative().optional(),
+  priceVnd6Months: z.number().nonnegative().optional(),
   priceVndYearly: z.number().nonnegative().optional(),
   isFree: z.boolean().optional(),
   gates: TierGateSchema.optional(),
