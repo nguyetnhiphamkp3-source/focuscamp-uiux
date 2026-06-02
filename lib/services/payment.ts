@@ -8,6 +8,7 @@ import { logger } from "@/lib/logger";
 import { activateCommunityPlan } from "@/lib/services/community";
 import { getPaymentConfig } from "@/lib/community-config";
 import { validateCoupon, redeemCouponInTx } from "@/lib/services/coupon";
+import { assertChallengeMemberHasCommunityMembership } from "@/lib/services/challenge-member";
 import type { Prisma } from "@prisma/client";
 
 /**
@@ -253,6 +254,19 @@ export async function startChallengePurchase(params: {
   couponCode?: string;
 }) {
   const { userId, challengeId, communityId, amountVnd } = params;
+  const challenge = await prisma.challenge.findUnique({
+    where: { id: challengeId },
+    select: { communityId: true },
+  });
+  if (!challenge) throw new Error("challenge_not_found");
+  if (challenge.communityId !== communityId) throw new Error("community_mismatch");
+
+  const membership = await prisma.membership.findUnique({
+    where: { userId_communityId: { userId, communityId } },
+    select: { id: true },
+  });
+  if (!membership) throw new Error("not_a_member");
+
   const coupon = await resolveCoupon({
     couponCode: params.couponCode,
     communityId,
@@ -485,6 +499,7 @@ export async function matchSePayTransactionToPayment(params: {
     } else if (payment.refType === "challenge") {
       // Always activate on successful payment. Start timing is controlled by
       // Challenge.autoStartAfterHours grace logic, not by this flow.
+      await assertChallengeMemberHasCommunityMembership(tx, payment.refId);
       await tx.challengeMember.update({
         where: { id: payment.refId },
         data: { status: "ACTIVE", approvedAt: new Date() },

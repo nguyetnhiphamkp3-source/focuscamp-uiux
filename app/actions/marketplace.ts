@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { createPayment } from "@/lib/sepay";
 import { startProductPurchase, fulfillBumpInTx } from "@/lib/services/payment";
 import { getPaymentConfig } from "@/lib/community-config";
+import { assertChallengeMemberHasCommunityMembership } from "@/lib/services/challenge-member";
 
 type ActionResult<T = unknown> =
   | { ok: true; data?: T }
@@ -354,6 +355,7 @@ export async function simulatePaymentCompletedAction(
       });
     } else if (payment.refType === "challenge") {
       // Activate the member; start timing is controlled by Challenge.autoStartAfterHours.
+      await assertChallengeMemberHasCommunityMembership(tx, payment.refId);
       await tx.challengeMember.update({
         where: { id: payment.refId },
         data: { status: "ACTIVE", approvedAt: new Date() },

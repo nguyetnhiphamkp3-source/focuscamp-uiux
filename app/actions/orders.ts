@@ -8,6 +8,7 @@ import { canCommunity, effectiveCommunityRole } from "@/lib/community-permission
 import { isSuperAdmin } from "@/lib/platform-admin";
 import { activateCommunityPlan } from "@/lib/services/community";
 import { fulfillBumpInTx } from "@/lib/services/payment";
+import { assertChallengeMemberHasCommunityMembership } from "@/lib/services/challenge-member";
 
 type ActionResult = { ok: true } | { ok: false; reason: string };
 
@@ -252,6 +253,7 @@ export async function approvePaymentAction(input: {
 
       if (payment.refType === "challenge") {
         // Activate the member; start timing is controlled by Challenge.autoStartAfterHours.
+        await assertChallengeMemberHasCommunityMembership(tx, payment.refId);
         await tx.challengeMember.update({
           where: { id: payment.refId },
           data: { status: "ACTIVE", approvedAt: new Date() },

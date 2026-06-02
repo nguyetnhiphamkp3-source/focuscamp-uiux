@@ -46,17 +46,17 @@ export default async function MyAffiliatesPage({
     <div style={{ flex: 1, overflowY: "auto" }}>
       <header className="view-header">
         <span className="view-title">Affiliate</span>
-        <span className="view-subtitle">Hoa hong tu link ban share</span>
+        <span className="view-subtitle">Hoa hồng từ link bạn chia sẻ</span>
       </header>
       <div style={{ padding: "var(--space-5) var(--space-6)", maxWidth: 880, margin: "0 auto" }}>
         {communities.length === 0 ? (
           <div style={{ padding: "60px 20px", textAlign: "center", color: "var(--text-muted)", border: "1px dashed var(--border-subtle)", borderRadius: 12 }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>&#128279;</div>
             <div style={{ fontWeight: 700, color: "var(--header-primary)", marginBottom: 4 }}>
-              Ban chua co affiliate link
+              Bạn chưa có affiliate link
             </div>
             <div style={{ fontSize: "var(--text-sm)" }}>
-              Vao trang community bat ky, mo affiliate panel, tao link dau tien.
+              Vào trang community bất kỳ, mở affiliate panel, tạo link đầu tiên.
             </div>
           </div>
         ) : (
@@ -64,9 +64,9 @@ export default async function MyAffiliatesPage({
             {/* Aggregate stats */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: "var(--space-6)" }}>
               <Stat label="Click" value={totals.clicks} />
-              <Stat label="Signup" value={totals.signups} />
-              <Stat label="Conversion" value={totals.conversions} />
-              <Stat label="Hoa hong" value={`${fmtVnd(totals.totalCommission)}d`} accent />
+              <Stat label="Đăng ký" value={totals.signups} />
+              <Stat label="Chuyển đổi" value={totals.conversions} />
+              <Stat label="Hoa hồng" value={`${fmtVnd(totals.totalCommission)}đ`} accent />
             </div>
 
             {/* Per-community cards */}

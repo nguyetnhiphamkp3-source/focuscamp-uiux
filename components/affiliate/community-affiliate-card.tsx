@@ -13,9 +13,9 @@ interface ReferralRow {
 
 function PayoutBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; color: string; bg: string }> = {
-    PAID: { label: "Da TT", color: "var(--brand-green)", bg: "rgba(27,158,117,0.1)" },
-    REJECTED: { label: "Tu choi", color: "var(--danger)", bg: "rgba(220,53,69,0.1)" },
-    UNPAID: { label: "Cho TT", color: "var(--text-muted)", bg: "rgba(128,128,128,0.08)" },
+    PAID: { label: "Đã TT", color: "var(--brand-green)", bg: "rgba(27,158,117,0.1)" },
+    REJECTED: { label: "Từ chối", color: "var(--danger)", bg: "rgba(220,53,69,0.1)" },
+    UNPAID: { label: "Chờ TT", color: "var(--text-muted)", bg: "rgba(128,128,128,0.08)" },
   };
   const s = map[status] ?? map.UNPAID;
   return (
@@ -57,7 +57,7 @@ export function CommunityAffiliateCard({
           marginBottom: 12,
         }}
       >
-        Lich su referral
+        Lịch sử referral
       </h3>
 
       <div
@@ -69,9 +69,9 @@ export function CommunityAffiliateCard({
         }}
       >
         <MiniStat label="Click" value={stats.clicks} />
-        <MiniStat label="Signup" value={stats.signups} />
-        <MiniStat label="Conversion" value={stats.conversions} />
-        <MiniStat label="Hoa hong" value={`${fmtVnd(stats.totalCommission)}d`} accent />
+        <MiniStat label="Đăng ký" value={stats.signups} />
+        <MiniStat label="Chuyển đổi" value={stats.conversions} />
+        <MiniStat label="Hoa hồng" value={`${fmtVnd(stats.totalCommission)}đ`} accent />
       </div>
 
       {referrals.length === 0 ? (
@@ -85,7 +85,7 @@ export function CommunityAffiliateCard({
             borderRadius: 8,
           }}
         >
-          Chua co referral nao.
+          Chưa có referral nào.
         </div>
       ) : (
         <div
@@ -116,7 +116,7 @@ export function CommunityAffiliateCard({
                     color: "var(--header-primary)",
                   }}
                 >
-                  {r.referredUser?.name || r.referredUser?.email || "An danh"}
+                  {r.referredUser?.name || r.referredUser?.email || "Ẩn danh"}
                 </div>
                 <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
                   {fmtRelativeTime(r.createdAt)}
@@ -131,7 +131,7 @@ export function CommunityAffiliateCard({
                       color: "var(--brand-green)",
                     }}
                   >
-                    +{fmtVnd(Number(r.commissionVnd ?? 0))}d
+                    +{fmtVnd(Number(r.commissionVnd ?? 0))}đ
                   </span>
                   <PayoutBadge status={r.payoutStatus} />
                 </div>

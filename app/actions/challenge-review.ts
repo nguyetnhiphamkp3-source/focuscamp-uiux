@@ -637,6 +637,12 @@ export async function joinChallengeAction(
   const returnUrl = `/c/${input.communitySlug}/challenges/${input.challengeSlug}`;
   if (!s?.user?.id) redirect(`/login?redirectTo=${encodeURIComponent(returnUrl)}`);
 
+  const membership = await prisma.membership.findUnique({
+    where: { userId_communityId: { userId: s.user.id, communityId: input.communityId } },
+    select: { aip: true },
+  });
+  if (!membership) redirect(`/c/${input.communitySlug}`);
+
   const rawCouponCode = formData?.get("couponCode");
   const couponCode =
     typeof rawCouponCode === "string" && rawCouponCode.trim()
@@ -650,18 +656,12 @@ export async function joinChallengeAction(
   const pricingConfig = parsePricingConfig(challenge?.pricingConfig);
 
   if (pricingConfig) {
-    const membership = await prisma.membership.findUnique({
-      where: { userId_communityId: { userId: s.user.id, communityId: input.communityId } },
-      select: { aip: true },
-    });
-    const { tierKey } = membership
-      ? await getUserTier({ userId: s.user.id, communityId: input.communityId })
-      : { tierKey: null };
+    const { tierKey } = await getUserTier({ userId: s.user.id, communityId: input.communityId });
 
     const price = calculateEffectivePrice(pricingConfig, {
-      isMember: !!membership,
+      isMember: true,
       tierKey,
-      aipBalance: membership?.aip ?? 0,
+      aipBalance: membership.aip,
     });
 
     if (price.vnd > 0) {

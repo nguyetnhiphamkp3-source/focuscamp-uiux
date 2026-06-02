@@ -21,9 +21,9 @@ interface CommissionRow {
 
 function PayoutBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; color: string; bg: string }> = {
-    PAID: { label: "Da TT", color: "var(--brand-green)", bg: "rgba(27,158,117,0.1)" },
-    REJECTED: { label: "Tu choi", color: "var(--danger)", bg: "rgba(220,53,69,0.1)" },
-    UNPAID: { label: "Cho TT", color: "var(--text-muted)", bg: "rgba(128,128,128,0.08)" },
+    PAID: { label: "Đã TT", color: "var(--brand-green)", bg: "rgba(27,158,117,0.1)" },
+    REJECTED: { label: "Từ chối", color: "var(--danger)", bg: "rgba(220,53,69,0.1)" },
+    UNPAID: { label: "Chờ TT", color: "var(--text-muted)", bg: "rgba(128,128,128,0.08)" },
   };
   const s = map[status] ?? map.UNPAID;
   return (
@@ -76,7 +76,7 @@ export function ReferralTable({
           borderRadius: 8,
         }}
       >
-        Chua co commission nao.
+        Chưa có commission nào.
       </div>
     );
   }
@@ -110,7 +110,7 @@ export function ReferralTable({
                 color: "var(--header-primary)",
               }}
             >
-              {c.referral.referredUser?.name || c.referral.referredUser?.email || "An danh"}
+              {c.referral.referredUser?.name || c.referral.referredUser?.email || "Ẩn danh"}
             </div>
             <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
               {fmtRelativeTime(c.createdAt)} - {c.sourceType}
@@ -128,10 +128,10 @@ export function ReferralTable({
                   color: "var(--brand-green)",
                 }}
               >
-                +{fmtVnd(Number(c.commissionVnd ?? 0))}d
+                +{fmtVnd(Number(c.commissionVnd ?? 0))}đ
               </span>
               <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
-                tren {fmtVnd(Number(c.grossAmountVnd ?? 0))}d
+                trên {fmtVnd(Number(c.grossAmountVnd ?? 0))}đ
               </span>
             </div>
             <PayoutBadge status={c.payoutStatus} />
@@ -152,7 +152,7 @@ export function ReferralTable({
                     cursor: pending ? "not-allowed" : "pointer",
                   }}
                 >
-                  Thanh toan
+                  Thanh toán
                 </button>
                 <button
                   type="button"
@@ -169,7 +169,7 @@ export function ReferralTable({
                     cursor: pending ? "not-allowed" : "pointer",
                   }}
                 >
-                  Tu choi
+                  Từ chối
                 </button>
               </>
             )}

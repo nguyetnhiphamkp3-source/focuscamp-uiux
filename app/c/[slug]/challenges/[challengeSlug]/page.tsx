@@ -707,7 +707,7 @@ export default async function ChallengeDetailPage({
               </div>
 
             </>
-          ) : tierGateBlock ? (
+          ) : communityMembership && tierGateBlock ? (
             <UpgradePrompt
               message={tierGateBlock.message}
               requiredTier={tierGateBlock.requiredTier}
@@ -730,30 +730,57 @@ export default async function ChallengeDetailPage({
               communitySlug={slug}
               joinButton={
                 <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-                  {effectivePrice && effectivePrice.vnd > 0 ? (
-                    <JoinChallengeWithCoupon
-                      communityId={challenge.community.id}
-                      challengeId={challenge.id}
-                      priceVnd={effectivePrice.vnd}
-                      buyLabel={`🚀 Đăng ký ngay — ${Number(effectivePrice.vnd).toLocaleString("vi-VN")}đ`}
-                      action={joinAction}
-                    />
+                  {!session?.user?.id ? (
+                    <Link
+                      href={`/login?redirectTo=${encodeURIComponent(`/c/${slug}/challenges/${challengeSlug}`)}`}
+                      className="ui-btn ui-btn-primary ui-btn-lg"
+                      style={{ textAlign: "center" }}
+                    >
+                      Đăng nhập để tham gia
+                    </Link>
+                  ) : !communityMembership ? (
+                    <div>
+                      <p
+                        style={{
+                          fontSize: "var(--text-sm)",
+                          color: "var(--text-muted)",
+                          marginBottom: "var(--space-3)",
+                        }}
+                      >
+                        Tham gia community “{challenge.community.name}” để được tham gia challenge.
+                      </p>
+                      <Link href={`/c/${slug}`} className="ui-btn ui-btn-primary ui-btn-lg">
+                        Vào community
+                      </Link>
+                    </div>
                   ) : (
-                    <form action={joinAction}>
-                      <button type="submit" className="ui-btn ui-btn-primary ui-btn-lg" style={{ width: "100%" }}>
-                        🚀 Tham gia challenge — Miễn phí
-                      </button>
-                    </form>
-                  )}
-                  {effectivePrice?.canPayAip && (
-                    <PayWithAipButton
-                      challengeId={challenge.id}
-                      communityId={challenge.community.id}
-                      communitySlug={slug}
-                      challengeSlug={challengeSlug}
-                      aipPrice={effectivePrice.aipPrice}
-                      aipBalance={effectivePrice.aipBalance}
-                    />
+                    <>
+                      {effectivePrice && effectivePrice.vnd > 0 ? (
+                        <JoinChallengeWithCoupon
+                          communityId={challenge.community.id}
+                          challengeId={challenge.id}
+                          priceVnd={effectivePrice.vnd}
+                          buyLabel={`🚀 Đăng ký ngay — ${Number(effectivePrice.vnd).toLocaleString("vi-VN")}đ`}
+                          action={joinAction}
+                        />
+                      ) : (
+                        <form action={joinAction}>
+                          <button type="submit" className="ui-btn ui-btn-primary ui-btn-lg" style={{ width: "100%" }}>
+                            🚀 Tham gia challenge — Miễn phí
+                          </button>
+                        </form>
+                      )}
+                      {effectivePrice?.canPayAip && (
+                        <PayWithAipButton
+                          challengeId={challenge.id}
+                          communityId={challenge.community.id}
+                          communitySlug={slug}
+                          challengeSlug={challengeSlug}
+                          aipPrice={effectivePrice.aipPrice}
+                          aipBalance={effectivePrice.aipBalance}
+                        />
+                      )}
+                    </>
                   )}
                 </div>
               }

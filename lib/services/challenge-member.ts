@@ -89,6 +89,33 @@ export async function listPendingMembers(challengeId: string) {
   });
 }
 
+export async function assertChallengeMemberHasCommunityMembership(
+  tx: Prisma.TransactionClient,
+  challengeMemberId: string,
+) {
+  const member = await tx.challengeMember.findUnique({
+    where: { id: challengeMemberId },
+    select: {
+      userId: true,
+      challenge: { select: { communityId: true } },
+    },
+  });
+  if (!member) throw new Error("challenge_member_not_found");
+
+  const membership = await tx.membership.findUnique({
+    where: {
+      userId_communityId: {
+        userId: member.userId,
+        communityId: member.challenge.communityId,
+      },
+    },
+    select: { id: true },
+  });
+  if (!membership) throw new Error("not_a_member");
+
+  return member;
+}
+
 export async function approveChallengeMember(input: {
   userId: string;
   memberId: string;
@@ -117,6 +144,17 @@ export async function approveChallengeMember(input: {
   if (!canCommunity(role, "review_challenge_members")) {
     throw new Error("Chỉ admin cộng đồng mới duyệt được");
   }
+  const applicantMembership = await prisma.membership.findUnique({
+    where: {
+      userId_communityId: {
+        userId: member.userId,
+        communityId: member.challenge.communityId,
+      },
+    },
+    select: { id: true },
+  });
+  if (!applicantMembership) throw new Error("applicant_not_community_member");
+
   const updated = await prisma.challengeMember.update({
     where: { id: input.memberId },
     data: {
@@ -868,6 +906,17 @@ export async function joinChallenge(input: {
   });
   if (!challenge) throw new Error("Challenge không tồn tại");
   await assertCommunityCanWrite(challenge.communityId);
+
+  const membership = await prisma.membership.findUnique({
+    where: {
+      userId_communityId: {
+        userId: input.userId,
+        communityId: challenge.communityId,
+      },
+    },
+    select: { id: true },
+  });
+  if (!membership) throw new Error("not_a_member");
 
   await prisma.challengeMember.upsert({
     where: {
