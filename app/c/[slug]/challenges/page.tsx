@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CreateChallengeButton } from "@/components/community/create-challenge-button";
+import { BossChallengeCard } from "@/components/community/boss-challenge-card";
 import { getEffectiveOwnership } from "@/lib/preview-mode";
 import { communityPermissionFlags, effectiveCommunityRole } from "@/lib/community-permissions";
 import { effectivePersonalStartsAt, challengeCurrentDay } from "@/lib/services/challenge-progress";
@@ -151,6 +152,17 @@ export default async function QuestLogPage({
         }}
       >
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
+          {/* Boss challenge widget — only for members */}
+          {session?.user?.id && (
+            <div style={{ marginBottom: "var(--space-5)" }}>
+              <BossChallengeCard
+                userId={session.user.id}
+                communityId={community.id}
+                communitySlug={slug}
+              />
+            </div>
+          )}
+
           {/* Admin: create new challenge */}
           {permissions.canManageChallenges && (
             <div
