@@ -21,6 +21,7 @@ import { PostImageLightbox } from "@/components/feed/post-image-lightbox";
 import { CommentComposer } from "@/components/feed/comment-composer";
 import { CommentItem } from "@/components/feed/comment-item";
 import type { CommentItemData } from "@/components/feed/comment-item";
+import { LinkifiedText } from "@/components/shared/linkified-text";
 import { EmptyState } from "@/components/ui/empty-state";
 import { getEffectiveOwnership } from "@/lib/preview-mode";
 import { communityPermissionFlags, effectiveCommunityRole } from "@/lib/community-permissions";
@@ -231,7 +232,7 @@ export default async function PostDetailPage({
                 lineHeight: 1.6,
               }}
             >
-              {post.body}
+              <LinkifiedText>{post.body}</LinkifiedText>
             </div>
             {post.imageUrl && <PostImageLightbox src={post.imageUrl} />}
 

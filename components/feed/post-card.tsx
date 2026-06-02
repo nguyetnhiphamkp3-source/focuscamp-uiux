@@ -13,6 +13,7 @@ import { PostMenu } from "./post-menu";
 import { BookmarkButton } from "./bookmark-button";
 import { LinkPreview } from "./link-preview";
 import { PostImageLightbox } from "./post-image-lightbox";
+import { LinkifiedText } from "@/components/shared/linkified-text";
 import type { FeedPost } from "@/lib/services/post";
 
 export function PostCard({
@@ -133,7 +134,7 @@ export function PostCard({
         </Link>
       )}
       <div className="feed-post-body" style={{ whiteSpace: "pre-wrap" }}>
-        {post.body}
+        <LinkifiedText>{post.body}</LinkifiedText>
       </div>
       {post.imageUrl && <PostImageLightbox src={post.imageUrl} />}
       <LinkPreview body={post.body} />

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { avatarColorFor as colorFor, nameColorFor as nameColor } from "@/lib/brand";
 import { Pin, Users, Bell } from "lucide-react";
 import { ChatInput } from "@/components/community/chat-input";
+import { LinkifiedText } from "@/components/shared/linkified-text";
 
 export const dynamic = "force-dynamic";
 
@@ -268,7 +269,9 @@ export default async function ChannelPage({
                         {formatTimeShort(m.createdAt)}
                       </span>
                     </div>
-                    <div className="message-content">{m.content}</div>
+                    <div className="message-content">
+                      <LinkifiedText>{m.content}</LinkifiedText>
+                    </div>
                   </div>
                 );
               });

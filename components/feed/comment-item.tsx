@@ -11,6 +11,7 @@ import {
   fmtRelativeTime,
 } from "@/lib/brand";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { LinkifiedText } from "@/components/shared/linkified-text";
 import { ReportModal } from "./report-modal";
 import {
   markBestAnswerAction,
@@ -338,7 +339,7 @@ export function CommentItem({
                 wordBreak: "break-word",
               }}
             >
-              {displayBody}
+              <LinkifiedText>{displayBody}</LinkifiedText>
             </div>
           )}
 
