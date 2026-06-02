@@ -34,6 +34,9 @@ import { parseChallengeVideoUrl } from "@/lib/challenge-video";
 import { parseChallengeBenefits } from "@/lib/challenge-benefits";
 import { SopContent } from "@/components/community/sop-content";
 import { AgentReviewCard } from "@/components/community/agent-review-card";
+import { SubmissionHistory } from "@/components/community/submission-history";
+import { SubmissionImageCarousel } from "@/components/community/submission-image-carousel";
+import { parseCheckinHistory } from "@/lib/checkin-history";
 import type { AIReviewData } from "@/lib/ai-review-data";
 import { listAIProviders } from "@/lib/services/ai-provider";
 import { checkinImages } from "@/lib/checkin-images";
@@ -197,7 +200,7 @@ export default async function ChallengeDetailPage({
           // asc so the latest check-in per dayNumber wins the checkinByDay Map (last-write-wins);
           // keeps isPending/isRejected (and the gift gate) deterministic when a day has >1 check-in.
           orderBy: { createdAt: "asc" },
-          select: { id: true, taskId: true, dayNumber: true, createdAt: true, updatedAt: true, content: true, linkUrl: true, imageUrl: true, imageUrls: true, status: true, reviewedAt: true, reviewNote: true, rejectCount: true, aiReviewData: true },
+          select: { id: true, taskId: true, dayNumber: true, createdAt: true, updatedAt: true, resubmittedAt: true, content: true, linkUrl: true, imageUrl: true, imageUrls: true, status: true, reviewedAt: true, reviewNote: true, rejectCount: true, aiReviewData: true, reviewHistory: true },
         })
       : Promise.resolve([]),
 
@@ -1097,10 +1100,14 @@ export default async function ChallengeDetailPage({
                           </div>
                         )}
                         {checkinData && (() => {
-                          const isResubmitted = checkinData.rejectCount > 0 && !isRejected;
-                          const displayTime = isResubmitted ? checkinData.updatedAt : checkinData.createdAt;
+                          // resubmittedAt is set only on a real resubmit and is immune to a
+                          // later approve clobbering updatedAt — so it's the accurate "nộp lại" time.
+                          const isResubmitted = !!checkinData.resubmittedAt;
+                          const displayTime = checkinData.resubmittedAt ?? checkinData.createdAt;
                           const fmtOpts: Intl.DateTimeFormatOptions = { timeZone: "Asia/Ho_Chi_Minh", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false };
                           const timeStr = displayTime.toLocaleString("vi-VN", fmtOpts);
+                          const history = parseCheckinHistory(checkinData.reviewHistory);
+                          const evidenceImages = checkinImages(checkinData);
                           return (
                           <>
                             {/* Recap block for completed tasks */}
@@ -1113,7 +1120,7 @@ export default async function ChallengeDetailPage({
                                 background: "rgba(27,158,117,0.06)",
                               }}>
                                 <div style={{ fontSize: "var(--text-xs)", fontWeight: "var(--fw-semibold)", color: "var(--brand-green)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "var(--space-2)" }}>
-                                  📌 Nhật ký của bạn · {timeStr}
+                                  📌 Nhật ký của bạn · {timeStr}{isResubmitted ? " (nộp lại)" : ""}
                                 </div>
                                 <div style={{ fontSize: "var(--text-sm)", color: "var(--text-normal)", lineHeight: "var(--lh-relaxed)", whiteSpace: "pre-wrap", fontStyle: "italic" }}>
                                   &ldquo;{checkinData.content}&rdquo;
@@ -1123,9 +1130,17 @@ export default async function ChallengeDetailPage({
                                     {checkinData.linkUrl}
                                   </a>
                                 )}
-                                {checkinImages(checkinData).map((img, i) => (
-                                  <img key={img} src={img} alt={`Submission ${i + 1}`} className="ch-submission-image" style={{ marginTop: "var(--space-2)" }} />
-                                ))}
+                                <SubmissionImageCarousel images={evidenceImages} alt="Bài nộp" />
+                                {/* AI review card — visible to the member once reviewed (approved/flagged) */}
+                                {checkinData.aiReviewData && (
+                                  <AgentReviewCard
+                                    data={checkinData.aiReviewData as AIReviewData}
+                                    status={checkinData.status}
+                                    compact
+                                  />
+                                )}
+                                {/* Proof trail of earlier rejected attempts */}
+                                <SubmissionHistory entries={history} />
                               </div>
                             )}
                             {/* Submission detail for rejected/pending/admin */}
@@ -1154,6 +1169,9 @@ export default async function ChallengeDetailPage({
                                   </div>
                                 )}
                                 <div className="ch-submission-content">{checkinData.content}</div>
+                                <SubmissionImageCarousel images={evidenceImages} alt="Bài nộp" />
+                                {/* Proof trail of earlier rejected attempts (shown here when no recap above) */}
+                                {!(isDone && !isRejected) && <SubmissionHistory entries={history} />}
                                 {isRejected && (
                                   <ResubmitForm
                                     checkinId={checkinData.id}
