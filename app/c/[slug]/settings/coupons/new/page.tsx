@@ -20,7 +20,12 @@ export default async function NewCouponPage({
 
   const community = await prisma.community.findUnique({
     where: { slug },
-    select: { id: true, name: true, ownerId: true },
+    select: {
+      id: true,
+      name: true,
+      ownerId: true,
+      owner: { select: { id: true, name: true, email: true, handle: true } },
+    },
   });
   if (!community) notFound();
 
@@ -41,7 +46,7 @@ export default async function NewCouponPage({
   );
   if (!perms.canManageCoupons) redirect(`/c/${slug}/settings`);
 
-  const [products, challenges] = await Promise.all([
+  const [products, challenges, memberships] = await Promise.all([
     prisma.product.findMany({
       where: { communityId: community.id },
       select: { id: true, title: true },
@@ -52,7 +57,22 @@ export default async function NewCouponPage({
       select: { id: true, title: true },
       orderBy: { createdAt: "desc" },
     }),
+    prisma.membership.findMany({
+      where: { communityId: community.id },
+      select: { user: { select: { id: true, name: true, email: true, handle: true } } },
+      orderBy: { joinedAt: "desc" },
+    }),
   ]);
+  const memberMap = new Map(
+    [community.owner, ...memberships.map((m) => m.user)].map((user) => [
+      user.id,
+      {
+        id: user.id,
+        title: user.name ?? user.handle ?? user.email,
+      },
+    ]),
+  );
+  const members = Array.from(memberMap.values());
 
   return (
     <>
@@ -67,6 +87,7 @@ export default async function NewCouponPage({
             communitySlug={slug}
             products={products}
             challenges={challenges}
+            members={members}
           />
         </div>
       </div>

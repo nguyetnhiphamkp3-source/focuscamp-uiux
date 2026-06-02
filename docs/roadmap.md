@@ -107,6 +107,7 @@ Key: ✅ done · 🟡 partial · ❌ not started · 🚫 deferred (Phase 2+)
 | Course list + detail + lesson player | ✅ | |
 | Marketplace list + detail | ✅ | |
 | Purchase via SePay webhook | ✅ | |
+| Per-community coupons with product/challenge/event/member targeting | ✅ | Member targeting shipped via coupon allowlist |
 | Course progress tracking | ✅ | |
 | Admin create course + draft visibility | ✅ | CreateCourseButton, owner sees unpublished |
 | Admin create lesson inside course | ✅ | CreateLessonButton |

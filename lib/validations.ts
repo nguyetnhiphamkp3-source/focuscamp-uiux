@@ -656,6 +656,7 @@ const baseCouponSchema = z.object({
   allowedRefTypes: z.array(CouponRefTypeSchema).min(1, "Chọn ít nhất 1 loại checkout"),
   allowedProductIds: z.array(z.string().cuid()).optional().default([]),
   allowedChallengeIds: z.array(z.string().cuid()).optional().default([]),
+  allowedMemberIds: z.array(z.string().cuid()).optional().default([]),
   isActive: z.coerce.boolean().default(true),
 });
 

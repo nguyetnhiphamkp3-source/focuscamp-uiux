@@ -1269,6 +1269,10 @@ model Coupon {
    * Target specific challenges. Empty = applies to all challenges in the community.
    */
   allowedChallengeIds String[]
+  /**
+   * Target specific community members. Empty = applies to all members in the community.
+   */
+  allowedMemberIds    String[]  @default([])
   isActive        Boolean   @default(true)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt

@@ -26,6 +26,7 @@ export type CouponRejectReason =
   | "min_amount_after_discount"
   | "product_not_eligible"
   | "challenge_not_eligible"
+  | "member_not_eligible"
   | "feature_disabled";
 
 /** Single cart line for eligible-subtotal computation. */
@@ -105,6 +106,9 @@ export async function validateCoupon(
   }
   if (coupon.minOrderVnd && input.orderAmountVnd < Number(coupon.minOrderVnd)) {
     return { ok: false, reason: "min_order_not_met" };
+  }
+  if (coupon.allowedMemberIds.length > 0 && !coupon.allowedMemberIds.includes(input.userId)) {
+    return { ok: false, reason: "member_not_eligible" };
   }
 
   // Redemption limits: count only COMPLETED + PENDING (in-flight) to prevent
@@ -239,5 +243,6 @@ export const COUPON_REJECT_LABELS: Record<CouponRejectReason, string> = {
   min_amount_after_discount: "Số tiền sau giảm thấp hơn mức tối thiểu",
   product_not_eligible: "Mã không áp dụng cho sản phẩm này",
   challenge_not_eligible: "Mã không áp dụng cho challenge này",
+  member_not_eligible: "Mã không áp dụng cho tài khoản này",
   feature_disabled: "Tính năng coupon đang tắt",
 };

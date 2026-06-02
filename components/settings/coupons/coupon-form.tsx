@@ -26,6 +26,7 @@ export type CouponFormInitial = {
   allowedRefTypes: RefType[];
   allowedProductIds: string[];
   allowedChallengeIds: string[];
+  allowedMemberIds: string[];
   isActive: boolean;
 };
 
@@ -34,6 +35,7 @@ type Props = {
   communitySlug: string;
   products: EntityOption[];
   challenges: EntityOption[];
+  members: EntityOption[];
   initial?: CouponFormInitial;
 };
 
@@ -54,7 +56,7 @@ function toLocalInput(iso: string | null): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export function CouponForm({ communityId, communitySlug, products, challenges, initial }: Props) {
+export function CouponForm({ communityId, communitySlug, products, challenges, members, initial }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -93,6 +95,9 @@ export function CouponForm({ communityId, communitySlug, products, challenges, i
   const [challengeIds, setChallengeIds] = useState<string[]>(
     initial?.allowedChallengeIds ?? [],
   );
+  const [memberIds, setMemberIds] = useState<string[]>(
+    initial?.allowedMemberIds ?? [],
+  );
   const [isActive, setIsActive] = useState<boolean>(initial?.isActive ?? true);
 
   // Targeting only makes sense for product/cart (products) and challenge (challenges).
@@ -120,6 +125,7 @@ export function CouponForm({ communityId, communitySlug, products, challenges, i
       allowedRefTypes: refTypes,
       allowedProductIds: showProductTarget ? productIds : [],
       allowedChallengeIds: showChallengeTarget ? challengeIds : [],
+      allowedMemberIds: memberIds,
       isActive,
     };
 
@@ -252,6 +258,14 @@ export function CouponForm({ communityId, communitySlug, products, challenges, i
           onChange={setChallengeIds}
         />
       )}
+
+      <EntityTargetPicker
+        label="Áp dụng cho thành viên"
+        emptyHint="Community chưa có thành viên nào."
+        options={members}
+        selected={memberIds}
+        onChange={setMemberIds}
+      />
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: 16 }}>
         <Field label="Hiệu lực từ (optional)">

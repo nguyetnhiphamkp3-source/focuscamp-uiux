@@ -20,7 +20,12 @@ export default async function EditCouponPage({
 
   const community = await prisma.community.findUnique({
     where: { slug },
-    select: { id: true, name: true, ownerId: true },
+    select: {
+      id: true,
+      name: true,
+      ownerId: true,
+      owner: { select: { id: true, name: true, email: true, handle: true } },
+    },
   });
   if (!community) notFound();
 
@@ -46,7 +51,7 @@ export default async function EditCouponPage({
   });
   if (!coupon) notFound();
 
-  const [products, challenges] = await Promise.all([
+  const [products, challenges, memberships] = await Promise.all([
     prisma.product.findMany({
       where: { communityId: community.id },
       select: { id: true, title: true },
@@ -57,7 +62,22 @@ export default async function EditCouponPage({
       select: { id: true, title: true },
       orderBy: { createdAt: "desc" },
     }),
+    prisma.membership.findMany({
+      where: { communityId: community.id },
+      select: { user: { select: { id: true, name: true, email: true, handle: true } } },
+      orderBy: { joinedAt: "desc" },
+    }),
   ]);
+  const memberMap = new Map(
+    [community.owner, ...memberships.map((m) => m.user)].map((user) => [
+      user.id,
+      {
+        id: user.id,
+        title: user.name ?? user.handle ?? user.email,
+      },
+    ]),
+  );
+  const members = Array.from(memberMap.values());
 
   const redemptionStats = await prisma.couponRedemption.groupBy({
     by: ["status"],
@@ -96,6 +116,7 @@ export default async function EditCouponPage({
               communitySlug={slug}
               products={products}
               challenges={challenges}
+              members={members}
               initial={{
                 id: coupon.id,
                 code: coupon.code,
@@ -111,6 +132,7 @@ export default async function EditCouponPage({
                 allowedRefTypes: coupon.allowedRefTypes as ("product" | "challenge" | "cart" | "event")[],
                 allowedProductIds: coupon.allowedProductIds,
                 allowedChallengeIds: coupon.allowedChallengeIds,
+                allowedMemberIds: coupon.allowedMemberIds,
                 isActive: coupon.isActive,
               }}
             />

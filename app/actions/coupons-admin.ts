@@ -37,6 +37,22 @@ async function requireCouponManager(communityId: string) {
   return { userId: session.user.id };
 }
 
+async function normalizeAllowedMemberIds(communityId: string, rawIds: string[]) {
+  const ids = Array.from(new Set(rawIds));
+  if (ids.length === 0) return ids;
+
+  const community = await prisma.community.findUnique({
+    where: { id: communityId },
+    select: { ownerId: true },
+  });
+  const memberships = await prisma.membership.findMany({
+    where: { communityId, userId: { in: ids } },
+    select: { userId: true },
+  });
+  const allowed = new Set([community?.ownerId, ...memberships.map((m) => m.userId)].filter(Boolean));
+  return ids.every((id) => allowed.has(id)) ? ids : null;
+}
+
 export async function createCouponAction(input: {
   communityId: string;
   data: unknown;
@@ -49,6 +65,13 @@ export async function createCouponAction(input: {
         ok: false,
         reason: parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ",
       };
+    }
+    const allowedMemberIds = await normalizeAllowedMemberIds(
+      input.communityId,
+      parsed.data.allowedMemberIds,
+    );
+    if (!allowedMemberIds) {
+      return { ok: false, reason: "Thành viên được chọn không thuộc community này" };
     }
     const coupon = await prisma.coupon.create({
       data: {
@@ -66,6 +89,7 @@ export async function createCouponAction(input: {
         allowedRefTypes: parsed.data.allowedRefTypes,
         allowedProductIds: parsed.data.allowedProductIds,
         allowedChallengeIds: parsed.data.allowedChallengeIds,
+        allowedMemberIds,
         isActive: parsed.data.isActive,
       },
     });
@@ -94,6 +118,13 @@ export async function updateCouponAction(input: {
         reason: parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ",
       };
     }
+    const allowedMemberIds =
+      parsed.data.allowedMemberIds === undefined
+        ? undefined
+        : await normalizeAllowedMemberIds(input.communityId, parsed.data.allowedMemberIds);
+    if (allowedMemberIds === null) {
+      return { ok: false, reason: "Thành viên được chọn không thuộc community này" };
+    }
     await prisma.coupon.update({
       where: { id: input.couponId, communityId: input.communityId },
       data: {
@@ -110,6 +141,7 @@ export async function updateCouponAction(input: {
         ...(parsed.data.allowedRefTypes !== undefined && { allowedRefTypes: parsed.data.allowedRefTypes }),
         ...(parsed.data.allowedProductIds !== undefined && { allowedProductIds: parsed.data.allowedProductIds }),
         ...(parsed.data.allowedChallengeIds !== undefined && { allowedChallengeIds: parsed.data.allowedChallengeIds }),
+        ...(allowedMemberIds !== undefined && { allowedMemberIds }),
         ...(parsed.data.isActive !== undefined && { isActive: parsed.data.isActive }),
       },
     });
