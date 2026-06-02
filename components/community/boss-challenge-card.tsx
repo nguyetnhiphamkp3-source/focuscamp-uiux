@@ -35,7 +35,6 @@ export async function BossChallengeCard({
       style={{
         background: "#1a1a1a",
         borderRadius: "var(--r-md)",
-        margin: "var(--space-2) var(--space-3)",
         overflow: "hidden",
       }}
     >
