@@ -3920,7 +3920,7 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
 .lb-podium-xp { font-size: var(--text-base); font-weight: 700; color: var(--online-green); }
 .lb-podium-sub { font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px; }
 
-@container (max-width: 760px) {
+@container (max-width: 480px) {
   .lb-podium {
     grid-template-columns: 1fr;
     align-items: stretch;
