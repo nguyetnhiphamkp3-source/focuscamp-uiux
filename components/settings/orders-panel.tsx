@@ -437,7 +437,6 @@ export function OrdersPanel({
                     <span className="orders-amount">{fmtVnd(order.amountVnd)}đ</span>
                     <StatusBadge status={order.status} />
                     <span className="orders-time">{fmtRelativeTime(order.createdAt)}</span>
-                    {order.status === "PENDING" && <CancelPendingButton order={order} communitySlug={communitySlug} mode={mode} />}
                     {order.status === "PENDING" && <ApproveButton order={order} communitySlug={communitySlug} mode={mode} />}
                     {order.status === "EXPIRED" && <DeleteExpiredButton order={order} communitySlug={communitySlug} mode={mode} />}
                     <button
