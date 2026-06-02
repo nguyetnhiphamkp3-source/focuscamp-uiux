@@ -166,15 +166,8 @@ export function SubmissionReviewPanel({
         )}
       </div>
 
-      {/* Status filter tabs */}
-      <div
-        style={{
-          display: "flex",
-          gap: 4,
-          borderBottom: "1px solid var(--border-subtle)",
-          marginBottom: 12,
-        }}
-      >
+      {/* Status filter tabs — horizontally scrollable so they never wrap on mobile */}
+      <div className="review-tab-bar">
         {(
           [
             { key: "ALL", label: "Tất cả" },
@@ -188,9 +181,8 @@ export function SubmissionReviewPanel({
             key={t.key}
             href={`?review=${t.key.toLowerCase()}`}
             scroll={false}
+            className="review-tab"
             style={{
-              padding: "8px 14px",
-              fontSize: "var(--text-sm)",
               color:
                 activeStatus === t.key
                   ? "var(--header-primary)"
@@ -199,9 +191,7 @@ export function SubmissionReviewPanel({
                 activeStatus === t.key
                   ? "2px solid var(--brand-green)"
                   : "2px solid transparent",
-              textDecoration: "none",
               fontWeight: activeStatus === t.key ? 600 : 400,
-              marginBottom: -1,
             }}
           >
             {t.label}
@@ -313,7 +303,7 @@ function SubmissionCard({
         padding: 12,
       }}
     >
-      <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+      <div className="submission-card-row">
         <Link
           href={`/c/${communitySlug}/profile/${submission.user.id}`}
           style={{ flexShrink: 0 }}
@@ -425,7 +415,7 @@ function SubmissionCard({
           )}
           {submission.imageUrls.length > 0 && (
             <div style={{ marginTop: 6, marginBottom: 4 }}>
-              <SubmissionImageCarousel images={submission.imageUrls} alt="evidence" />
+              <SubmissionImageCarousel images={submission.imageUrls} alt="evidence" compact />
             </div>
           )}
 

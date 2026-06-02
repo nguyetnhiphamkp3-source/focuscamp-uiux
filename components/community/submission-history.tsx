@@ -125,7 +125,7 @@ export function SubmissionHistory({ entries }: { entries: CheckinHistoryEntry[] 
               </a>
             )}
 
-            <SubmissionImageCarousel images={e.imageUrls} alt="bài nộp cũ" />
+            <SubmissionImageCarousel images={e.imageUrls} alt="bài nộp cũ" compact />
           </div>
         ))}
       </div>

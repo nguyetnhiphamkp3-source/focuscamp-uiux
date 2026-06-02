@@ -3100,6 +3100,41 @@ body[data-theme="dark-heavy"] .meta-chip { filter: brightness(1.3) saturate(0.85
   max-width: 100%;
   border-radius: 8px;
 }
+
+/* Admin review panel — status filter tabs scroll horizontally instead of
+   wrapping into a broken multi-line bar on mobile. */
+.review-tab-bar {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 12px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.review-tab-bar::-webkit-scrollbar { height: 0; }
+.review-tab {
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding: 8px 14px;
+  font-size: var(--text-sm);
+  text-decoration: none;
+  margin-bottom: -1px;
+}
+
+/* Admin review panel — submission card: stack avatar above content on mobile so
+   the text body gets full width instead of being squeezed beside the avatar. */
+.submission-card-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+@media (max-width: 767.98px) {
+  .submission-card-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
 .ch-submission-reject-note {
   font-size: var(--text-sm);
   color: var(--dnd-red);
