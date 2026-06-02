@@ -10,6 +10,7 @@ import {
   approveOrderAction,
   approvePaymentAction,
   approvePlatformPaymentAction,
+  cancelPendingOrderAction,
   deleteExpiredOrderAction,
 } from "@/app/actions/orders";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
@@ -35,6 +36,7 @@ const TABS = [
   { key: "COMPLETED", label: "Đã thanh toán" },
   { key: "PENDING", label: "Pending" },
   { key: "EXPIRED", label: "Hết hạn" },
+  { key: "CANCELLED", label: "Đã hủy" },
 ];
 
 const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
@@ -42,6 +44,7 @@ const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
   PENDING: { bg: "rgba(240,178,50,0.15)", color: "var(--warning)" },
   EXPIRED: { bg: "rgba(242,63,67,0.1)", color: "var(--danger)" },
   REFUNDED: { bg: "rgba(107,101,90,0.12)", color: "var(--text-muted)" },
+  CANCELLED: { bg: "rgba(107,101,90,0.12)", color: "var(--text-muted)" },
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -49,6 +52,7 @@ const STATUS_LABELS: Record<string, string> = {
   PENDING: "Pending",
   EXPIRED: "Hết hạn",
   REFUNDED: "Hoàn tiền",
+  CANCELLED: "Đã hủy",
 };
 
 const PRODUCT_TYPE_LABELS: Record<string, string> = {
@@ -242,6 +246,59 @@ function DeleteExpiredButton({
   );
 }
 
+function CancelPendingButton({
+  order,
+  communitySlug,
+  mode,
+  onSuccess,
+}: {
+  order: OrderRow;
+  communitySlug: string;
+  mode: "community" | "platform";
+  onSuccess?: () => void;
+}) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  function confirmCancel() {
+    setShowConfirm(false);
+    startTransition(async () => {
+      const res = await cancelPendingOrderAction({
+        paymentId: order.orderId,
+        communitySlug,
+        mode,
+      });
+      if (res.ok) {
+        router.refresh();
+        onSuccess?.();
+      } else {
+        alert("Lỗi: " + res.reason);
+      }
+    });
+  }
+
+  return (
+    <>
+      <ConfirmModal
+        open={showConfirm}
+        title="Hủy đơn hàng"
+        message="Hủy đơn pending này? Người mua sẽ không thể thanh toán bằng mã này nữa."
+        confirmLabel="Hủy đơn"
+        onConfirm={confirmCancel}
+        onCancel={() => setShowConfirm(false)}
+      />
+      <button
+        disabled={pending}
+        onClick={() => setShowConfirm(true)}
+        style={{ fontSize: "var(--text-xs)", fontWeight: 600, padding: "3px 10px", borderRadius: 5, border: "1px solid var(--danger)", background: "transparent", color: "var(--danger)", cursor: pending ? "not-allowed" : "pointer", opacity: pending ? 0.6 : 1 }}
+      >
+        {pending ? "Đang hủy..." : "Hủy"}
+      </button>
+    </>
+  );
+}
+
 export function OrdersPanel({
   orders,
   total,
@@ -300,12 +357,20 @@ export function OrdersPanel({
           actionSlot={
             <>
               {selectedOrder.status === "PENDING" && (
-                <ApproveButton
-                  order={selectedOrder}
-                  communitySlug={communitySlug}
-                  mode={mode}
-                  onSuccess={() => setSelectedOrder(null)}
-                />
+                <>
+                  <CancelPendingButton
+                    order={selectedOrder}
+                    communitySlug={communitySlug}
+                    mode={mode}
+                    onSuccess={() => setSelectedOrder(null)}
+                  />
+                  <ApproveButton
+                    order={selectedOrder}
+                    communitySlug={communitySlug}
+                    mode={mode}
+                    onSuccess={() => setSelectedOrder(null)}
+                  />
+                </>
               )}
               {selectedOrder.status === "EXPIRED" && (
                 <DeleteExpiredButton
@@ -372,6 +437,7 @@ export function OrdersPanel({
                     <span className="orders-amount">{fmtVnd(order.amountVnd)}đ</span>
                     <StatusBadge status={order.status} />
                     <span className="orders-time">{fmtRelativeTime(order.createdAt)}</span>
+                    {order.status === "PENDING" && <CancelPendingButton order={order} communitySlug={communitySlug} mode={mode} />}
                     {order.status === "PENDING" && <ApproveButton order={order} communitySlug={communitySlug} mode={mode} />}
                     {order.status === "EXPIRED" && <DeleteExpiredButton order={order} communitySlug={communitySlug} mode={mode} />}
                     <button

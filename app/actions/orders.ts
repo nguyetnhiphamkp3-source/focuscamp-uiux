@@ -450,3 +450,105 @@ export async function deleteExpiredOrderAction(input: {
   revalidatePath(input.mode === "platform" ? "/admin/orders" : `/c/${input.communitySlug}/orders`);
   return { ok: true };
 }
+
+/**
+ * Soft-cancel a PENDING order. The Payment row is kept for audit, while the
+ * not-yet-activated child record is marked CANCELLED so the buyer no longer
+ * sits in a pending access state.
+ */
+export async function cancelPendingOrderAction(input: {
+  paymentId: string;
+  communitySlug: string;
+  mode?: "community" | "platform";
+}): Promise<ActionResult> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+  const adminId = s.user.id;
+
+  const payment = await prisma.payment.findUnique({ where: { id: input.paymentId } });
+  if (!payment) return { ok: false, reason: "not_found" };
+  if (payment.status !== "PENDING") return { ok: false, reason: "already_processed" };
+
+  if (input.mode === "platform") {
+    if (payment.purpose !== "community_plan" || payment.refType !== "community") {
+      return { ok: false, reason: "not_platform_order" };
+    }
+    if (!(await isSuperAdmin(adminId))) return { ok: false, reason: "unauthorized" };
+  } else if (payment.purpose === "community_plan") {
+    if (!(await isSuperAdmin(adminId))) return { ok: false, reason: "unauthorized" };
+  } else {
+    const community = await prisma.community.findUnique({
+      where: { slug: input.communitySlug },
+      select: {
+        id: true,
+        ownerId: true,
+        memberships: { where: { userId: adminId }, select: { role: true } },
+      },
+    });
+    if (!community || community.id !== payment.communityId) return { ok: false, reason: "unauthorized" };
+    const role = effectiveCommunityRole({
+      isOwner: community.ownerId === adminId,
+      membershipRole: community.memberships[0]?.role,
+    });
+    if (!canCommunity(role, "manage_orders")) return { ok: false, reason: "unauthorized" };
+  }
+
+  const now = new Date();
+  const meta = (payment.metadata ?? {}) as Record<string, unknown>;
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const updated = await tx.payment.updateMany({
+        where: { id: payment.id, status: "PENDING" },
+        data: {
+          status: "CANCELLED",
+          metadata: {
+            ...meta,
+            cancellationSource: "MANUAL",
+            cancelledBy: adminId,
+            cancelledAt: now.toISOString(),
+          },
+        },
+      });
+      if (updated.count === 0) throw new Error("already_processed");
+
+      await tx.couponRedemption.updateMany({
+        where: { paymentId: payment.id, status: "PENDING" },
+        data: { status: "CANCELLED" },
+      });
+
+      if (payment.refType === "product") {
+        await tx.purchase.updateMany({
+          where: { id: payment.refId, status: "PENDING" },
+          data: { status: "CANCELLED" },
+        });
+      } else if (payment.refType === "challenge") {
+        await tx.challengeMember.updateMany({
+          where: { id: payment.refId, status: { in: ["PAYMENT_PENDING", "PENDING"] } },
+          data: { status: "CANCELLED" },
+        });
+      } else if (payment.refType === "subscription") {
+        await tx.subscription.updateMany({
+          where: { id: payment.refId, status: "PENDING" },
+          data: { status: "CANCELLED", cancelledAt: now },
+        });
+      } else if (payment.refType === "event") {
+        await tx.eventBooking.updateMany({
+          where: { id: payment.refId, status: "PENDING" },
+          data: { status: "CANCELLED" },
+        });
+      }
+    });
+  } catch (err) {
+    logError(err, { paymentId: payment.id });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+
+  logger.info(
+    { paymentId: payment.id, refType: payment.refType, adminId },
+    "[orders] payment manually cancelled",
+  );
+  revalidatePath(input.mode === "platform" ? "/admin/orders" : `/c/${input.communitySlug}/orders`);
+  return { ok: true };
+}

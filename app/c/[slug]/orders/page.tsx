@@ -7,7 +7,7 @@ import { canCommunity, effectiveCommunityRole } from "@/lib/community-permission
 
 export const dynamic = "force-dynamic";
 
-const VALID_STATUSES = ["PENDING", "COMPLETED", "EXPIRED", "REFUNDED"];
+const VALID_STATUSES = ["PENDING", "COMPLETED", "EXPIRED", "REFUNDED", "CANCELLED"];
 const LIMIT = 20;
 
 export default async function OrdersPage({

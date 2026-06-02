@@ -48,7 +48,7 @@ export interface OrderRow {
   approval: OrderApproval | null;
 }
 
-const VALID_STATUSES = ["PENDING", "COMPLETED", "EXPIRED", "REFUNDED"];
+const VALID_STATUSES = ["PENDING", "COMPLETED", "EXPIRED", "REFUNDED", "CANCELLED"];
 
 /**
  * Build a paymentId → AffiliateInfo map for a batch of payments.

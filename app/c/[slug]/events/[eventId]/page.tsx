@@ -11,6 +11,8 @@ import { canCommunity, effectiveCommunityRole } from "@/lib/community-permission
 
 export const dynamic = "force-dynamic";
 
+const SEAT_HOLDING_BOOKING_STATUSES = ["PENDING", "CONFIRMED", "ATTENDED"];
+
 export default async function EventDetailPage({
   params,
 }: {
@@ -36,7 +38,11 @@ export default async function EventDetailPage({
     where: { id: eventId, communityId: community.id },
     include: {
       owner: { select: { name: true, image: true } },
-      _count: { select: { bookings: true } },
+      _count: {
+        select: {
+          bookings: { where: { status: { in: SEAT_HOLDING_BOOKING_STATUSES } } },
+        },
+      },
       bookings: session?.user?.id
         ? { where: { userId: session.user.id }, select: { id: true, status: true, attendedAt: true } }
         : false,

@@ -6,7 +6,7 @@ import { listPlatformOrders } from "@/lib/services/community-orders";
 
 export const dynamic = "force-dynamic";
 
-const VALID_STATUSES = ["PENDING", "COMPLETED", "EXPIRED", "REFUNDED"];
+const VALID_STATUSES = ["PENDING", "COMPLETED", "EXPIRED", "REFUNDED", "CANCELLED"];
 const LIMIT = 20;
 
 export default async function AdminOrdersPage({

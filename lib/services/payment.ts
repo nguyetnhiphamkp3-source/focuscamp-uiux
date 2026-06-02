@@ -355,17 +355,25 @@ export async function getPaymentStatus(paymentCode: string) {
   if (!payment) return null;
   let status = payment.status;
   if (status === "PENDING" && payment.expiresAt < new Date()) {
-    await prisma.payment.update({
-      where: { paymentCode },
+    const expired = await prisma.payment.updateMany({
+      where: { id: payment.id, status: "PENDING" },
       data: { status: "EXPIRED" },
     });
-    if (payment.couponId) {
+    if (expired.count > 0 && payment.couponId) {
       await prisma.couponRedemption.updateMany({
         where: { paymentId: payment.id, status: "PENDING" },
         data: { status: "CANCELLED" },
       });
     }
-    status = "EXPIRED";
+    if (expired.count > 0) {
+      status = "EXPIRED";
+    } else {
+      const latest = await prisma.payment.findUnique({
+        where: { id: payment.id },
+        select: { status: true },
+      });
+      status = latest?.status ?? status;
+    }
   }
   return { status, receivedAt: payment.receivedAt };
 }
@@ -389,6 +397,26 @@ export async function matchSePayTransactionToPayment(params: {
   if (!payment) return { matched: false, reason: "payment_not_found" };
   if (payment.status !== "PENDING") {
     return { matched: false, reason: "not_pending", status: payment.status };
+  }
+  if (payment.expiresAt < new Date()) {
+    const expired = await prisma.payment.updateMany({
+      where: { id: payment.id, status: "PENDING" },
+      data: { status: "EXPIRED" },
+    });
+    if (expired.count > 0 && payment.couponId) {
+      await prisma.couponRedemption.updateMany({
+        where: { paymentId: payment.id, status: "PENDING" },
+        data: { status: "CANCELLED" },
+      });
+    }
+    if (expired.count === 0) {
+      const latest = await prisma.payment.findUnique({
+        where: { id: payment.id },
+        select: { status: true },
+      });
+      return { matched: false, reason: "not_pending", status: latest?.status ?? payment.status };
+    }
+    return { matched: false, reason: "expired", status: "EXPIRED" };
   }
   const paymentAmount = Number(payment.amountVnd);
   if (Math.abs(paymentAmount - amount) >= 0.01) {

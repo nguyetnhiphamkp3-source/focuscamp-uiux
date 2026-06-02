@@ -233,6 +233,13 @@ export default async function PaymentPage({
             subtitle="Hãy quay lại tạo đơn mới."
             tone="danger"
           />
+        ) : payment.status === "CANCELLED" ? (
+          <StatusBox
+            emoji="✕"
+            title="Đơn hàng đã bị hủy"
+            subtitle="Mã thanh toán này không còn hiệu lực."
+            tone="danger"
+          />
         ) : (
           <>
             <p

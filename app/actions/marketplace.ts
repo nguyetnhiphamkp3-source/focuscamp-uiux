@@ -300,6 +300,20 @@ export async function simulatePaymentCompletedAction(
 
   const payment = await prisma.payment.findUnique({ where: { paymentCode } });
   if (!payment || payment.status !== "PENDING") return { ok: false, reason: "payment_invalid" };
+  if (payment.expiresAt < new Date()) {
+    const expired = await prisma.payment.updateMany({
+      where: { id: payment.id, status: "PENDING" },
+      data: { status: "EXPIRED" },
+    });
+    if (expired.count > 0 && payment.couponId) {
+      await prisma.couponRedemption.updateMany({
+        where: { paymentId: payment.id, status: "PENDING" },
+        data: { status: "CANCELLED" },
+      });
+    }
+    revalidatePath(`/pay/${paymentCode}`);
+    return { ok: false, reason: "payment_expired" };
+  }
 
   // Community plan orders are sold by focus.camp; only super admin can mark
   // them completed via /admin/orders. Block self-simulate to close the

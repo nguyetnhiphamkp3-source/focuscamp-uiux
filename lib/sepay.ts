@@ -158,6 +158,19 @@ export async function activatePayment(paymentId: string, transactionId: string) 
   const payment = await prisma.payment.findUnique({ where: { id: paymentId } });
   if (!payment) return { ok: false, reason: "payment_not_found" };
   if (payment.status !== "PENDING") return { ok: true, reason: "already_processed" };
+  if (payment.expiresAt < new Date()) {
+    const expired = await prisma.payment.updateMany({
+      where: { id: payment.id, status: "PENDING" },
+      data: { status: "EXPIRED" },
+    });
+    if (expired.count > 0 && payment.couponId) {
+      await prisma.couponRedemption.updateMany({
+        where: { paymentId: payment.id, status: "PENDING" },
+        data: { status: "CANCELLED" },
+      });
+    }
+    return { ok: false, reason: "payment_expired" };
+  }
 
   await prisma.payment.update({
     where: { id: paymentId },

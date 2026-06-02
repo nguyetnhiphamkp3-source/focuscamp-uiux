@@ -898,7 +898,7 @@ model Payment {
    */
   couponId          String?
   couponCode        String?
-  status            String    @default("PENDING") // PENDING, COMPLETED, EXPIRED, REFUNDED
+  status            String    @default("PENDING") // PENDING, COMPLETED, EXPIRED, CANCELLED, REFUNDED
   provider          String    @default("SEPAY_STANDARD") // SEPAY_STANDARD | SEPAY_BANKHUB
   bankName          String?
   bankAccount       String?
@@ -1167,7 +1167,7 @@ model EventBooking {
   id         String    @id @default(cuid())
   eventId    String
   userId     String
-  status     String    @default("PENDING") // PENDING | CONFIRMED | ATTENDED | NO_SHOW | REFUNDED
+  status     String    @default("PENDING") // PENDING | CONFIRMED | ATTENDED | NO_SHOW | CANCELLED | REFUNDED
   paymentRef String?
   attendedAt DateTime? // set by Meet participants API after event ends
   createdAt  DateTime  @default(now())

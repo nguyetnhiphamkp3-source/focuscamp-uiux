@@ -9,6 +9,7 @@ const STATUS_LABELS: Record<string, string> = {
   PENDING: "Chờ thanh toán",
   EXPIRED: "Hết hạn",
   REFUNDED: "Hoàn tiền",
+  CANCELLED: "Đã hủy",
 };
 
 const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
@@ -16,6 +17,7 @@ const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
   PENDING: { bg: "rgba(240,178,50,0.15)", color: "var(--warning)" },
   EXPIRED: { bg: "rgba(242,63,67,0.1)", color: "var(--danger)" },
   REFUNDED: { bg: "rgba(107,101,90,0.12)", color: "var(--text-muted)" },
+  CANCELLED: { bg: "rgba(107,101,90,0.12)", color: "var(--text-muted)" },
 };
 
 const ORDER_TYPE_LABELS: Record<string, string> = {

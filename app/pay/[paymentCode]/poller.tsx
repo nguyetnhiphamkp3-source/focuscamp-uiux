@@ -19,7 +19,7 @@ export function PaymentStatusPoller({ paymentCode }: { paymentCode: string }) {
         if (cancelled) return;
         if (data.status && data.status !== status) {
           setStatus(data.status);
-          if (data.status === "COMPLETED" || data.status === "EXPIRED") {
+          if (data.status === "COMPLETED" || data.status === "EXPIRED" || data.status === "CANCELLED") {
             router.refresh();
           }
         }

@@ -17,6 +17,8 @@ import {
   getAttendees,
 } from "@/lib/integrations/google-meet";
 
+const SEAT_HOLDING_BOOKING_STATUSES = ["PENDING", "CONFIRMED", "ATTENDED"];
+
 async function assertCommunityOwner(userId: string, communityId: string) {
   const c = await prisma.community.findUnique({
     where: { id: communityId },
@@ -187,7 +189,11 @@ export async function listEvents(input: {
       take: pageSize,
       skip: (page - 1) * pageSize,
       include: {
-        _count: { select: { bookings: true } },
+        _count: {
+          select: {
+            bookings: { where: { status: { in: SEAT_HOLDING_BOOKING_STATUSES } } },
+          },
+        },
         bookings: input.viewerUserId
           ? {
               where: { userId: input.viewerUserId },
@@ -215,7 +221,11 @@ export async function bookEvent(input: {
       priceVnd: true,
       capacity: true,
       status: true,
-      _count: { select: { bookings: true } },
+      _count: {
+        select: {
+          bookings: { where: { status: { in: SEAT_HOLDING_BOOKING_STATUSES } } },
+        },
+      },
     },
   });
   if (!event) throw new Error("Event không tồn tại");
@@ -262,16 +272,21 @@ export async function bookEvent(input: {
     return { status: "CONFIRMED" };
   }
 
-  // Paid: create or reuse pending booking + new payment
-  const booking =
-    existing ??
-    (await prisma.eventBooking.create({
-      data: {
-        eventId: event.id,
-        userId: input.userId,
-        status: "PENDING",
-      },
-    }));
+  // Paid: create or reuse pending booking + new payment.
+  const booking = existing
+    ? existing.status === "PENDING"
+      ? existing
+      : await prisma.eventBooking.update({
+          where: { id: existing.id },
+          data: { status: "PENDING", paymentRef: null },
+        })
+    : await prisma.eventBooking.create({
+        data: {
+          eventId: event.id,
+          userId: input.userId,
+          status: "PENDING",
+        },
+      });
 
   const community = await prisma.community.findUnique({
     where: { id: event.communityId },
