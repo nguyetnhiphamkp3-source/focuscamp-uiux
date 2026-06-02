@@ -587,6 +587,22 @@ export async function resubmitCheckin(input: {
     throw new Error("Vui lòng nhập text hoặc upload ảnh bằng chứng");
   }
 
+  // Snapshot the rejected attempt before the row is overwritten, so the member
+  // (and admin) keep a proof trail of what was submitted and why it was rejected.
+  const prevHistory = Array.isArray(checkin.reviewHistory)
+    ? (checkin.reviewHistory as unknown[])
+    : [];
+  const rejectedSnapshot = {
+    content: checkin.content,
+    linkUrl: checkin.linkUrl,
+    imageUrls: checkinImages(checkin),
+    reviewNote: checkin.reviewNote,
+    aiReviewData: checkin.aiReviewData ?? null,
+    reviewedAt: checkin.reviewedAt?.toISOString() ?? null,
+    rejectedAt: (checkin.reviewedAt ?? new Date()).toISOString(),
+    attempt: checkin.rejectCount, // 1 = first rejection, 2 = second, …
+  };
+
   const updated = await prisma.checkin.update({
     where: { id: input.checkinId },
     data: {
@@ -600,6 +616,11 @@ export async function resubmitCheckin(input: {
       reviewedById: null,
       reviewedAt: null,
       reviewNote: null,
+      // Stale AI verdict is now preserved in reviewHistory; clear it so the row
+      // doesn't show last attempt's review until the new one re-runs.
+      aiReviewData: Prisma.DbNull,
+      reviewHistory: [...prevHistory, rejectedSnapshot] as Prisma.InputJsonValue,
+      resubmittedAt: new Date(),
     },
   });
   await deleteRemovedMediaUrls(checkinImages(checkin), updated.imageUrls, {

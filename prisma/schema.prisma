@@ -633,6 +633,15 @@ model Checkin {
    * AI review output: { decision, confidence, reasoning, model, reviewedAt }
    */
   aiReviewData Json?
+  /**
+   * Snapshots of every rejected attempt, captured at resubmit time before the
+   * row is overwritten. Array of { content, linkUrl, imageUrls, reviewNote,
+   * aiReviewData, reviewedAt, rejectedAt, attempt }. Lets the member (and admin)
+   * see the rejection history as proof. Append-only.
+   */
+  reviewHistory Json?
+  /** Accurate timestamp of the latest resubmit (updatedAt gets clobbered by a later approve). */
+  resubmittedAt DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 

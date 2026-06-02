@@ -11,6 +11,7 @@ import {
 import { avatarColorFor, initials, fmtRelativeTime } from "@/lib/brand";
 import type { AIReviewData } from "@/lib/ai-review-data";
 import { AgentReviewCard } from "@/components/community/agent-review-card";
+import { SubmissionImageCarousel } from "@/components/community/submission-image-carousel";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 
 export type SubmissionRow = {
@@ -423,21 +424,8 @@ function SubmissionCard({
             </div>
           )}
           {submission.imageUrls.length > 0 && (
-            <div style={{ marginTop: 6, marginBottom: 4, display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {submission.imageUrls.map((img, i) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={img}
-                  src={img}
-                  alt={`evidence ${i + 1}`}
-                  style={{
-                    maxWidth: "100%",
-                    maxHeight: 280,
-                    borderRadius: 6,
-                    border: "1px solid var(--border-subtle)",
-                  }}
-                />
-              ))}
+            <div style={{ marginTop: 6, marginBottom: 4 }}>
+              <SubmissionImageCarousel images={submission.imageUrls} alt="evidence" />
             </div>
           )}
 
