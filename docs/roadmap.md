@@ -1,6 +1,6 @@
 # focus.camp — Roadmap & Module Spec
 
-_Updated: 2026-05-27. Source of truth for "what's shipped / what's next"._
+_Updated: 2026-06-02. Source of truth for "what's shipped / what's next"._
 
 ## Positioning
 
@@ -83,6 +83,7 @@ Key: ✅ done · 🟡 partial · ❌ not started · 🚫 deferred (Phase 2+)
 | CRUD expedition/challenge (admin) | ✅ | Create challenge + tasks (edit/delete) all via UI |
 | Challenge hero media: image or YouTube/Vimeo/Wistia video | ✅ | ChallengeSettingsPanel supports video URL + poster thumbnail upload/auto-fetch |
 | User join (direct ACTIVE) | ✅ | |
+| Auto-start grace period + live countdown UI | ✅ | Client-side countdown from `joinedAt + N giờ`; refreshes route once when grace expires |
 | Admin approve member requests | ✅ | `requiresApproval` flag |
 | UI toggle `requiresApproval` in challenge settings | ✅ | ChallengeSettingsPanel |
 | Daily task unlock by day | ✅ | |

@@ -26,6 +26,7 @@ import {
 import { ChallengeSalesIntro } from "@/components/community/challenge-sales-intro";
 import { RenewPaymentButton } from "@/components/community/renew-payment-button";
 import { JoinChallengeWithCoupon } from "@/components/challenges/join-with-coupon";
+import { AutoStartCountdown } from "@/components/challenges/auto-start-countdown";
 import { getEffectiveOwnership } from "@/lib/preview-mode";
 import { communityPermissionFlags, effectiveCommunityRole } from "@/lib/community-permissions";
 import { toEmbedUrl } from "@/lib/brand";
@@ -308,6 +309,17 @@ export default async function ChallengeDetailPage({
     myMembership && challenge.autoStartAfterHours != null
       ? new Date(myMembership.joinedAt.getTime() + challenge.autoStartAfterHours * 3600_000)
       : null;
+  const autoStartDeadlineLabel = autoStartDeadline
+    ? autoStartDeadline.toLocaleString("vi-VN", {
+        timeZone: "Asia/Ho_Chi_Minh",
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      })
+    : null;
+  const autoStartServerNowIso = autoStartDeadline ? new Date().toISOString() : null;
 
   const joinAction = joinChallengeAction.bind(null, {
     challengeId: challenge.id,
@@ -626,21 +638,12 @@ export default async function ChallengeDetailPage({
             <div style={{ marginTop: "var(--space-5)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
               <div style={{ padding: "14px 18px", background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 12, fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>
                 Bạn đã tham gia challenge. Nhấn <strong>Bắt đầu</strong> khi sẵn sàng — đồng hồ đếm ngày sẽ chạy từ lúc này.
-                {autoStartDeadline && (
-                  <div style={{ marginTop: 6, fontSize: "var(--text-xs)", color: "var(--warning)" }}>
-                    ⏱ Nếu không bấm, challenge sẽ tự bắt đầu lúc{" "}
-                    <strong>
-                      {autoStartDeadline.toLocaleString("vi-VN", {
-                        timeZone: "Asia/Ho_Chi_Minh",
-                        day: "2-digit",
-                        month: "2-digit",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        hour12: false,
-                      })}
-                    </strong>
-                    .
-                  </div>
+                {autoStartDeadline && autoStartDeadlineLabel && autoStartServerNowIso && (
+                  <AutoStartCountdown
+                    deadlineIso={autoStartDeadline.toISOString()}
+                    deadlineLabel={autoStartDeadlineLabel}
+                    serverNowIso={autoStartServerNowIso}
+                  />
                 )}
               </div>
               <form action={startChallengeAction.bind(null, { challengeId: challenge.id, communitySlug: slug, challengeSlug })}>
