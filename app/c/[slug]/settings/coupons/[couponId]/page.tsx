@@ -74,6 +74,7 @@ export default async function EditCouponPage({
       {
         id: user.id,
         title: user.name ?? user.handle ?? user.email,
+        searchText: [user.name, user.handle, user.email].filter(Boolean).join(" "),
       },
     ]),
   );

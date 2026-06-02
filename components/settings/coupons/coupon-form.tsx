@@ -9,7 +9,7 @@ import {
 
 type RefType = "product" | "challenge" | "cart" | "event";
 
-export type EntityOption = { id: string; title: string };
+export type EntityOption = { id: string; title: string; searchText?: string };
 
 export type CouponFormInitial = {
   id?: string;
@@ -98,6 +98,9 @@ export function CouponForm({ communityId, communitySlug, products, challenges, m
   const [memberIds, setMemberIds] = useState<string[]>(
     initial?.allowedMemberIds ?? [],
   );
+  const [memberSpecific, setMemberSpecific] = useState<boolean>(
+    (initial?.allowedMemberIds?.length ?? 0) > 0,
+  );
   const [isActive, setIsActive] = useState<boolean>(initial?.isActive ?? true);
 
   // Targeting only makes sense for product/cart (products) and challenge (challenges).
@@ -125,7 +128,7 @@ export function CouponForm({ communityId, communitySlug, products, challenges, m
       allowedRefTypes: refTypes,
       allowedProductIds: showProductTarget ? productIds : [],
       allowedChallengeIds: showChallengeTarget ? challengeIds : [],
-      allowedMemberIds: memberIds,
+      allowedMemberIds: memberSpecific ? memberIds : [],
       isActive,
     };
 
@@ -259,10 +262,12 @@ export function CouponForm({ communityId, communitySlug, products, challenges, m
         />
       )}
 
-      <EntityTargetPicker
+      <MemberTargetPicker
         label="Áp dụng cho thành viên"
         emptyHint="Community chưa có thành viên nào."
         options={members}
+        specific={memberSpecific}
+        onSpecificChange={setMemberSpecific}
         selected={memberIds}
         onChange={setMemberIds}
       />
@@ -348,7 +353,7 @@ export function CouponForm({ communityId, communitySlug, products, challenges, m
       <div style={{ display: "flex", gap: 12 }}>
         <button
           type="submit"
-          disabled={pending || refTypes.length === 0}
+          disabled={pending || refTypes.length === 0 || (memberSpecific && memberIds.length === 0)}
           className="ui-btn ui-btn-primary"
           style={{ opacity: pending ? 0.6 : 1 }}
         >
@@ -461,6 +466,171 @@ function EntityTargetPicker({
           </div>
         ))}
     </Field>
+  );
+}
+
+function MemberTargetPicker({
+  label,
+  emptyHint,
+  options,
+  specific,
+  onSpecificChange,
+  selected,
+  onChange,
+}: {
+  label: string;
+  emptyHint: string;
+  options: EntityOption[];
+  specific: boolean;
+  onSpecificChange: (next: boolean) => void;
+  selected: string[];
+  onChange: (next: string[]) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const selectedSet = new Set(selected);
+  const normalizedQuery = query.trim().toLowerCase();
+  const selectedOptions = selected.map((id) => options.find((o) => o.id === id) ?? { id, title: id });
+  const matches = normalizedQuery
+    ? options
+        .filter(
+          (o) =>
+            !selectedSet.has(o.id) &&
+            (o.searchText ?? o.title).toLowerCase().includes(normalizedQuery),
+        )
+        .slice(0, 8)
+    : [];
+
+  function addMember(id: string) {
+    if (!selectedSet.has(id)) onChange([...selected, id]);
+    setQuery("");
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <span
+        style={{
+          fontSize: "var(--text-sm)",
+          fontWeight: 600,
+          color: "var(--text-heading)",
+        }}
+      >
+        {label}
+      </span>
+      <div style={{ display: "flex", gap: 12, marginBottom: specific ? 8 : 0 }}>
+        <label style={radioStyle}>
+          <input
+            type="radio"
+            checked={!specific}
+            onChange={() => {
+              onSpecificChange(false);
+              onChange([]);
+              setQuery("");
+            }}
+          />
+          Tất cả
+        </label>
+        <label style={radioStyle}>
+          <input
+            type="radio"
+            checked={specific}
+            disabled={options.length === 0}
+            onChange={() => onSpecificChange(true)}
+          />
+          Cụ thể
+        </label>
+      </div>
+
+      {specific &&
+        (options.length === 0 ? (
+          <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{emptyHint}</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Tìm theo tên hoặc email"
+              style={inputStyle}
+            />
+
+            {normalizedQuery && (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 4,
+                  border: "1px solid var(--border)",
+                  borderRadius: 8,
+                  background: "var(--bg-elevated)",
+                  padding: "var(--space-2)",
+                }}
+              >
+                {matches.length > 0 ? (
+                  matches.map((o) => (
+                    <button
+                      key={o.id}
+                      type="button"
+                      onClick={() => addMember(o.id)}
+                      className="ui-btn"
+                      style={{
+                        justifyContent: "space-between",
+                        width: "100%",
+                        minHeight: 36,
+                        padding: "6px 10px",
+                      }}
+                    >
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {o.title}
+                      </span>
+                      <span style={{ color: "var(--brand-green)", fontWeight: 700 }}>Thêm</span>
+                    </button>
+                  ))
+                ) : (
+                  <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", padding: "6px 10px" }}>
+                    Không tìm thấy thành viên
+                  </div>
+                )}
+              </div>
+            )}
+
+            {selectedOptions.length > 0 ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {selectedOptions.map((o) => (
+                  <div
+                    key={o.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      padding: "8px 10px",
+                      border: "1px solid var(--border)",
+                      borderRadius: 8,
+                      background: "var(--bg-elevated)",
+                    }}
+                  >
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {o.title}
+                    </span>
+                    <button
+                      type="button"
+                      className="ui-btn"
+                      onClick={() => onChange(selected.filter((id) => id !== o.id))}
+                      style={{ minHeight: 30, padding: "4px 10px" }}
+                    >
+                      Bỏ
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+                Chưa chọn thành viên nào.
+              </div>
+            )}
+          </div>
+        ))}
+    </div>
   );
 }
 
