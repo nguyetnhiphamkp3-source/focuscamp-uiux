@@ -254,9 +254,15 @@ export default async function CommunityLayout({
                   <span className="feature-name">AI Agent</span>
                 </FeatureLink>
               )}
-              {(permissions.canManageOrders || permissions.canModerateContent) && !previewAsMember && (
+              {(permissions.canViewMembers || permissions.canManageOrders || permissions.canModerateContent) && !previewAsMember && (
                 <>
                   <div className="features-section-title">Quản lý</div>
+                  {permissions.canViewMembers && (
+                    <FeatureLink href={`/c/${slug}/members`}>
+                      <span className="feature-icon"><Users size={18} /></span>
+                      <span className="feature-name">Thành viên</span>
+                    </FeatureLink>
+                  )}
                   {permissions.canModerateContent && (
                     <FeatureLink href={`/c/${slug}/reports`}>
                       <span className="feature-icon"><Flag size={18} /></span>

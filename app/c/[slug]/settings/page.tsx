@@ -18,7 +18,6 @@ import { PillarsEditor } from "@/components/settings/pillars-editor";
 import { ClassesEditor } from "@/components/settings/classes-editor";
 import { CurrencyEditor } from "@/components/settings/currency-editor";
 import { LevelsEditor } from "@/components/settings/levels-editor";
-import { MembersEditor } from "@/components/settings/members-editor";
 import { CommunityInfoEditor } from "@/components/settings/community-info-editor";
 import { CommunityStatsCard } from "@/components/settings/community-stats-card";
 import { TiersEditor } from "@/components/settings/tiers-editor";
@@ -36,7 +35,6 @@ import { normalizeChannelConfig } from "@/lib/channel-config";
 import { PaymentConfigEditor } from "@/components/settings/payment-config-editor";
 import { getPlanStatus } from "@/lib/platform-plans";
 import { getTiersConfig } from "@/lib/services/subscription";
-import { listMembers } from "@/lib/services/community-settings";
 import { DangerZone } from "@/components/settings/danger-zone";
 import { SlugChangeEditor } from "@/components/settings/slug-change-editor";
 
@@ -84,7 +82,6 @@ export default async function SettingsPage({
     { slug: "billing", label: "Thanh toán", visible: perms.canManageBilling },
     { slug: "content", label: "Nội dung", visible: perms.canManageSettings },
     { slug: "integrations", label: "Tích hợp", visible: perms.canManageAiAgent || perms.canManageApiKeys },
-    { slug: "members", label: "Thành viên", visible: perms.canViewMembers },
   ].filter((t) => t.visible);
 
   const tab = tabs.find((t) => t.slug === tabParam)?.slug ?? tabs[0]?.slug ?? "general";
@@ -104,10 +101,6 @@ export default async function SettingsPage({
     tab === "integrations" && perms.canManageAiAgent
       ? await listAIProviders(session.user.id, community.id)
       : [];
-  const { members, total } =
-    tab === "members" && perms.canViewMembers
-      ? await listMembers({ communityId: community.id, limit: 100 })
-      : { members: [], total: 0 };
   // Challenge list for per-channel notification routing
   const notifyChallenges =
     tab === "integrations" && perms.canManageApiKeys
@@ -468,35 +461,6 @@ export default async function SettingsPage({
                 })()}
 
               {perms.canManageAiAgent && <AgentActivityPanel communityId={community.id} />}
-            </>
-          )}
-
-          {/* Tab: Thành viên */}
-          {tab === "members" && (
-            <>
-              {perms.canViewMembers && (
-                <MembersEditor
-                  communityId={community.id}
-                  communitySlug={slug}
-                  members={members.map((m) => ({
-                    userId: m.userId,
-                    role: m.role,
-                    tier: m.tier,
-                    className: m.className,
-                    xp: m.xp,
-                    level: m.level,
-                    joinedAt: m.joinedAt,
-                    lastActiveAt: m.lastActiveAt,
-                    user: m.user,
-                  }))}
-                  total={total}
-                  canManageRoles={perms.canManageRoles}
-                  ownerId={community.ownerId}
-                  currentUserId={session.user.id}
-                  classes={classes}
-                  levelTiers={tiers}
-                />
-              )}
             </>
           )}
         </div>

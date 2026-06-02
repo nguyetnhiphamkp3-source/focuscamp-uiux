@@ -44,7 +44,7 @@ Key: ✅ done · 🟡 partial · ❌ not started · 🚫 deferred (Phase 2+)
 | Right sidebar: guest/member views | ✅ | |
 | Boss Sói gamification (HP/tagline/name, computed from activity) | ✅ | Per-community |
 | Admin Settings: pillars/classes/currency/levels CRUD | ✅ | |
-| Settings: member list + role change + remove | ✅ | |
+| Member management: list + role change + remove | ✅ | In community sidebar under Quản lý |
 | Role permissions: OWNER / ADMIN / MOD / MEMBER | ✅ | `docs/roles-permissions.md` + `lib/community-permissions.ts`; admin has full community settings edit access except community deletion, mod reviews submissions + moderates |
 | Settings: challenge-level toggles (requiresApproval, freeze) | ✅ | ChallengeSettingsPanel |
 | Notifications inbox + bell badge + 6 emitters | ✅ | Global inbox; bulk mark-read / clear-read / clear-all; keeps 42 newest/user, prunes read after 14d and unread after 30d |
