@@ -36,6 +36,7 @@ const TABS = [
   { key: "COMPLETED", label: "Đã thanh toán" },
   { key: "PENDING", label: "Pending" },
   { key: "EXPIRED", label: "Hết hạn" },
+  { key: "CANCELLED", label: "Đã hủy" },
 ];
 
 const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
