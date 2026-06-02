@@ -124,6 +124,7 @@ export default async function CommunityLayout({
             <CommunityHeader
               slug={slug}
               name={community.name}
+              iconUrl={community.iconUrl}
               isOwner={isOwner}
               isMember={!!membership}
               canAccessSettings={isOwner || role === "ADMIN"}
