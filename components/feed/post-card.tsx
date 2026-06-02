@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Pin, Star, MessageCircle } from "lucide-react";
 import {
   avatarColorFor,
@@ -47,9 +50,30 @@ export function PostCard({
   const pillar = pillarByKey(post.pillar, pillars);
   const authorName = post.user.name || "Ẩn danh";
   const nameColor = nameColorFor(post.user.id);
+  const router = useRouter();
+  const detailHref = href ?? `/c/${communitySlug}/p/${post.id}`;
+
+  // Whole-card click opens the post — but not when the click lands on an
+  // interactive element (link, button, form field, dialog) or while the user
+  // is selecting text.
+  function handleCardClick(e: React.MouseEvent<HTMLElement>) {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+    if (
+      (e.target as HTMLElement).closest(
+        "a, button, input, textarea, select, label, [role='dialog'], [role='button']",
+      )
+    )
+      return;
+    if (window.getSelection()?.toString()) return;
+    router.push(detailHref);
+  }
 
   return (
-    <article className={`feed-post${post.isCot ? " cot-post" : ""}`}>
+    <article
+      className={`feed-post${post.isCot ? " cot-post" : ""}`}
+      onClick={handleCardClick}
+      style={{ cursor: "pointer" }}
+    >
       <div className="feed-post-head">
         <Link
           href={`/c/${communitySlug}/profile/${post.user.id}`}
