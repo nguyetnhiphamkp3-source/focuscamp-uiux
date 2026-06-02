@@ -14,6 +14,7 @@ export interface ActiveChallenge {
   requiredDays: number;
   personalStartsAt: Date;
   currentDay: number;
+  hasCalendarDeadline: boolean;
   progressPct: number;
   streak: number;
   missedDays: number; // days from start to yesterday without any check-in
@@ -88,6 +89,21 @@ export function challengeCurrentDay(
   return Math.min(requiredDays, Math.max(1, elapsedDays + 1));
 }
 
+export function sequentialCurrentDay(
+  tasks: { dayNumber: number }[],
+  approvedDayNumbers: Set<number>,
+  requiredDays: number
+): number {
+  if (tasks.length === 0) return 0;
+  const sorted = [...tasks].sort((a, b) => a.dayNumber - b.dayNumber);
+  const next = sorted.find((task) => !approvedDayNumbers.has(task.dayNumber));
+  return next?.dayNumber ?? requiredDays;
+}
+
+export function hasCalendarDeadline(unlockMode: string | null | undefined): boolean {
+  return unlockMode === "DAILY" || unlockMode === "DAILY_SEQUENTIAL";
+}
+
 /**
  * Compute consecutive-day streak ending at the most recent check-in.
  * Given checkins sorted asc, returns the longest run of consecutive days
@@ -141,14 +157,6 @@ export async function getActiveChallenge(
       .catch(() => {});
   }
 
-  const now = new Date();
-  const today = new Date(now);
-  today.setHours(0, 0, 0, 0);
-  const currentDay = challengeCurrentDay(effStart, ch.requiredDays, now);
-  const progressPct = Math.round((currentDay / ch.requiredDays) * 100);
-
-  const todayTask = ch.tasks.find((t) => t.dayNumber === currentDay) || null;
-
   // Load all my check-ins for this challenge (lightweight)
   const myCheckins = await prisma.checkin.findMany({
     where: { userId, challengeId: ch.id },
@@ -157,19 +165,43 @@ export async function getActiveChallenge(
   const dayNumbers = myCheckins
     .map((c) => c.dayNumber ?? null)
     .filter((n): n is number => n !== null);
+  const approvedDayNumbers = new Set(
+    myCheckins
+      .filter((c) => c.status === "APPROVED")
+      .map((c) => c.dayNumber ?? null)
+      .filter((n): n is number => n !== null)
+  );
+
+  const now = new Date();
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+  const unlockMode = ch.taskUnlockMode ?? "DAILY";
+  const isSequential = unlockMode === "SEQUENTIAL";
+  const calendarDeadline = hasCalendarDeadline(unlockMode);
+  const currentDay = isSequential
+    ? sequentialCurrentDay(ch.tasks, approvedDayNumbers, ch.requiredDays)
+    : challengeCurrentDay(effStart, ch.requiredDays, now);
+  const progressNumerator = isSequential ? approvedDayNumbers.size : currentDay;
+  const progressPct = Math.round((progressNumerator / ch.requiredDays) * 100);
+
+  const todayTask = ch.tasks.find((t) => t.dayNumber === currentDay) || null;
   // "Done for now" if submitted since local midnight (normal daily flow) OR the
   // current day already has a non-rejected submission. The 2nd clause matters in
   // warm-up: Day 1 spans the start evening + the anchor day (2 calendar dates),
   // so a midnight-only check would re-show the form and allow a duplicate Day-1.
   const checkedInToday =
-    myCheckins.some((c) => c.createdAt.getTime() >= today.getTime()) ||
-    myCheckins.some((c) => c.dayNumber === currentDay && c.status !== "REJECTED");
+    isSequential
+      ? myCheckins.some((c) => c.dayNumber === currentDay && c.status !== "REJECTED")
+      : myCheckins.some((c) => c.createdAt.getTime() >= today.getTime()) ||
+        myCheckins.some((c) => c.dayNumber === currentDay && c.status !== "REJECTED");
   const streak = computeStreak(dayNumbers);
   // Missed days = days from 1..(currentDay-1) that have no check-in
   const doneSet = new Set(dayNumbers);
   let missedDays = 0;
-  for (let d = 1; d < currentDay; d++) {
-    if (!doneSet.has(d)) missedDays++;
+  if (!isSequential) {
+    for (let d = 1; d < currentDay; d++) {
+      if (!doneSet.has(d)) missedDays++;
+    }
   }
 
   return {
@@ -181,6 +213,7 @@ export async function getActiveChallenge(
     requiredDays: ch.requiredDays,
     personalStartsAt: effStart,
     currentDay,
+    hasCalendarDeadline: calendarDeadline,
     progressPct,
     streak,
     missedDays,

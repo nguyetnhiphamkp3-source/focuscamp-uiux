@@ -7,7 +7,7 @@ import { joinChallengeAction, startChallengeAction } from "@/app/actions/challen
 import { CheckinForm } from "@/components/community/checkin-form";
 import { SubmissionReviewPanel } from "@/components/community/submission-review-panel";
 import type { SubmissionRow } from "@/components/community/submission-review-panel";
-import { effectivePersonalStartsAt, challengeDayAnchor, challengeCurrentDay } from "@/lib/services/challenge-progress";
+import { effectivePersonalStartsAt, challengeDayAnchor, challengeCurrentDay, hasCalendarDeadline, sequentialCurrentDay } from "@/lib/services/challenge-progress";
 import { ChallengeSettingsPanel } from "@/components/community/challenge-settings-panel";
 import { ChallengeEditButton } from "@/components/community/challenge-edit-button";
 import { ResubmitForm } from "@/components/community/resubmit-form";
@@ -316,24 +316,28 @@ export default async function ChallengeDetailPage({
     challengeSlug,
   });
 
+  const unlockMode = challenge.taskUnlockMode ?? "DAILY";
+  const calendarDeadline = hasCalendarDeadline(unlockMode);
+  const tasks = challenge.tasks;
+
   const dayNow = (() => {
     if (myMembership?.completedAt) return challenge.requiredDays;
     if (!effStart) return 0;
+    if (unlockMode === "SEQUENTIAL") {
+      return sequentialCurrentDay(tasks, approvedDayNumbers, challenge.requiredDays);
+    }
     return challengeCurrentDay(effStart, challenge.requiredDays);
   })();
 
-  const currentTaskDeadlineLabel = effStart && dayNow > 0
+  const currentTaskDeadlineLabel = calendarDeadline && effStart && dayNow > 0
     ? new Date(challengeDayAnchor(effStart).getTime() + dayNow * 24 * 60 * 60 * 1000).toLocaleString("vi-VN", {
         timeZone: "Asia/Ho_Chi_Minh", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false,
       })
     : undefined;
 
   // Compute per-task unlock status based on taskUnlockMode
-  const unlockMode = challenge.taskUnlockMode ?? "DAILY";
   const defaultInterval = challenge.unlockIntervalHours ?? 24;
   const personalStart = effStart?.getTime() ?? 0;
-
-  const tasks = challenge.tasks;
 
   // Cumulative hours from the member's personal start until task[idx] should open.
   const cumulativeUnlockHours = (idx: number): number => {
@@ -649,6 +653,7 @@ export default async function ChallengeDetailPage({
             <>
               {/* Missed day warning */}
               {(() => {
+                if (!calendarDeadline) return null;
                 const currentDay = dayNow;
                 let missed = 0;
                 for (let d = 1; d < currentDay; d++) {
@@ -846,11 +851,11 @@ export default async function ChallengeDetailPage({
                 const isDone = doneDayNumbers.has(t.dayNumber);
                 const isCurrent = !isDone && !isRejected && t.dayNumber === dayNow;
                 const isFuture = t.dayNumber > dayNow && !isDone && !isRejected;
-                const isOverdue = !isDone && !isRejected && !isCurrent && t.dayNumber < dayNow;
-                const dayDeadline = effStart
-                  ? new Date(effStart.getTime() + t.dayNumber * 24 * 60 * 60 * 1000)
+                const isOverdue = calendarDeadline && !isDone && !isRejected && !isCurrent && t.dayNumber < dayNow;
+                const dayDeadline = calendarDeadline && effStart
+                  ? new Date(challengeDayAnchor(effStart).getTime() + t.dayNumber * 24 * 60 * 60 * 1000)
                   : null;
-                const isLate = !!(isDone && checkinData && dayDeadline && checkinData.createdAt.getTime() > dayDeadline.getTime());
+                const isLate = !!(calendarDeadline && isDone && checkinData && dayDeadline && checkinData.createdAt.getTime() > dayDeadline.getTime());
                 const hasBody = !!(t.description || t.sopContent || t.videoUrl || hasEvidenceHint || checkinData || isCurrent || isOverdue);
                 // Determine if task is locked based on unlock mode
                 const taskUnlocked = isDone || permissions.canManageChallenges || isTaskUnlocked(t, taskIndex);
@@ -1418,16 +1423,16 @@ async function CheckinGate({
     },
   });
 
-  const deadlineMs = challengeDayAnchor(active.personalStartsAt).getTime() + active.currentDay * 24 * 60 * 60 * 1000;
-  const deadlineDate = new Date(deadlineMs);
-  const deadlineStr = deadlineDate.toLocaleString("vi-VN", {
-    timeZone: "Asia/Ho_Chi_Minh",
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
+  const deadlineStr = active.hasCalendarDeadline
+    ? new Date(challengeDayAnchor(active.personalStartsAt).getTime() + active.currentDay * 24 * 60 * 60 * 1000).toLocaleString("vi-VN", {
+        timeZone: "Asia/Ho_Chi_Minh",
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      })
+    : undefined;
 
   return (
     <CheckinForm
