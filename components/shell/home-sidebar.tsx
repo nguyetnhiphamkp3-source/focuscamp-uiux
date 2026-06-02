@@ -32,7 +32,7 @@ export function HomeSidebar({
         </FeatureLink>
         <FeatureLink href="/marketplace">
           <span className="feature-icon"><ShoppingCart size={18} /></span>
-          <span className="feature-name">Marketplace</span>
+          <span className="feature-name">Super Marketplace</span>
         </FeatureLink>
 
         <div className="features-section-title">Về chúng tôi</div>

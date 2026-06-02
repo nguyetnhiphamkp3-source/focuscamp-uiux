@@ -5,7 +5,7 @@ import { fmtVnd } from "@/lib/brand";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Marketplace — focus.camp",
+  title: "Super Marketplace — focus.camp",
   description:
     "Khám phá digital products + challenges từ tất cả community trên focus.camp",
 };
@@ -54,7 +54,7 @@ export default async function GlobalMarketplacePage({
   return (
     <div style={{ flex: 1, overflowY: "auto" }}>
       <header className="view-header">
-        <span className="view-title">Marketplace</span>
+        <span className="view-title">Super Marketplace</span>
         <span className="view-subtitle">
           Digital products + challenges từ tất cả community
         </span>
