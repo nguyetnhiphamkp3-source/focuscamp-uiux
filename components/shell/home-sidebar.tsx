@@ -48,6 +48,10 @@ export function HomeSidebar({
           <span className="feature-icon"><Shield size={18} /></span>
           <span className="feature-name">Brand Guide</span>
         </FeatureLink>
+        <FeatureLink href="/fire-keeper">
+          <span className="feature-icon"><Flame size={18} /></span>
+          <span className="feature-name">Fire Keeper</span>
+        </FeatureLink>
 
         {isSuperAdmin && (
           <>
