@@ -92,6 +92,7 @@ export default async function InboxPage() {
                   readAt: n.readAt,
                   createdAt: n.createdAt,
                   actor: n.actor,
+                  community: n.community,
                 }}
               />
             ))}
