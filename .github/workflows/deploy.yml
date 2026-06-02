@@ -73,7 +73,7 @@ jobs:
             git fetch origin main
             git checkout main
             git clean -fd -- scripts/migrate-challenge.ts scripts/migration-data/
-            git pull origin main --ff-only
+            git reset --hard origin/main
 
             # Ensure REDIS_URL is in .env
             grep -q "REDIS_URL" .env 2>/dev/null || echo 'REDIS_URL=redis://redis:6379' >> .env
