@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Bookmark } from "lucide-react";
 import { toggleBookmarkAction } from "@/app/actions/social";
 
 export function BookmarkButton({
@@ -55,7 +56,8 @@ export function BookmarkButton({
           fontWeight: bookmarked ? 600 : undefined,
         }}
       >
-        {bookmarked ? "🔖 Đã lưu" : "🔖 Bookmark"}
+        <Bookmark size={16} fill={bookmarked ? "currentColor" : "none"} />{" "}
+        {bookmarked ? "Đã lưu" : "Bookmark"}
       </button>
       {showHint && (
         <span

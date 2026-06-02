@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Share2, Check } from "lucide-react";
 
 /**
  * Copy post URL to clipboard. Shows "Đã copy" confirmation for 2 seconds.
@@ -49,14 +50,17 @@ export function ShareButton({
       }
       aria-label="Copy link bài viết"
     >
-      {copied ? "✓ Đã copy" : "🔗 Share"}
+      {copied ? <Check size={16} /> : <Share2 size={16} />}{" "}
+      {copied ? "Đã copy" : "Share"}
     </button>
   );
 }
 
 function menuButtonStyle(color: string): React.CSSProperties {
   return {
-    display: "block",
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
     width: "100%",
     padding: "8px 12px",
     textAlign: "left",

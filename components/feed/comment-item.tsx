@@ -3,6 +3,7 @@
 import { useEffect, useRef, useTransition, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { MoreHorizontal, Reply, Pencil, Star, Check, Flag, Trash2 } from "lucide-react";
 import {
   avatarColorFor,
   nameColorFor,
@@ -258,7 +259,7 @@ export function CommentItem({
                   borderRadius: 10,
                 }}
               >
-                ✓ {isQuestion ? "Câu trả lời tốt nhất" : "Được ghim"}
+                <Check size={13} style={{ verticalAlign: "-2px" }} /> {isQuestion ? "Câu trả lời tốt nhất" : "Được ghim"}
               </span>
             )}
           </div>
@@ -357,7 +358,13 @@ export function CommentItem({
                   onClick={() => setReplying((v) => !v)}
                   style={actionBtnStyle("var(--interactive-normal)")}
                 >
-                  {replying ? "Huỷ trả lời" : "↩ Trả lời"}
+                  {replying ? (
+                    "Huỷ trả lời"
+                  ) : (
+                    <>
+                      <Reply size={13} style={{ verticalAlign: "-2px" }} /> Trả lời
+                    </>
+                  )}
                 </button>
               )}
               {comment.isBestAnswer && canMarkBest && (
@@ -382,17 +389,18 @@ export function CommentItem({
                     }}
                     aria-label="Tuỳ chọn comment"
                     style={{
+                      display: "inline-flex",
+                      alignItems: "center",
                       background: "transparent",
                       border: "none",
                       padding: "2px 6px",
                       cursor: "pointer",
                       color: "var(--text-muted)",
-                      fontSize: "var(--text-md)",
                       lineHeight: 1,
                       borderRadius: 4,
                     }}
                   >
-                    ⋯
+                    <MoreHorizontal size={16} />
                   </button>
                   {menuOpen && (
                     <div
@@ -419,7 +427,7 @@ export function CommentItem({
                           }}
                           style={menuItemStyle("var(--text-normal)")}
                         >
-                          ✎ Sửa
+                          <Pencil size={15} /> Sửa
                         </button>
                       )}
                       {canMarkBest && (
@@ -436,11 +444,16 @@ export function CommentItem({
                               : "var(--text-normal)",
                           )}
                         >
-                          {comment.isBestAnswer
-                            ? "✓ Bỏ đánh dấu"
-                            : isQuestion
-                              ? "★ Đánh dấu best answer"
-                              : "★ Ghim comment"}
+                          {comment.isBestAnswer ? (
+                            <>
+                              <Check size={15} /> Bỏ đánh dấu
+                            </>
+                          ) : (
+                            <>
+                              <Star size={15} />{" "}
+                              {isQuestion ? "Đánh dấu best answer" : "Ghim comment"}
+                            </>
+                          )}
                         </button>
                       )}
                       {canReport && (
@@ -452,7 +465,7 @@ export function CommentItem({
                           }}
                           style={menuItemStyle("var(--text-normal)")}
                         >
-                          ⚑ Báo cáo
+                          <Flag size={15} /> Báo cáo
                         </button>
                       )}
                       {canDelete && (
@@ -465,7 +478,7 @@ export function CommentItem({
                           disabled={pending}
                           style={menuItemStyle("var(--danger)")}
                         >
-                          🗑 Xoá
+                          <Trash2 size={15} /> Xoá
                         </button>
                       )}
                     </div>
@@ -622,7 +635,9 @@ function actionBtnStyle(color: string, weight: number = 400): React.CSSPropertie
 
 function menuItemStyle(color: string): React.CSSProperties {
   return {
-    display: "block",
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
     width: "100%",
     padding: "8px 12px",
     textAlign: "left",

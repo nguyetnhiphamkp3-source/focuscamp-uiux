@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { MoreHorizontal, Flag, Pencil, Trash2 } from "lucide-react";
 import {
   deletePostAction,
   updatePostAction,
@@ -132,7 +133,7 @@ export function PostMenu({
           style={{ padding: "4px 10px", minWidth: 32 }}
           aria-label="Tuỳ chọn bài viết"
         >
-          ⋯
+          <MoreHorizontal size={18} />
         </button>
         {open && (
           <div
@@ -163,7 +164,7 @@ export function PostMenu({
                 onClick={() => { setOpen(false); setShowReportModal(true); }}
                 style={menuItemStyle("var(--text-normal)")}
               >
-                ⚑ Báo cáo
+                <Flag size={15} /> Báo cáo
               </button>
             )}
             {canManagePostActions && (
@@ -197,7 +198,7 @@ export function PostMenu({
                 }}
                 style={menuItemStyle("var(--text-normal)")}
               >
-                ✎ Sửa
+                <Pencil size={15} /> Sửa
               </button>
             )}
             {canDelete && (
@@ -210,7 +211,7 @@ export function PostMenu({
                 disabled={pending}
                 style={menuItemStyle("var(--danger)")}
               >
-                🗑 Xoá
+                <Trash2 size={15} /> Xoá
               </button>
             )}
           </div>
@@ -405,7 +406,9 @@ export function PostMenu({
 
 function menuItemStyle(color: string): React.CSSProperties {
   return {
-    display: "block",
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
     width: "100%",
     padding: "8px 12px",
     textAlign: "left",

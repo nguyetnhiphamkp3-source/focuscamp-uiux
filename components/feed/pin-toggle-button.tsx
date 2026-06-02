@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Pin } from "lucide-react";
 import { togglePinAction } from "@/app/actions/posts";
 
 export function PinToggleButton({
@@ -32,7 +33,8 @@ export function PinToggleButton({
     });
   }
 
-  const label = isPinned ? "📌 Bỏ ghim" : "📌 Ghim";
+  const text =
+    variant === "inline" && isPinned ? "Đã ghim" : isPinned ? "Bỏ ghim" : "Ghim";
 
   return (
     <button
@@ -50,14 +52,16 @@ export function PinToggleButton({
             }
       }
     >
-      {variant === "inline" && isPinned ? "📌 Đã ghim" : label}
+      <Pin size={variant === "menu" ? 15 : 16} fill={isPinned ? "currentColor" : "none"} /> {text}
     </button>
   );
 }
 
 function menuButtonStyle(color: string): React.CSSProperties {
   return {
-    display: "block",
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
     width: "100%",
     padding: "8px 12px",
     textAlign: "left",

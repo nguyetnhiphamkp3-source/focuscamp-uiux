@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Heart } from "lucide-react";
 import { toggleReactionAction } from "@/app/actions/posts";
 
 export function ReactionButton({
@@ -50,7 +51,7 @@ export function ReactionButton({
       }}
       aria-label={reacted ? "Bỏ thích" : "Thích"}
     >
-      {reacted ? "❤️" : "🤍"} {count}
+      <Heart size={16} fill={reacted ? "currentColor" : "none"} /> {count}
     </button>
   );
 }

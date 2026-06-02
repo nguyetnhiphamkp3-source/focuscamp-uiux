@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Pin, Star, MessageCircle } from "lucide-react";
 import {
   avatarColorFor,
   nameColorFor,
@@ -89,7 +90,7 @@ export function PostCard({
               <>
                 {" · "}
                 <span style={{ color: "var(--brand-green)", fontWeight: 700 }}>
-                  📌 Ghim
+                  <Pin size={11} fill="currentColor" style={{ verticalAlign: "-1px" }} /> Ghim
                 </span>
               </>
             )}
@@ -97,7 +98,7 @@ export function PostCard({
               <>
                 {" · "}
                 <span style={{ color: "var(--premium-gold)", fontWeight: 700 }}>
-                  ⭐ CỐT
+                  <Star size={11} fill="currentColor" style={{ verticalAlign: "-1px" }} /> CỐT
                 </span>
               </>
             )}
@@ -149,7 +150,7 @@ export function PostCard({
           className="feed-post-action"
           style={{ textDecoration: "none" }}
         >
-          💬 {post.commentCount} bình luận
+          <MessageCircle size={16} /> {post.commentCount} bình luận
         </Link>
         {currentUserId && (
           <BookmarkButton

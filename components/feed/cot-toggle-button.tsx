@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Star } from "lucide-react";
 import { toggleCotAction } from "@/app/actions/posts";
 import { useRouter } from "next/navigation";
 
@@ -32,7 +33,8 @@ export function CotToggleButton({
     });
   }
 
-  const label = isCot ? "⭐ Bỏ CỐT" : "☆ Mark CỐT";
+  const text =
+    variant === "inline" && isCot ? "CỐT" : isCot ? "Bỏ CỐT" : "Mark CỐT";
 
   return (
     <button
@@ -50,14 +52,16 @@ export function CotToggleButton({
             }
       }
     >
-      {variant === "inline" && isCot ? "⭐ CỐT" : label}
+      <Star size={variant === "menu" ? 15 : 16} fill={isCot ? "currentColor" : "none"} /> {text}
     </button>
   );
 }
 
 function menuButtonStyle(color: string): React.CSSProperties {
   return {
-    display: "block",
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
     width: "100%",
     padding: "8px 12px",
     textAlign: "left",

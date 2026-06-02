@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Star, MessageCircle } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getPostWithComments } from "@/lib/services/post";
@@ -183,7 +184,7 @@ export default async function PostDetailPage({
                     <>
                       {" · "}
                       <span style={{ color: "var(--premium-gold)", fontWeight: 700 }}>
-                        ⭐ CỐT
+                        <Star size={11} fill="currentColor" style={{ verticalAlign: "-1px" }} /> CỐT
                       </span>
                     </>
                   )}
@@ -242,7 +243,7 @@ export default async function PostDetailPage({
                 initialReacted={post.reactedByMe}
               />
               <span className="feed-post-action" style={{ cursor: "default" }}>
-                💬 {post.commentCount} bình luận
+                <MessageCircle size={16} /> {post.commentCount} bình luận
               </span>
               <div style={{ marginLeft: "auto" }}>
                 <PostMenu
