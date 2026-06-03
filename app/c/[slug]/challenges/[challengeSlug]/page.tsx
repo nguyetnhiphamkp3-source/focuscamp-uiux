@@ -122,7 +122,7 @@ export default async function ChallengeDetailPage({
 
   const page = Math.max(1, parseInt(sp.page || "1", 10) || 1);
   const search = (sp.search || "").trim();
-  const PAGE_SIZE = 20;
+  const PAGE_SIZE = 13;
 
   // Parallel batch — all queries below are independent of each other.
   // Was sequential (10+ awaits in a row), now ~1 round-trip max.
