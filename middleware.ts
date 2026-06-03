@@ -87,18 +87,23 @@ export default function middleware(req: NextRequest) {
   );
   // connect-src narrowed: self + Cloudflare R2 (uploads) + Sentry (telemetry).
   // If you add a new external XHR target, whitelist it here — don't fall back to https:.
-  res.headers.set(
-    "Content-Security-Policy",
-    [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: https:",
-      "font-src 'self' https://fonts.gstatic.com",
-      "connect-src 'self' https://*.r2.cloudflarestorage.com https://*.r2.dev https://*.ingest.sentry.io https://o.ingest.sentry.io",
-      "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://fast.wistia.com https://fast.wistia.net",
-    ].join("; ") + ";"
-  );
+  // Standalone guide pages (/c/<slug>/guides/*) load Google Fonts and set their
+  // own relaxed CSP in the route handler — skip the strict app CSP for them.
+  const isGuidePage = /^\/c\/[^/]+\/guides\//.test(pathname);
+  if (!isGuidePage) {
+    res.headers.set(
+      "Content-Security-Policy",
+      [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self' data: https:",
+        "font-src 'self' https://fonts.gstatic.com",
+        "connect-src 'self' https://*.r2.cloudflarestorage.com https://*.r2.dev https://*.ingest.sentry.io https://o.ingest.sentry.io",
+        "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://fast.wistia.com https://fast.wistia.net",
+      ].join("; ") + ";"
+    );
+  }
 
   if (isPublic(pathname)) return res;
 
