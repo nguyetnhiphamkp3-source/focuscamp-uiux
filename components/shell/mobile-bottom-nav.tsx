@@ -30,16 +30,16 @@ export function MobileBottomNav({
     setDrawerOpen(false);
   }, [pathname]);
 
-  // Swipe-left anywhere on screen closes the drawer
+  // Swipe-right anywhere on screen closes the drawer (drawer opens from right)
   useEffect(() => {
     if (!drawerOpen) return;
     const onStart = (e: TouchEvent) => {
       swipeStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     };
     const onEnd = (e: TouchEvent) => {
-      const dx = swipeStart.current.x - e.changedTouches[0].clientX;
+      const dx = e.changedTouches[0].clientX - swipeStart.current.x;
       const dy = Math.abs(swipeStart.current.y - e.changedTouches[0].clientY);
-      // Close only on clear horizontal left-swipe, not vertical scrolling
+      // Close only on clear horizontal right-swipe, not vertical scrolling
       if (dx > 48 && dx > dy) setDrawerOpen(false);
     };
     document.addEventListener("touchstart", onStart, { passive: true });
