@@ -23,6 +23,8 @@ export type AIProviderClient = {
   hasApiKey: boolean;
   maskedKey: string | null;
   modelInputMode: "select" | "manual";
+  /** Display name of the user who created this provider (null for legacy rows). */
+  createdByName: string | null;
 };
 
 export type ResolvedAIModelConfig = {
@@ -63,7 +65,17 @@ export function toAIProviderClient(provider: AIProvider): AIProviderClient {
     hasApiKey: !!apiKey,
     maskedKey: maskApiKey(apiKey),
     modelInputMode: AI_PROVIDER_TYPES[providerType].modelInputMode,
+    createdByName: readCreatedByName(provider.settings),
   };
+}
+
+/** Read the snapshotted creator name stored in `settings.createdBy` (if any). */
+function readCreatedByName(settings: Prisma.JsonValue | null): string | null {
+  if (!settings || typeof settings !== "object" || Array.isArray(settings)) return null;
+  const createdBy = (settings as Record<string, unknown>).createdBy;
+  if (!createdBy || typeof createdBy !== "object" || Array.isArray(createdBy)) return null;
+  const name = (createdBy as Record<string, unknown>).name;
+  return typeof name === "string" && name ? name : null;
 }
 
 export async function listAIProviders(
@@ -119,6 +131,14 @@ export async function createAIProvider(input: {
 }): Promise<AIProviderClient> {
   await assertCommunityPermission(input.userId, input.communityId, "manage_ai_agent");
   const data = normalizeProviderInput(input);
+  const actor = await prisma.user.findUnique({
+    where: { id: input.userId },
+    select: { name: true },
+  });
+  const settings = {
+    ...(input.settings ?? {}),
+    createdBy: { id: input.userId, name: actor?.name ?? "" },
+  };
   const provider = await prisma.aIProvider.create({
     data: {
       communityId: input.communityId,
@@ -128,7 +148,7 @@ export async function createAIProvider(input: {
       baseUrl: data.baseUrl,
       encryptedApiKey: data.apiKey ? encryptProviderKey(data.apiKey) : null,
       enabled: input.enabled ?? true,
-      settings: input.settings as Prisma.InputJsonValue | undefined,
+      settings: settings as Prisma.InputJsonValue,
     },
   });
   return toAIProviderClient(provider);

@@ -25,6 +25,7 @@ interface ApiKeyRow {
   expiresAt: Date | null;
   revokedAt: Date | null;
   createdAt: Date;
+  owner: { id: string; name: string | null } | null;
 }
 
 export function ApiKeysPanel({
@@ -369,6 +370,7 @@ export function ApiKeysPanel({
                     }}
                   >
                     Tạo {k.createdAt.toLocaleDateString("vi-VN")}
+                    {k.owner?.name && <> · bởi {k.owner.name}</>}
                     {k.lastUsedAt && (
                       <> · Last used {k.lastUsedAt.toLocaleString("vi-VN")}</>
                     )}

@@ -313,6 +313,18 @@ export async function updateChannelConfig(input: {
   const prev = normalizeChannelConfig(existing?.channelConfig);
   const tokenById = new Map(prev.telegram.map((t) => [t.id, t.botToken]));
   const tokenByChat = new Map(prev.telegram.map((t) => [t.chatId, t.botToken]));
+  // Preserve the original "added by" snapshot so re-saving the whole config
+  // doesn't reassign authorship of channels someone else added.
+  const addedByTgId = new Map(prev.telegram.flatMap((t) => (t.addedBy ? [[t.id, t.addedBy] as const] : [])));
+  const addedByTgChat = new Map(prev.telegram.flatMap((t) => (t.addedBy ? [[t.chatId, t.addedBy] as const] : [])));
+  const addedByDiscordUrl = new Map(
+    prev.discord.flatMap((d) => (d.addedBy ? [[d.webhookUrl, d.addedBy] as const] : [])),
+  );
+  const actor = await prisma.user.findUnique({
+    where: { id: input.userId },
+    select: { name: true },
+  });
+  const addedByNow = { id: input.userId, name: actor?.name ?? "" };
 
   const optionalIds = (ids?: string[]) =>
     ids && ids.length ? { challengeIds: ids } : {};
@@ -321,11 +333,15 @@ export async function updateChannelConfig(input: {
 
   const discord = (input.discord ?? [])
     .filter((d) => d.webhookUrl.trim())
-    .map((d) => ({
-      webhookUrl: d.webhookUrl.trim(),
-      eventTypes: d.eventTypes,
-      ...optionalIds(d.challengeIds),
-    }));
+    .map((d) => {
+      const url = d.webhookUrl.trim();
+      return {
+        webhookUrl: url,
+        eventTypes: d.eventTypes,
+        ...optionalIds(d.challengeIds),
+        addedBy: addedByDiscordUrl.get(url) ?? addedByNow,
+      };
+    });
   if (discord.length) config.discord = discord;
 
   const telegram: Array<Record<string, unknown>> = [];
@@ -339,6 +355,8 @@ export async function updateChannelConfig(input: {
     else if (t.id && tokenById.has(t.id)) stored = tokenById.get(t.id) ?? "";
     else if (tokenByChat.has(chatId)) stored = tokenByChat.get(chatId) ?? "";
     if (!stored) continue; // no token available for this channel — drop it
+    const addedBy =
+      (t.id && addedByTgId.get(t.id)) || addedByTgChat.get(chatId) || addedByNow;
     telegram.push({
       id: t.id || randomUUID(),
       botToken: stored,
@@ -346,6 +364,7 @@ export async function updateChannelConfig(input: {
       eventTypes: t.eventTypes,
       ...(t.topicId?.trim() ? { topicId: t.topicId.trim() } : {}),
       ...optionalIds(t.challengeIds),
+      addedBy,
     });
   }
   if (telegram.length) config.telegram = telegram;

@@ -439,11 +439,13 @@ export default async function SettingsPage({
                       communityId={community.id}
                       communitySlug={slug}
                       challenges={notifyChallenges}
+                      currentUserName={session.user.name ?? null}
                       initial={{
                         discord: cfg.discord.map((d) => ({
                           webhookUrl: d.webhookUrl,
                           eventTypes: d.eventTypes,
                           challengeIds: d.challengeIds ?? [],
+                          addedByName: d.addedBy?.name || null,
                         })),
                         // Never send bot tokens to the client — only a "hasToken" flag.
                         telegram: cfg.telegram.map((t) => ({
@@ -453,6 +455,7 @@ export default async function SettingsPage({
                           topicId: t.topicId ?? "",
                           eventTypes: t.eventTypes,
                           challengeIds: t.challengeIds ?? [],
+                          addedByName: t.addedBy?.name || null,
                         })),
                         templates: cfg.templates ?? {},
                       }}

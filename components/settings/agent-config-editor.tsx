@@ -469,6 +469,7 @@ export function AgentConfigEditor({
                   {provider.providerLabel}
                   {provider.baseUrl ? ` · ${provider.baseUrl}` : ""}
                   {provider.maskedKey ? ` · ${provider.maskedKey}` : ""}
+                  {provider.createdByName ? ` · 👤 ${provider.createdByName}` : ""}
                 </div>
               </div>
               <button type="button" onClick={() => setProviderForm(formFromProvider(provider))} style={btnSecondary}>
