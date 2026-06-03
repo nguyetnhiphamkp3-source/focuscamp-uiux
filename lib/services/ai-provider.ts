@@ -133,11 +133,16 @@ export async function createAIProvider(input: {
   const data = normalizeProviderInput(input);
   const actor = await prisma.user.findUnique({
     where: { id: input.userId },
-    select: { name: true },
+    select: { name: true, handle: true, email: true },
   });
+  // Fall back to handle/email so the creator label always shows something,
+  // even for users who never set a display name.
   const settings = {
     ...(input.settings ?? {}),
-    createdBy: { id: input.userId, name: actor?.name ?? "" },
+    createdBy: {
+      id: input.userId,
+      name: actor?.name || actor?.handle || actor?.email || "",
+    },
   };
   const provider = await prisma.aIProvider.create({
     data: {
@@ -202,6 +207,9 @@ export async function updateAIProvider(input: {
   }
   if (input.data.enabled !== undefined) updateData.enabled = input.data.enabled;
   if (input.data.settings !== undefined) {
+    // NOTE: no route currently sends `settings` here. If you add settings
+    // updates, MERGE to preserve `settings.createdBy` (the "added by" snapshot)
+    // instead of overwriting the whole object.
     updateData.settings = input.data.settings as Prisma.InputJsonValue;
   }
 

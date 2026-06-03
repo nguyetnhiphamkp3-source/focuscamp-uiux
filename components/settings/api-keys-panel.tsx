@@ -25,7 +25,7 @@ interface ApiKeyRow {
   expiresAt: Date | null;
   revokedAt: Date | null;
   createdAt: Date;
-  owner: { id: string; name: string | null } | null;
+  owner: { id: string; name: string | null; handle: string | null; email: string | null } | null;
 }
 
 export function ApiKeysPanel({
@@ -311,6 +311,7 @@ export function ApiKeysPanel({
           {initial.map((k) => {
             const revoked = !!k.revokedAt;
             const expired = k.expiresAt && k.expiresAt < new Date();
+            const ownerLabel = k.owner?.name || k.owner?.handle || k.owner?.email;
             return (
               <div
                 key={k.id}
@@ -370,7 +371,7 @@ export function ApiKeysPanel({
                     }}
                   >
                     Tạo {k.createdAt.toLocaleDateString("vi-VN")}
-                    {k.owner?.name && <> · bởi {k.owner.name}</>}
+                    {ownerLabel && <> · bởi {ownerLabel}</>}
                     {k.lastUsedAt && (
                       <> · Last used {k.lastUsedAt.toLocaleString("vi-VN")}</>
                     )}

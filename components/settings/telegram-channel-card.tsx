@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { inputStyle } from "./editor-shared";
 import {
   EventChips,
@@ -85,6 +85,12 @@ export function TelegramChannelCard({
   // Already-configured bots start collapsed so the list is scannable; new ones
   // stay expanded so they can be filled in.
   const [collapsed, setCollapsed] = useState(channel.hasToken);
+  // Re-collapse once a freshly-added bot becomes configured (hasToken false→true
+  // on its first save). Existing bots keep any manual expand/collapse because
+  // their hasToken never changes, so this effect won't re-fire for them.
+  useEffect(() => {
+    setCollapsed(channel.hasToken);
+  }, [channel.hasToken]);
   const showChallengeFilter = CHALLENGE_SCOPED_EVENTS.some((e) => channel.eventTypes.has(e));
   const eventCount = channel.eventTypes.size;
 
@@ -122,7 +128,12 @@ export function TelegramChannelCard({
       </div>
 
       {collapsed ? (
-        <button type="button" onClick={() => setCollapsed(false)} style={summaryRow}>
+        <button
+          type="button"
+          onClick={() => setCollapsed(false)}
+          style={summaryRow}
+          aria-label="Mở rộng để sửa"
+        >
           💬 {channel.chatId || "(chưa có Chat ID)"}
           {channel.topicId ? ` · topic ${channel.topicId}` : ""}
           {` · ${eventCount} sự kiện`}
