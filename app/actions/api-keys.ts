@@ -116,6 +116,7 @@ export async function listApiKeys(communityId: string) {
       expiresAt: true,
       revokedAt: true,
       createdAt: true,
+      owner: { select: { id: true, name: true } },
     },
   });
 }

@@ -29,13 +29,21 @@ export function ChannelConfigEditor({
   communityId,
   communitySlug,
   challenges,
+  currentUserName,
   initial,
 }: {
   communityId: string;
   communitySlug: string;
   challenges: ChallengeOption[];
+  /** Name of the logged-in user — stamped on newly added channels after save. */
+  currentUserName?: string | null;
   initial: {
-    discord: Array<{ webhookUrl: string; eventTypes: string[]; challengeIds: string[] }>;
+    discord: Array<{
+      webhookUrl: string;
+      eventTypes: string[];
+      challengeIds: string[];
+      addedByName: string | null;
+    }>;
     telegram: Array<{
       id: string;
       hasToken: boolean;
@@ -43,6 +51,7 @@ export function ChannelConfigEditor({
       topicId: string;
       eventTypes: string[];
       challengeIds: string[];
+      addedByName: string | null;
     }>;
     templates?: Record<string, { title?: string; description?: string }>;
   };
@@ -55,6 +64,7 @@ export function ChannelConfigEditor({
       webhookUrl: d.webhookUrl,
       eventTypes: new Set(d.eventTypes),
       challengeIds: new Set(d.challengeIds),
+      addedByName: d.addedByName,
     })),
   );
   const [telegram, setTelegram] = useState<TelegramChannelState[]>(() =>
@@ -67,6 +77,7 @@ export function ChannelConfigEditor({
       topicId: t.topicId,
       eventTypes: new Set(t.eventTypes),
       challengeIds: new Set(t.challengeIds),
+      addedByName: t.addedByName,
     })),
   );
 
@@ -131,11 +142,28 @@ export function ChannelConfigEditor({
       });
       if (res.ok) {
         setSaved(true);
+        // Optimistically stamp the current user on freshly-added webhooks so
+        // the "added by" label shows up without a full reload.
+        setDiscord((prev) =>
+          prev.map((d) =>
+            d.webhookUrl.trim() && !d.addedByName
+              ? { ...d, addedByName: currentUserName ?? null }
+              : d,
+          ),
+        );
         // Tokens are encrypted server-side; clear inputs + mark as saved.
         setTelegram((prev) =>
           prev
             .filter((t) => t.chatId.trim())
-            .map((t) => ({ ...t, botToken: "", hasToken: t.hasToken || !!t.botToken.trim() })),
+            .map((t) => {
+              const nowHasToken = t.hasToken || !!t.botToken.trim();
+              return {
+                ...t,
+                botToken: "",
+                hasToken: nowHasToken,
+                addedByName: nowHasToken ? t.addedByName ?? currentUserName ?? null : t.addedByName,
+              };
+            }),
         );
         router.refresh();
       } else {
@@ -179,7 +207,7 @@ export function ChannelConfigEditor({
           onClick={() =>
             setDiscord((prev) => [
               ...prev,
-              { _key: newKey(), webhookUrl: "", eventTypes: new Set(), challengeIds: new Set() },
+              { _key: newKey(), webhookUrl: "", eventTypes: new Set(), challengeIds: new Set(), addedByName: null },
             ])
           }
           style={addBtn}
@@ -224,6 +252,7 @@ export function ChannelConfigEditor({
                 topicId: "",
                 eventTypes: new Set(),
                 challengeIds: new Set(),
+                addedByName: null,
               },
             ])
           }

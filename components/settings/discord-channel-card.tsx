@@ -13,6 +13,8 @@ export interface DiscordChannelState {
   webhookUrl: string;
   eventTypes: Set<string>;
   challengeIds: Set<string>;
+  /** Display name of who added this webhook (null = not saved yet / legacy). */
+  addedByName: string | null;
 }
 
 export function DiscordChannelCard({
@@ -45,6 +47,11 @@ export function DiscordChannelCard({
         <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--text-muted)" }}>
           Webhook #{index + 1}
         </span>
+        {channel.addedByName && (
+          <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginLeft: 8 }}>
+            👤 {channel.addedByName}
+          </span>
+        )}
         <button
           type="button"
           onClick={onRemove}
