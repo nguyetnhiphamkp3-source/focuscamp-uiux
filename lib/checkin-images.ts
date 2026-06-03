@@ -8,7 +8,7 @@
  */
 
 /** Max evidence images a member may attach to a single check-in. */
-export const MAX_CHECKIN_IMAGES = 3;
+export const MAX_CHECKIN_IMAGES = 10;
 
 export function checkinImages(checkin: {
   imageUrls?: string[] | null;

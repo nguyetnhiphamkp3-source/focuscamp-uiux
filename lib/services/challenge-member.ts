@@ -821,6 +821,7 @@ export async function updateChallengeTask(input: {
   videoUrl?: string;
   evidenceType?: string;
   evidenceLabel?: string;
+  maxEvidenceImages?: number;
   label?: string;
   unlockAfterHours?: number | null;
   aiReviewGuidelines?: string | null;
@@ -855,6 +856,7 @@ export async function updateChallengeTask(input: {
       ...(input.evidenceLabel !== undefined
         ? { evidenceLabel: input.evidenceLabel || null }
         : {}),
+      ...("maxEvidenceImages" in input ? { maxEvidenceImages: input.maxEvidenceImages ?? 3 } : {}),
       ...(input.label !== undefined ? { label: input.label || null } : {}),
       ...("unlockAfterHours" in input ? { unlockAfterHours: input.unlockAfterHours ?? null } : {}),
       ...(input.aiReviewGuidelines !== undefined ? { aiReviewGuidelines: input.aiReviewGuidelines } : {}),
@@ -881,6 +883,7 @@ export async function createChallengeTask(input: {
   videoUrl?: string;
   evidenceType?: string;
   evidenceLabel?: string;
+  maxEvidenceImages?: number;
   label?: string;
   unlockAfterHours?: number | null;
 }) {
@@ -895,6 +898,7 @@ export async function createChallengeTask(input: {
       videoUrl: input.videoUrl?.trim() || null,
       evidenceType: input.evidenceType || "TEXT",
       evidenceLabel: input.evidenceLabel?.trim() || null,
+      maxEvidenceImages: input.maxEvidenceImages ?? 3,
       label: input.label?.trim() || null,
       unlockAfterHours: input.unlockAfterHours ?? null,
     },

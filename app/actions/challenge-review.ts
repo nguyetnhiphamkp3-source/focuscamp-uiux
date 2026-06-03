@@ -399,6 +399,7 @@ export async function updateTaskAction(input: {
   videoUrl?: string;
   evidenceType?: "TEXT" | "LINK" | "IMAGE" | "TEXT_IMAGE";
   evidenceLabel?: string;
+  maxEvidenceImages?: number;
   label?: string;
   unlockAfterHours?: number | null;
   aiReviewGuidelines?: string | null;
@@ -419,6 +420,7 @@ export async function updateTaskAction(input: {
     videoUrl: input.videoUrl,
     evidenceType: input.evidenceType,
     evidenceLabel: input.evidenceLabel,
+    maxEvidenceImages: input.maxEvidenceImages,
     label: input.label,
     unlockAfterHours: input.unlockAfterHours,
     aiReviewGuidelines: input.aiReviewGuidelines,
@@ -440,6 +442,7 @@ export async function updateTaskAction(input: {
       videoUrl: parsed.data.videoUrl ?? undefined,
       evidenceType: parsed.data.evidenceType,
       evidenceLabel: parsed.data.evidenceLabel ?? undefined,
+      maxEvidenceImages: parsed.data.maxEvidenceImages,
       label: parsed.data.label ?? undefined,
       unlockAfterHours: parsed.data.unlockAfterHours,
       aiReviewGuidelines:
@@ -556,6 +559,7 @@ export async function createTaskAction(input: {
   videoUrl?: string;
   evidenceType?: "TEXT" | "LINK" | "IMAGE" | "TEXT_IMAGE";
   evidenceLabel?: string;
+  maxEvidenceImages?: number;
   label?: string;
   unlockAfterHours?: number | null;
   communitySlug: string;
@@ -572,6 +576,7 @@ export async function createTaskAction(input: {
     videoUrl: input.videoUrl,
     evidenceType: input.evidenceType,
     evidenceLabel: input.evidenceLabel,
+    maxEvidenceImages: input.maxEvidenceImages,
     label: input.label,
     unlockAfterHours: input.unlockAfterHours,
   });
@@ -589,6 +594,7 @@ export async function createTaskAction(input: {
       videoUrl: parsed.data.videoUrl ?? undefined,
       evidenceType: parsed.data.evidenceType,
       evidenceLabel: parsed.data.evidenceLabel ?? undefined,
+      maxEvidenceImages: parsed.data.maxEvidenceImages,
       label: parsed.data.label ?? undefined,
       unlockAfterHours: parsed.data.unlockAfterHours,
     });

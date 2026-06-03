@@ -14,6 +14,7 @@ export function ResubmitForm({
   evidenceType,
   rejectCount,
   maxRejects = 2,
+  maxImages,
 }: {
   checkinId: string;
   communitySlug: string;
@@ -22,6 +23,7 @@ export function ResubmitForm({
   evidenceType: string;
   rejectCount: number;
   maxRejects?: number;
+  maxImages?: number;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -160,7 +162,7 @@ export function ResubmitForm({
             values={imageUrls}
             onChange={setImageUrls}
             context="checkin"
-            max={MAX_CHECKIN_IMAGES}
+            max={maxImages ?? MAX_CHECKIN_IMAGES}
             disabled={pending}
             maxSizeNote="Tối đa 10MB"
           />

@@ -16,6 +16,7 @@ interface TodayTask {
   videoUrl: string | null;
   evidenceType: string; // TEXT | LINK | IMAGE | TEXT_IMAGE | FILE
   evidenceLabel: string | null;
+  maxEvidenceImages?: number;
 }
 
 function toYoutubeEmbed(url: string): string | null {
@@ -398,7 +399,7 @@ export function CheckinForm({
               values={imageUrls}
               onChange={setImageUrls}
               context="checkin"
-              max={MAX_CHECKIN_IMAGES}
+              max={task?.maxEvidenceImages ?? MAX_CHECKIN_IMAGES}
               disabled={pending}
               maxSizeNote="Tối đa 10MB"
             />

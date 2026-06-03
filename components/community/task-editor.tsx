@@ -30,6 +30,7 @@ export function TaskEditorButton({
     videoUrl: string | null;
     evidenceType: string;
     evidenceLabel: string | null;
+    maxEvidenceImages: number;
     label: string | null;
     unlockAfterHours: number | null;
     aiReviewGuidelines: string | null;
@@ -48,6 +49,9 @@ export function TaskEditorButton({
   const [evidenceType, setEvidenceType] = useState(initial.evidenceType);
   const [evidenceLabel, setEvidenceLabel] = useState(
     initial.evidenceLabel ?? ""
+  );
+  const [maxEvidenceImages, setMaxEvidenceImages] = useState(
+    initial.maxEvidenceImages ?? 3
   );
   const [label, setLabel] = useState(initial.label ?? "");
   const [unlockAfterHours, setUnlockAfterHours] = useState(
@@ -73,6 +77,7 @@ export function TaskEditorButton({
     setVideoUrl(initial.videoUrl ?? "");
     setEvidenceType(initial.evidenceType);
     setEvidenceLabel(initial.evidenceLabel ?? "");
+    setMaxEvidenceImages(initial.maxEvidenceImages ?? 3);
     setLabel(initial.label ?? "");
     setUnlockAfterHours(
       initial.unlockAfterHours != null ? String(initial.unlockAfterHours) : ""
@@ -126,6 +131,7 @@ export function TaskEditorButton({
         videoUrl: videoUrl.trim(),
         evidenceType: evidenceType as "TEXT" | "LINK" | "IMAGE" | "TEXT_IMAGE",
         evidenceLabel: evidenceLabel.trim(),
+        maxEvidenceImages,
         label: label.trim(),
         unlockAfterHours: unlockAfterHours.trim() ? parseInt(unlockAfterHours, 10) : null,
         aiReviewGuidelines: aiGuidelines.trim() || null,
@@ -305,13 +311,29 @@ export function TaskEditorButton({
                     type="text"
                     value={evidenceLabel}
                     onChange={(e) => setEvidenceLabel(e.target.value)}
-                    maxLength={500}
+                    maxLength={2000}
                     disabled={pending}
                     placeholder="vd: Screenshot dashboard sau khi set KPI"
                     style={inputStyle}
                   />
                 </Field>
               </div>
+              {(evidenceType === "IMAGE" || evidenceType === "TEXT_IMAGE") && (
+                <Field label="Số ảnh tối đa">
+                  <input
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={maxEvidenceImages}
+                    onChange={(e) => setMaxEvidenceImages(Number(e.target.value))}
+                    disabled={pending}
+                    style={{ ...inputStyle, maxWidth: 100 }}
+                  />
+                  <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 4 }}>
+                    1-10 ảnh · Mặc định: 3
+                  </div>
+                </Field>
+              )}
 
               <Field label="Override thời gian mở khóa (giờ) — để trống = dùng mặc định challenge">
                 <input

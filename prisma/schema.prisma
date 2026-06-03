@@ -543,6 +543,10 @@ model ChallengeTask {
   evidenceType       String    @default("TEXT")
   evidenceLabel      String?   @db.Text
   /**
+   * Max number of evidence images for this task (1-10). Default 3.
+   */
+  maxEvidenceImages  Int       @default(3)
+  /**
    * Per-task unlock override in hours. Null = use challenge default.
    */
   unlockAfterHours   Int?

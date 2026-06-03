@@ -1018,6 +1018,7 @@ export default async function ChallengeDetailPage({
                             giftLabel: t.giftLabel ?? null,
                             giftFileUrl: t.giftFileUrl ?? null,
                             giftLinkUrl: t.giftLinkUrl ?? null,
+                            maxEvidenceImages: t.maxEvidenceImages,
                           }}
                         />
                       )}
@@ -1190,6 +1191,7 @@ export default async function ChallengeDetailPage({
                                     }}
                                     evidenceType={t.evidenceType}
                                     rejectCount={checkinData.rejectCount}
+                                    maxImages={t.maxEvidenceImages}
                                   />
                                 )}
                               </div>
@@ -1215,6 +1217,7 @@ export default async function ChallengeDetailPage({
                                 videoUrl: t.videoUrl,
                                 evidenceType: t.evidenceType,
                                 evidenceLabel: t.evidenceLabel,
+                                maxEvidenceImages: t.maxEvidenceImages,
                               }}
                               deadlineLabel={isOverdue ? "Nộp bù" : currentTaskDeadlineLabel}
                             />
@@ -1477,6 +1480,7 @@ async function CheckinGate({
       videoUrl: true,
       evidenceType: true,
       evidenceLabel: true,
+      maxEvidenceImages: true,
     },
   });
 
