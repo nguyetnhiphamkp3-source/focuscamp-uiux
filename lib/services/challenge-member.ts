@@ -248,8 +248,9 @@ export async function listChallengeSubmissions(input: {
   status?: SubmissionStatus | "ALL" | "AI_FLAGGED";
   limit?: number;
   offset?: number;
+  search?: string;
 }) {
-  const { challengeId, status = "ALL", limit = 50, offset = 0 } = input;
+  const { challengeId, status = "ALL", limit = 50, offset = 0, search } = input;
   const statusWhere: Prisma.CheckinWhereInput =
     status === "AI_FLAGGED"
       ? {
@@ -259,12 +260,21 @@ export async function listChallengeSubmissions(input: {
       : status !== "ALL"
         ? { status }
         : {};
+
+  const searchWhere: Prisma.CheckinWhereInput =
+    search?.trim()
+      ? { user: { name: { contains: search.trim(), mode: "insensitive" } } }
+      : {};
+
+  const baseWhere: Prisma.CheckinWhereInput = {
+    challengeId,
+    ...statusWhere,
+    ...searchWhere,
+  };
+
   const [rows, total, pendingCount, aiFlaggedCount] = await Promise.all([
     prisma.checkin.findMany({
-      where: {
-        challengeId,
-        ...statusWhere,
-      },
+      where: baseWhere,
       include: {
         user: { select: { id: true, name: true, image: true } },
         task: { select: { id: true, dayNumber: true, title: true, label: true } },
@@ -274,7 +284,7 @@ export async function listChallengeSubmissions(input: {
       take: limit,
       skip: offset,
     }),
-    prisma.checkin.count({ where: { challengeId } }),
+    prisma.checkin.count({ where: baseWhere }),
     prisma.checkin.count({ where: { challengeId, status: "PENDING" } }),
     prisma.checkin.count({
       where: {

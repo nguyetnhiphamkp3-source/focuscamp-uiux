@@ -66,7 +66,7 @@ export default async function ChallengeDetailPage({
   searchParams,
 }: {
   params: Promise<{ slug: string; challengeSlug: string }>;
-  searchParams: Promise<{ review?: string }>;
+  searchParams: Promise<{ review?: string; page?: string; search?: string }>;
 }) {
   const { slug, challengeSlug } = await params;
   const sp = await searchParams;
@@ -120,6 +120,10 @@ export default async function ChallengeDetailPage({
     return "PENDING"; // default shows what needs attention
   })();
 
+  const page = Math.max(1, parseInt(sp.page || "1", 10) || 1);
+  const search = (sp.search || "").trim();
+  const PAGE_SIZE = 20;
+
   // Parallel batch — all queries below are independent of each other.
   // Was sequential (10+ awaits in a row), now ~1 round-trip max.
   const [
@@ -166,7 +170,9 @@ export default async function ChallengeDetailPage({
           const res = await listChallengeSubmissions({
             challengeId: challenge.id,
             status: reviewTab,
-            limit: 50,
+            limit: PAGE_SIZE,
+            offset: (page - 1) * PAGE_SIZE,
+            search: search || undefined,
           });
           return {
             rows: res.rows.map((r) => ({
@@ -1398,6 +1404,9 @@ export default async function ChallengeDetailPage({
                 pendingCount={submissionData.pendingCount}
                 aiFlaggedCount={submissionData.aiFlaggedCount}
                 activeStatus={reviewTab}
+                page={page}
+                search={search}
+                pageSize={PAGE_SIZE}
               />
             </div>
           )}

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   reviewSubmissionAction,
   flagSubmissionAction,
@@ -39,6 +39,9 @@ export function SubmissionReviewPanel({
   pendingCount,
   aiFlaggedCount,
   activeStatus,
+  page,
+  search,
+  pageSize,
 }: {
   challengeId: string;
   communitySlug: string;
@@ -48,11 +51,41 @@ export function SubmissionReviewPanel({
   pendingCount: number;
   aiFlaggedCount: number;
   activeStatus: "ALL" | "AI_FLAGGED" | "PENDING" | "APPROVED" | "REJECTED";
+  page: number;
+  search: string;
+  pageSize: number;
 }) {
   const router = useRouter();
+  const sp = useSearchParams();
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const [showApproveAllConfirm, setShowApproveAllConfirm] = useState(false);
+  const [searchInput, setSearchInput] = useState(search);
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  const buildUrl = useCallback(
+    (overrides: Record<string, string | null>) => {
+      const params = new URLSearchParams(sp.toString());
+      for (const [k, v] of Object.entries(overrides)) {
+        if (v === null || v === "") params.delete(k);
+        else params.set(k, v);
+      }
+      // reset page to 1 when search or status changes
+      if (overrides.search !== undefined || overrides.review !== undefined) {
+        params.delete("page");
+      }
+      const qs = params.toString();
+      return qs ? `?${qs}` : "";
+    },
+    [sp],
+  );
+
+  function handleSearchSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = searchInput.trim();
+    router.push(buildUrl({ search: trimmed || null }));
+  }
 
   function review(
     checkinId: string,
@@ -166,6 +199,62 @@ export function SubmissionReviewPanel({
         )}
       </div>
 
+      {/* Search bar */}
+      <form onSubmit={handleSearchSubmit} style={{ marginBottom: 10, display: "flex", gap: 8 }}>
+        <input
+          type="text"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          placeholder="Tìm theo tên…"
+          style={{
+            flex: 1,
+            padding: "7px 10px",
+            borderRadius: 6,
+            border: "1px solid var(--border-subtle)",
+            background: "var(--bg-chat)",
+            color: "var(--text-normal)",
+            fontSize: "var(--text-sm)",
+            fontFamily: "inherit",
+            outline: "none",
+            maxWidth: 260,
+          }}
+        />
+        <button
+          type="submit"
+          style={{
+            padding: "6px 12px",
+            borderRadius: 6,
+            border: "1px solid var(--border-subtle)",
+            background: "var(--bg-modifier-hover)",
+            color: "var(--text-normal)",
+            fontSize: "var(--text-xs)",
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          🔍 Tìm
+        </button>
+        {search && (
+          <Link
+            href={buildUrl({ search: null })}
+            scroll={false}
+            style={{
+              padding: "6px 12px",
+              borderRadius: 6,
+              border: "1px solid var(--border-subtle)",
+              background: "transparent",
+              color: "var(--text-muted)",
+              fontSize: "var(--text-xs)",
+              textDecoration: "none",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            ✕ Xoá
+          </Link>
+        )}
+      </form>
+
       {/* Status filter tabs — horizontally scrollable so they never wrap on mobile */}
       <div className="review-tab-bar">
         {(
@@ -179,7 +268,7 @@ export function SubmissionReviewPanel({
         ).map((t) => (
           <Link
             key={t.key}
-            href={`?review=${t.key.toLowerCase()}`}
+            href={buildUrl({ review: t.key.toLowerCase() })}
             scroll={false}
             className="review-tab"
             style={{
@@ -224,6 +313,87 @@ export function SubmissionReviewPanel({
               onFlag={flag}
             />
           ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 12,
+            marginTop: 16,
+            fontSize: "var(--text-sm)",
+            color: "var(--text-muted)",
+          }}
+        >
+          {page > 1 ? (
+            <Link
+              href={buildUrl({ page: String(page - 1) })}
+              scroll={false}
+              style={{
+                padding: "6px 14px",
+                borderRadius: 6,
+                border: "1px solid var(--border-subtle)",
+                background: "var(--bg-modifier-hover)",
+                color: "var(--text-normal)",
+                fontSize: "var(--text-xs)",
+                fontWeight: 600,
+                textDecoration: "none",
+              }}
+            >
+              ← Trước
+            </Link>
+          ) : (
+            <span
+              style={{
+                padding: "6px 14px",
+                borderRadius: 6,
+                border: "1px solid var(--border-subtle)",
+                color: "var(--text-muted)",
+                fontSize: "var(--text-xs)",
+                opacity: 0.4,
+              }}
+            >
+              ← Trước
+            </span>
+          )}
+          <span>
+            Trang {page} / {totalPages}
+          </span>
+          {page < totalPages ? (
+            <Link
+              href={buildUrl({ page: String(page + 1) })}
+              scroll={false}
+              style={{
+                padding: "6px 14px",
+                borderRadius: 6,
+                border: "1px solid var(--border-subtle)",
+                background: "var(--bg-modifier-hover)",
+                color: "var(--text-normal)",
+                fontSize: "var(--text-xs)",
+                fontWeight: 600,
+                textDecoration: "none",
+              }}
+            >
+              Sau →
+            </Link>
+          ) : (
+            <span
+              style={{
+                padding: "6px 14px",
+                borderRadius: 6,
+                border: "1px solid var(--border-subtle)",
+                color: "var(--text-muted)",
+                fontSize: "var(--text-xs)",
+                opacity: 0.4,
+              }}
+            >
+              Sau →
+            </span>
+          )}
         </div>
       )}
 
