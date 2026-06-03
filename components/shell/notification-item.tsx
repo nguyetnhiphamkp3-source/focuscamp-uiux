@@ -20,6 +20,7 @@ export type InboxItem = {
   readAt: Date | null;
   createdAt: Date;
   actor: { id: string; name: string | null; image: string | null } | null;
+  community?: { slug: string; name: string; iconUrl: string | null } | null;
 };
 
 const TYPE_ICON: Record<string, string> = {
@@ -55,6 +56,17 @@ export function NotificationItem({ n }: { n: InboxItem }) {
 
   const actorName = n.actor?.name ?? "focus.camp";
 
+  // Submission decisions are attributed to the community (not the reviewing
+  // admin), so they show the community icon. Everything else uses the actor.
+  const isReviewDecision =
+    n.type === "SUBMISSION_APPROVED" || n.type === "SUBMISSION_REJECTED";
+  const avatar =
+    isReviewDecision && n.community
+      ? { image: n.community.iconUrl, colorKey: n.community.slug, label: n.community.name }
+      : n.actor
+        ? { image: n.actor.image, colorKey: n.actor.id, label: actorName }
+        : null;
+
   return (
     <div
       onClick={onClick}
@@ -81,12 +93,12 @@ export function NotificationItem({ n }: { n: InboxItem }) {
         alignItems: "flex-start",
       }}
     >
-      {/* Actor avatar if present, else type icon */}
-      {n.actor ? (
-        n.actor.image ? (
+      {/* Community/actor avatar if present, else type icon */}
+      {avatar ? (
+        avatar.image ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={n.actor.image}
+            src={avatar.image}
             alt=""
             style={{
               width: 40,
@@ -102,7 +114,7 @@ export function NotificationItem({ n }: { n: InboxItem }) {
               width: 40,
               height: 40,
               borderRadius: "50%",
-              background: avatarColorFor(n.actor.id),
+              background: avatarColorFor(avatar.colorKey),
               color: "#fff",
               display: "flex",
               alignItems: "center",
@@ -111,7 +123,7 @@ export function NotificationItem({ n }: { n: InboxItem }) {
               flexShrink: 0,
             }}
           >
-            {initials(actorName)}
+            {initials(avatar.label)}
           </div>
         )
       ) : (

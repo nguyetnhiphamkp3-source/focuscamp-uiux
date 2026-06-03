@@ -150,7 +150,25 @@ export async function listNotifications(input: {
     }),
     prisma.notification.count({ where: { userId, readAt: null } }),
   ]);
-  return { items, unread };
+
+  // Attach community branding so submission-review notifications can show the
+  // community icon instead of the reviewing admin's avatar.
+  const slugs = [
+    ...new Set(items.map((n) => n.communitySlug).filter((s): s is string => !!s)),
+  ];
+  const communities = slugs.length
+    ? await prisma.community.findMany({
+        where: { slug: { in: slugs } },
+        select: { slug: true, name: true, iconUrl: true },
+      })
+    : [];
+  const communityBySlug = new Map(communities.map((c) => [c.slug, c]));
+  const enriched = items.map((n) => ({
+    ...n,
+    community: n.communitySlug ? communityBySlug.get(n.communitySlug) ?? null : null,
+  }));
+
+  return { items: enriched, unread };
 }
 
 export async function unreadCount(userId: string): Promise<number> {
