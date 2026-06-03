@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ngày 7 — Dùng Agent Coding Quản Lý Công Việc</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,400;1,9..144,500&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --ink: #1a1612;
+    --ink-soft: #4a4038;
+    --ink-mute: #8a7f75;
+    --paper: #faf7f2;
+    --paper-warm: #f2ece0;
+    --paper-deep: #ebe3d3;
+    --rule: #d6cdbc;
+    --accent: #c8441f;
+    --accent-soft: #fce4dc;
+    --gold: #b8882d;
+    --gold-soft: #f8ecd0;
+    --sage: #5c6b4d;
+    --sage-soft: #e8ede0;
+    --shadow: 0 1px 2px rgba(26,22,18,0.04), 0 8px 24px rgba(26,22,18,0.06);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.65;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    background-image:
+      radial-gradient(circle at 10% 20%, rgba(200, 68, 31, 0.03) 0%, transparent 40%),
+      radial-gradient(circle at 90% 80%, rgba(184, 136, 45, 0.04) 0%, transparent 40%);
+  }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    position: sticky;
+    top: 0;
+    background: rgba(250, 247, 242, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--rule);
+    z-index: 100;
+    padding: 14px 0;
+  }
+  .topbar-inner {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+  }
+  .topbar-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--ink-mute);
+    text-transform: uppercase;
+  }
+  .topbar-nav { display: flex; gap: 6px; font-size: 13px; }
+  .topbar-nav a {
+    color: var(--ink-soft);
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 100px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    font-weight: 500;
+  }
+  .topbar-nav a:hover { background: var(--paper-deep); color: var(--ink); }
+
+  /* ── LAYOUT ── */
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 48px 24px 120px;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    margin-bottom: 44px;
+    padding-bottom: 40px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .day-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    font-weight: 600;
+  }
+  .day-tag::before {
+    content: "";
+    width: 32px;
+    height: 1px;
+    background: var(--accent);
+  }
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(32px, 6vw, 48px);
+    font-weight: 600;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin-bottom: 22px;
+    color: var(--ink);
+  }
+  .hero-sub {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 19px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+    font-weight: 400;
+  }
+  .hero-meta {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 22px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-mute);
+    letter-spacing: 0.04em;
+  }
+  .hero-meta span { display: inline-flex; align-items: center; gap: 7px; }
+  .hero-meta .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sage); }
+
+  /* ── GOAL BOX ── */
+  .goal-box {
+    background: var(--paper-warm);
+    border-left: 3px solid var(--accent);
+    padding: 24px 28px;
+    margin: 32px 0;
+    border-radius: 0 8px 8px 0;
+  }
+  .goal-box-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  .goal-box p { font-size: 16px; color: var(--ink); }
+  .goal-box em {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 17px;
+    color: var(--accent);
+    display: block;
+    margin: 10px 0 4px;
+    font-weight: 500;
+  }
+
+  /* ── SECTION HEAD ── */
+  .section-head {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 8px 0 28px;
+  }
+  .section-icon {
+    width: 46px; height: 46px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+    border: 1px solid var(--rule);
+  }
+  .section-icon.accent { background: var(--accent-soft); }
+  .section-icon.sage { background: var(--sage-soft); }
+  .section-icon.gold { background: var(--gold-soft); }
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    color: var(--ink-mute);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .section-title {
+    font-family: 'Fraunces', serif;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+  }
+
+  /* ── MINDSET CARDS ── */
+  .mindset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+  }
+  .mindset-card {
+    background: white;
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    padding: 22px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    transition: transform 0.2s ease;
+  }
+  .mindset-card:hover { transform: translateY(-2px); }
+  .mindset-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 14px 14px 0 0;
+  }
+  .mindset-card.c1::before { background: linear-gradient(90deg, var(--accent), transparent); }
+  .mindset-card.c2::before { background: linear-gradient(90deg, var(--sage), transparent); }
+  .mindset-card.c3::before { background: linear-gradient(90deg, var(--gold), transparent); }
+  .mindset-card.c4::before { background: linear-gradient(90deg, var(--accent), transparent); }
+  .mindset-card.c5::before { background: linear-gradient(90deg, var(--sage), transparent); }
+  .mindset-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    letter-spacing: 0.06em;
+  }
+  .mindset-card.c1 .mindset-num { color: var(--accent); }
+  .mindset-card.c2 .mindset-num { color: var(--sage); }
+  .mindset-card.c3 .mindset-num { color: var(--gold); }
+  .mindset-card.c4 .mindset-num { color: var(--accent); }
+  .mindset-card.c5 .mindset-num { color: var(--sage); }
+  .mindset-heading {
+    font-family: 'Fraunces', serif;
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    line-height: 1.3;
+    color: var(--ink);
+  }
+  .mindset-body { font-size: 14px; color: var(--ink-soft); line-height: 1.6; }
+  .mindset-body strong { color: var(--ink); font-weight: 600; }
+  .compare-row { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+  .compare-item { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; line-height: 1.5; color: var(--ink-soft); }
+  .compare-item .tag {
+    flex-shrink: 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 8px;
+    border-radius: 4px;
+    margin-top: 2px;
+  }
+  .tag-old { background: var(--accent-soft); color: var(--accent); }
+  .tag-new { background: var(--sage-soft); color: var(--sage); }
+
+  /* ── PHASE HEADER ── */
+  .phase-header {
+    text-align: center;
+    margin: 72px 0 36px;
+    position: relative;
+  }
+  .phase-header::before,
+  .phase-header::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 56px;
+    height: 1px;
+    background: var(--rule);
+  }
+  .phase-header::before { left: 16%; }
+  .phase-header::after { right: 16%; }
+  .phase-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    color: var(--ink-mute);
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 8px;
+  }
+  .phase-title {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 28px;
+    color: var(--ink);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  /* ── STEP ── */
+  .step { display: flex; gap: 20px; margin-bottom: 28px; }
+  .step-left { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+  .step-circle {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .step-circle.p1 { background: var(--accent-soft); color: var(--accent); border: 1px solid rgba(200,68,31,0.25); }
+  .step-circle.p2 { background: var(--sage-soft); color: var(--sage); border: 1px solid rgba(92,107,77,0.3); }
+  .step-circle.p3 { background: var(--gold-soft); color: var(--gold); border: 1px solid rgba(184,136,45,0.3); }
+  .step-line { width: 1px; flex: 1; background: var(--rule); margin: 8px 0 0; min-height: 20px; }
+  .step-content { flex: 1; padding-bottom: 4px; }
+  .step-title {
+    font-family: 'Fraunces', serif;
+    font-size: 19px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    line-height: 1.3;
+    color: var(--ink);
+  }
+  .step-desc { font-size: 15px; color: var(--ink-soft); margin-bottom: 14px; line-height: 1.65; }
+
+  /* ── PROMPT BOX (dark ink) ── */
+  .prompt-box {
+    background: var(--ink);
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 14px 0;
+    box-shadow: var(--shadow);
+  }
+  .prompt-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 18px;
+    background: rgba(255,255,255,0.04);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .prompt-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: rgba(245,237,224,0.55);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .copy-btn {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: rgba(245,237,224,0.7);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 0.05em;
+  }
+  .copy-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
+  .copy-btn.copied { background: var(--sage); color: #fff; border-color: var(--sage); }
+  .prompt-body {
+    padding: 18px 22px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    color: #f0e6d6;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* ── TREE BLOCK (warm) ── */
+  .tree-block {
+    background: var(--paper-warm);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    padding: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 2;
+    margin: 14px 0;
+  }
+  .tree-row { display: flex; align-items: flex-start; gap: 10px; }
+  .tree-icon { font-size: 15px; flex-shrink: 0; }
+  .tree-name { color: var(--accent); font-weight: 600; }
+  .tree-comment { color: var(--ink-mute); font-size: 12px; }
+  .tree-indent { padding-left: 24px; }
+
+  /* ── CALLOUT ── */
+  .callout {
+    display: flex;
+    gap: 12px;
+    padding: 15px 18px;
+    border-radius: 10px;
+    margin: 14px 0;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .callout-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .callout.tip { background: var(--sage-soft); border-left: 3px solid var(--sage); }
+  .callout.warn { background: var(--gold-soft); border-left: 3px solid var(--gold); }
+  .callout.rule { background: var(--accent-soft); border-left: 3px solid var(--accent); }
+  .callout-body { color: var(--ink-soft); }
+  .callout-body strong { color: var(--ink); font-weight: 600; }
+
+  /* ── CHECKLIST ── */
+  .checklist { list-style: none; margin: 14px 0; }
+  .checklist li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 9px 0;
+    font-size: 14px;
+    color: var(--ink-soft);
+    border-bottom: 1px solid var(--rule);
+    line-height: 1.6;
+  }
+  .checklist li:last-child { border-bottom: none; }
+  .check-box {
+    width: 18px; height: 18px;
+    border: 1.5px solid var(--ink-mute);
+    border-radius: 5px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .checklist strong { color: var(--ink); }
+
+  /* ── USE CASE PILLS ── */
+  .pill-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .pill {
+    font-size: 14px;
+    padding: 7px 16px;
+    border-radius: 100px;
+    border: 1px solid var(--rule);
+    background: white;
+    color: var(--ink-soft);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* ── DIVIDER ── */
+  .divider { height: 1px; background: var(--rule); margin: 48px 0; }
+
+  /* ── FINAL NOTE ── */
+  .final-note {
+    background: var(--gold-soft);
+    border: 1px solid rgba(184, 136, 45, 0.25);
+    border-radius: 14px;
+    padding: 32px;
+    text-align: center;
+    margin-top: 48px;
+  }
+  .final-note p {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 18px;
+    color: var(--ink);
+    line-height: 1.7;
+    font-weight: 400;
+  }
+  .final-note strong { color: var(--accent); font-weight: 600; font-style: normal; }
+
+  /* ── INLINE CODE ── */
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    background: var(--paper-deep);
+    padding: 2px 7px;
+    border-radius: 4px;
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    .mindset-grid { grid-template-columns: 1fr; }
+    .step { gap: 14px; }
+    .step-circle { width: 32px; height: 32px; font-size: 11px; }
+    .phase-header::before { left: 6%; }
+    .phase-header::after { right: 6%; }
+    .topbar-nav { display: none; }
+  }
+
+  /* ── FADE IN ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .hero > * { animation: fadeUp 0.5s ease both; }
+  .hero > *:nth-child(1) { animation-delay: 0.05s; }
+  .hero > *:nth-child(2) { animation-delay: 0.12s; }
+  .hero > *:nth-child(3) { animation-delay: 0.18s; }
+  .hero > *:nth-child(4) { animation-delay: 0.24s; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="topbar-label">21-Day Challenge</div>
+    <nav class="topbar-nav">
+      <a href="#phase1">1 · Tạo</a>
+      <a href="#phase2">2 · Trò chuyện</a>
+      <a href="#phase3">3 · Demo</a>
+    </nav>
+  </div>
+</div>
+
+<main>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="day-tag">Ngày 07 · Tuần 1</div>
+  <h1>Dùng Agent Coding<br>Quản Lý Công Việc</h1>
+  <p class="hero-sub">Hướng dẫn từng bước dành cho người mới — đơn giản, thực tế, <em>dùng được ngay hôm nay</em>.</p>
+  <div class="hero-meta">
+    <span><span class="dot"></span> 3 giai đoạn</span>
+    <span><span class="dot"></span> 10 bước</span>
+    <span><span class="dot"></span> ~25 phút hoàn thành</span>
+  </div>
+</header>
+
+<!-- GOAL BOX -->
+<div class="goal-box">
+  <div class="goal-box-label">Mục tiêu cuối ngày</div>
+  <p>Cuối hôm nay bạn có:</p>
+  <em>Một thư mục làm việc my-workspace/ do chính Agent tạo — đủ README, tasks, projects, meetings, archive</em>
+  <em>Ít nhất 3 task thật được Agent sắp xếp ưu tiên + một lịch tuần tự động</em>
+  <em>Đã xem hết record meeting Ngày 7 và nộp bằng chứng — hoàn thành tuần 1</em>
+</div>
+
+<!-- ═══════════════════════ MINDSET ═══════════════════════ -->
+<div class="section-head">
+  <div class="section-icon gold">🧠</div>
+  <div>
+    <div class="section-label">Trước khi bắt đầu</div>
+    <div class="section-title">5 Tư Duy AI-First Cần Có</div>
+  </div>
+</div>
+
+<div class="mindset-grid">
+
+  <div class="mindset-card c1">
+    <div class="mindset-num">01 / CONTEXT IS KING</div>
+    <div class="mindset-heading">Agent chỉ giỏi khi bạn cho đủ bối cảnh</div>
+    <div class="mindset-body">Agent không đọc được suy nghĩ. Bạn càng viết rõ — <strong>bạn là ai, đang làm gì, muốn gì</strong> — thì kết quả càng chuẩn. File README.md chính là "não" của workspace.</div>
+  </div>
+
+  <div class="mindset-card c2">
+    <div class="mindset-num">02 / DELEGATE, DON'T DO</div>
+    <div class="mindset-heading">Đừng tự làm những gì Agent làm được</div>
+    <div class="mindset-body">
+      <div class="compare-row">
+        <div class="compare-item">
+          <span class="tag tag-old">Cũ</span>
+          <span>Tự tạo từng file, gõ từng dòng, format tay</span>
+        </div>
+        <div class="compare-item">
+          <span class="tag tag-new">Mới</span>
+          <span>1 câu lệnh → Agent tạo toàn bộ cấu trúc</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mindset-card c3">
+    <div class="mindset-num">03 / PROMPT = SKILL</div>
+    <div class="mindset-heading">Cách bạn hỏi quyết định chất lượng trả lời</div>
+    <div class="mindset-body">Prompt tốt có 3 phần: <strong>Ngữ cảnh</strong> (bạn đang ở đâu), <strong>Nhiệm vụ</strong> (cần làm gì), <strong>Output mong muốn</strong> (muốn nhận lại dạng gì). Thiếu 1 trong 3 → kết quả nhạt.</div>
+  </div>
+
+  <div class="mindset-card c4">
+    <div class="mindset-num">04 / DATA IN, DATA OUT</div>
+    <div class="mindset-heading">Rác vào = rác ra. Dữ liệu tốt = kết quả tốt</div>
+    <div class="mindset-body">Agent phân tích dữ liệu từ file của bạn. Nếu tasks.md trống hoặc viết chung chung, Agent cũng chỉ trả lời chung chung. <strong>Đầu tư 5 phút viết file → tiết kiệm hàng giờ sau đó.</strong></div>
+  </div>
+
+  <div class="mindset-card c5">
+    <div class="mindset-num">05 / ITERATE FAST</div>
+    <div class="mindset-heading">Không cần hoàn hảo, cần chạy được trước</div>
+    <div class="mindset-body">Đừng chờ có đủ dữ liệu mới bắt đầu. <strong>Tạo file với nội dung tối thiểu → chạy thử → sửa dần.</strong> Agent giúp bạn cải thiện từng vòng, không cần làm đúng ngay từ đầu.</div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════ PHASE 1 ═══════════════════════ -->
+<div class="phase-header" id="phase1">
+  <span class="phase-label">Giai đoạn 1 · 10 phút</span>
+  <div class="phase-title">Tạo thư mục làm việc</div>
+</div>
+
+<!-- Step 1 -->
+<div class="step">
+  <div class="step-left">
+    <div class="step-circle p1">01</div>
+    <div class="step-line"></div>
+  </div>
+  <div class="step-content">
+    <div class="step-title">Mở Agent Coding — trỏ vào thư mục làm việc</div>
+    <div class="step-desc">Tạo một thư mục trống trên máy (ví dụ: Desktop), đặt tên <code>my-workspace</code>. Sau đó mở thư mục đó trong công cụ của bạn.</div>
+    <div class="callout tip">
+      <span class="callout-icon">💡</span>
+      <div class="callout-body"><strong>Cursor / VS Code:</strong> File → Open Folder → chọn my-workspace &nbsp;|&nbsp; <strong>Antigravity:</strong> tương tự, chọn Open Folder</div>
+    </div>
+  </div>
+</div>
+
+<!-- Step 2 -->
+<div class="step">
+  <div class="step-left">
+    <div class="step-circle p1">02</div>
+    <div class="step-line"></div>
+  </div>
+  <div class="step-content">
+    <div class="step-title">Dùng Agent tạo toàn bộ cấu trúc bằng 1 câu lệnh</div>
+    <div class="step-desc">Thay vì tự tay tạo từng file — hãy để Agent làm. Dán đoạn này vào ô chat của Agent:</div>
+    <div class="prompt-box">
+      <div class="prompt-header"><span class="prompt-label">Prompt → Agent</span><button class="copy-btn">Copy</button></div>
+      <div class="prompt-body">Hãy tạo cho tôi cấu trúc thư mục làm việc cá nhân gồm:
+
+my-workspace/
+├── README.md
+├── tasks.md
+├── weekly-goals.md
+├── projects/
+│   ├── project-1.md
+│   └── project-2.md
+├── meetings/
+│   └── meeting-notes.md
+└── archive/
+
+Trong mỗi file .md, hãy tạo sẵn nội dung mẫu
+phù hợp để tôi có thể điền vào ngay.</div>
+    </div>
+    <div class="callout tip">
+      <span class="callout-icon">✅</span>
+      <div class="callout-body">Agent sẽ tự tạo toàn bộ file và nội dung mẫu. Bạn không cần gõ tay gì cả.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Step 3 -->
+<div class="step">
+  <div class="step-left">
+    <div class="step-circle p1">03</div>
+    <div class="step-line"></div>
+  </div>
+  <div class="step-content">
+    <div class="step-title">Hiểu mỗi thư mục dùng để làm gì</div>
+    <div class="step-desc">Sau khi Agent tạo xong, đây là ý nghĩa của từng file và thư mục:</div>
+    <div class="tree-block">
+      <div class="tree-row"><span class="tree-icon">📁</span><span class="tree-name">my-workspace/</span></div>
+      <div class="tree-indent">
+        <div class="tree-row"><span class="tree-icon">📄</span><span class="tree-name">README.md</span>&nbsp;&nbsp;<span class="tree-comment">← Agent đọc cái này TRƯỚC TIÊN. Viết bạn là ai, đang làm gì.</span></div>
+        <div class="tree-row"><span class="tree-icon">📄</span><span class="tree-name">tasks.md</span>&nbsp;&nbsp;<span class="tree-comment">← Tất cả việc cần làm, deadline, trạng thái.</span></div>
+        <div class="tree-row"><span class="tree-icon">📄</span><span class="tree-name">weekly-goals.md</span>&nbsp;&nbsp;<span class="tree-comment">← 3–5 mục tiêu tuần này. Viết vào mỗi đầu tuần.</span></div>
+        <div class="tree-row"><span class="tree-icon">📁</span><span class="tree-name">projects/</span>&nbsp;&nbsp;<span class="tree-comment">← Mỗi dự án lớn có 1 file riêng.</span></div>
+        <div class="tree-indent">
+          <div class="tree-row"><span class="tree-icon">📄</span><span class="tree-name">project-1.md</span></div>
+          <div class="tree-row"><span class="tree-icon">📄</span><span class="tree-name">project-2.md</span></div>
+        </div>
+        <div class="tree-row"><span class="tree-icon">📁</span><span class="tree-name">meetings/</span>&nbsp;&nbsp;<span class="tree-comment">← Ghi chép sau mỗi buổi họp.</span></div>
+        <div class="tree-row"><span class="tree-icon">📁</span><span class="tree-name">archive/</span>&nbsp;&nbsp;<span class="tree-comment">← Việc đã xong. Chuyển vào đây để không rối.</span></div>
+      </div>
+    </div>
+    <div class="callout rule">
+      <span class="callout-icon">📌</span>
+      <div class="callout-body"><strong>Quy tắc đơn giản:</strong> Việc hàng ngày → tasks.md &nbsp;|&nbsp; Dự án lớn → projects/ &nbsp;|&nbsp; Họp xong → meetings/ &nbsp;|&nbsp; Xong rồi → archive/</div>
+    </div>
+  </div>
+</div>
+
+<!-- Step 4 -->
+<div class="step">
+  <div class="step-left">
+    <div class="step-circle p1">04</div>
+    <div class="step-line"></div>
+  </div>
+  <div class="step-content">
+    <div class="step-title">Dùng Agent điền nội dung vào README.md</div>
+    <div class="step-desc">README.md là file quan trọng nhất — Agent đọc cái này đầu tiên để hiểu bối cảnh của bạn. Điền thông tin thật vào phần ngoặc vuông rồi dán vào chat:</div>
+    <div class="prompt-box">
+      <div class="prompt-header"><span class="prompt-label">Prompt → Agent</span><button class="copy-btn">Copy</button></div>
+      <div class="prompt-body">Hãy viết nội dung cho file README.md dựa trên thông tin:
+
+- Tên tôi: [điền tên bạn]
+- Vai trò: [ví dụ: học viên AI Agent / trưởng nhóm / freelancer]
+- Đội nhóm: [tên nhóm hoặc tổ chức nếu có]
+- Mục tiêu lớn nhất tháng này: [1–2 câu]
+- Quy tắc ưu tiên:
+  + Urgent + Important → làm ngay hôm nay
+  + Important, not urgent → lên lịch
+  + Urgent, not important → nhờ người khác hoặc cắt
+
+Viết định dạng markdown, ngắn gọn, rõ ràng.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Step 5 -->
+<div class="step">
+  <div class="step-left">
+    <div class="step-circle p1">05</div>
+  </div>
+  <div class="step-content">
+    <div class="step-title">Dùng Agent tạo danh sách task trong tasks.md</div>
+    <div class="step-desc">"Đổ" hết công việc trong đầu ra file. Liệt kê thật — đừng bịa. Agent sẽ format và sắp xếp cho bạn:</div>
+    <div class="prompt-box">
+      <div class="prompt-header"><span class="prompt-label">Prompt → Agent</span><button class="copy-btn">Copy</button></div>
+      <div class="prompt-body">Hãy tạo nội dung cho tasks.md với danh sách sau:
+
+[Liệt kê tất cả việc bạn đang có, ví dụ:]
+- Hoàn thành bài tập tuần 1 AI Agent — deadline: Chủ nhật
+- Xem lại video buổi học hôm qua — deadline: ngày mai
+- Chuẩn bị nội dung demo — deadline: thứ 6
+
+Format thành bảng markdown gồm các cột:
+Tên task | Deadline | Trạng thái | Độ ưu tiên
+
+Điền trạng thái mặc định: "Chưa làm".
+Điền độ ưu tiên dựa vào deadline gần nhất.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ PHASE 2 ═══════════════════════ -->
+<div class="phase-header" id="phase2">
+  <span class="phase-label">Giai đoạn 2 · 10 phút</span>
+  <div class="phase-title">Nói chuyện với Agent</div>
+</div>
+
+<!-- Step 6 -->
+<div class="step">
+  <div class="step-left">
+    <div class="step-circle p2">06</div>
+    <div class="step-line"></div>
+  </div>
+  <div class="step-content">
+    <div class="step-title">Ra lệnh cho Agent đọc toàn bộ thư mục và phân tích</div>
+    <div class="step-desc">Bây giờ thư mục đã có dữ liệu thật. Hỏi Agent phân tích cho bạn:</div>
+    <div class="prompt-box">
+      <div class="prompt-header"><span class="prompt-label">Prompt → Agent</span><button class="copy-btn">Copy</button></div>
+      <div class="prompt-body">Hãy đọc toàn bộ file trong thư mục này.
+Sau đó cho tôi biết:
+1. Tôi đang có bao nhiêu task chưa hoàn thành?
+2. Task nào quan trọng nhất cần làm hôm nay?
+3. Có file nào còn thiếu thông tin không?
+
+Trả lời ngắn gọn, dùng bullet points.</div>
+    </div>
+    <div class="callout warn">
+      <span class="callout-icon">⚠️</span>
+      <div class="callout-body"><strong>Quy tắc vàng:</strong> Prompt càng cụ thể → Agent càng trả lời đúng. Đừng hỏi kiểu "giúp tôi với" — Agent không biết giúp gì.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Step 7 -->
+<div class="step">
+  <div class="step-left">
+    <div class="step-circle p2">07</div>
+    <div class="step-line"></div>
+  </div>
+  <div class="step-content">
+    <div class="step-title">Ra lệnh cho Agent lên lịch tuần tự động</div>
+    <div class="prompt-box">
+      <div class="prompt-header"><span class="prompt-label">Prompt → Agent</span><button class="copy-btn">Copy</button></div>
+      <div class="prompt-body">Dựa vào tasks.md và weekly-goals.md trong thư mục này,
+hãy tạo lịch làm việc từ Thứ 2 đến Thứ 6 tuần này.
+Mỗi ngày tối đa 3 việc chính.
+Ưu tiên deadline gần nhất lên trước.
+Xuất ra dạng bảng, mỗi hàng là 1 ngày.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Step 8 -->
+<div class="step">
+  <div class="step-left">
+    <div class="step-circle p2">08</div>
+  </div>
+  <div class="step-content">
+    <div class="step-title">Ra lệnh cho Agent cập nhật task khi xong việc</div>
+    <div class="step-desc">Mỗi khi hoàn thành một việc, thay vì tự sửa file — chỉ cần nói với Agent:</div>
+    <div class="prompt-box">
+      <div class="prompt-header"><span class="prompt-label">Prompt → Agent</span><button class="copy-btn">Copy</button></div>
+      <div class="prompt-body">Tôi vừa hoàn thành task "[tên task]".
+Hãy cập nhật trạng thái trong tasks.md thành "Đã xong"
+và ghi thêm ngày hoàn thành hôm nay vào bên cạnh.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ PHASE 3 ═══════════════════════ -->
+<div class="phase-header" id="phase3">
+  <span class="phase-label">Giai đoạn 3 · 5 phút</span>
+  <div class="phase-title">Demo cho nhóm</div>
+</div>
+
+<!-- Step 9 -->
+<div class="step">
+  <div class="step-left">
+    <div class="step-circle p3">09</div>
+    <div class="step-line"></div>
+  </div>
+  <div class="step-content">
+    <div class="step-title">Chuẩn bị nội dung chia sẻ trong meeting</div>
+    <div class="step-desc">Không cần slide. Không cần chuẩn bị nhiều. Chỉ cần trả lời đúng 3 câu hỏi này:</div>
+    <ul class="checklist">
+      <li><div class="check-box"></div><span><strong>Use case là gì?</strong> — Bạn dùng Agent để quản lý cá nhân / đội nhóm / dự án gì cụ thể?</span></li>
+      <li><div class="check-box"></div><span><strong>Agent làm được gì?</strong> — Đọc file, tạo lịch, cập nhật task, tóm tắt, phân tích ưu tiên...</span></li>
+      <li><div class="check-box"></div><span><strong>Tiết kiệm bao nhiêu thời gian?</strong> — So với cách bạn làm thủ công trước đây.</span></li>
+    </ul>
+    <div class="callout tip">
+      <span class="callout-icon">🎯</span>
+      <div class="callout-body"><strong>Demo trực tiếp thuyết phục hơn slide.</strong> Chiếu màn hình và chạy 1 prompt live — 30 giây Agent đọc 10 file và xuất lịch tuần sẽ gây ấn tượng hơn bất kỳ PowerPoint nào.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Step 10 -->
+<div class="step">
+  <div class="step-left">
+    <div class="step-circle p3">10</div>
+  </div>
+  <div class="step-content">
+    <div class="step-title">Checklist trước khi nộp bài</div>
+    <ul class="checklist">
+      <li><div class="check-box"></div><span>Thư mục my-workspace/ đã có đủ 6 file/folder theo cấu trúc ở Bước 2</span></li>
+      <li><div class="check-box"></div><span>README.md đã có thông tin thật của bạn — không phải nội dung mẫu</span></li>
+      <li><div class="check-box"></div><span>tasks.md đã có ít nhất 3 task thật với deadline thật</span></li>
+      <li><div class="check-box"></div><span>Đã chạy thử ít nhất 2 prompt với Agent và có output thực</span></li>
+      <li><div class="check-box"></div><span>Chụp màn hình hoặc quay video kết quả</span></li>
+      <li><div class="check-box"></div><span>Chuẩn bị câu trả lời cho 3 câu hỏi ở Bước 9</span></li>
+      <li><div class="check-box"></div><span><strong>Quan trọng:</strong> Đã xem hết record meeting Ngày 7 và nộp bằng chứng screen record/video quay lại quá trình xem. Có thể tua nhanh tốc độ phát, nhưng không được skip nội dung. Đây là yêu cầu bắt buộc để đảm bảo mọi thành viên đều hoàn thành cùng một phần trải nghiệm như nhau, công bằng với những bạn đã tham gia đầy đủ buổi meeting live. Có thể sử dụng các phần mềm quay màn hình như OBS Studio, Loom, Zoom Recording, QuickTime Player trên macOS, Xbox Game Bar trên Windows, hoặc hỏi AI để được gợi ý công cụ phù hợp với thiết bị của bạn. Tinh thần là AI-first: chưa biết dùng công cụ nào thì hỏi AI trước, rồi làm theo hướng dẫn.</span></li>
+    </ul>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════ USE CASES ═══════════════════════ -->
+<div class="section-head">
+  <div class="section-icon sage">💡</div>
+  <div>
+    <div class="section-label">Chưa biết bắt đầu từ đâu?</div>
+    <div class="section-title">Ý Tưởng Use Case</div>
+  </div>
+</div>
+<div class="pill-grid">
+  <div class="pill">📌 Quản lý task học tập AI Agent</div>
+  <div class="pill">📌 Kế hoạch sprint cho đội nhóm</div>
+  <div class="pill">📌 Ghi chép tóm tắt buổi họp</div>
+  <div class="pill">📌 Theo dõi tiến độ dự án song song</div>
+  <div class="pill">📌 Phân tích và sắp xếp ưu tiên công việc</div>
+  <div class="pill">📌 Lên lịch học & ôn tập tự động</div>
+</div>
+
+<!-- FINAL NOTE -->
+<div class="final-note">
+  <p>Nhớ một điều quan trọng nhất:<br><strong>Agent không "biết" gì nếu bạn không viết vào file.</strong><br>Thư mục càng chi tiết — có context, có deadline, có người phụ trách<br>thì Agent càng trả lời chính xác.<br><br><strong>Rác vào = rác ra. Dữ liệu tốt vào = kết quả tốt ra.</strong></p>
+</div>
+
+</main>
+
+<script>
+  // Copy button cho prompt-box
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const body = btn.closest('.prompt-box').querySelector('.prompt-body');
+      const text = body.innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = 'Đã copy';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
+      });
+    });
+  });
+
+  // Checklist: bấm để tick
+  document.querySelectorAll('.checklist li').forEach(li => {
+    li.style.cursor = 'pointer';
+    li.addEventListener('click', () => {
+      const box = li.querySelector('.check-box');
+      if (!box) return;
+      const on = box.style.background === 'var(--accent)';
+      box.style.background = on ? 'transparent' : 'var(--accent)';
+      box.style.borderColor = on ? 'var(--ink-mute)' : 'var(--accent)';
+    });
+  });
+</script>
+
+</body>
+</html>

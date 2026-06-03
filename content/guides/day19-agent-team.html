@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ngày 19 — Tạo Agent Team trong goClaw</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,400&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --ink: #1a1612; --ink-soft: #4a4038; --ink-mute: #8a7f75;
+    --paper: #faf7f2; --paper-warm: #f2ece0; --paper-deep: #ebe3d3;
+    --rule: #d6cdbc;
+    --accent: #c8441f; --accent-soft: #fce4dc;
+    --gold: #b8882d; --gold-soft: #f8ecd0;
+    --sage: #5c6b4d; --sage-soft: #e8ede0;
+    --shadow: 0 1px 2px rgba(26,22,18,0.04), 0 8px 24px rgba(26,22,18,0.06);
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--paper); color: var(--ink);
+    line-height: 1.65; font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    background-image:
+      radial-gradient(circle at 10% 20%, rgba(200,68,31,0.03) 0%, transparent 40%),
+      radial-gradient(circle at 90% 80%, rgba(184,136,45,0.04) 0%, transparent 40%);
+  }
+  .topbar {
+    position: sticky; top: 0;
+    background: rgba(250,247,242,0.92);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--rule); z-index: 100; padding: 14px 0;
+  }
+  .topbar-inner {
+    max-width: 780px; margin: 0 auto; padding: 0 24px;
+    display: flex; justify-content: space-between; align-items: center; gap: 20px;
+  }
+  .topbar-label { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.12em; color:var(--ink-mute); text-transform:uppercase; }
+  .topbar-nav { display:flex; gap:6px; font-size:13px; }
+  .topbar-nav a { color:var(--ink-soft); text-decoration:none; padding:6px 12px; border-radius:100px; transition:all 0.2s; white-space:nowrap; font-weight:500; }
+  .topbar-nav a:hover { background:var(--paper-deep); color:var(--ink); }
+  main { max-width:720px; margin:0 auto; padding:48px 24px 120px; }
+  .hero { margin-bottom:56px; padding-bottom:40px; border-bottom:1px solid var(--rule); }
+  .day-tag { display:inline-flex; align-items:center; gap:8px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.18em; color:var(--accent); text-transform:uppercase; margin-bottom:20px; font-weight:600; }
+  .day-tag::before { content:""; width:32px; height:1px; background:var(--accent); }
+  h1 { font-family:'Fraunces',serif; font-size:clamp(32px,6vw,48px); font-weight:600; line-height:1.05; letter-spacing:-0.02em; margin-bottom:24px; color:var(--ink); }
+  .hero-sub { font-family:'Fraunces',serif; font-style:italic; font-size:19px; color:var(--ink-soft); line-height:1.5; }
+  .goal-box { background:var(--paper-warm); border-left:3px solid var(--accent); padding:24px 28px; margin:32px 0; border-radius:0 8px 8px 0; }
+  .goal-box-label { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.18em; color:var(--accent); text-transform:uppercase; margin-bottom:10px; font-weight:600; }
+  .goal-box p { font-size:16px; color:var(--ink); }
+  .goal-box em { font-family:'Fraunces',serif; font-style:italic; font-size:18px; color:var(--accent); display:block; margin:10px 0 4px; font-weight:500; }
+  section { margin-bottom:56px; }
+  h2 { font-family:'Fraunces',serif; font-size:28px; font-weight:600; line-height:1.15; letter-spacing:-0.015em; margin:64px 0 20px; padding-top:24px; border-top:1px solid var(--rule); color:var(--ink); }
+  h2 .step-num { font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--ink-mute); display:block; margin-bottom:6px; letter-spacing:0.15em; font-weight:500; }
+  .phase-header { text-align:center; margin:80px 0 40px; position:relative; }
+  .phase-header::before,.phase-header::after { content:""; position:absolute; top:50%; width:60px; height:1px; background:var(--rule); }
+  .phase-header::before { left:20%; } .phase-header::after { right:20%; }
+  .phase-label { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.25em; color:var(--ink-mute); text-transform:uppercase; display:block; margin-bottom:8px; }
+  .phase-title { font-family:'Fraunces',serif; font-style:italic; font-size:32px; color:var(--ink); font-weight:500; letter-spacing:-0.01em; }
+  h3 { font-family:'Fraunces',serif; font-size:21px; font-weight:600; margin:32px 0 12px; color:var(--ink); line-height:1.3; }
+  p { margin-bottom:16px; color:var(--ink-soft); }
+  strong { color:var(--ink); font-weight:600; }
+  em { font-family:'Fraunces',serif; font-style:italic; color:var(--ink); }
+  ul,ol { margin:16px 0 20px 4px; padding-left:24px; }
+  li { margin-bottom:10px; color:var(--ink-soft); }
+  li::marker { color:var(--accent); font-family:'JetBrains Mono',monospace; font-weight:600; }
+  code { font-family:'JetBrains Mono',monospace; font-size:13px; background:var(--paper-deep); padding:2px 7px; border-radius:4px; color:var(--accent); font-weight:500; word-break:break-word; }
+  pre { background:var(--paper-deep); padding:14px 18px; border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:12.5px; line-height:1.6; color:var(--ink); margin:12px 0; overflow-x:auto; border-left:3px solid var(--accent); }
+  pre code { background:transparent; padding:0; color:var(--ink); font-weight:400; }
+
+  /* Components */
+  .story { background:var(--gold-soft); padding:28px 32px; margin:28px 0; border-radius:12px; border:1px solid rgba(184,136,45,0.2); }
+  .story-label { display:inline-block; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.15em; color:var(--gold); text-transform:uppercase; margin-bottom:14px; font-weight:600; }
+  .story p { color:var(--ink); font-size:16px; }
+  .story p:last-child { margin-bottom:0; }
+  .metaphor { background:var(--sage-soft); padding:24px 28px; margin:24px 0; border-radius:10px; border-left:3px solid var(--sage); position:relative; }
+  .metaphor::before { content:"💡"; position:absolute; top:20px; right:24px; font-size:20px; opacity:0.6; }
+  .metaphor-label { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.15em; color:var(--sage); text-transform:uppercase; margin-bottom:8px; font-weight:600; }
+  .metaphor blockquote { font-family:'Fraunces',serif; font-style:italic; font-size:18px; color:var(--ink); line-height:1.5; margin-top:8px; border:none; padding:0; }
+  .tip { background:var(--accent-soft); padding:20px 24px; margin:24px 0; border-radius:10px; position:relative; border-left:3px solid var(--accent); }
+  .tip::before { content:"🔥"; position:absolute; top:16px; right:20px; font-size:18px; }
+  .tip-label { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.15em; color:var(--accent); text-transform:uppercase; margin-bottom:10px; font-weight:600; padding-right:30px; }
+  .tip p { color:var(--ink); font-size:15px; }
+  .tip p:last-child { margin-bottom:0; }
+  .warning { background:#fff4e6; border-left:3px solid #e8a544; padding:20px 24px; margin:24px 0; border-radius:10px; position:relative; }
+  .warning::before { content:"⚠️"; position:absolute; top:16px; right:20px; font-size:18px; }
+  .warning-label { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.15em; color:#b97318; text-transform:uppercase; margin-bottom:10px; font-weight:600; padding-right:30px; }
+  .warning p { color:var(--ink); font-size:15px; }
+  .warning p:last-child { margin-bottom:0; }
+  .verify { background:white; border:2px dashed var(--sage); padding:18px 22px; margin:18px 0; border-radius:8px; }
+  .verify-label { display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.15em; color:var(--sage); text-transform:uppercase; margin-bottom:10px; font-weight:700; }
+  .verify-label::before { content:"✓"; background:var(--sage); color:white; width:20px; height:20px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold; }
+  .verify p { color:var(--ink); font-size:15px; margin-bottom:0; }
+  .prompt-box { background:var(--ink); margin:20px 0; border-radius:12px; overflow:hidden; box-shadow:var(--shadow); }
+  .prompt-header { background:rgba(255,255,255,0.04); padding:10px 20px; border-bottom:1px solid rgba(255,255,255,0.08); display:flex; justify-content:space-between; align-items:center; }
+  .prompt-label { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.2em; color:rgba(255,255,255,0.5); text-transform:uppercase; font-weight:500; }
+  .copy-btn { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.7); font-family:'JetBrains Mono',monospace; font-size:11px; padding:4px 10px; border-radius:4px; cursor:pointer; transition:all 0.2s; letter-spacing:0.05em; }
+  .copy-btn:hover { background:rgba(255,255,255,0.15); color:white; }
+  .copy-btn.copied { background:var(--sage); color:white; border-color:var(--sage); }
+  .prompt-body { padding:20px 24px; font-family:'JetBrains Mono',monospace; font-size:13.5px; line-height:1.65; color:#f5ede0; white-space:pre-wrap; word-wrap:break-word; }
+  .click-path { background:var(--paper-deep); padding:12px 16px; margin:12px 0; border-radius:6px; font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--ink); line-height:1.5; border-left:3px solid var(--accent); overflow-x:auto; }
+  .click-path strong { color:var(--accent); }
+  .ui-mock { background:white; border:1px solid var(--rule); padding:16px 20px; margin:14px 0; border-radius:8px; box-shadow:var(--shadow); font-size:14px; }
+  .ui-mock-title { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.1em; color:var(--ink-mute); text-transform:uppercase; margin-bottom:8px; font-weight:600; }
+  .ui-mock-content { background:var(--paper-warm); padding:12px 14px; border-radius:6px; font-family:'JetBrains Mono',monospace; font-size:12.5px; color:var(--ink); line-height:1.55; white-space:pre-wrap; }
+  .troubleshoot { background:white; border:1px solid var(--rule); margin:20px 0; border-radius:10px; overflow:hidden; box-shadow:var(--shadow); }
+  .troubleshoot-header { background:#fff4e6; padding:12px 18px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.15em; color:#b97318; text-transform:uppercase; font-weight:600; border-bottom:1px solid #e8a544; display:flex; align-items:center; gap:8px; }
+  .troubleshoot-body { padding:16px 22px; }
+  .troubleshoot-body details { margin:8px 0; border-bottom:1px dashed var(--rule); padding-bottom:8px; }
+  .troubleshoot-body details:last-child { border-bottom:none; }
+  .troubleshoot-body summary { cursor:pointer; font-weight:600; color:var(--ink); padding:6px 0; font-size:14.5px; }
+  .troubleshoot-body summary:hover { color:var(--accent); }
+  .troubleshoot-body details[open] summary { color:var(--accent); }
+  .troubleshoot-body details > p,.troubleshoot-body details > ul { margin-top:8px; color:var(--ink-soft); font-size:14px; }
+
+  /* Agent table */
+  .agent-table { width:100%; border-collapse:separate; border-spacing:0; margin:20px 0; background:white; border-radius:10px; overflow:hidden; box-shadow:var(--shadow); border:1px solid var(--rule); }
+  .agent-table th { background:var(--paper-warm); padding:10px 14px; text-align:left; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.1em; color:var(--ink-mute); text-transform:uppercase; font-weight:600; border-bottom:1px solid var(--rule); }
+  .agent-table td { padding:10px 14px; font-size:14px; border-bottom:1px solid var(--paper-warm); color:var(--ink); }
+  .agent-table tr:last-child td { border-bottom:none; }
+  .agent-table .agent-num { font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--accent); width:36px; }
+  .agent-table .agent-name { font-weight:600; }
+  .agent-table .agent-out { font-family:'JetBrains Mono',monospace; font-size:12.5px; color:var(--sage); }
+
+  /* Stage card */
+  .stage-card { background:white; padding:24px 28px; margin:18px 0; border-radius:12px; border:1px solid var(--rule); box-shadow:var(--shadow); border-left:4px solid var(--accent); }
+  .stage-card-tag { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.18em; color:var(--accent); text-transform:uppercase; font-weight:600; margin-bottom:6px; }
+  .stage-card-title { font-family:'Fraunces',serif; font-size:20px; font-weight:600; color:var(--ink); margin-bottom:6px; }
+  .stage-card-agents { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--sage); margin-bottom:10px; font-weight:500; }
+  .stage-card-desc { font-size:14.5px; color:var(--ink-soft); line-height:1.55; }
+
+  /* Folder / board structure */
+  .folder-tree { background:var(--ink); color:#f5ede0; padding:18px 24px; margin:14px 0; border-radius:10px; font-family:'JetBrains Mono',monospace; font-size:13px; line-height:1.7; white-space:pre; overflow-x:auto; }
+  .folder-tree .comment { color:rgba(245,237,224,0.5); }
+
+  /* Checklist */
+  .checklist { background:white; padding:28px 32px; margin:28px 0; border-radius:12px; box-shadow:var(--shadow); border:1px solid var(--rule); }
+  .checklist-title { font-family:'Fraunces',serif; font-size:20px; font-weight:600; margin-bottom:18px; color:var(--ink); }
+  .check-item { display:flex; align-items:flex-start; gap:14px; padding:12px 0; border-bottom:1px dashed var(--rule); cursor:pointer; user-select:none; }
+  .check-item:last-child { border-bottom:none; }
+  .check-box { flex-shrink:0; width:22px; height:22px; border:2px solid var(--ink-mute); border-radius:5px; margin-top:3px; position:relative; transition:all 0.2s; background:white; }
+  .check-item.done .check-box { background:var(--sage); border-color:var(--sage); }
+  .check-item.done .check-box::after { content:"✓"; color:white; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:14px; font-weight:bold; }
+  .check-item.done .check-text { color:var(--ink-mute); text-decoration:line-through; }
+  .check-text { color:var(--ink); font-size:15px; line-height:1.55; }
+  .success { background:linear-gradient(135deg,var(--sage-soft) 0%,#f0f4e8 100%); padding:28px 32px; margin:32px 0; border-radius:12px; border:1px solid rgba(92,107,77,0.2); }
+  .success-title { font-family:'Fraunces',serif; font-size:22px; font-weight:600; color:var(--sage); margin-bottom:14px; display:flex; align-items:center; gap:10px; }
+  .success-title::before { content:"✓"; background:var(--sage); color:white; width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:15px; font-weight:bold; }
+  .success ul { margin:0; padding-left:4px; list-style:none; }
+  .success li { padding:6px 0; color:var(--ink); font-weight:500; padding-left:22px; position:relative; }
+  .success li::before { content:"→"; position:absolute; left:0; color:var(--sage); font-weight:bold; }
+  footer { max-width:720px; margin:0 auto; padding:48px 24px 64px; text-align:center; border-top:1px solid var(--rule); }
+  .footer-quote { font-family:'Fraunces',serif; font-style:italic; font-size:20px; color:var(--ink-soft); line-height:1.5; margin-bottom:12px; }
+  .footer-sig { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.2em; color:var(--ink-mute); text-transform:uppercase; }
+
+  @media (max-width:640px) {
+    main { padding:32px 20px 100px; }
+    h1 { font-size:32px; } h2 { font-size:24px; margin-top:48px; } h3 { font-size:19px; }
+    .phase-title { font-size:26px; }
+    .phase-header::before,.phase-header::after { width:30px; }
+    .phase-header::before { left:10%; } .phase-header::after { right:10%; }
+    .topbar-nav a { padding:6px 8px; font-size:12px; }
+    .topbar-label { display:none; }
+    .story,.success { padding:22px; }
+    .prompt-body { font-size:12.5px; padding:16px 20px; }
+    .agent-table { font-size:12px; }
+    .agent-table th, .agent-table td { padding:8px 10px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="topbar-label">21-Day Challenge</div>
+    <nav class="topbar-nav">
+      <a href="#phase1">1 · Member</a>
+      <a href="#phase2">2 · Lập Team</a>
+      <a href="#phase3">3 · Giao việc</a>
+      <a href="#phase4">4 · Nộp bài</a>
+    </nav>
+  </div>
+</div>
+
+<main>
+
+<header class="hero">
+  <div class="day-tag">Ngày 19 · Tuần 4</div>
+  <h1>
+    Tạo Agent Team —<br>
+    Từ Một Agent<br>
+    Thành Một Đội
+  </h1>
+  <p class="hero-sub">
+    Ngày 13 bạn dựng con agent đầu tiên. 6 ngày qua bạn dạy nó kỹ năng — viết content, tạo hình, làm video. Hôm nay bạn cho nó <em>đồng đội</em>: một đội agent biết tự chia việc cho nhau, có một con <em>trưởng nhóm</em> điều phối tất cả. Bạn đi từ "vận hành 1 agent" lên "điều hành cả một bộ máy AI".
+  </p>
+</header>
+
+<div class="goal-box">
+  <div class="goal-box-label">Mục tiêu cuối ngày</div>
+  <p>Cuối hôm nay bạn có:</p>
+  <em>2–4 agent member mới, mỗi con một chuyên môn (viết bài / tạo hình / làm video)</em>
+  <em>1 Agent Team thật trong goClaw — Agent chính làm trưởng nhóm, các agent mới làm thành viên, cấu hình chuẩn</em>
+  <em>Giao 1 việc thật → tận mắt thấy trưởng nhóm chia task, member nhận việc, chạy trên bảng Kanban</em>
+</div>
+
+<div class="story">
+  <div class="story-label">Tinh thần ngày hôm nay</div>
+  <p>Tới giờ bạn có <strong>1 agent làm tất cả mọi thứ</strong> — viết bài, trả lời khách, làm content. Một mình ôm hết. Đó chính là cái nút thắt: nó giỏi, nhưng nó là <em>một người</em>.</p>
+  <p>Công ty thật không vận hành kiểu một người ôm mọi việc. Nó có <strong>một đội</strong>: một người quản lý chia việc, mỗi nhân viên một chuyên môn. Hôm nay agent của bạn thôi làm <em>freelancer đơn độc</em> — nó trở thành <strong>một công ty nhỏ</strong> mà bạn là ông chủ.</p>
+</div>
+
+<div class="metaphor">
+  <div class="metaphor-label">Agent Team khác gì Agent Link?</div>
+  <blockquote>
+    <strong>Agent Link</strong> = một đường ống nhờ việc giữa <em>2 agent</em> (A nhờ B làm hộ một việc nhỏ) — nhẹ, không có bảng việc. <strong>Agent Team</strong> = một <em>đội chính thức</em>: 1 trưởng nhóm + nhiều thành viên + một <strong>bảng Kanban</strong> theo dõi từng task + workspace chung. Việc nhiều bước, nhiều người, cần theo dõi → dùng Team. Hôm nay ta làm Team.
+  </blockquote>
+</div>
+
+<div class="tip">
+  <div class="tip-label">Mẹo của Nghĩa — đọc trước khi bắt đầu</div>
+  <p>Đừng học thuộc lý thuyết. Cứ làm theo từng bước bên dưới: <strong>tạo vài agent → gom vào 1 team → giao 1 việc thật → xem nó chạy</strong>. Hiểu sâu nằm ở chỗ nhìn task nhảy qua các cột Kanban, không nằm ở chữ.</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- BỐI CẢNH: bạn đang có gì + Agent Team là gì -->
+<!-- ============================================================ -->
+
+<section>
+  <h2>
+    <span class="step-num">TRƯỚC KHI BẮT ĐẦU</span>
+    Bạn đang có 1 agent. Hôm nay biến nó thành đội.
+  </h2>
+
+  <p>Nhìn lại những gì bạn đã có sau 18 ngày — đây chính là "nhân sự" và "công cụ" của đội:</p>
+
+  <ul>
+    <li><strong>1 Agent chính</strong> (con bạn dựng từ Ngày 13, đã có bot Telegram) — nó sẽ làm <em>Orchestrator</em>, tức <em>trưởng nhóm điều phối</em>.</li>
+    <li><strong>Skill <code>tao-creative-fb</code></strong> (Ngày 17) — viết caption + tạo ảnh bằng <code>gpt-image-1</code> (OpenAI).</li>
+    <li><strong>Skill <code>tao-video-ai</code></strong> (Ngày 18) — làm video bằng Higgsfield (Stream 4.5 + Kling).</li>
+    <li><strong><code>brain.db</code></strong> (Ngày 5) — bộ não thứ 2 giữ brand voice của bạn.</li>
+  </ul>
+
+  <div class="story">
+    <div class="story-label">Agent Team hoạt động thế nào — hiểu trong 30 giây</div>
+    <p>Bạn nhắn cho <strong>trưởng nhóm</strong> (Lead) một yêu cầu. Lead <em>không tự làm</em> — nó <strong>bẻ việc thành các task nhỏ và giao cho từng thành viên</strong> (member). Mỗi task hiện lên một <strong>bảng Kanban</strong>, chạy qua các cột <em>Chờ xử lý → Đang chạy → Đã hoàn thành</em>. Member làm xong báo về, Lead gom kết quả trả lại cho bạn. Bạn chỉ ra lệnh một câu, cả đội tự xoay.</p>
+  </div>
+
+  <div class="warning">
+    <div class="warning-label">Nhớ trước khi bắt đầu</div>
+    <p><strong>1.</strong> Hôm nay bạn mới có <strong>1 agent</strong> (để làm Orchestrator). Muốn có đội, <strong>phải tạo thêm vài agent member</strong> trước — đó là Phần Một bên dưới.<br>
+    <strong>2.</strong> Mọi agent bạn tạo bằng nút "Tạo agent" <strong>dùng được làm thành viên ngay</strong> — chỉ cần nó đang bật (active). Không có loại nào phải chọn, không có gì phải lo.</p>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- PHẦN 1: TẠO AGENT MEMBER -->
+<!-- ============================================================ -->
+
+<div class="phase-header" id="phase1">
+  <span class="phase-label">Phần Một</span>
+  <div class="phase-title">Tuyển "Nhân Viên" — Tạo Agent Member</div>
+</div>
+
+<section>
+  <h2>
+    <span class="step-num">BƯỚC 01</span>
+    Chọn đội của bạn — 3 mẫu để bắt đầu
+  </h2>
+
+  <p>Đội nào cũng được, miễn bám business của bạn. Dưới đây 3 mẫu — chọn 1, hoặc lấy làm gốc rồi đổi theo ý. Mỗi mẫu tái dùng đúng skill bạn đã có.</p>
+
+  <div class="stage-card">
+    <div class="stage-card-tag">Mẫu 1 · Khuyên cho người mới</div>
+    <div class="stage-card-title">Đội Nội Dung Facebook</div>
+    <div class="stage-card-agents">Lead: Agent chính · Member: viết bài · tạo hình · làm video</div>
+    <div class="stage-card-desc">Đội tối thiểu mà đủ mạnh: trưởng nhóm nhận yêu cầu, giao cho 3 thành viên chuyên môn. Rẻ nhất để khởi động. <strong>Nếu phân vân, chọn mẫu này.</strong></div>
+  </div>
+
+  <div class="stage-card">
+    <div class="stage-card-tag">Mẫu 2 · Đầy đủ hơn</div>
+    <div class="stage-card-title">Đội Chiến Dịch Ra Mắt Sản Phẩm</div>
+    <div class="stage-card-agents">Lead: Agent chính · Member: lập kế hoạch · viết bài · tạo hình · làm video</div>
+    <div class="stage-card-desc">Thêm 1 member "lập kế hoạch" đọc <code>brain.db</code> ra brief chia việc cho cả đội. Tốn credit nhất (nhiều ảnh + video) — nhớ check credit OpenAI &amp; Higgsfield trước.</div>
+  </div>
+
+  <div class="stage-card">
+    <div class="stage-card-tag">Mẫu 3 · Gắn lịch hẹn</div>
+    <div class="stage-card-title">Đội Sản Xuất Hàng Ngày</div>
+    <div class="stage-card-agents">Lead: Agent chính (đã có Heartbeat + cron 9h) · Member: viết bài · tạo hình · làm video (2 lần/tuần)</div>
+    <div class="stage-card-desc">Kết hợp với Lịch hẹn (Schedule Tasks) đã có từ Ngày 17/18: cron đánh thức Lead mỗi sáng → Lead giao việc cho đội. Member video chỉ chạy Thứ 3 + Thứ 6 để giữ credit Higgsfield.</div>
+  </div>
+
+  <div class="tip">
+    <div class="tip-label">Đặt tên member theo chuyên môn — đây là cách Orchestrator biết giao cho ai</div>
+    <p>Khi giao việc, Orchestrator <strong>nhìn vào TÊN của member</strong> để biết con nào làm gì (nó được tiêm sẵn danh sách thành viên, nhưng chỉ thấy <em>tên + một dòng chuyên môn ngắn</em>, không thấy mô tả đầy đủ). Nên đặt Khóa agent (Agent Key) rõ theo nghề: <code>viet-bai-fb</code>, <code>tao-hinh-fb</code>, <code>lam-video-fb</code>; tên hiển thị cũng gợi nghề: "Cây Bút", "Hoạ Sĩ", "Đạo Diễn". Đặt tên mơ hồ kiểu <code>agent-1</code> thì Orchestrator <strong>không biết con đó làm gì</strong> mà giao.</p>
+    <p><strong>Muốn chắc hơn:</strong> ở phần Cá tính của mỗi member, điền dòng <em>Tóm tắt chuyên môn</em> ngắn (vd <em>"Viết caption Facebook đúng brand voice"</em>) — Orchestrator cũng đọc dòng này khi chia việc.</p>
+  </div>
+</section>
+
+<section>
+  <h2>
+    <span class="step-num">BƯỚC 02</span>
+    Tạo từng agent member trong goClaw
+  </h2>
+
+  <p>Mở dashboard goClaw của bạn (<code>https://app.tên-miền-của-bạn</code>). Vào menu tạo agent:</p>
+
+  <div class="click-path"><strong>Sidebar</strong> → <strong>Agents</strong> (đường dẫn <code>/agents</code>) → nút <strong>tạo agent</strong> → hộp thoại <strong>Tạo agent (Create agent)</strong></div>
+
+  <p>Điền các trường (nhãn hiển thị tùy ngôn ngữ — bên dưới ghi <strong>Tiếng Việt (English)</strong>):</p>
+
+  <div class="ui-mock">
+    <div class="ui-mock-title">Form: Tạo agent (Create agent)</div>
+    <div class="ui-mock-content">Tên hiển thị (Display Name) *   → Cây Bút
+Khóa agent (Agent Key) *      → viet-bai-fb   (tự gợi ý từ tên)
+Provider *                    → chọn provider đã cấu hình
+Model *                       → chọn model RẺ cho member (vd Claude Haiku)
+Mô tả agent (Describe agent)  → "Bạn là cây bút chuyên viết
+                                 caption + bài đăng Facebook đúng
+                                 brand voice trong brain.db. Ngắn,
+                                 có hook, có CTA, không sến."
+Tự tiến hóa (Self-evolution)  → để TẮT (mới tạo)
+[ Hủy ]              [ Tạo (Create) ]</div>
+  </div>
+
+  <div class="warning">
+    <div class="warning-label">Cái bẫy im lặng — nút "Tạo" cứ bị mờ</div>
+    <p>Nút <strong>Tạo (Create)</strong> chỉ sáng khi đã điền đủ: Tên hiển thị + Khóa agent + Provider + Model + <strong>Mô tả agent (KHÔNG được để trống)</strong>. Nhiều người bỏ trống ô Mô tả rồi loay hoay không bấm được. Cứ viết mô tả vài câu là nút sáng.</p>
+  </div>
+
+
+  <p><strong>Lặp lại</strong> cho mỗi member trong mẫu bạn chọn. Tối thiểu 2 member; mẫu chuẩn là 3 (viết bài, tạo hình, làm video).</p>
+
+  <div class="verify">
+    <div class="verify-label">Kiểm tra điểm</div>
+    <p>Vào lại trang <strong>Agents</strong> — thấy danh sách có Agent chính + các agent member vừa tạo, tất cả ở trạng thái <strong>active</strong>. Agent nào không active sẽ KHÔNG hiện ra khi chọn thành viên ở bước lập team — nhớ bật active.</p>
+  </div>
+</section>
+
+<section>
+  <h2>
+    <span class="step-num">BƯỚC 03</span>
+    Trang bị skill cho từng member
+  </h2>
+
+  <p>Mỗi member chỉ giỏi khi có đúng "đồ nghề". Vào từng agent → tab <strong>Skills</strong> → bật skill tương ứng. Đây là skill bạn đã tạo/cài ở các ngày trước:</p>
+
+  <p><strong>Đổi vai:</strong> mấy skill này trước đây bạn gán cho <em>Agent chính</em>. Giờ chuyển sang <em>member</em> — mỗi con cầm một skill. Agent chính <strong>không cần ôm skill sản xuất nữa</strong>, nó chỉ còn một việc: điều phối.</p>
+
+  <table class="agent-table">
+    <thead>
+      <tr><th>Member</th><th>Skill đã có</th><th>Chi phí</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="agent-name">Viết bài</td><td class="agent-out">tao-creative-fb + brand_voice</td><td>Rẻ nhất — chỉ tốn token chữ</td></tr>
+      <tr><td class="agent-name">Tạo hình</td><td class="agent-out">tao-creative-fb (ra ảnh)</td><td>Tốn credit OpenAI mỗi ảnh</td></tr>
+      <tr><td class="agent-name">Làm video</td><td class="agent-out">tao-video-ai (Higgsfield)</td><td>Tốn nhất — credit Higgsfield</td></tr>
+    </tbody>
+  </table>
+
+  <div class="warning">
+    <div class="warning-label">Tiền — đọc kỹ kẻo cháy ví</div>
+    <p>Một team không phải "gộp chung cho rẻ". Mỗi lần trưởng nhóm giao việc, hệ thống chạy <strong>1 lượt model cho Lead + N lượt cho từng member</strong> — tức nhân chi phí token. Riêng:</p>
+    <p>• <strong>Member tạo hình</strong> đốt credit OpenAI (<code>gpt-image-1</code>) — tài khoản mới có ~$5 free.<br>
+    • <strong>Member làm video</strong> đốt credit Higgsfield mạnh nhất (~30–50 credit/video, gói ~1tr = 1000 credit ≈ 20–30 video). <strong>Đừng để đội tự giao nhiều video liên tiếp.</strong></p>
+    <p>→ Chọn <strong>model rẻ</strong> (Haiku / GPT-4o-mini) cho member, để model mạnh cho mình Lead (vì Lead phải điều phối). Check credit OpenAI + Higgsfield trước khi cho đội chạy hàng loạt.</p>
+  </div>
+</section>
+
+<section>
+  <h2>
+    <span class="step-num">BƯỚC 04</span>
+    Cho mỗi member 1 bot Telegram + gom vào 1 group
+  </h2>
+
+  <p>Đây là bước nhiều người bỏ quên — nhưng thiếu nó thì <strong>bạn không thấy đội làm việc</strong>. Mỗi agent muốn "sống" và nói chuyện được thì phải có <strong>kênh riêng</strong>. Bạn đã làm điều này cho Agent chính (Orchestrator) từ Ngày 13 — giờ làm tương tự cho từng member.</p>
+
+  <div class="metaphor">
+    <div class="metaphor-label">Vì sao mỗi member cần 1 bot riêng</div>
+    <blockquote>
+      Orchestrator điều phối, nhưng <strong>member phải có "miệng" để báo cáo</strong>. Mỗi bot Telegram = một cái miệng. Gom hết vào <em>một group chung</em> = một "phòng làm việc": bạn nhắn Orchestrator, nó giao việc, các member trả lời ngay trong group. Bạn ngồi xem cả đội phối hợp trước mắt.
+    </blockquote>
+  </div>
+
+  <ul>
+    <li><strong>Mỗi member → 1 bot Telegram riêng</strong>, gắn làm Channel cho đúng agent đó trong goClaw. <em>(Cách tạo bot bạn đã rành từ Ngày 13 — làm lại y vậy cho từng member.)</em></li>
+    <li><strong>Tạo 1 group Telegram</strong> rồi add hết bot vào: bot Orchestrator (agent chính) + bot từng member. Đây là "phòng làm việc" chung của đội.</li>
+  </ul>
+
+  <div class="verify">
+    <div class="verify-label">Kiểm tra điểm</div>
+    <p>Trong group Telegram có đủ bot: Orchestrator + các member. Thử nhắn 1 câu chào — đúng bot phản hồi là được. Đây là "phòng làm việc" nơi bạn xem đội phối hợp ở Phần Ba.</p>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- PHẦN 2: TẠO TEAM -->
+<!-- ============================================================ -->
+
+<div class="phase-header" id="phase2">
+  <span class="phase-label">Phần Hai</span>
+  <div class="phase-title">Gom Lại Thành Đội — Tạo Team</div>
+</div>
+
+<section>
+  <h2>
+    <span class="step-num">BƯỚC 05</span>
+    Tạo Agent Team
+  </h2>
+
+  <p>Giờ bạn có "nhân viên" rồi. Lập đội cho chúng:</p>
+
+  <div class="click-path"><strong>Sidebar</strong> → <strong>Agent Link &amp; Team</strong> → tab <strong>Agent Team</strong> (mặc định) → nút <strong>Tạo Team (Create Team)</strong></div>
+
+  <div class="ui-mock">
+    <div class="ui-mock-title">Form: Tạo Team (Create Team)</div>
+    <div class="ui-mock-content">Tên (Name) *                      → Đội Nội Dung Facebook
+Mô tả (Description)               → "Đội sản xuất content: viết bài,
+                                     tạo hình, làm video cho Page."
+Agent trưởng nhóm (Lead Agent) *  → chọn AGENT GOCLAW của bạn
+Thành viên (Members) *            → chọn: viet-bai-fb, tao-hinh-fb,
+                                     lam-video-fb
+[ Hủy ]                  [ Tạo (Create) ]</div>
+  </div>
+
+  <ul>
+    <li><strong>Agent trưởng nhóm (Lead Agent) = Orchestrator:</strong> chọn <strong>Agent chính</strong> (con bạn dựng từ Ngày 13) — nó là <em>người điều phối</em>: nhận yêu cầu từ bạn rồi chia việc cho member. Lead nên dùng model mạnh (Sonnet/Opus) vì phải nghĩ cách chia việc.</li>
+    <li><strong>Thành viên (Members):</strong> ô này hiện <em>các agent đang active</em> — đúng mấy con bạn vừa tạo. Thiếu con nào thì quay lại bật active cho nó. Nên chọn 2–3 con chuyên môn khác nhau.</li>
+  </ul>
+
+  <p>Bấm <strong>Tạo (Create)</strong>. Xong — đội của bạn ra đời.</p>
+
+  <div class="warning">
+    <div class="warning-label">Một agent chỉ được làm trưởng 1 đội</div>
+    <p>Nếu sau này bạn thử tạo đội thứ 2 với <em>cùng</em> Agent chính làm Lead, hệ thống báo lỗi "agent này đã làm trưởng một nhóm rồi". Hôm nay chỉ cần <strong>1 đội</strong> — đừng tạo trùng. Muốn đội khác thì dùng một agent Lead khác.</p>
+  </div>
+
+  <div class="tip">
+    <div class="tip-label">Agent chính có cần "skill điều phối" riêng không? — KHÔNG</div>
+    <p>Bạn <strong>không phải tạo skill điều phối</strong> cho Agent chính. Ngay khi nó được đặt làm trưởng nhóm, goClaw <strong>tự trang bị</strong>: hướng dẫn cách chia việc + công cụ giao việc + danh sách thành viên — tiêm thẳng vào "não" nó. Nó biết tạo task và giao cho member ngay, không cần setup gì thêm.</p>
+    <p>Muốn nó chia việc <em>khéo hơn theo business của bạn</em> (vd "yêu cầu content thì giao viết bài trước, xong mới tới ảnh")? Chỉ cần thêm vài dòng vào file <code>AGENTS.md</code> của Agent chính — <strong>không phải tạo skill</strong>, cũng không phải sửa CAPABILITIES.md. Cái này tùy chọn, không bắt buộc.</p>
+  </div>
+</section>
+
+<section>
+  <h2>
+    <span class="step-num">BƯỚC 06</span>
+    Cấu hình đội — đặt đúng vài công tắc
+  </h2>
+
+  <p>Mở đội vừa tạo (bấm vào nó, vào trang <code>/teams/&lt;id&gt;</code> — đây là <strong>bảng Kanban</strong> của đội) → bấm nút <strong>Cài đặt (Settings — biểu tượng bánh răng)</strong> ở đầu bảng. Phần lớn đã đúng mặc định; chỉnh cho khớp các giá trị sau:</p>
+
+  <div class="ui-mock">
+    <div class="ui-mock-title">Team Settings — cấu hình khuyên dùng</div>
+    <div class="ui-mock-content">Chế độ gửi (Delivery mode)     → Trực tiếp (direct)   ← KHÔNG để "Qua Leader"
+Workspace                       → Cô lập (isolated)
+Escalation khi bị chặn          → BẬT (mặc định đã bật)
+Cho thành viên tạo request      → TẮT
+Nhắc theo dõi (Follow-up)       → 30 phút / tối đa 5 lần</div>
+  </div>
+
+  <div class="tip">
+    <div class="tip-label">Vì sao để "Trực tiếp", đừng để "Qua Leader"</div>
+    <p>Chế độ gửi mặc định là <strong>Trực tiếp</strong> — thông báo gửi thẳng, không tốn token. Nếu đổi sang <strong>Qua Leader</strong>, mỗi thông báo bị Lead diễn đạt lại bằng AI = thêm một lượt model mỗi lần. Giữ <strong>Trực tiếp</strong> cho rẻ và nhanh.</p>
+  </div>
+
+  <div class="verify">
+    <div class="verify-label">Kiểm tra điểm — kết thúc Phần Hai</div>
+    <p>Mở trang đội (<code>/teams/&lt;id&gt;</code>) thấy: tên đội, danh sách <strong>1 Lead + các member</strong>, và một bảng Kanban đang <em>trống</em> (chưa có task — bình thường). Sẵn sàng giao việc.</p>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- PHẦN 3: GIAO VIỆC THẬT -->
+<!-- ============================================================ -->
+
+<div class="phase-header" id="phase3">
+  <span class="phase-label">Phần Ba</span>
+  <div class="phase-title">Giao 1 Việc Thật — Xem Đội Chạy</div>
+</div>
+
+<section>
+  <h2>
+    <span class="step-num">BƯỚC 07</span>
+    Nhắn cho Orchestrator một yêu cầu thật (trong group)
+  </h2>
+
+  <p>Đây là khoảnh khắc đáng xem nhất. <strong>Bạn không giao việc cho từng member</strong> — bạn chỉ nói với <em>Orchestrator</em>, nó tự chia. Mở <strong>group Telegram của đội</strong> (nơi có đủ bot Orchestrator + members) và nhắn một việc nhiều bước, ví dụ:</p>
+
+  <div class="prompt-box">
+    <div class="prompt-header">
+      <span class="prompt-label">Nhắn Orchestrator trong group</span>
+      <button class="copy-btn" data-copy="t1">COPY</button>
+    </div>
+    <div class="prompt-body" id="t1">Tạo cho anh 1 bài đăng Facebook cho [sản phẩm/dịch vụ của bạn]:
+- 1 caption đúng giọng brand (có hook + CTA)
+- 1 ảnh minh hoạ hợp với caption
+
+Giao việc cho đội làm, xong tổng hợp lại gửi anh duyệt.</div>
+  </div>
+
+  <p>Orchestrator sẽ <em>tự</em> tạo task và giao cho member (mỗi task một member phụ trách). Các member nhận việc và <strong>báo cáo ngay trong group</strong> — bạn ngồi xem cả đội phối hợp. Không cần làm gì thêm, chỉ chờ và quan sát.</p>
+
+  <div class="warning">
+    <div class="warning-label">Member được "đánh thức" sau khi Lead xong lượt</div>
+    <p>Đừng sốt ruột. Member <strong>không nhận việc tức thì</strong> — hệ thống đợi <em>lượt trả lời của Lead kết thúc</em> rồi mới đẩy task xuống cho member (cơ chế dispatch sau lượt). Vài giây tới một phút là chuyện thường. Và mỗi member mỗi vòng <strong>chỉ nhận 1 task ưu tiên cao nhất</strong> — nếu giao 5 việc cho 1 member, chúng xếp hàng làm lần lượt, không chạy song song.</p>
+  </div>
+</section>
+
+<section>
+  <h2>
+    <span class="step-num">BƯỚC 08</span>
+    Xem task chạy trên bảng Kanban
+  </h2>
+
+  <p>Quay lại trang đội (<code>/teams/&lt;id&gt;</code>). Bạn sẽ thấy task xuất hiện và <strong>nhảy qua các cột</strong> — đây chính là bằng chứng "trưởng nhóm đang điều phối thành viên":</p>
+
+  <div class="folder-tree">Chờ xử lý      Đang chạy        Chờ duyệt       Đã hoàn thành
+(Pending)      (In Progress)    (In Review)     (Completed)
+─────────      ────────────     ─────────       ────────────
+               #1 Viết caption
+               → Cây Bút
+               #2 Tạo ảnh
+               → Hoạ Sĩ         <span class="comment"># mỗi thẻ có tên member phụ trách</span></div>
+
+  <p>Lọc theo trạng thái ở thanh công cụ bảng: <strong>Đang hoạt động (Active) · Chờ xử lý (Pending) · Đang chạy (In Progress) · Chờ duyệt (In Review) · Đã hoàn thành (Completed) · Tất cả (All)</strong>. Khi member làm xong, Orchestrator gom kết quả và nhắn lại trong group để bạn duyệt.</p>
+
+  <div class="troubleshoot">
+    <div class="troubleshoot-header">⚠ Khi gặp lỗi — bấm để mở</div>
+    <div class="troubleshoot-body">
+      <details>
+        <summary>Member không nhận task / bảng đứng im</summary>
+        <p>Kiểm tra theo thứ tự: (1) Đã <em>chờ Lead kết thúc lượt</em> chưa? Member chỉ được đánh thức sau đó. (2) Task có giao đúng cho <strong>member</strong> không — không được giao cho chính Lead (hệ thống chặn). (3) Member đó có đang <strong>active</strong> không. (4) Member đó có thật sự nằm trong đội không.</p>
+      </details>
+      <details>
+        <summary>Thẻ task tự chuyển sang "Đã thất bại" (failed) / "Bị chặn" (blocked)</summary>
+        <p>Đây là cơ chế <em>bình thường</em>, không phải hỏng. Khi member gặp chướng ngại, nó báo "blocker" → hệ thống tự đánh task fail và <strong>báo lên cho Lead kèm gợi ý chạy lại (retry)</strong>. Cách xử lý: vào chat của Lead bảo nó <em>"thử lại task đó"</em>, hoặc sửa nguyên nhân (vd hết credit OpenAI/Higgsfield) rồi cho chạy lại. Một task thử lại tối đa 3 lần rồi mới dừng hẳn.</p>
+      </details>
+      <details>
+        <summary>Không thấy member muốn chọn khi lập team</summary>
+        <p>Ô Thành viên chỉ hiện agent <strong>đang active</strong>. Nếu agent bị tắt (inactive) nó biến mất khỏi danh sách. Vào trang Agents bật lại active cho nó.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- PHẦN 4: NỘP BÀI -->
+<!-- ============================================================ -->
+
+<div class="phase-header" id="phase4">
+  <span class="phase-label">Phần Bốn</span>
+  <div class="phase-title">Nộp Bài</div>
+</div>
+
+<section>
+  <h2>
+    <span class="step-num">FINAL</span>
+    Checklist &amp; bằng chứng
+  </h2>
+
+  <div class="checklist">
+    <div class="checklist-title">Làm theo thứ tự này là không kẹt</div>
+    <div class="check-item"><div class="check-box"></div><div class="check-text">Có Agent chính đang active (sẽ làm trưởng nhóm)</div></div>
+    <div class="check-item"><div class="check-box"></div><div class="check-text">Tạo ≥2 agent member ở <code>/agents</code> (nhớ điền Mô tả để nút Tạo sáng), bật active</div></div>
+    <div class="check-item"><div class="check-box"></div><div class="check-text">Gán skill cho từng member (tao-creative-fb, tao-video-ai, brand_voice)</div></div>
+    <div class="check-item"><div class="check-box"></div><div class="check-text">Mỗi member 1 bot Telegram + gom hết bot vào 1 group chung (cả Orchestrator)</div></div>
+    <div class="check-item"><div class="check-box"></div><div class="check-text">Vào "Agent Link &amp; Team" → Tạo Team: Lead = Orchestrator (Agent chính), Members = các agent vừa tạo</div></div>
+    <div class="check-item"><div class="check-box"></div><div class="check-text">Cài đặt đội: Trực tiếp + Cô lập + Escalation bật + Follow-up 30 phút/5 lần (đừng "Qua Leader")</div></div>
+    <div class="check-item"><div class="check-box"></div><div class="check-text">Nhắn Orchestrator trong group 1 việc thật → nó chia task cho member → <strong>chụp ảnh group điều phối</strong></div></div>
+    <div class="check-item"><div class="check-box"></div><div class="check-text">Mở Kanban trên dashboard goClaw → chụp màn hình task của đội đang chạy</div></div>
+  </div>
+
+  <h3>Bằng chứng nộp bài</h3>
+
+  <ul>
+    <li><strong>1. Ảnh group Telegram của đội</strong> — bạn nhắn 1 yêu cầu, Orchestrator <em>thật sự điều phối</em>: chia việc và giao cho member (kiểu <em>"đã giao [việc] cho [member]…"</em>), các member báo cáo lại — tất cả ngay trong group. Đây là bằng chứng Orchestrator <strong>đang điều hành đội</strong>, không tự ôm hết một mình.</li>
+    <li><strong>2. Ảnh bảng Kanban trên dashboard goClaw</strong> — task của đội hiện trên bảng, có tên member phụ trách, đang chạy hoặc đã xong.</li>
+    <li><strong>Tùy chọn:</strong> output thật của member (1 caption, 1 ảnh <code>gpt-image-1</code>, hoặc 1 clip Higgsfield) — để dành khoe ở Demo Day Ngày 21.</li>
+  </ul>
+
+  <div class="success">
+    <div class="success-title">Được duyệt khi</div>
+    <ul>
+      <li>Có 1 Agent Team với trưởng nhóm + thành viên</li>
+      <li>Ảnh group Telegram cho thấy Orchestrator <strong>thật sự điều phối</strong> — giao việc cho member, member báo cáo lại</li>
+      <li>Ảnh Kanban trên dashboard goClaw cho thấy task của đội đang chạy</li>
+    </ul>
+  </div>
+
+  <div class="tip">
+    <div class="tip-label">Mẹo AI-First</div>
+    <p>Cả ngày hôm nay bạn <strong>không tự viết caption, không tự vẽ ảnh, không tự dựng video</strong>. Bạn chỉ làm đúng một việc của ông chủ: <em>tuyển người, lập đội, giao việc</em>. Đây là nấc cao nhất của pattern Operator — bạn điều hành một bộ máy, không phải tự tay làm từng việc. Một câu nhắn cho trưởng nhóm = cả đội chuyển động.</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <p class="footer-quote">Hôm qua bạn là người làm.<br>Hôm nay bạn là người điều hành một đội.</p>
+  <p class="footer-sig">focus.camp · The KP3 · Day 19 of 21</p>
+</footer>
+
+<script>
+  // Copy buttons
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const targetId = btn.getAttribute('data-copy');
+      const target = document.getElementById(targetId);
+      if (!target) return;
+      const text = target.textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const original = btn.textContent;
+        btn.textContent = 'COPIED';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = original; btn.classList.remove('copied'); }, 1500);
+      }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+        btn.textContent = 'COPIED'; btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 1500);
+      });
+    });
+  });
+
+  // Checklist toggle
+  document.querySelectorAll('.check-item').forEach(item => {
+    item.addEventListener('click', () => item.classList.toggle('done'));
+  });
+</script>
+
+</body>
+</html>

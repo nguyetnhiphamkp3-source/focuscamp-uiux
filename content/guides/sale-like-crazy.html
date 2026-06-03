@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sell Like Crazy™ — Kịch Bản Bán Hàng</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,800;0,900;1,800;1,900&family=Barlow:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --red:     #D4360A;
+  --red-dk:  #A82808;
+  --red-lt:  #F04020;
+  --yellow:  #FFF707;
+  --yellow-dk:#D4C900;
+  --ink:     #1A0A04;
+  --white:   #FFFFFF;
+  --offwhite:#FFF9F7;
+  --gray:    #6B5A54;
+  --gray-lt: #A89890;
+  --bd:      #EAD8D0;
+  --bg:      #FFF9F7;
+  --shadow:  0 3px 24px rgba(212,54,10,.10);
+  --shadow-lg: 0 8px 40px rgba(212,54,10,.16);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Barlow',sans-serif;color:var(--ink)}
+
+.deck{width:100vw;height:100vh;position:relative;overflow:hidden}
+.slide{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  padding:48px 72px 44px;
+  opacity:0;pointer-events:none;
+  transform:translateX(52px);
+  transition:opacity .38s cubic-bezier(.4,0,.2,1),transform .38s cubic-bezier(.4,0,.2,1);
+}
+.slide.active{opacity:1;pointer-events:all;transform:translateX(0)}
+.slide.out{opacity:0;transform:translateX(-52px);transition:opacity .28s ease,transform .28s ease}
+
+.prog{position:fixed;top:0;left:0;height:4px;background:linear-gradient(90deg,var(--red),var(--red-lt));transition:width .4s ease;z-index:999}
+.nav{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:12px;
+  background:var(--white);border:2px solid var(--bd);
+  border-radius:40px;padding:7px 16px;
+  box-shadow:var(--shadow);z-index:999;
+}
+.nav button{background:none;border:none;cursor:pointer;color:var(--gray);font-size:18px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s;font-weight:700}
+.nav button:hover{background:#FFF0EC;color:var(--red)}
+.nav button:disabled{opacity:.22;cursor:default}
+.ctr{font-family:'DM Mono',monospace;font-size:11px;color:var(--gray);min-width:48px;text-align:center;letter-spacing:.06em}
+.dots{display:flex;gap:5px;align-items:center}
+.dots span{width:6px;height:6px;border-radius:50%;background:var(--bd);cursor:pointer;transition:background .2s,transform .2s;flex-shrink:0}
+.dots span.on{background:var(--red);transform:scale(1.4)}
+.kb{position:fixed;top:13px;right:16px;font-family:'DM Mono',monospace;font-size:10px;color:var(--gray-lt);letter-spacing:.05em}
+.kbd{background:var(--white);border:1px solid var(--bd);border-radius:3px;padding:1px 5px;font-size:10px;color:var(--gray)}
+
+/* ── TYPOGRAPHY ── */
+.T{
+  font-family:'Barlow Condensed',sans-serif;font-weight:900;
+  line-height:.96;text-transform:uppercase;color:var(--red);letter-spacing:-.01em;
+}
+.T em,.hl{font-style:normal;background:var(--yellow);color:var(--ink);padding:0 5px 1px;display:inline}
+.eyebrow{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--red);opacity:.7;margin-bottom:8px}
+.bar{width:56px;height:5px;background:var(--red);border-radius:3px;margin:14px 0}
+
+/* accent stripe */
+.acc::before{content:'';display:block;height:5px;background:var(--red);margin:-48px -72px 22px}
+
+/* step badge */
+.sbadge{display:inline-flex;align-items:center;justify-content:center;background:var(--red);color:var(--white);font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:17px;text-transform:uppercase;letter-spacing:.02em;padding:4px 13px;border-radius:4px;flex-shrink:0}
+
+/* Quote box */
+.qbox{background:var(--white);border:2px solid var(--bd);border-left:6px solid var(--red);border-radius:0 10px 10px 0;padding:16px 22px;box-shadow:var(--shadow)}
+.ql{font-family:'DM Mono',monospace;font-size:10px;font-weight:500;letter-spacing:.1em;color:var(--red);text-transform:uppercase;margin-bottom:7px}
+.qbox p{font-size:17px;color:var(--ink);line-height:1.55;font-style:italic;font-weight:500}
+.qbox-green{border-left-color:#1A7040}.qbox-green .ql{color:#1A7040}
+
+/* Note */
+.note{border-radius:8px;padding:12px 16px;display:flex;gap:11px;align-items:flex-start}
+.ni{font-size:15px;flex-shrink:0;margin-top:1px}
+.note p{font-size:14px;line-height:1.58;font-weight:500}
+.nw{background:#FFFDE6;border:2px solid var(--yellow-dk)}.nw p{color:#5A4A00}
+.nd{background:#FFF0EC;border:2px solid var(--red)}.nd p{color:var(--red-dk)}
+.nt{background:#F0FFF4;border:2px solid #4CAF50}.nt p{color:#1B5E20}
+.ni-b{background:#E8F4FD;border:2px solid #1A88CC}.ni-b p{color:#0D3A5C}
+
+/* List */
+.blist{list-style:none;display:flex;flex-direction:column;gap:9px}
+.blist li{display:flex;gap:11px;font-size:17px;color:var(--ink);line-height:1.5;font-weight:500}
+.blist li::before{content:'▶';color:var(--red);font-size:11px;flex-shrink:0;margin-top:3px}
+
+/* Card */
+.card{background:var(--white);border:2px solid var(--bd);border-radius:12px;padding:20px 24px;box-shadow:var(--shadow)}
+.c-red{background:#FFF0EC;border-color:#F5B8A8}
+.c-yel{background:#FFFDE6;border-color:var(--yellow-dk)}
+.c-grn{background:#F0FFF4;border-color:#A8D8B8}
+
+/* Grid */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+
+/* Channel */
+.ch-row{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:auto}
+.ch{border-radius:8px;padding:12px 16px;border:2px solid}
+.chv{background:#EEF4FC;border-color:#B8D4F0}
+.chvid{background:#F5EEFB;border-color:#D4B8F0}
+.chl{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px}
+.chv .chl{color:#1A5FAB}.chvid .chl{color:#7B2FBE}
+.ch p{font-size:13px;color:var(--gray);line-height:1.5;font-weight:500}
+
+/* Score */
+.srow{display:flex;align-items:center;gap:15px;padding:15px 18px;border-radius:10px;border:2px solid var(--bd)}
+.snum{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;width:58px;text-align:center;flex-shrink:0}
+.srow p{font-size:16px;color:var(--ink);line-height:1.45;font-weight:500}
+
+/* Step map */
+.smap{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;flex:1}
+.sc{background:var(--white);border:2px solid var(--bd);border-radius:10px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;transition:transform .2s,box-shadow .2s}
+.sc:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.sc.cls{background:#FFF0EC;border-color:#F5B8A8}
+.sc-n{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:900;color:var(--red);background:#FFF0EC;border:1px solid #F5B8A8;border-radius:3px;padding:2px 8px;text-transform:uppercase;letter-spacing:.04em}
+.sc.cls .sc-n{background:var(--red);color:var(--white);border-color:var(--red)}
+.sc-l{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:800;color:var(--ink);line-height:1.2;text-transform:uppercase}
+
+/* Pkg */
+.pkg{border-radius:12px;padding:20px 18px;border:2px solid;display:flex;flex-direction:column;gap:9px}
+.phi{background:#F5EEFB;border-color:#C084FC}
+.pmd{background:#FFF0EC;border-color:var(--red)}
+.plo{background:#F0F4F8;border-color:#90A8C0}
+.pchip{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;padding:3px 10px;border-radius:3px;display:inline-block;width:fit-content}
+.phi .pchip{background:#C084FC;color:#fff}
+.pmd .pchip{background:var(--red);color:#fff}
+.plo .pchip{background:#7A9AB8;color:#fff}
+.ptitle{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;text-transform:uppercase}
+.phi .ptitle{color:#7B2FBE}.pmd .ptitle{color:var(--red)}.plo .ptitle{color:#4A6A88}
+.psub{font-size:12px;color:var(--gray);font-style:italic;font-weight:500}
+.plist{list-style:none;display:flex;flex-direction:column;gap:5px;margin-top:3px}
+.plist li{font-size:13px;color:var(--ink);display:flex;gap:7px;font-weight:500}
+.plist li::before{content:'▶';color:var(--red);font-size:9px;flex-shrink:0;margin-top:3px}
+
+/* Obj */
+.obj{background:var(--white);border:2px solid var(--bd);border-left:6px solid var(--red);border-radius:0 10px 10px 0;padding:15px 18px}
+.oq{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;text-transform:uppercase;color:var(--red);margin-bottom:7px;letter-spacing:.01em}
+.oa{font-size:15px;color:var(--gray);line-height:1.6;font-style:italic;font-weight:500}
+
+/* Cover */
+.cv-wrap{display:flex;height:100%;margin:-48px -72px}
+.cv-l{flex:1;padding:60px 56px;display:flex;flex-direction:column;justify-content:space-between;background:var(--white);border-right:2px solid var(--bd)}
+.cv-r{width:300px;background:var(--red);display:flex;flex-direction:column;justify-content:center;align-items:center;padding:44px 28px;gap:22px}
+.cst{text-align:center}
+.cst-n{font-family:'Barlow Condensed',sans-serif;font-size:62px;font-weight:900;color:var(--yellow);line-height:1;text-transform:uppercase}
+.cst-l{font-size:11px;color:rgba(255,255,255,.6);margin-top:4px;letter-spacing:.07em;font-weight:600;text-transform:uppercase}
+.cdv{width:36px;height:2px;background:rgba(255,255,255,.18)}
+
+.tag{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;color:var(--red);background:#FFF0EC;border:1px solid #F5B8A8;border-radius:4px;padding:4px 12px;display:inline-block}
+</style>
+</head>
+<body>
+<div class="prog" id="prog"></div>
+<div class="kb"><kbd class="kbd">←</kbd> <kbd class="kbd">→</kbd></div>
+<div class="deck" id="deck">
+
+<!-- S01 COVER -->
+<div class="slide active">
+  <div class="cv-wrap">
+    <div class="cv-l">
+      <div>
+        <div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--red);opacity:.55;margin-bottom:20px">Sell Like Crazy™ · Phiên Bản Việt Nam</div>
+        <div class="T" style="font-size:74px">SELL<br>LIKE<br><em>CRAZY</em></div>
+        <p style="font-size:17px;color:var(--gray);font-weight:500;line-height:1.6;margin-top:16px">Kịch bản bán hàng qua điện thoại<br>Dựa trên framework của <strong style="color:var(--ink)">Sabri Suby</strong></p>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:24px">
+          <span class="tag">Khóa học giá cao</span>
+          <span class="tag">Agency / B2B</span>
+          <span class="tag">Sản phẩm vật lý</span>
+          <span class="tag">Voice Call</span>
+          <span class="tag">Video Call</span>
+        </div>
+      </div>
+      <p style="font-size:13px;color:var(--gray-lt);font-style:italic;font-weight:500">Kịch bản là la bàn. Con người là vũ khí.</p>
+    </div>
+    <div class="cv-r">
+      <div class="cst"><div class="cst-n">14</div><div class="cst-l">Bước thực chiến</div></div>
+      <div class="cdv"></div>
+      <div class="cst"><div class="cst-n">5</div><div class="cst-l">Objection xử lý</div></div>
+      <div class="cdv"></div>
+      <div class="cst"><div class="cst-n">2×</div><div class="cst-l">Voice & Video</div></div>
+      <p style="font-size:11px;color:rgba(255,255,255,.32);text-align:center;margin-top:10px;line-height:1.7;font-weight:500">17 năm kinh nghiệm<br>$20M+ doanh số<br>— Sabri Suby</p>
+    </div>
+  </div>
+</div>
+
+<!-- S02 NGUYÊN TẮC GỐC -->
+<div class="slide">
+  <div class="acc"></div>
+  <div class="eyebrow">Nguyên Tắc Gốc</div>
+  <div class="T" style="font-size:58px">KỊCH BẢN LÀ LA BÀN.<br><em>CON NGƯỜI LÀ VŨ KHÍ.</em></div>
+  <div class="bar"></div>
+  <div style="flex:1;display:flex;flex-direction:column;gap:13px;max-width:800px">
+    <div class="note nd"><span class="ni">⚡</span><p><strong>KHÔNG đọc kịch bản như robot.</strong> Khách cảm nhận ngay khi bạn đang "đọc bài" — và họ sẽ tắt máy trong đầu.</p></div>
+    <div class="note nt"><span class="ni">✅</span><p><strong>Nắm framework trong xương tủy</strong> — rồi nói chuyện như người thật. Kịch bản chỉ là bản đồ, bạn mới là người đi đường.</p></div>
+    <div class="note ni-b"><span class="ni">🩺</span><p><strong>Tư duy bác sĩ:</strong> Hỏi → Lắng nghe → Chẩn đoán → Rồi mới kê đơn. <span class="hl">Không bao giờ kê đơn trước khi khám bệnh.</span></p></div>
+  </div>
+</div>
+
+<!-- S03 FULL MAP -->
+<div class="slide">
+  <div class="acc"></div>
+  <div class="eyebrow">Full Map — 14 Bước</div>
+  <div class="T" style="font-size:40px">TỔNG QUAN <em>HÀNH TRÌNH</em> TỪ MỞ ĐẦU ĐẾN CHỐT</div>
+  <p style="font-size:13px;color:var(--gray);font-weight:700;margin:10px 0 16px;text-transform:uppercase;letter-spacing:.05em">Nền đỏ = phần chốt (Bước 10–14) · Còn lại = chẩn đoán</p>
+  <div class="smap">
+    <div class="sc"><div class="sc-n">00</div><div class="sc-l">Chuẩn Bị</div></div>
+    <div class="sc"><div class="sc-n">01</div><div class="sc-l">Xây Dựng Quan Hệ</div></div>
+    <div class="sc"><div class="sc-n">02</div><div class="sc-l">Thiết Lập Khung</div></div>
+    <div class="sc"><div class="sc-n">03</div><div class="sc-l">Người Ra QĐ</div></div>
+    <div class="sc"><div class="sc-n">04</div><div class="sc-l">Lý Do Đặt Call</div></div>
+    <div class="sc"><div class="sc-n">05</div><div class="sc-l">Đánh Giá Hiện Tại</div></div>
+    <div class="sc"><div class="sc-n">06</div><div class="sc-l">Lý Do Sâu Xa</div></div>
+    <div class="sc"><div class="sc-n">07</div><div class="sc-l">Mục Tiêu Cụ Thể</div></div>
+    <div class="sc"><div class="sc-n">08</div><div class="sc-l">Sự Thừa Nhận</div></div>
+    <div class="sc"><div class="sc-n">09</div><div class="sc-l">Cam Kết</div></div>
+    <div class="sc cls"><div class="sc-n">10</div><div class="sc-l">Trao Giá Trị</div></div>
+    <div class="sc cls"><div class="sc-n">11</div><div class="sc-l">Kê Đơn</div></div>
+    <div class="sc cls"><div class="sc-n">12</div><div class="sc-l">Test Close</div></div>
+    <div class="sc cls"><div class="sc-n">13</div><div class="sc-l">Trình Bày Gói</div></div>
+    <div class="sc cls"><div class="sc-n">14</div><div class="sc-l">Chốt & Lock Down</div></div>
+  </div>
+</div>
+
+<!-- S04 LINH HOẠT -->
+<div class="slide">
+  <div class="acc"></div>
+  <div class="eyebrow">Hướng Dẫn Sử Dụng</div>
+  <div class="T" style="font-size:50px">KHI NÀO DÙNG <em>FULL</em> — KHI NÀO LƯỢC?</div>
+  <div style="flex:1;display:flex;flex-direction:column;gap:0;margin-top:18px">
+    <div style="display:grid;grid-template-columns:1.8fr 2fr 1.6fr;background:var(--red);border-radius:10px 10px 0 0">
+      <div style="padding:10px 16px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:900;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:.05em">Tình huống</div>
+      <div style="padding:10px 16px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:900;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:.05em">Cách áp dụng</div>
+      <div style="padding:10px 16px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:900;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:.05em">Lưu ý quan trọng</div>
+    </div>
+    <div style="border:2px solid var(--bd);border-top:none;border-radius:0 0 10px 10px;overflow:hidden">
+      <div style="display:grid;grid-template-columns:1.8fr 2fr 1.6fr;border-bottom:1px solid var(--bd)">
+        <div style="padding:12px 16px;font-size:15px;font-weight:700;border-right:1px solid var(--bd)">Khóa học / Coaching</div>
+        <div style="padding:12px 16px;font-size:15px;font-weight:700;color:#1A7040;border-right:1px solid var(--bd)">Dùng full 14 bước</div>
+        <div style="padding:12px 16px;font-size:14px;color:var(--gray);font-weight:500">Bước 06–07 là then chốt</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1.8fr 2fr 1.6fr;border-bottom:1px solid var(--bd);background:#FAFAF8">
+        <div style="padding:12px 16px;font-size:15px;font-weight:700;border-right:1px solid var(--bd)">B2B / Agency</div>
+        <div style="padding:12px 16px;font-size:15px;font-weight:700;color:#1A7040;border-right:1px solid var(--bd)">Full — nhấn mạnh Bước 03</div>
+        <div style="padding:12px 16px;font-size:14px;color:var(--red);font-weight:700">Không pitch khi thiếu người QĐ</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1.8fr 2fr 1.6fr;border-bottom:1px solid var(--bd)">
+        <div style="padding:12px 16px;font-size:15px;font-weight:700;border-right:1px solid var(--bd)">Inbound nóng</div>
+        <div style="padding:12px 16px;font-size:15px;font-weight:700;color:var(--red);border-right:1px solid var(--bd)">Bắt đầu từ Bước 03</div>
+        <div style="padding:12px 16px;font-size:14px;color:var(--gray);font-weight:500">Lược 01–02, vẫn rapport nhanh</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1.8fr 2fr 1.6fr;background:#FAFAF8">
+        <div style="padding:12px 16px;font-size:15px;font-weight:700;border-right:1px solid var(--bd)">Giá thấp (&lt;3 triệu)</div>
+        <div style="padding:12px 16px;font-size:15px;font-weight:700;color:var(--red);border-right:1px solid var(--bd)">Lược Bước 06–07</div>
+        <div style="padding:12px 16px;font-size:14px;color:var(--gray);font-weight:500">Tập trung Bước 08 + 13</div>
+      </div>
+    </div>
+  </div>
+  <div class="note nw" style="margin-top:12px"><span class="ni">⚡</span><p><span class="hl">Kịch bản là la bàn, không phải dây xích.</span> Nắm framework — nói chuyện như người thật.</p></div>
+</div>
+
+<!-- S05 CHUẨN BỊ MÔI TRƯỜNG -->
+<div class="slide">
+  <div class="acc"></div>
+  <div style="display:flex;align-items:center;gap:11px;margin-bottom:8px">
+    <div class="sbadge">00</div>
+    <div class="eyebrow" style="margin:0">Chuẩn Bị — Môi Trường</div>
+  </div>
+  <div class="T" style="font-size:54px">PHÒNG YÊN TĨNH.<br><em>KHÔNG PHÂN TÂM.</em></div>
+  <div class="bar"></div>
+  <ul class="blist" style="flex:1">
+    <li>Phòng kín, cửa đóng — không tiếng xe, TV, trẻ em</li>
+    <li>Tai nghe tốt — <span class="hl">không dùng loa ngoài</span>, tránh vọng tiếng</li>
+    <li>Tắt tất cả thông báo — điện thoại và máy tính</li>
+    <li>Vở + bút ghi tay — tiếng gõ phím phá vỡ cảm giác lắng nghe</li>
+    <li>Gọi đúng giờ xuống giây — <span class="hl">trễ 1 phút mất điểm ngay từ đầu</span></li>
+  </ul>
+  <div class="ch-row">
+    <div class="ch chv"><div class="chl">📞 Voice Call</div><p>Giọng ấm, nhịp chậm hơn 20%. Im lặng sau câu trả lời mạnh hơn nhiều so với video.</p></div>
+    <div class="ch chvid"><div class="chl">🎥 Video Call</div><p>Ánh sáng phía trước mặt. Phông nền sạch. Nhìn vào camera, không nhìn màn hình.</p></div>
+  </div>
+</div>
+
+<!-- S06 CHUẨN BỊ MINDSET -->
+<div class="slide">
+  <div class="acc"></div>
+  <div style="display:flex;align-items:center;gap:11px;margin-bottom:8px">
+    <div class="sbadge">00</div>
+    <div class="eyebrow" style="margin:0">Chuẩn Bị — Mindset</div>
+  </div>
+  <div class="T" style="font-size:54px">BẠN ĐANG <em>CHỌN</em><br>— KHÔNG ĐI XIN.</div>
+  <div class="bar"></div>
+  <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    <div class="card c-grn" style="display:flex;flex-direction:column;gap:9px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:900;color:#1A7040;letter-spacing:.06em;text-transform:uppercase">✅ Đúng Mindset</div>
+      <ul class="blist" style="font-size:15px">
+        <li>Tôi đang xem có nên giúp người này không</li>
+        <li>Nếu không phù hợp → nói thẳng — đó là uy tín</li>
+        <li>Mỗi call = ca khám bệnh, tôi là bác sĩ</li>
+      </ul>
+    </div>
+    <div class="card c-red" style="display:flex;flex-direction:column;gap:9px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:900;color:var(--red);letter-spacing:.06em;text-transform:uppercase">🚫 Sai Mindset</div>
+      <ul class="blist" style="font-size:15px">
+        <li>Tôi phải chốt được người này</li>
+        <li>Nếu họ từ chối là tôi thất bại</li>
+        <li>Phải nói thật nhiều về sản phẩm</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note nw" style="margin-top:12px"><span class="ni">⚡</span><p><strong>5 phút trước khi gọi:</strong> Đứng dậy, vươn vai, hít thở sâu 3 lần. <span class="hl">Reset trạng thái — đừng mang franticness vào call.</span></p></div>
+</div>
+
+<!-- S07 RAPPORT — CÂU HỎI PHÁ BĂNG -->
+<div class="slide">
+  <div class="acc"></div>
+  <div style="display:flex;align-items:center;gap:11px;margin-bottom:8px">
+    <div class="sbadge">01</div>
+    <div class="eyebrow" style="margin:0">Xây Dựng Quan Hệ</div>
+  </div>
+  <div class="T" style="font-size:50px">NGƯỜI VIỆT MUA NGƯỜI<br>HỌ <em>THÍCH</em> — TRƯỚC TIÊN.</div>
+  <div class="bar"></div>
+  <div class="qbox" style="margin-bottom:14px">
+    <div class="ql">🎤 Mở đầu cuộc gọi</div>
+    <p>"Alo, [Tên] ơi! Em là [Tên] — gọi theo lịch hẹn mình đặt lúc [giờ] nha. Anh/chị đang có tiện không ạ?"</p>
+  </div>
+  <p style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;color:var(--red);margin-bottom:10px">Câu hỏi phá băng — về công việc & cuộc sống:</p>
+  <ul class="blist" style="flex:1">
+    <li>"Anh/chị đang bận với dự án nào hay đang trong giai đoạn xây dựng gì vậy ạ?"</li>
+    <li>"Nhìn vào [thông tin từ form/profile], em thấy anh/chị đang làm [X] — hướng này mình theo bao lâu rồi ạ?"</li>
+    <li>"Gần đây anh/chị có gì đang vui vẻ không — công việc hay cuộc sống?"</li>
+    <li>"Anh/chị hay làm việc buổi sáng hay chiều tối hơn? Em hỏi để lần sau lên lịch cho phù hợp hơn nha."</li>
+  </ul>
+  <div class="note nw" style="margin-top:12px"><span class="ni">🎯</span><p><span class="hl">Không hỏi "anh/chị ở đâu"</span> — generic, ai cũng hỏi. Hỏi về công việc và cuộc sống — khác biệt ngay, khách thấy bạn đã chuẩn bị.</p></div>
+</div>
+
+<!-- S08 THIẾT LẬP KHUNG -->
+<div class="slide">
+  <div class="acc"></div>
+  <div style="display:flex;align-items:center;gap:11px;margin-bottom:8px">
+    <div class="sbadge">02</div>
+    <div class="eyebrow" style="margin:0">Thiết Lập Khung</div>
+  </div>
+  <div class="T" style="font-size:54px">AI THIẾT LẬP KHUNG —<br><em>NGƯỜI ĐÓ KIỂM SOÁT.</em></div>
+  <div class="bar"></div>
+  <div class="qbox" style="margin-bottom:13px">
+    <div class="ql">🎤 Script thiết lập khung</div>
+    <p>"Cuộc gọi hôm nay em sẽ hỏi anh/chị một số câu về tình trạng và mục tiêu, để xem bên em có hỗ trợ được không. Nếu phù hợp mình nói tiếp, nếu không thì em cũng chia sẻ điều có ích. <span class="hl" style="font-style:normal">Anh/chị đồng ý không ạ?</span>"</p>
+  </div>
+  <div class="qbox" style="border-left-color:var(--red);margin-bottom:auto">
+    <div class="ql">🚫 Nếu khách hỏi giá sớm</div>
+    <p>"Dạ, em sẽ nói về chi phí ở cuối buổi khi mình đã xác định được anh/chị có phù hợp chưa ạ. Giờ mình đi vào câu hỏi trước nha?"</p>
+  </div>
+  <div class="note nw" style="margin-top:12px"><span class="ni">⚡</span><p><span class="hl">Im lặng 3 giây sau khi họ trả lời.</span> Khoảng lặng đó thường kéo ra thông tin quan trọng nhất của cả cuộc gọi.</p></div>
+</div>
+
+<!-- S09 DECISION MAKER -->
+<div class="slide">
+  <div class="acc"></div>
+  <div style="display:flex;align-items:center;gap:11px;margin-bottom:8px">
+    <div class="sbadge">03</div>
+    <div class="eyebrow" style="margin:0">Xác Định Người Ra Quyết Định</div>
+  </div>
+  <div class="T" style="font-size:50px">KHÔNG BAO GIỜ PITCH KHI<br><em>THIẾU NGƯỜI QUYẾT ĐỊNH.</em></div>
+  <div class="bar"></div>
+  <div class="g2" style="flex:1;gap:16px">
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div class="qbox">
+        <div class="ql">🎤 B2C — Gia đình</div>
+        <p>"Anh/chị thường tự quyết định những khoản đầu tư lớn hay hay thường trao đổi với gia đình trước ạ?"</p>
+      </div>
+      <div class="qbox qbox-green">
+        <div class="ql">✅ Nếu có vợ/chồng</div>
+        <p>"Vợ/chồng mình có ủng hộ việc đầu tư vào [lĩnh vực] không ạ? Hay mình cần align trước?"</p>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div class="qbox">
+        <div class="ql">🎤 B2B — Doanh nghiệp</div>
+        <p>"Với quyết định như thế này, thường anh/chị tự quyết hay cần có ai trong team cùng confirm không ạ?"</p>
+      </div>
+      <div class="qbox qbox-green">
+        <div class="ql">✅ Mời người quyết định vào</div>
+        <p>"Vậy mình có thể mời anh/chị [kia] vào call này luôn, hoặc lên lịch lại khi cả hai có mặt không ạ?"</p>
+      </div>
+    </div>
+  </div>
+  <div class="note nd" style="margin-top:12px"><span class="ni">🚫</span><p>B2B: Pitch rồi <span class="hl">"để tôi báo cáo sếp"</span> = deal chết 90%. Luôn xác nhận đủ người ra quyết định trước khi pitch.</p></div>
+</div>
+
+<!-- S10 LÝ DO ĐẶT CALL -->
+<div class="slide">
+  <div class="acc"></div>
+  <div style="display:flex;align-items:center;gap:11px;margin-bottom:8px">
+    <div class="sbadge">04</div>
+    <div class="eyebrow" style="margin:0">Lý Do Thực Sự Đặt Call</div>
+  </div>
+  <div class="T" style="font-size:54px">ĐÀO CHO ĐẾN KHI<br>TÌM ĐƯỢC <em>LÝ DO THẬT.</em></div>
+  <div class="bar"></div>
+  <div class="qbox" style="margin-bottom:16px">
+    <div class="ql">🎤 Câu hỏi gốc</div>
+    <p>"Điều gì khiến anh/chị quyết định dành thời gian cho cuộc gọi này — chứ không phải để sau?"</p>
+  </div>
+  <p style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;color:var(--gray);margin-bottom:10px">Nếu câu trả lời còn mơ hồ — tiếp tục đào:</p>
+  <ul class="blist" style="flex:1">
+    <li>"Ý anh/chị là... em có thể hiểu thêm được không ạ?"</li>
+    <li>"Điều gì khiến vấn đề này quan trọng ở thời điểm <em>này</em> — chứ không phải tháng trước?"</li>
+    <li>"Trước đây anh/chị đã thử giải quyết bằng cách nào rồi?"</li>
+    <li>"Nếu tiếp tục như hiện tại thêm 6 tháng — anh/chị nghĩ tình trạng sẽ thế nào?"</li>
+  </ul>
+  <div class="note nw" style="margin-top:12px"><span class="ni">🔑</span><p><span class="hl">Im lặng ít nhất 3 giây sau câu trả lời.</span> Khoảng lặng đó thường kéo ra câu trả lời thật sự — thứ bạn sẽ dùng khi close.</p></div>
+</div>
+
+<!-- S11 ĐÁNH GIÁ -->
+<div class="slide">
+  <div class="acc"></div>
+  <div style="display:flex;align-items:center;gap:11px;margin-bottom:8px">
+    <div class="sbadge">05</div>
+    <div class="eyebrow" style="margin:0">Đánh Giá Tình Trạng Hiện Tại</div>
+  </div>
+  <div class="T" style="font-size:54px">PHẢI LẤY ĐƯỢC<br><em>CON SỐ CỤ THỂ.</em></div>
+  <div class="bar"></div>
+  <div class="g3" style="flex:1;gap:13px">
+    <div class="card" style="display:flex;flex-direction:column;gap:7px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;color:var(--red);text-transform:uppercase;letter-spacing:.05em">Kinh doanh / Agency</div>
+      <ul class="blist" style="font-size:14px">
+        <li>Doanh thu hiện tại/tháng?</li>
+        <li>Bán gì? Kênh khách hàng?</li>
+        <li>Chi phí ra 1 khách mới?</li>
+        <li>Tỷ lệ chốt hiện tại?</li>
+      </ul>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;gap:7px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;color:var(--red);text-transform:uppercase;letter-spacing:.05em">B2B / Phần mềm</div>
+      <ul class="blist" style="font-size:14px">
+        <li>Đang dùng giải pháp nào?</li>
+        <li>Ai quyết định ngân sách?</li>
+        <li>Team bao nhiêu người?</li>
+        <li>Quy trình hiện tại thế nào?</li>
+      </ul>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;gap:7px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;color:var(--red);text-transform:uppercase;letter-spacing:.05em">Sức khỏe / Làm đẹp</div>
+      <ul class="blist" style="font-size:14px">
+        <li>Tình trạng hiện tại?</li>
+        <li>Đã thử cách gì chưa?</li>
+        <li>Chế độ ăn/ngủ/tập?</li>
+        <li>Tình trạng này bao lâu?</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note nd" style="margin-top:12px"><span class="ni">🚫</span><p>Không có con số = không có baseline = <span class="hl">không có câu chuyện để close.</span> Phải lấy được số trước khi tiếp tục.</p></div>
+</div>
+
+<!-- S12 LÝ DO SÂU XA -->
+<div class="slide">
+  <div class="acc"></div>
+  <div style="display:flex;align-items:center;gap:11px;margin-bottom:8px">
+    <div class="sbadge">06</div>
+    <div class="eyebrow" style="margin:0">Lý Do Sâu Xa</div>
+  </div>
+  <div class="T" style="font-size:48px">MỌI QUYẾT ĐỊNH MUA XUẤT PHÁT<br>TỪ <em>TÌNH YÊU</em> HOẶC <em>ĐỊA VỊ.</em></div>
+  <div class="bar"></div>
+  <div class="qbox" style="margin-bottom:14px">
+    <div class="ql">🎤 Mở khóa cảm xúc</div>
+    <p>"Nếu mình giải quyết xong vấn đề này — cuộc sống anh/chị thay đổi thế nào? Cụ thể là với gia đình, công việc, hay chính bản thân mình?"</p>
+  </div>
+  <div class="g2" style="gap:13px">
+    <div class="card c-red" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:7px;padding:18px">
+      <div style="font-size:38px">❤️</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;text-transform:uppercase;color:var(--red)">Tình Yêu</div>
+      <p style="font-size:14px;color:var(--gray);line-height:1.55;font-weight:500">Thời gian cho con · cho bố mẹ<br>Sống lâu hơn · Bảo vệ gia đình</p>
+    </div>
+    <div class="card c-yel" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:7px;padding:18px">
+      <div style="font-size:38px">👑</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;text-transform:uppercase;color:var(--red-dk)">Địa Vị</div>
+      <p style="font-size:14px;color:var(--gray);line-height:1.55;font-weight:500">Được tôn trọng · Giàu hơn<br>Xuất hiện đẹp hơn · Chứng minh</p>
+    </div>
+  </div>
+  <div class="note nw" style="margin-top:12px"><span class="ni">🎯</span><p>Ghi chính xác từ ngữ họ dùng. Mirror lại khi close: <span class="hl">"Anh/chị nói muốn có thêm thời gian cho con — đây là cách mình đến đó."</span></p></div>
+</div>
+
+<!-- S13 MỤC TIÊU -->
+<div class="slide">
+  <div class="acc"></div>
+  <div style="display:flex;align-items:center;gap:11px;margin-bottom:8px">
+    <div class="sbadge">07</div>
+    <div class="eyebrow" style="margin:0">Mục Tiêu Cụ Thể</div>
+  </div>
+  <div class="T" style="font-size:54px">HỎI <em>"XỨNG ĐÁNG"</em><br>— KHÔNG HỎI <em>"MUỐN GÌ."</em></div>
+  <div class="bar"></div>
+  <div class="qbox" style="margin-bottom:13px">
+    <div class="ql">🎤 Câu hỏi đặt kỳ vọng thực tế</div>
+    <p>"Giả sử sau 3–6 tháng làm việc cùng nhau, anh/chị nhìn lại và nghĩ <em>'khoản đầu tư này xứng đáng'</em> — thì điều gì cần đã xảy ra ạ?"</p>
+  </div>
+  <div class="note nt" style="margin-bottom:13px"><span class="ni">💡</span><p><strong>Tại sao không hỏi "muốn gì"?</strong> Khách đặt kỳ vọng phi thực tế → bạn không vượt được dù kết quả rất tốt. Câu này buộc họ nêu mức tối thiểu → bạn vượt dễ → <span class="hl">họ ca ngợi bạn.</span></p></div>
+  <div class="qbox qbox-green" style="margin-top:auto">
+    <div class="ql">🎤 Nếu kỳ vọng quá cao</div>
+    <p>"Em hiểu anh/chị muốn [kỳ vọng đó]. Nhưng nếu chỉ đạt được [kỳ vọng thực tế] — anh/chị có vui hơn không ạ?"</p>
+  </div>
+</div>
+
+<!-- S14 SỰ THỪA NHẬN -->
+<div class="slide">
+  <div class="acc"></div>
+  <div style="display:flex;align-items:center;gap:11px;margin-bottom:8px">
+    <div class="sbadge">08</div>
+    <div class="eyebrow" style="margin:0">Sự Thừa Nhận</div>
+  </div>
+  <div class="T" style="font-size:52px">ĐỂ KHÁCH <em>TỰ THUYẾT PHỤC</em><br>BẢN THÂN HỌ CẦN GIÚP ĐỠ.</div>
+  <div class="bar"></div>
+  <div class="qbox" style="margin-bottom:13px">
+    <div class="ql">🎤 Câu hỏi thừa nhận</div>
+    <p>"Điều gì khiến cho đến giờ mình vẫn chưa đạt được điều đó, dù đã biết mình muốn gì?"</p>
+  </div>
+  <div class="qbox" style="margin-bottom:14px">
+    <div class="ql">🎤 Thang điểm đo độ nóng</div>
+    <p>"Theo thang 1–10, với 10 là cực kỳ cấp thiết — việc giải quyết vấn đề này đang ở mức nào với anh/chị?"</p>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;gap:8px;justify-content:flex-end">
+    <div class="srow" style="background:#F0FFF4;border-color:#A8D8B8"><div class="snum" style="color:#1A7040">8–10</div><p>Tiếp tục — khách nóng. Hỏi thêm tại sao quan trọng.</p></div>
+    <div class="srow" style="background:#FFFDE6;border-color:var(--yellow-dk)"><div class="snum" style="color:#856404">5–7</div><p>Hỏi: <em>"Điều gì ngăn điểm này lên 9–10?"</em> Khai thác hậu quả nếu không giải quyết.</p></div>
+    <div class="srow" style="background:#FFF0EC;border-color:#F5B8A8"><div class="snum" style="color:var(--red)">1–4</div><p>Kết thúc lịch sự. Chưa phải thời điểm phù hợp — đừng lãng phí thời gian cả hai.</p></div>
+  </div>
+</div>
+
+<!-- S15 CAM KẾT -->
+<div class="slide">
+  <div class="acc"></div>
+  <div style="display:flex;align-items:center;gap:11px;margin-bottom:8px">
+    <div class="sbadge">09</div>
+    <div class="eyebrow" style="margin:0">Cam Kết</div>
+  </div>
+  <div class="T" style="font-size:54px">CHỐT <em>THỜI ĐIỂM</em><br>TRƯỚC KHI CHỐT GIÁ.</div>
+  <div class="bar"></div>
+  <div class="qbox" style="margin-bottom:12px">
+    <div class="ql">🎤 Câu hỏi cam kết</div>
+    <p>"Anh/chị muốn giải quyết điều này từ khi nào ạ?"</p>
+  </div>
+  <div class="qbox qbox-green" style="margin-bottom:12px">
+    <div class="ql">🎤 Confirm ngay</div>
+    <p>"Nếu hôm nay mình tìm được giải pháp phù hợp, anh/chị sẵn sàng bắt đầu ngay không ạ?"</p>
+  </div>
+  <p style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;color:var(--gray);margin-bottom:9px">Nếu họ chần chừ:</p>
+  <ul class="blist" style="flex:1">
+    <li>"Điều gì khiến anh/chị muốn đợi đến tháng sau?"</li>
+    <li>"Anh/chị đã muốn giải quyết điều này [X tháng] rồi — nếu chờ thêm, tình trạng sẽ thay đổi thế nào?"</li>
+  </ul>
+  <div class="note ni-b" style="margin-top:12px"><span class="ni">🧠</span><p>Câu hỏi "tại sao đợi" không phải công kích — giúp khách nhận ra <span class="hl">họ đang tự cản chính mình.</span> Giọng điệu phải tò mò, không phán xét.</p></div>
+</div>
+
+<!-- S16 TRAO GIÁ TRỊ -->
+<div class="slide">
+  <div class="acc"></div>
+  <div style="display:flex;align-items:center;gap:11px;margin-bottom:8px">
+    <div class="sbadge">10</div>
+    <div class="eyebrow" style="margin:0">Trao Giá Trị</div>
+  </div>
+  <div class="T" style="font-size:52px"><em>CHỨNG MINH</em> BẠN HIỂU HỌ<br>— TRƯỚC KHI BÁN BẤT CỨ THỨ GÌ.</div>
+  <div class="bar"></div>
+  <div class="qbox" style="margin-bottom:16px">
+    <div class="ql">🎤 Chuyển vào phần giá trị</div>
+    <p>"Em thấy [điểm A] và [điểm B] đang là nút thắt chính. Em muốn show anh/chị cách tiếp cận — anh/chị có 5 phút không ạ?"</p>
+  </div>
+  <div class="g3" style="flex:1;gap:13px">
+    <div class="card" style="display:flex;flex-direction:column;gap:7px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;color:var(--red);text-transform:uppercase">Marketing / Agency</div>
+      <p style="font-size:14px;color:var(--gray);line-height:1.55;font-weight:500">Chỉ ra 1–2 điểm yếu cụ thể trong funnel / quảng cáo hiện tại của họ</p>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;gap:7px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;color:var(--red);text-transform:uppercase">Khóa học / Coaching</div>
+      <p style="font-size:14px;color:var(--gray);line-height:1.55;font-weight:500">Vạch 3 bước cụ thể — đủ thấy bạn hiểu, chưa đủ để tự làm</p>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;gap:7px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;color:var(--red);text-transform:uppercase">B2B / Phần mềm</div>
+      <p style="font-size:14px;color:var(--gray);line-height:1.55;font-weight:500">Demo 1 tính năng giải quyết đúng pain point họ vừa nêu</p>
+    </div>
+  </div>
+  <div class="note nw" style="margin-top:12px"><span class="ni">⚠️</span><p>Mục tiêu: họ nghĩ <span class="hl">"Người này thực sự hiểu mình"</span> — không phải giải quyết xong rồi không cần mua nữa.</p></div>
+</div>
+
+<!-- S17 KÊ ĐƠN -->
+<div class="slide">
+  <div class="acc"></div>
+  <div style="display:flex;align-items:center;gap:11px;margin-bottom:8px">
+    <div class="sbadge">11</div>
+    <div class="eyebrow" style="margin:0">Kê Đơn</div>
+  </div>
+  <div class="T" style="font-size:54px">LẦN <em>ĐẦU TIÊN</em> TRONG CALL<br>BẠN NÓI VỀ SẢN PHẨM.</div>
+  <div class="bar"></div>
+  <div class="card c-red" style="margin-bottom:13px;padding:14px 20px">
+    <p style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;color:var(--red);text-transform:uppercase">Không sớm hơn Bước 11. Không bao giờ.</p>
+  </div>
+  <div class="qbox" style="margin-bottom:13px">
+    <div class="ql">🎤 Mở đầu kê đơn</div>
+    <p>"Dựa trên [lặp lại pain point bằng chính từ họ dùng] — em <strong>tin rằng</strong> [tên giải pháp] là thứ phù hợp nhất với anh/chị lúc này. Anh/chị muốn em chia sẻ cụ thể không?"</p>
+  </div>
+  <ul class="blist" style="flex:1">
+    <li>Nhắc lại vấn đề bằng <span class="hl">chính từ ngữ của họ</span></li>
+    <li>Giới thiệu giải pháp + cơ chế — tối đa 2 phút</li>
+    <li>Kết nối từng tính năng → lợi ích cụ thể cho họ</li>
+    <li>Kết bằng case study tương đồng với profile của họ</li>
+  </ul>
+  <div class="note nt" style="margin-top:12px"><span class="ni">✅</span><p>Thay <em>"Em nghĩ..."</em> → <span class="hl">"Em tin rằng..."</span> · Không bao giờ dùng: <em>có lẽ, hình như, có thể là</em> khi trình bày giải pháp.</p></div>
+</div>
+
+<!-- S18 TEST CLOSE -->
+<div class="slide">
+  <div class="acc"></div>
+  <div style="display:flex;align-items:center;gap:11px;margin-bottom:8px">
+    <div class="sbadge">12</div>
+    <div class="eyebrow" style="margin:0">Test Close</div>
+  </div>
+  <div class="T" style="font-size:54px">ĐỂ KHÁCH <em>TỰ BÁN</em><br>CHO CHÍNH MÌNH.</div>
+  <div class="bar"></div>
+  <div class="qbox" style="margin-bottom:12px">
+    <div class="ql">🎤 Câu hỏi mạnh nhất</div>
+    <p>"Dựa trên những gì mình vừa trao đổi — anh/chị cảm thấy điều gì khiến mình phù hợp với chương trình này?"</p>
+  </div>
+  <div class="qbox" style="margin-bottom:12px">
+    <div class="ql">🎤 Nhắc lại khoảng cách</div>
+    <p>"Hiện tại anh/chị đang ở [tình trạng] và muốn [mục tiêu]. Điều gì đang cản mình đi từ điểm này sang điểm kia?"</p>
+  </div>
+  <div class="qbox" style="border-left-color:var(--red);margin-bottom:auto">
+    <div class="ql" style="color:var(--red)">🎤 Flush out objections ẩn — trước khi nêu giá</div>
+    <p>"Ngoài việc xem chi phí có phù hợp không — còn lý do nào khiến mình chưa muốn bắt đầu không ạ?"</p>
+  </div>
+  <div class="note nd" style="margin-top:12px"><span class="ni">🔑</span><p>Xử lý hết tất cả objections ẩn <span class="hl">trước khi nêu giá.</span> Đừng để objection nổ ra sau khi đã nêu số.</p></div>
+</div>
+
+<!-- S19 3 GÓI -->
+<div class="slide">
+  <div class="acc"></div>
+  <div style="display:flex;align-items:center;gap:11px;margin-bottom:8px">
+    <div class="sbadge">13</div>
+    <div class="eyebrow" style="margin:0">Trình Bày Gói — Option Close</div>
+  </div>
+  <div class="T" style="font-size:50px">3 GÓI — 1 MỒI NHỬ,<br><em>1 CHỦ LỰC</em>, 1 DỰ PHÒNG.</div>
+  <div class="bar"></div>
+  <div class="g3" style="flex:1;gap:14px">
+    <div class="pkg phi">
+      <span class="pchip">Gói Cao Cấp</span>
+      <div class="ptitle">Giá Neo — Mồi Nhử</div>
+      <div class="psub">~10% người mua chọn</div>
+      <ul class="plist">
+        <li>Tất cả bells & whistles đầy đủ</li>
+        <li>Mục đích: làm gói giữa trông hời</li>
+        <li>Công cụ định giá so sánh</li>
+      </ul>
+    </div>
+    <div class="pkg pmd">
+      <span class="pchip">⭐ Gói Chính</span>
+      <div class="ptitle">Dẫn Đầu — Pitch Trước</div>
+      <div class="psub">30–40% người mua chọn</div>
+      <ul class="plist">
+        <li>Offer bạn muốn bán nhất</li>
+        <li>Luôn trình bày gói này trước</li>
+        <li>Tăng LTV khách hàng tốt nhất</li>
+      </ul>
+    </div>
+    <div class="pkg plo">
+      <span class="pchip">Gói Cơ Bản</span>
+      <div class="ptitle">Dự Phòng</div>
+      <div class="psub">Gói bạn tính đến nhiều nhất</div>
+      <ul class="plist">
+        <li>Không bán mặc định — pitch gói chính trước</li>
+        <li>Dùng khi khách từ chối gói chính</li>
+        <li>Vẫn phải có giá trị thực sự</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- S20 FAST ACTION + IM LẶNG -->
+<div class="slide">
+  <div class="acc"></div>
+  <div style="display:flex;align-items:center;gap:11px;margin-bottom:8px">
+    <div class="sbadge">13</div>
+    <div class="eyebrow" style="margin:0">Fast Action Bonus & Sau Khi Nêu Giá</div>
+  </div>
+  <div class="T" style="font-size:54px">SAU KHI NÊU GIÁ —<br><em>IM LẶNG TUYỆT ĐỐI.</em></div>
+  <div class="bar"></div>
+  <div class="qbox" style="margin-bottom:20px">
+    <div class="ql">🎤 Fast Action Bonus — Tạo urgency hợp lý</div>
+    <p>"Thường có phí setup 3 triệu riêng. Nhưng em thấy anh/chị là người quyết đoán — những người như vậy thường là khách hàng làm việc hiệu quả nhất. Nên nếu mình chốt trong hôm nay, em sẽ waive phần phí setup đó cho anh/chị."</p>
+  </div>
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px">
+    <div style="font-size:80px">🤐</div>
+    <div class="T" style="font-size:36px;text-align:center">AI NÓI TRƯỚC — <em>NGƯỜI ĐÓ THUA.</em></div>
+    <p style="font-size:17px;color:var(--gray);text-align:center;font-weight:500;line-height:1.6">Khoảng lặng 10–15 giây sau khi nêu giá là hoàn toàn bình thường.<br><span class="hl">Đừng bẻ gãy nó.</span></p>
+  </div>
+</div>
+
+<!-- S21 CHỐT LOCK DOWN -->
+<div class="slide">
+  <div class="acc"></div>
+  <div style="display:flex;align-items:center;gap:11px;margin-bottom:8px">
+    <div class="sbadge">14</div>
+    <div class="eyebrow" style="margin:0">Chốt & Lock Down</div>
+  </div>
+  <div class="T" style="font-size:54px">CHỐT XONG RỒI —<br><em>KHOÁ CHẶT LẠI.</em></div>
+  <div class="bar"></div>
+  <div class="qbox" style="margin-bottom:11px">
+    <div class="ql">🎤 Sau khi khách đồng ý</div>
+    <p>"Tuyệt vời! Trước khi mình xử lý thanh toán — anh/chị có thực sự muốn bắt đầu không, hay đang nói cho em vui lòng? <span class="hl" style="font-style:normal">Em nói thẳng được nhận câu thẳng.</span>"</p>
+  </div>
+  <div class="qbox" style="margin-bottom:11px">
+    <div class="ql">🎤 Lock Down</div>
+    <p>"Còn lý do nào khiến anh/chị sẽ đổi ý không ạ? Em hỏi thẳng vì em không muốn mất thời gian của anh/chị."</p>
+  </div>
+  <div class="qbox qbox-green">
+    <div class="ql">🎤 Next Steps — Onboard ngay</div>
+    <p>"Để mình bắt đầu, anh/chị [chuyển khoản / điền form]. Em sẽ gửi thông tin trong 15 phút. Anh/chị hoàn thành trước [giờ cụ thể] nhé?"</p>
+  </div>
+  <div class="note nt" style="margin-top:auto"><span class="ni">✅</span><p>Giải thích ngay: ai liên hệ, khi nào bắt đầu, cần chuẩn bị gì. <span class="hl">Đừng để khách ngồi tự hỏi "giờ tôi làm gì?"</span></p></div>
+</div>
+
+<!-- S22 OBJ 1+2 -->
+<div class="slide">
+  <div class="acc"></div>
+  <div class="eyebrow">Phụ Lục — Xử Lý Từ Chối</div>
+  <div class="T" style="font-size:50px">OBJECTION <em>01 & 02</em></div>
+  <div class="bar"></div>
+  <div style="flex:1;display:flex;flex-direction:column;gap:16px">
+    <div class="obj">
+      <div class="oq">❶ "Để tôi nghĩ thêm"</div>
+      <div class="oa">"Em hiểu. Anh/chị đang cân nhắc điều gì cụ thể nhất? Thường khi muốn nghĩ thêm là vì chưa rõ về [giá trị / kết quả / rủi ro] — anh/chị đang băn khoăn phần nào?"</div>
+    </div>
+    <div class="obj">
+      <div class="oq">❷ "Giá hơi cao"</div>
+      <div class="oa">"Em hiểu. Câu hỏi không phải là giá có cao không — mà là nếu đạt được [mục tiêu họ đã nêu], khoản đầu tư này có xứng đáng không? Anh/chị nghĩ sao?"</div>
+    </div>
+  </div>
+  <div class="note ni-b" style="margin-top:14px"><span class="ni">🧠</span><p>Nguyên tắc xử lý objection: <span class="hl">Thừa nhận → Tò mò hỏi thêm → Redirect.</span> Không bao giờ phản bác trực tiếp — luôn đứng về phía họ rồi dẫn dắt.</p></div>
+</div>
+
+<!-- S23 OBJ 3+4+5 -->
+<div class="slide">
+  <div class="acc"></div>
+  <div class="eyebrow">Phụ Lục — Xử Lý Từ Chối</div>
+  <div class="T" style="font-size:50px">OBJECTION <em>03, 04 & 05</em></div>
+  <div class="bar"></div>
+  <div style="flex:1;display:flex;flex-direction:column;gap:13px">
+    <div class="obj">
+      <div class="oq">❸ "Để hỏi vợ / chồng / đối tác"</div>
+      <div class="oa">"Hoàn toàn hợp lý. Vợ/chồng anh/chị thường có góc nhìn nào về việc đầu tư vào [lĩnh vực]? Mình có thể mời vào call này luôn, hoặc lên lịch lại khi cả hai có mặt không ạ?"</div>
+    </div>
+    <div class="obj">
+      <div class="oq">❹ "Tôi chưa có tiền"</div>
+      <div class="oa">"Nếu vấn đề là thời điểm thanh toán, mình có thể linh hoạt. Nhưng quan trọng hơn: nếu vẫn chưa giải quyết vấn đề này trong 3 tháng tới, điều đó sẽ cost anh/chị bao nhiêu?"</div>
+    </div>
+    <div class="obj">
+      <div class="oq">❺ "Đã thử nhiều rồi, không hiệu quả"</div>
+      <div class="oa">"Anh/chị đã thử những gì rồi ạ?" [Nghe xong] "Em hiểu tại sao những cách đó không hiệu quả — vì chúng thiếu [X]. Bên em khác ở điểm [cụ thể]. Anh/chị muốn em giải thích không?"</div>
+    </div>
+  </div>
+</div>
+
+<!-- S24 CLOSING -->
+<div class="slide" style="justify-content:center;align-items:center;background:var(--white)">
+  <div style="position:absolute;top:0;left:0;right:0;height:6px;background:var(--red)"></div>
+  <div style="text-align:center;max-width:640px">
+    <div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--red);opacity:.5;margin-bottom:22px">Sell Like Crazy™</div>
+    <div class="T" style="font-size:64px;text-align:center">KỊCH BẢN<br>LÀ LA BÀN.<br><em>CON NGƯỜI<br>LÀ VŨ KHÍ.</em></div>
+    <div style="display:flex;justify-content:center;gap:36px;margin-top:36px;align-items:center">
+      <div style="text-align:center">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:56px;font-weight:900;color:var(--red);line-height:1">14</div>
+        <div style="font-size:11px;color:var(--gray-lt);margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Bước</div>
+      </div>
+      <div style="width:2px;height:48px;background:var(--bd)"></div>
+      <div style="text-align:center">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:56px;font-weight:900;color:var(--red);line-height:1">5</div>
+        <div style="font-size:11px;color:var(--gray-lt);margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Objections</div>
+      </div>
+      <div style="width:2px;height:48px;background:var(--bd)"></div>
+      <div style="text-align:center">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:56px;font-weight:900;color:var(--red);line-height:1">2×</div>
+        <div style="font-size:11px;color:var(--gray-lt);margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Channels</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<nav class="nav">
+  <button id="bP" onclick="go(-1)">&#8592;</button>
+  <div class="dots" id="dots"></div>
+  <span class="ctr" id="ctr">1 / 24</span>
+  <button id="bN" onclick="go(1)">&#8594;</button>
+</nav>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const N = slides.length;
+let cur = 0;
+const dotsEl = document.getElementById('dots');
+for(let i=0;i<N;i++){const d=document.createElement('span');d.onclick=()=>goTo(i);dotsEl.appendChild(d)}
+function goTo(n){
+  if(n<0||n>=N||n===cur)return;
+  slides[cur].classList.remove('active');slides[cur].classList.add('out');
+  const p=cur;cur=n;
+  setTimeout(()=>slides[p].classList.remove('out'),300);
+  slides[cur].classList.add('active');upd();
+}
+function go(d){goTo(cur+d)}
+function upd(){
+  document.getElementById('ctr').textContent=`${cur+1} / ${N}`;
+  document.getElementById('bP').disabled=cur===0;
+  document.getElementById('bN').disabled=cur===N-1;
+  document.getElementById('prog').style.width=`${((cur+1)/N)*100}%`;
+  dotsEl.querySelectorAll('span').forEach((d,i)=>d.classList.toggle('on',i===cur));
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='ArrowDown')go(1);
+  if(e.key==='ArrowLeft'||e.key==='ArrowUp')go(-1);
+});
+let tx=0;
+document.addEventListener('touchstart',e=>{tx=e.touches[0].clientX});
+document.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>50)go(dx<0?1:-1)});
+upd();
+</script>
+</body>
+</html>
