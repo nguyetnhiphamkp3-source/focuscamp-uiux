@@ -322,9 +322,14 @@ export async function updateChannelConfig(input: {
   );
   const actor = await prisma.user.findUnique({
     where: { id: input.userId },
-    select: { name: true },
+    select: { name: true, handle: true, email: true },
   });
-  const addedByNow = { id: input.userId, name: actor?.name ?? "" };
+  // Fall back to handle/email so the "added by" label always shows something,
+  // even for users who never set a display name.
+  const addedByNow = {
+    id: input.userId,
+    name: actor?.name || actor?.handle || actor?.email || "",
+  };
 
   const optionalIds = (ids?: string[]) =>
     ids && ids.length ? { challengeIds: ids } : {};
