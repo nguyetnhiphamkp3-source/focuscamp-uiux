@@ -1,6 +1,7 @@
 import type { CheckinHistoryEntry } from "@/lib/checkin-history";
 import { AgentReviewCard } from "@/components/community/agent-review-card";
 import { SubmissionImageCarousel } from "@/components/community/submission-image-carousel";
+import { LinkifiedText } from "@/components/shared/linkified-text";
 
 /**
  * Collapsible proof trail of rejected attempts for a check-in.
@@ -110,7 +111,7 @@ export function SubmissionHistory({ entries }: { entries: CheckinHistoryEntry[] 
                   lineHeight: 1.5,
                 }}
               >
-                {e.content}
+                <LinkifiedText>{e.content}</LinkifiedText>
               </div>
             )}
 

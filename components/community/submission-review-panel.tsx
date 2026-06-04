@@ -13,6 +13,7 @@ import type { AIReviewData } from "@/lib/ai-review-data";
 import { AgentReviewCard } from "@/components/community/agent-review-card";
 import { SubmissionImageCarousel } from "@/components/community/submission-image-carousel";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { LinkifiedText } from "@/components/shared/linkified-text";
 
 export type SubmissionRow = {
   id: string;
@@ -567,7 +568,7 @@ function SubmissionCard({
               marginBottom: 6,
             }}
           >
-            {submission.content}
+            <LinkifiedText>{submission.content}</LinkifiedText>
           </div>
 
           {submission.linkUrl && (

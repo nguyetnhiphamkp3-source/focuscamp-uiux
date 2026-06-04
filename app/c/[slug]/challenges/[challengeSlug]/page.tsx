@@ -36,6 +36,7 @@ import { SopContent } from "@/components/community/sop-content";
 import { AgentReviewCard } from "@/components/community/agent-review-card";
 import { SubmissionHistory } from "@/components/community/submission-history";
 import { SubmissionImageCarousel } from "@/components/community/submission-image-carousel";
+import { LinkifiedText } from "@/components/shared/linkified-text";
 import { parseCheckinHistory } from "@/lib/checkin-history";
 import type { AIReviewData } from "@/lib/ai-review-data";
 import { listAIProviders } from "@/lib/services/ai-provider";
@@ -1130,7 +1131,7 @@ export default async function ChallengeDetailPage({
                                   📌 Nhật ký của bạn · {timeStr}{isResubmitted ? " (nộp lại)" : ""}
                                 </div>
                                 <div style={{ fontSize: "var(--text-sm)", color: "var(--text-normal)", lineHeight: "var(--lh-relaxed)", whiteSpace: "pre-wrap", fontStyle: "italic" }}>
-                                  &ldquo;{checkinData.content}&rdquo;
+                                  &ldquo;<LinkifiedText>{checkinData.content}</LinkifiedText>&rdquo;
                                 </div>
                                 {checkinData.linkUrl && (
                                   <a href={checkinData.linkUrl} target="_blank" rel="noreferrer" className="ch-submission-link" style={{ marginTop: "var(--space-2)", display: "inline-block" }}>
@@ -1175,7 +1176,7 @@ export default async function ChallengeDetailPage({
                                     <strong>Lý do:</strong> {checkinData.reviewNote}
                                   </div>
                                 )}
-                                <div className="ch-submission-content">{checkinData.content}</div>
+                                <div className="ch-submission-content"><LinkifiedText>{checkinData.content}</LinkifiedText></div>
                                 <SubmissionImageCarousel images={evidenceImages} alt="Bài nộp" />
                                 {/* Proof trail of earlier rejected attempts (shown here when no recap above) */}
                                 {!(isDone && !isRejected) && <SubmissionHistory entries={history} />}
