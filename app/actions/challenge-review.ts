@@ -1,12 +1,13 @@
 "use server";
 
 import { auth } from "@/auth";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import {
   reviewSubmission,
   flagSubmissionForReview,
   approveAllPending,
   getSubmissionReviewCounts,
+  challengeLeaderboardTag,
   approveChallengeMember,
   rejectChallengeMember,
   assertChallengeAdmin,
@@ -70,6 +71,18 @@ function bumpChallenge(communitySlug: string, challengeSlug: string) {
   revalidatePath(`/c/${communitySlug}/leaderboard`);
 }
 
+/**
+ * Narrowed invalidation for a single review decision: refresh the detail route
+ * (for other viewers' next navigation) + the scoped cached leaderboard tag only.
+ * Deliberately drops bumpChallenge's challenges-list and leaderboard-route path
+ * revalidations — one approve doesn't change the list, and the leaderboard tag
+ * covers the cached board wherever it's rendered.
+ */
+function bumpReview(communitySlug: string, challengeSlug: string, challengeId: string) {
+  revalidatePath(`/c/${communitySlug}/challenges/${challengeSlug}`);
+  revalidateTag(challengeLeaderboardTag(challengeId), "max");
+}
+
 export async function reviewSubmissionAction(input: {
   checkinId: string;
   action: "APPROVE" | "REJECT";
@@ -102,7 +115,7 @@ export async function reviewSubmissionAction(input: {
     // speed). after() bumps the cache AFTER the RSC payload is sent, so the awaited
     // action no longer ships a full force-dynamic page re-render that blocks the UI.
     const { after } = await import("next/server");
-    after(() => bumpChallenge(input.communitySlug, input.challengeSlug));
+    after(() => bumpReview(input.communitySlug, input.challengeSlug, updated.challengeId));
     return {
       ok: true,
       data: {
@@ -140,7 +153,7 @@ export async function flagSubmissionAction(input: {
     });
     const counts = await getSubmissionReviewCounts(updated.challengeId);
     const { after } = await import("next/server");
-    after(() => bumpChallenge(input.communitySlug, input.challengeSlug));
+    after(() => bumpReview(input.communitySlug, input.challengeSlug, updated.challengeId));
     return {
       ok: true,
       data: {
@@ -180,7 +193,7 @@ export async function approveAllPendingAction(input: {
     });
     const counts = await getSubmissionReviewCounts(parsed.data.challengeId);
     const { after } = await import("next/server");
-    after(() => bumpChallenge(input.communitySlug, input.challengeSlug));
+    after(() => bumpReview(input.communitySlug, input.challengeSlug, parsed.data.challengeId));
     return {
       ok: true,
       count: res.count,

@@ -3,14 +3,35 @@
  * and re-exports from sub-modules for backwards compatibility.
  */
 import { prisma } from "@/lib/prisma";
+import { unstable_cache } from "next/cache";
 import { computeStreak } from "./challenge-progress";
+
+/** Cache tag for a challenge's leaderboard — invalidated on review decisions. */
+export function challengeLeaderboardTag(challengeId: string): string {
+  return `challenge:${challengeId}:leaderboard`;
+}
 
 /**
  * Get per-challenge leaderboard: top members by streak (tiebreak by checkin count).
+ * Cached per (challengeId, limit) and shared across all concurrent viewers — the
+ * heavy member + approved-checkin scan runs once per cache window instead of once
+ * per render. Invalidated on review decisions via
+ * revalidateTag(challengeLeaderboardTag(id), "max"); 60s acts as a safety net.
  */
 export async function getChallengeLeaderboard(
   challengeId: string,
   limit: number = 10
+) {
+  return unstable_cache(
+    () => computeChallengeLeaderboard(challengeId, limit),
+    ["challenge-leaderboard", challengeId, String(limit)],
+    { tags: [challengeLeaderboardTag(challengeId)], revalidate: 60 },
+  )();
+}
+
+async function computeChallengeLeaderboard(
+  challengeId: string,
+  limit: number
 ) {
   const members = await prisma.challengeMember.findMany({
     where: { challengeId, status: { in: ["ACTIVE", "COMPLETED"] } },
