@@ -520,14 +520,100 @@ export async function approveAllPending(input: {
       reviewedAt: new Date(),
     },
   });
-  for (const u of pendingUsers) {
-    await recomputeMemberCompletion(u.userId, input.challengeId);
-  }
+  // Set-based completion recompute for the affected submitters — replaces the
+  // per-user serial recomputeMemberCompletion loop (O(distinct users) round-trips).
+  // Bulk approve only ADDS approvals, so members can only complete, never revoke.
+  await recomputeCompletionForUsers(
+    input.challengeId,
+    pendingUsers.map((u) => u.userId),
+  );
   logger.info(
     { challengeId: input.challengeId, count: res.count, by: input.userId },
     "[challenge] bulk approve pending"
   );
   return { count: res.count };
+}
+
+/**
+ * Bulk equivalent of recomputeMemberCompletion's COMPLETE branch for many users at
+ * once: marks members COMPLETED when their distinct APPROVED-day count reaches
+ * requiredDays. Used by approveAllPending to avoid an O(users) serial query storm.
+ * Only completes (never revokes) — its single caller only adds approvals.
+ */
+async function recomputeCompletionForUsers(challengeId: string, userIds: string[]) {
+  if (userIds.length === 0) return;
+  const challengeRow = await prisma.challenge.findUnique({
+    where: { id: challengeId },
+    select: { requiredDays: true },
+  });
+  if (!challengeRow) return;
+
+  // Distinct APPROVED days per affected user in one grouped query (matches the
+  // distinct-dayNumber semantics of recomputeMemberCompletion).
+  const dayCounts = await prisma.$queryRaw<{ userId: string; days: number }[]>`
+    SELECT "userId", COUNT(DISTINCT "dayNumber")::int AS days
+    FROM "Checkin"
+    WHERE "challengeId" = ${challengeId}
+      AND "status" = 'APPROVED'
+      AND "dayNumber" IS NOT NULL
+      AND "userId" IN (${Prisma.join(userIds)})
+    GROUP BY "userId"
+  `;
+  const completeUserIds = dayCounts
+    .filter((d) => Number(d.days) >= challengeRow.requiredDays)
+    .map((d) => d.userId);
+  if (completeUserIds.length === 0) return;
+
+  // Freshly-completing members (completedAt still null) — captured before the
+  // update so only genuinely-new completions trigger the external dispatch.
+  const freshly = await prisma.challengeMember.findMany({
+    where: { challengeId, userId: { in: completeUserIds }, completedAt: null },
+    select: { userId: true },
+  });
+  await prisma.challengeMember.updateMany({
+    where: { challengeId, userId: { in: completeUserIds }, completedAt: null },
+    data: { status: "COMPLETED", completedAt: new Date() },
+  });
+  if (freshly.length > 0) {
+    void dispatchBulkCompletions(challengeId, freshly.map((m) => m.userId));
+  }
+}
+
+/**
+ * Fire the "challenge_completed" external dispatch for a batch of freshly-completed
+ * members (mirrors recomputeMemberCompletion's per-user dispatch). Non-blocking.
+ */
+async function dispatchBulkCompletions(challengeId: string, userIds: string[]) {
+  try {
+    const [challenge, users] = await Promise.all([
+      prisma.challenge.findUnique({
+        where: { id: challengeId },
+        select: { title: true, slug: true, communityId: true, community: { select: { slug: true } } },
+      }),
+      prisma.user.findMany({
+        where: { id: { in: userIds } },
+        select: { id: true, name: true, email: true },
+      }),
+    ]);
+    if (!challenge) return;
+    const { dispatchToChannels } = await import("./external-notify");
+    for (const user of users) {
+      const displayName = user.name || user.email?.split("@")[0] || "Thành viên";
+      await dispatchToChannels(
+        challenge.communityId,
+        "challenge_completed",
+        {
+          title: `🏆 ${displayName} hoàn thành challenge!`,
+          description: challenge.title,
+          url: `/c/${challenge.community.slug}/challenges/${challenge.slug}`,
+        },
+        { name: displayName, challenge: challenge.title },
+        { challengeId },
+      );
+    }
+  } catch {
+    /* non-blocking */
+  }
 }
 
 /* ===== Checkin voting ===== */

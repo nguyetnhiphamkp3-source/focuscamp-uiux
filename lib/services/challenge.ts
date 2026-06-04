@@ -33,18 +33,20 @@ async function computeChallengeLeaderboard(
   challengeId: string,
   limit: number
 ) {
+  // Member rows without the user join — only userId/status/completedAt are needed
+  // to rank. Display fields (name/image) are hydrated for the top `limit` only.
   const members = await prisma.challengeMember.findMany({
     where: { challengeId, status: { in: ["ACTIVE", "COMPLETED"] } },
-    include: {
-      user: { select: { id: true, name: true, email: true, image: true } },
-    },
+    select: { userId: true, status: true, completedAt: true },
     take: 200,
   });
   const memberUserIds = members.map((m) => m.userId);
-  const checkins = await prisma.checkin.findMany({
-    where: { challengeId, userId: { in: memberUserIds }, status: "APPROVED" },
-    select: { userId: true, dayNumber: true, createdAt: true },
-  });
+  const checkins = memberUserIds.length
+    ? await prisma.checkin.findMany({
+        where: { challengeId, userId: { in: memberUserIds }, status: "APPROVED" },
+        select: { userId: true, dayNumber: true },
+      })
+    : [];
   const byUser = new Map<string, number[]>();
   for (const c of checkins) {
     if (c.dayNumber == null) continue;
@@ -52,28 +54,50 @@ async function computeChallengeLeaderboard(
     byUser.get(c.userId)!.push(c.dayNumber);
   }
 
-  const rows = members.map((m) => {
-    const days = byUser.get(m.userId) ?? [];
+  // Rank first (no display data needed), then hydrate only the visible top rows —
+  // previously a full user join for all 200 members ran on every (cache-miss) render.
+  const ranked = members
+    .map((m) => {
+      const days = byUser.get(m.userId) ?? [];
+      return {
+        userId: m.userId,
+        status: m.status,
+        completedAt: m.completedAt,
+        currentDay: days.length ? Math.max(...days) : 0,
+        streak: computeStreak(days),
+        totalCheckins: days.length,
+      };
+    })
+    .sort((a, b) => {
+      if (a.status === "COMPLETED" && b.status !== "COMPLETED") return -1;
+      if (b.status === "COMPLETED" && a.status !== "COMPLETED") return 1;
+      if (b.streak !== a.streak) return b.streak - a.streak;
+      return b.totalCheckins - a.totalCheckins;
+    })
+    .slice(0, limit);
+
+  const topUserIds = ranked.map((r) => r.userId);
+  const users = topUserIds.length
+    ? await prisma.user.findMany({
+        where: { id: { in: topUserIds } },
+        select: { id: true, name: true, email: true, image: true },
+      })
+    : [];
+  const userById = new Map(users.map((u) => [u.id, u]));
+
+  return ranked.map((r) => {
+    const u = userById.get(r.userId);
     return {
-      userId: m.userId,
-      name: m.user.name || m.user.email || "Member",
-      image: m.user.image,
-      status: m.status,
-      completedAt: m.completedAt,
-      currentDay: days.length ? Math.max(...days) : 0,
-      streak: computeStreak(days),
-      totalCheckins: days.length,
+      userId: r.userId,
+      name: u?.name || u?.email || "Member",
+      image: u?.image ?? null,
+      status: r.status,
+      completedAt: r.completedAt,
+      currentDay: r.currentDay,
+      streak: r.streak,
+      totalCheckins: r.totalCheckins,
     };
   });
-
-  rows.sort((a, b) => {
-    if (a.status === "COMPLETED" && b.status !== "COMPLETED") return -1;
-    if (b.status === "COMPLETED" && a.status !== "COMPLETED") return 1;
-    if (b.streak !== a.streak) return b.streak - a.streak;
-    return b.totalCheckins - a.totalCheckins;
-  });
-
-  return rows.slice(0, limit);
 }
 
 // Re-export everything from sub-modules for backwards compatibility
