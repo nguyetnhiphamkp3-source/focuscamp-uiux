@@ -430,9 +430,11 @@ export function CheckinForm({
             ❌{" "}
             {error === "already_checked_in_today"
               ? "Bạn đã check-in hôm nay rồi."
-              : error === "not_a_member"
-                ? "Bạn chưa tham gia challenge này."
-                : `Lỗi: ${error}`}
+              : error === "already_submitted_task"
+                ? "Bạn đã nộp task này rồi, đang chờ duyệt."
+                : error === "not_a_member"
+                  ? "Bạn chưa tham gia challenge này."
+                  : `Lỗi: ${error}`}
           </div>
         )}
       </div>

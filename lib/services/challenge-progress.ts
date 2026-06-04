@@ -288,25 +288,30 @@ export async function submitCheckin(params: {
     throw new Error("Vui lòng nhập text hoặc upload ảnh bằng chứng");
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const existing = await prisma.checkin.findFirst({
-    where: {
-      userId,
-      challengeId,
-      createdAt: { gte: today },
-    },
-  });
-  if (existing) {
-    return { ok: false, reason: "already_checked_in_today" };
-  }
-
   const challenge = await prisma.challenge.findUnique({
     where: { id: challengeId },
-    select: { autoStartAfterHours: true },
+    select: { autoStartAfterHours: true, taskUnlockMode: true },
   });
   if (!challenge) throw new Error("challenge_not_found");
+
+  // Duplicate-submission guard. SEQUENTIAL unlocks the next task on approval
+  // (not on a calendar clock), so it gates per-task: block only when this task
+  // (dayNumber) already has a non-rejected check-in — letting an approved member
+  // start the next task the same day. Other modes keep the one-per-calendar-day
+  // pace cap.
+  if (challenge.taskUnlockMode === "SEQUENTIAL" && dayNumber != null) {
+    const dup = await prisma.checkin.findFirst({
+      where: { userId, challengeId, dayNumber, status: { not: "REJECTED" } },
+    });
+    if (dup) return { ok: false, reason: "already_submitted_task" };
+  } else {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const existing = await prisma.checkin.findFirst({
+      where: { userId, challengeId, createdAt: { gte: today } },
+    });
+    if (existing) return { ok: false, reason: "already_checked_in_today" };
+  }
 
   const effStart = effectivePersonalStartsAt(member, challenge);
   if (!effStart) throw new Error("challenge_not_started");
