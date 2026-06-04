@@ -473,6 +473,8 @@ export const UpdateChannelConfigSchema = z.object({
         id: z.string().max(64).optional(),
         // Empty/omitted = keep previously saved token for this channel.
         botToken: z.string().trim().max(200).optional(),
+        // Optional display label so owners can tell bots apart.
+        label: z.string().trim().max(60).optional(),
         chatId: z.string().trim().min(1).max(80),
         topicId: z.string().trim().regex(/^\d*$/, "Topic ID phải là số").max(20).optional(),
         eventTypes: z.array(ExternalEventTypeSchema),

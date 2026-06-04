@@ -17,6 +17,8 @@ export interface TelegramChannelState {
   hasToken: boolean;
   /** Newly entered token — empty means keep the saved one. */
   botToken: string;
+  /** Optional display name so owners can tell bots/groups apart. */
+  label: string;
   chatId: string;
   topicId: string;
   eventTypes: Set<string>;
@@ -114,7 +116,7 @@ export function TelegramChannelCard({
           {collapsed ? "▸" : "▾"}
         </button>
         <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--text-muted)" }}>
-          Bot #{index + 1}
+          {channel.label.trim() || `Bot #${index + 1}`}
         </span>
         {channel.hasToken && <span style={configuredBadge}>✓ đã cấu hình</span>}
         {channel.addedByName && (
@@ -140,6 +142,19 @@ export function TelegramChannelCard({
         </button>
       ) : (
         <>
+          <label style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 10 }}>
+            <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+              Tên bot (tuỳ chọn — để dễ phân biệt nhóm)
+            </span>
+            <input
+              type="text"
+              value={channel.label}
+              onChange={(e) => onChange({ ...channel, label: e.target.value })}
+              disabled={disabled}
+              placeholder={`VD: Group ThaiSon (mặc định: Bot #${index + 1})`}
+              style={inputStyle}
+            />
+          </label>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>

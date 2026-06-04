@@ -451,6 +451,7 @@ export default async function SettingsPage({
                         telegram: cfg.telegram.map((t) => ({
                           id: t.id,
                           hasToken: !!t.botToken,
+                          label: t.label ?? "",
                           chatId: t.chatId,
                           topicId: t.topicId ?? "",
                           eventTypes: t.eventTypes,

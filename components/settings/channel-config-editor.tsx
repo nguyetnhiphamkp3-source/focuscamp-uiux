@@ -47,6 +47,7 @@ export function ChannelConfigEditor({
     telegram: Array<{
       id: string;
       hasToken: boolean;
+      label: string;
       chatId: string;
       topicId: string;
       eventTypes: string[];
@@ -72,6 +73,7 @@ export function ChannelConfigEditor({
       _key: newKey(),
       id: t.id,
       hasToken: t.hasToken,
+      label: t.label,
       botToken: "",
       chatId: t.chatId,
       topicId: t.topicId,
@@ -133,6 +135,7 @@ export function ChannelConfigEditor({
           .map((t) => ({
             id: t.id,
             botToken: t.botToken.trim() || undefined,
+            label: t.label.trim() || undefined,
             chatId: t.chatId.trim(),
             topicId: t.topicId.trim() || undefined,
             eventTypes: Array.from(t.eventTypes),
@@ -247,6 +250,7 @@ export function ChannelConfigEditor({
               {
                 _key: newKey(),
                 hasToken: false,
+                label: "",
                 botToken: "",
                 chatId: "",
                 topicId: "",

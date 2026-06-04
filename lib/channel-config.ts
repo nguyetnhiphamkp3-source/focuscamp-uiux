@@ -34,6 +34,8 @@ export interface TelegramChannel {
   id: string;
   /** Encrypted at rest (see lib/integrations/encryption). */
   botToken: string;
+  /** Optional human label so owners can tell bots/groups apart. */
+  label?: string;
   chatId: string;
   /** Telegram forum topic thread (message_thread_id). */
   topicId?: string;
@@ -93,6 +95,7 @@ export function normalizeChannelConfig(raw: unknown): NormalizedChannelConfig {
     .map((t) => ({
       id: typeof t.id === "string" && t.id ? t.id : randomUUID(),
       botToken: typeof t.botToken === "string" ? t.botToken : "",
+      label: typeof t.label === "string" && t.label ? t.label : undefined,
       chatId: t.chatId as string,
       topicId: typeof t.topicId === "string" && t.topicId ? t.topicId : undefined,
       eventTypes: Array.isArray(t.eventTypes) ? (t.eventTypes as string[]) : [],

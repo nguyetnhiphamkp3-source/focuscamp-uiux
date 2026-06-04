@@ -234,6 +234,7 @@ export async function updateChannelConfigAction(input: {
   telegram: Array<{
     id?: string;
     botToken?: string;
+    label?: string;
     chatId: string;
     topicId?: string;
     eventTypes: string[];

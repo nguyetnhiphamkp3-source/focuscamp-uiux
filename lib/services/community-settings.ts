@@ -292,6 +292,7 @@ export async function updateChannelConfig(input: {
   telegram: Array<{
     id?: string;
     botToken?: string;
+    label?: string;
     chatId: string;
     topicId?: string;
     eventTypes: string[];
@@ -367,6 +368,7 @@ export async function updateChannelConfig(input: {
       botToken: stored,
       chatId,
       eventTypes: t.eventTypes,
+      ...(t.label?.trim() ? { label: t.label.trim() } : {}),
       ...(t.topicId?.trim() ? { topicId: t.topicId.trim() } : {}),
       ...optionalIds(t.challengeIds),
       addedBy,
