@@ -298,6 +298,31 @@ export async function listChallengeSubmissions(input: {
 }
 
 /**
+ * Lightweight review-panel counts (the two PENDING-derived numbers that
+ * listChallengeSubmissions computes) WITHOUT the paginated row fetch. Review
+ * mutations call this to return authoritative counts to the client so it can
+ * reconcile its optimistic state instead of refetching the whole detail page.
+ * The where-clauses are kept identical to listChallengeSubmissions so the
+ * numbers never diverge.
+ */
+export async function getSubmissionReviewCounts(challengeId: string): Promise<{
+  pendingCount: number;
+  aiFlaggedCount: number;
+}> {
+  const [pendingCount, aiFlaggedCount] = await Promise.all([
+    prisma.checkin.count({ where: { challengeId, status: "PENDING" } }),
+    prisma.checkin.count({
+      where: {
+        challengeId,
+        status: "PENDING",
+        NOT: [{ aiReviewData: { equals: Prisma.DbNull } }],
+      },
+    }),
+  ]);
+  return { pendingCount, aiFlaggedCount };
+}
+
+/**
  * Recompute a member's COMPLETED status from their APPROVED distinct-day count.
  * Marks COMPLETED when approved days >= requiredDays; revokes back to ACTIVE if a
  * rejection dropped them below. Idempotent — safe to call after any review decision.

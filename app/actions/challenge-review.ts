@@ -6,6 +6,7 @@ import {
   reviewSubmission,
   flagSubmissionForReview,
   approveAllPending,
+  getSubmissionReviewCounts,
   approveChallengeMember,
   rejectChallengeMember,
   assertChallengeAdmin,
@@ -41,6 +42,28 @@ import { resolveChallengeVideoUrl } from "@/lib/challenge-video";
 
 type ActionResult = { ok: true } | { ok: false; reason: string };
 
+/**
+ * Authoritative post-mutation state a review action returns so the client panel
+ * reconciles its optimistic update WITHOUT refetching the whole challenge detail
+ * page (the force-dynamic re-render that caused the ~5s click latency).
+ */
+type ReviewPayload = {
+  checkinId: string;
+  status: "APPROVED" | "REJECTED" | "PENDING";
+  reviewNote: string | null;
+  reviewedAt: string | null;
+  reviewedByName: string | null;
+  pendingCount: number;
+  aiFlaggedCount: number;
+};
+type ReviewActionResult =
+  | { ok: true; data: ReviewPayload }
+  | { ok: false; reason: string };
+
+type ApproveAllResult =
+  | { ok: true; count: number; pendingCount: number; aiFlaggedCount: number }
+  | { ok: false; reason: string };
+
 function bumpChallenge(communitySlug: string, challengeSlug: string) {
   revalidatePath(`/c/${communitySlug}/challenges/${challengeSlug}`);
   revalidatePath(`/c/${communitySlug}/challenges`);
@@ -53,7 +76,7 @@ export async function reviewSubmissionAction(input: {
   note?: string;
   communitySlug: string;
   challengeSlug: string;
-}): Promise<ActionResult> {
+}): Promise<ReviewActionResult> {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
 
@@ -67,14 +90,31 @@ export async function reviewSubmissionAction(input: {
   }
 
   try {
-    await reviewSubmission({
+    const updated = await reviewSubmission({
       userId: s.user.id,
       checkinId: parsed.data.checkinId,
       action: parsed.data.action,
       note: parsed.data.note || undefined,
     });
-    bumpChallenge(input.communitySlug, input.challengeSlug);
-    return { ok: true };
+    // Authoritative counts so the client reconciles without a full-page refetch.
+    const counts = await getSubmissionReviewCounts(updated.challengeId);
+    // Defer revalidation past the response so the click is render-free (~mutation
+    // speed). after() bumps the cache AFTER the RSC payload is sent, so the awaited
+    // action no longer ships a full force-dynamic page re-render that blocks the UI.
+    const { after } = await import("next/server");
+    after(() => bumpChallenge(input.communitySlug, input.challengeSlug));
+    return {
+      ok: true,
+      data: {
+        checkinId: updated.id,
+        status: updated.status as ReviewPayload["status"],
+        reviewNote: updated.reviewNote,
+        reviewedAt: updated.reviewedAt?.toISOString() ?? null,
+        reviewedByName: s.user.name ?? null,
+        pendingCount: counts.pendingCount,
+        aiFlaggedCount: counts.aiFlaggedCount,
+      },
+    };
   } catch (err) {
     logError(err, { userId: s.user.id, checkinId: input.checkinId });
     if (err instanceof Error) return { ok: false, reason: err.message };
@@ -86,7 +126,7 @@ export async function flagSubmissionAction(input: {
   checkinId: string;
   communitySlug: string;
   challengeSlug: string;
-}): Promise<ActionResult> {
+}): Promise<ReviewActionResult> {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
 
@@ -94,12 +134,25 @@ export async function flagSubmissionAction(input: {
   if (!parsed.success) return { ok: false, reason: "invalid" };
 
   try {
-    await flagSubmissionForReview({
+    const updated = await flagSubmissionForReview({
       userId: s.user.id,
       checkinId: parsed.data.checkinId,
     });
-    bumpChallenge(input.communitySlug, input.challengeSlug);
-    return { ok: true };
+    const counts = await getSubmissionReviewCounts(updated.challengeId);
+    const { after } = await import("next/server");
+    after(() => bumpChallenge(input.communitySlug, input.challengeSlug));
+    return {
+      ok: true,
+      data: {
+        checkinId: updated.id,
+        status: updated.status as ReviewPayload["status"],
+        reviewNote: updated.reviewNote,
+        reviewedAt: updated.reviewedAt?.toISOString() ?? null,
+        reviewedByName: null,
+        pendingCount: counts.pendingCount,
+        aiFlaggedCount: counts.aiFlaggedCount,
+      },
+    };
   } catch (err) {
     logError(err, { userId: s.user.id, checkinId: input.checkinId });
     if (err instanceof Error) return { ok: false, reason: err.message };
@@ -111,7 +164,7 @@ export async function approveAllPendingAction(input: {
   challengeId: string;
   communitySlug: string;
   challengeSlug: string;
-}): Promise<ActionResult & { count?: number }> {
+}): Promise<ApproveAllResult> {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
 
@@ -125,8 +178,15 @@ export async function approveAllPendingAction(input: {
       userId: s.user.id,
       challengeId: parsed.data.challengeId,
     });
-    bumpChallenge(input.communitySlug, input.challengeSlug);
-    return { ok: true, count: res.count };
+    const counts = await getSubmissionReviewCounts(parsed.data.challengeId);
+    const { after } = await import("next/server");
+    after(() => bumpChallenge(input.communitySlug, input.challengeSlug));
+    return {
+      ok: true,
+      count: res.count,
+      pendingCount: counts.pendingCount,
+      aiFlaggedCount: counts.aiFlaggedCount,
+    };
   } catch (err) {
     logError(err, { userId: s.user.id, challengeId: input.challengeId });
     if (err instanceof Error) return { ok: false, reason: err.message };

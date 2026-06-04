@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useCallback } from "react";
+import { useState, useEffect, useTransition, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -35,10 +35,10 @@ export function SubmissionReviewPanel({
   challengeId,
   communitySlug,
   challengeSlug,
-  submissions,
+  submissions: initialSubmissions,
   total,
-  pendingCount,
-  aiFlaggedCount,
+  pendingCount: initialPendingCount,
+  aiFlaggedCount: initialAiFlaggedCount,
   activeStatus,
   page,
   search,
@@ -63,7 +63,75 @@ export function SubmissionReviewPanel({
   const [showApproveAllConfirm, setShowApproveAllConfirm] = useState(false);
   const [searchInput, setSearchInput] = useState(search);
 
+  // Local view state — seeded from server props, mutated optimistically on a
+  // review click, then reconciled to the action's authoritative returned payload.
+  // This is what makes a click render-free: the panel never refetches the
+  // force-dynamic detail page; server-side revalidation runs in after() on the action.
+  const [submissions, setSubmissions] = useState(initialSubmissions);
+  const [pendingCount, setPendingCount] = useState(initialPendingCount);
+  const [aiFlaggedCount, setAiFlaggedCount] = useState(initialAiFlaggedCount);
+
+  // Re-sync when the server sends a fresh page (tab / pagination / search nav).
+  useEffect(() => {
+    setSubmissions(initialSubmissions);
+    setPendingCount(initialPendingCount);
+    setAiFlaggedCount(initialAiFlaggedCount);
+  }, [initialSubmissions, initialPendingCount, initialAiFlaggedCount]);
+
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  // Does a row with this status still belong in the current tab?
+  const rowMatchesView = useCallback(
+    (status: string): boolean => {
+      switch (activeStatus) {
+        case "PENDING":
+        case "AI_FLAGGED":
+          return status === "PENDING";
+        case "APPROVED":
+          return status === "APPROVED";
+        case "REJECTED":
+          return status === "REJECTED";
+        case "ALL":
+        default:
+          return true;
+      }
+    },
+    [activeStatus],
+  );
+
+  // Apply a status change to local rows: drop the row if it no longer matches the
+  // active tab, otherwise patch it in place. Authoritative counts (when provided)
+  // overwrite the optimistic ones.
+  const applyReview = useCallback(
+    (
+      checkinId: string,
+      newStatus: string,
+      patch: { reviewNote?: string | null; reviewedAt?: Date | null; reviewedByName?: string | null },
+      counts?: { pendingCount: number; aiFlaggedCount: number },
+    ) => {
+      setSubmissions((cur) => {
+        const idx = cur.findIndex((r) => r.id === checkinId);
+        if (idx === -1) return cur;
+        if (!rowMatchesView(newStatus)) return cur.filter((r) => r.id !== checkinId);
+        const next = cur.slice();
+        next[idx] = {
+          ...next[idx],
+          status: newStatus,
+          ...(patch.reviewNote !== undefined ? { reviewNote: patch.reviewNote } : {}),
+          ...(patch.reviewedAt !== undefined ? { reviewedAt: patch.reviewedAt } : {}),
+          ...(patch.reviewedByName
+            ? { reviewedBy: { id: next[idx].reviewedBy?.id ?? "", name: patch.reviewedByName } }
+            : {}),
+        };
+        return next;
+      });
+      if (counts) {
+        setPendingCount(counts.pendingCount);
+        setAiFlaggedCount(counts.aiFlaggedCount);
+      }
+    },
+    [rowMatchesView],
+  );
 
   const buildUrl = useCallback(
     (overrides: Record<string, string | null>) => {
@@ -94,6 +162,13 @@ export function SubmissionReviewPanel({
     note?: string
   ) {
     setErr(null);
+    const snapshot = { rows: submissions, pending: pendingCount, ai: aiFlaggedCount };
+    const wasPending =
+      submissions.find((r) => r.id === checkinId)?.status === "PENDING";
+    const optimisticStatus = action === "APPROVE" ? "APPROVED" : "REJECTED";
+    // Optimistic: flip the card / drop it from a pending view; nudge the count.
+    applyReview(checkinId, optimisticStatus, { reviewNote: note ?? null, reviewedAt: new Date() });
+    if (wasPending) setPendingCount((c) => Math.max(0, c - 1));
     start(async () => {
       const res = await reviewSubmissionAction({
         checkinId,
@@ -102,21 +177,57 @@ export function SubmissionReviewPanel({
         communitySlug,
         challengeSlug,
       });
-      if (res.ok) router.refresh();
-      else setErr(res.reason);
+      if (res.ok) {
+        // Reconcile to server truth (status + authoritative counts).
+        applyReview(
+          res.data.checkinId,
+          res.data.status,
+          {
+            reviewNote: res.data.reviewNote,
+            reviewedAt: res.data.reviewedAt ? new Date(res.data.reviewedAt) : null,
+            reviewedByName: res.data.reviewedByName,
+          },
+          { pendingCount: res.data.pendingCount, aiFlaggedCount: res.data.aiFlaggedCount },
+        );
+      } else {
+        // Roll back the optimistic mutation.
+        setSubmissions(snapshot.rows);
+        setPendingCount(snapshot.pending);
+        setAiFlaggedCount(snapshot.ai);
+        setErr(res.reason);
+      }
     });
   }
 
   function flag(checkinId: string) {
     setErr(null);
+    const snapshot = { rows: submissions, pending: pendingCount, ai: aiFlaggedCount };
+    // Optimistic: back to PENDING (drops it from an APPROVED/REJECTED view).
+    applyReview(checkinId, "PENDING", { reviewNote: null, reviewedAt: null });
+    setPendingCount((c) => c + 1);
     start(async () => {
       const res = await flagSubmissionAction({
         checkinId,
         communitySlug,
         challengeSlug,
       });
-      if (res.ok) router.refresh();
-      else setErr(res.reason);
+      if (res.ok) {
+        applyReview(
+          res.data.checkinId,
+          res.data.status,
+          {
+            reviewNote: res.data.reviewNote,
+            reviewedAt: res.data.reviewedAt ? new Date(res.data.reviewedAt) : null,
+            reviewedByName: res.data.reviewedByName,
+          },
+          { pendingCount: res.data.pendingCount, aiFlaggedCount: res.data.aiFlaggedCount },
+        );
+      } else {
+        setSubmissions(snapshot.rows);
+        setPendingCount(snapshot.pending);
+        setAiFlaggedCount(snapshot.ai);
+        setErr(res.reason);
+      }
     });
   }
 
@@ -127,14 +238,34 @@ export function SubmissionReviewPanel({
   function confirmApproveAll() {
     setShowApproveAllConfirm(false);
     setErr(null);
+    const snapshot = { rows: submissions, pending: pendingCount, ai: aiFlaggedCount };
+    const isPendingView = activeStatus === "PENDING" || activeStatus === "AI_FLAGGED";
+    // Optimistic: in a pending view every pending row clears; elsewhere flip them.
+    setSubmissions((cur) =>
+      isPendingView
+        ? cur.filter((r) => r.status !== "PENDING")
+        : cur.map((r) =>
+            r.status === "PENDING" ? { ...r, status: "APPROVED", reviewedAt: new Date() } : r,
+          ),
+    );
+    setPendingCount(0);
+    setAiFlaggedCount(0);
     start(async () => {
       const res = await approveAllPendingAction({
         challengeId,
         communitySlug,
         challengeSlug,
       });
-      if (res.ok) router.refresh();
-      else setErr(res.reason);
+      if (res.ok) {
+        // Rows already reflect the bulk approve; reconcile counts to server truth.
+        setPendingCount(res.pendingCount);
+        setAiFlaggedCount(res.aiFlaggedCount);
+      } else {
+        setSubmissions(snapshot.rows);
+        setPendingCount(snapshot.pending);
+        setAiFlaggedCount(snapshot.ai);
+        setErr(res.reason);
+      }
     });
   }
 
