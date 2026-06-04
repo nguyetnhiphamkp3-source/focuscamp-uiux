@@ -564,18 +564,23 @@ async function recomputeCompletionForUsers(challengeId: string, userIds: string[
     .map((d) => d.userId);
   if (completeUserIds.length === 0) return;
 
-  // Freshly-completing members (completedAt still null) — captured before the
-  // update so only genuinely-new completions trigger the external dispatch.
-  const freshly = await prisma.challengeMember.findMany({
+  // Complete atomically, then derive the freshly-completed set from the rows THIS
+  // update actually flipped (members carrying the exact completedAt we just wrote).
+  // Mirrors recomputeMemberCompletion's `completion.count > 0` gate and avoids a
+  // TOCTOU where a concurrent reviewer's update would otherwise duplicate-dispatch.
+  const completedAt = new Date();
+  const flipped = await prisma.challengeMember.updateMany({
     where: { challengeId, userId: { in: completeUserIds }, completedAt: null },
-    select: { userId: true },
+    data: { status: "COMPLETED", completedAt },
   });
-  await prisma.challengeMember.updateMany({
-    where: { challengeId, userId: { in: completeUserIds }, completedAt: null },
-    data: { status: "COMPLETED", completedAt: new Date() },
-  });
-  if (freshly.length > 0) {
-    void dispatchBulkCompletions(challengeId, freshly.map((m) => m.userId));
+  if (flipped.count > 0) {
+    const freshly = await prisma.challengeMember.findMany({
+      where: { challengeId, userId: { in: completeUserIds }, completedAt },
+      select: { userId: true },
+    });
+    if (freshly.length > 0) {
+      void dispatchBulkCompletions(challengeId, freshly.map((m) => m.userId));
+    }
   }
 }
 

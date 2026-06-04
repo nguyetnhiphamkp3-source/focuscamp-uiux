@@ -36,7 +36,7 @@ export function SubmissionReviewPanel({
   communitySlug,
   challengeSlug,
   submissions: initialSubmissions,
-  total,
+  total: initialTotal,
   pendingCount: initialPendingCount,
   aiFlaggedCount: initialAiFlaggedCount,
   activeStatus,
@@ -70,13 +70,15 @@ export function SubmissionReviewPanel({
   const [submissions, setSubmissions] = useState(initialSubmissions);
   const [pendingCount, setPendingCount] = useState(initialPendingCount);
   const [aiFlaggedCount, setAiFlaggedCount] = useState(initialAiFlaggedCount);
+  const [total, setTotal] = useState(initialTotal);
 
   // Re-sync when the server sends a fresh page (tab / pagination / search nav).
   useEffect(() => {
     setSubmissions(initialSubmissions);
     setPendingCount(initialPendingCount);
     setAiFlaggedCount(initialAiFlaggedCount);
-  }, [initialSubmissions, initialPendingCount, initialAiFlaggedCount]);
+    setTotal(initialTotal);
+  }, [initialSubmissions, initialPendingCount, initialAiFlaggedCount, initialTotal]);
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
@@ -162,13 +164,17 @@ export function SubmissionReviewPanel({
     note?: string
   ) {
     setErr(null);
-    const snapshot = { rows: submissions, pending: pendingCount, ai: aiFlaggedCount };
-    const wasPending =
-      submissions.find((r) => r.id === checkinId)?.status === "PENDING";
+    const snapshot = { rows: submissions, pending: pendingCount, ai: aiFlaggedCount, total };
+    const row = submissions.find((r) => r.id === checkinId);
+    const wasPending = row?.status === "PENDING";
+    const wasAiFlagged = wasPending && row?.aiReviewData != null;
     const optimisticStatus = action === "APPROVE" ? "APPROVED" : "REJECTED";
-    // Optimistic: flip the card / drop it from a pending view; nudge the count.
+    const leavesView = !!row && !rowMatchesView(optimisticStatus);
+    // Optimistic: flip the card / drop it from a pending view; nudge the counts.
     applyReview(checkinId, optimisticStatus, { reviewNote: note ?? null, reviewedAt: new Date() });
     if (wasPending) setPendingCount((c) => Math.max(0, c - 1));
+    if (wasAiFlagged) setAiFlaggedCount((c) => Math.max(0, c - 1));
+    if (leavesView) setTotal((t) => Math.max(0, t - 1));
     start(async () => {
       const res = await reviewSubmissionAction({
         checkinId,
@@ -194,6 +200,7 @@ export function SubmissionReviewPanel({
         setSubmissions(snapshot.rows);
         setPendingCount(snapshot.pending);
         setAiFlaggedCount(snapshot.ai);
+        setTotal(snapshot.total);
         setErr(res.reason);
       }
     });
@@ -201,10 +208,12 @@ export function SubmissionReviewPanel({
 
   function flag(checkinId: string) {
     setErr(null);
-    const snapshot = { rows: submissions, pending: pendingCount, ai: aiFlaggedCount };
+    const snapshot = { rows: submissions, pending: pendingCount, ai: aiFlaggedCount, total };
+    const leavesView = !rowMatchesView("PENDING");
     // Optimistic: back to PENDING (drops it from an APPROVED/REJECTED view).
     applyReview(checkinId, "PENDING", { reviewNote: null, reviewedAt: null });
     setPendingCount((c) => c + 1);
+    if (leavesView) setTotal((t) => Math.max(0, t - 1));
     start(async () => {
       const res = await flagSubmissionAction({
         checkinId,
@@ -226,6 +235,7 @@ export function SubmissionReviewPanel({
         setSubmissions(snapshot.rows);
         setPendingCount(snapshot.pending);
         setAiFlaggedCount(snapshot.ai);
+        setTotal(snapshot.total);
         setErr(res.reason);
       }
     });
@@ -238,9 +248,12 @@ export function SubmissionReviewPanel({
   function confirmApproveAll() {
     setShowApproveAllConfirm(false);
     setErr(null);
-    const snapshot = { rows: submissions, pending: pendingCount, ai: aiFlaggedCount };
+    const snapshot = { rows: submissions, pending: pendingCount, ai: aiFlaggedCount, total };
     const isPendingView = activeStatus === "PENDING" || activeStatus === "AI_FLAGGED";
     // Optimistic: in a pending view every pending row clears; elsewhere flip them.
+    const removedFromView = isPendingView
+      ? submissions.filter((r) => r.status === "PENDING").length
+      : 0;
     setSubmissions((cur) =>
       isPendingView
         ? cur.filter((r) => r.status !== "PENDING")
@@ -250,6 +263,7 @@ export function SubmissionReviewPanel({
     );
     setPendingCount(0);
     setAiFlaggedCount(0);
+    if (removedFromView > 0) setTotal((t) => Math.max(0, t - removedFromView));
     start(async () => {
       const res = await approveAllPendingAction({
         challengeId,
@@ -264,6 +278,7 @@ export function SubmissionReviewPanel({
         setSubmissions(snapshot.rows);
         setPendingCount(snapshot.pending);
         setAiFlaggedCount(snapshot.ai);
+        setTotal(snapshot.total);
         setErr(res.reason);
       }
     });
