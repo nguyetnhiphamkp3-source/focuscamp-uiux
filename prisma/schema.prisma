@@ -591,6 +591,7 @@ model ChallengeMember {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([challengeId, userId])
+  @@index([challengeId, status])
 }
 
 model TaskCompletion {
@@ -658,6 +659,8 @@ model Checkin {
   @@index([challengeId, createdAt])
   @@index([challengeId, userId, createdAt])
   @@index([challengeId, status])
+  @@index([challengeId, status, createdAt])
+  @@index([challengeId, userId, status, dayNumber])
   @@index([taskId])
 }
 
