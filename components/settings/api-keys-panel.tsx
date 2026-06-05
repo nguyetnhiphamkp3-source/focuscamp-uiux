@@ -32,10 +32,13 @@ export function ApiKeysPanel({
   communityId,
   communitySlug,
   initial,
+  webhookUrl,
 }: {
   communityId: string;
   communitySlug: string;
   initial: ApiKeyRow[];
+  /** Absolute URL of the external-member webhook, shown when a key has the provision_members scope. */
+  webhookUrl: string;
 }) {
   const router = useRouter();
   const [showCreate, setShowCreate] = useState(false);
@@ -75,10 +78,16 @@ export function ApiKeysPanel({
     setRevokeTargetId(id);
   }
 
-  function toggleScope(scope: "write" | "admin", checked: boolean) {
+  function toggleScope(scope: "write" | "admin" | "provision_members", checked: boolean) {
     setScopes((current) => {
       const next = new Set(current);
       next.add("read");
+      // provision_members is independent of the read/write/admin hierarchy.
+      if (scope === "provision_members") {
+        if (checked) next.add(scope);
+        else next.delete(scope);
+        return Array.from(next);
+      }
       if (checked) {
         if (scope === "admin") next.add("write");
         next.add(scope);
@@ -258,6 +267,17 @@ export function ApiKeysPanel({
                 <strong>Admin</strong> — xoá post, quản lý member, course, community info
               </span>
             </label>
+            <label style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: "var(--text-sm)" }}>
+              <input
+                type="checkbox"
+                checked={scopes.includes("provision_members")}
+                disabled={pending}
+                onChange={(e) => toggleScope("provision_members", e.target.checked)}
+              />
+              <span>
+                <strong>Provision members</strong> — tạo member + cho vào challenge qua webhook landing page (không thu phí)
+              </span>
+            </label>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button
@@ -396,6 +416,69 @@ export function ApiKeysPanel({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {(scopes.includes("provision_members") ||
+        initial.some((k) => !k.revokedAt && k.scopes.includes("provision_members"))) && (
+        <div
+          style={{
+            marginTop: 16,
+            padding: 14,
+            background: "var(--bg-chat)",
+            border: "1px solid var(--border-subtle)",
+            borderRadius: 10,
+          }}
+        >
+          <div
+            style={{
+              fontSize: "var(--text-sm)",
+              fontWeight: 700,
+              color: "var(--header-primary)",
+              marginBottom: 8,
+            }}
+          >
+            🔗 Webhook tạo member từ landing page
+          </div>
+          <div
+            style={{
+              fontSize: "var(--text-xs)",
+              color: "var(--text-muted)",
+              marginBottom: 8,
+              lineHeight: 1.5,
+            }}
+          >
+            Gọi endpoint này sau khi khách thanh toán ở landing page. Khách được tạo
+            tài khoản (email + tên), join community free, và vào challenge chỉ định —
+            không cần thanh toán lại. Tài khoản mới nhận email magic link đăng nhập.
+            Dùng <code>externalOrderId</code> riêng cho mỗi đơn (gọi lại cùng id sẽ
+            không tạo trùng).
+          </div>
+          <pre
+            style={{
+              margin: 0,
+              padding: "10px 12px",
+              background: "var(--bg-card)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: 6,
+              fontFamily: "monospace",
+              fontSize: "var(--text-xs)",
+              color: "var(--text-normal)",
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-all",
+            }}
+          >
+{`POST ${webhookUrl}
+Authorization: Bearer fc_live_<KEY>
+Content-Type: application/json
+
+{
+  "email": "khach@example.com",
+  "name": "Nguyễn Văn A",
+  "challengeSlug": "ai-agent-challenge-21-day",
+  "externalOrderId": "LDP-12345"
+}`}
+          </pre>
         </div>
       )}
     </section>

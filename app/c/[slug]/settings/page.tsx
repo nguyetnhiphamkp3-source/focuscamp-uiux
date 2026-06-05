@@ -428,6 +428,7 @@ export default async function SettingsPage({
                   communityId={community.id}
                   communitySlug={slug}
                   initial={apiKeys}
+                  webhookUrl={`${process.env.APP_URL || "https://focus.camp"}/api/integrations/member`}
                 />
               )}
 
