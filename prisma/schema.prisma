@@ -1217,6 +1217,24 @@ model ApiKey {
   @@index([keyHash])
 }
 
+// Idempotency + audit log for the external-member provisioning webhook
+// (POST /api/integrations/member). One row per processed external order.
+// Relation-free (stores IDs only) to match AgentToolCall convention.
+model ExternalMemberProvision {
+  id              String   @id @default(cuid())
+  apiKeyId        String
+  communityId     String
+  userId          String
+  challengeId     String?
+  email           String
+  externalOrderId String
+  userCreated     Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  @@unique([apiKeyId, externalOrderId])
+  @@index([communityId, createdAt])
+}
+
 model AgentToolCall {
   id           String   @id @default(cuid())
   apiKeyId     String?

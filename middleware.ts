@@ -4,7 +4,8 @@ import { NextResponse, type NextRequest } from "next/server";
  * Auth + security middleware.
  *
  * Public: /, /login, /discovery, /about, /brand, /api/auth, /api/sepay,
- *         /api/payments, /api/health, /pay, /c/[slug] (viewable by guests —
+ *         /api/integrations (self-authed via ApiKey), /api/payments, /api/health,
+ *         /pay, /c/[slug] (viewable by guests —
  *         Right sidebar lets them join/login).
  * Protected: /c/[slug]/chat, /challenges, /courses, /marketplace, /profile,
  *            /invite, /settings + /c/[slug]/<any non-landing subroute>.
@@ -30,6 +31,7 @@ const PUBLIC_PREFIXES = [
   "/marketplace",
   "/api/auth",
   "/api/sepay",
+  "/api/integrations",
   "/api/health",
   "/api/notifications",
   "/api/mcp",

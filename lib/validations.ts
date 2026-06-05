@@ -513,18 +513,34 @@ export const RenewCommunityPlanSchema = z.object({
   communityId: z.string().cuid(),
 });
 
-export const ApiKeyScopeSchema = z.enum(["read", "write", "admin"]);
+export const ApiKeyScopeSchema = z.enum([
+  "read",
+  "write",
+  "admin",
+  // Allows the key to provision external members (create user + join community +
+  // enroll in a challenge) via POST /api/integrations/member. Kept separate so a
+  // landing-page webhook key carries least privilege (no MCP write/admin).
+  "provision_members",
+]);
 
 export const CreateApiKeySchema = z.object({
   communityId: z.string().cuid(),
   name: z.string().trim().min(1).max(60),
   expiresInDays: z.number().int().positive().max(365 * 5).optional().nullable(),
-  scopes: z.array(ApiKeyScopeSchema).min(1).max(3).default(["read"]),
+  scopes: z.array(ApiKeyScopeSchema).min(1).max(4).default(["read"]),
 });
 
 export const RevokeApiKeySchema = z.object({
   communityId: z.string().cuid(),
   apiKeyId: z.string().cuid(),
+});
+
+// Inbound payload for POST /api/integrations/member (external landing-page webhook).
+export const ExternalMemberWebhookSchema = z.object({
+  email: z.string().trim().email().max(200),
+  name: z.string().trim().min(1).max(120),
+  challengeSlug: z.string().trim().min(1).max(120).optional().nullable(),
+  externalOrderId: z.string().trim().min(1).max(200),
 });
 
 export const UpdateCommunityInfoSchema = z.object({
