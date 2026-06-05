@@ -137,8 +137,8 @@ export function ApiKeysPanel({
         onCancel={() => setRevokeTargetId(null)}
       />
       <SectionHeader
-        title="API Keys (MCP)"
-        subtitle="Key cho phép agent ngoài (vd goclaw.sh) đọc + thực thi action trên cộng đồng này. Plaintext chỉ hiện 1 lần — nhớ copy lưu chỗ an toàn."
+        title="API Keys"
+        subtitle="Key dùng cho 2 việc: (1) agent ngoài qua MCP (vd goclaw.sh) đọc/thực thi action; (2) webhook tạo member từ landing page — tick scope 'Provision members' khi tạo. Plaintext chỉ hiện 1 lần — nhớ copy lưu chỗ an toàn."
       />
 
       {revealedPlain && (
