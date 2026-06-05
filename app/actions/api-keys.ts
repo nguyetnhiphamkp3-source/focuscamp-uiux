@@ -100,6 +100,51 @@ export async function revokeApiKeyAction(input: {
   }
 }
 
+/**
+ * Permanently delete an API key — only allowed once it is already revoked
+ * (two-step: revoke → delete) to prevent accidentally killing a live key.
+ * Provision audit rows (ExternalMemberProvision) are intentionally kept; they
+ * store IDs only (no FK), so the key row can go without cascading.
+ */
+export async function deleteApiKeyAction(input: {
+  communityId: string;
+  communitySlug: string;
+  apiKeyId: string;
+}): Promise<ActionResult> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+
+  const parsed = RevokeApiKeySchema.safeParse({
+    communityId: input.communityId,
+    apiKeyId: input.apiKeyId,
+  });
+  if (!parsed.success) {
+    return { ok: false, reason: parsed.error.issues[0]?.message || "invalid" };
+  }
+
+  try {
+    await assertCommunityPermission(s.user.id, parsed.data.communityId, "manage_api_keys");
+    const deleted = await prisma.apiKey.deleteMany({
+      where: {
+        id: parsed.data.apiKeyId,
+        communityId: parsed.data.communityId,
+        revokedAt: { not: null }, // only revoked keys are deletable
+      },
+    });
+    if (deleted.count === 0) return { ok: false, reason: "not_found_or_active" };
+    logger.info(
+      { apiKeyId: parsed.data.apiKeyId, communityId: parsed.data.communityId, by: s.user.id },
+      "[apikey] deleted"
+    );
+    revalidatePath(`/c/${input.communitySlug}/settings`);
+    return { ok: true };
+  } catch (err) {
+    logError(err, { userId: s.user.id });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
 export async function listApiKeys(communityId: string) {
   const s = await auth();
   if (!s?.user?.id) throw new Error("unauthorized");

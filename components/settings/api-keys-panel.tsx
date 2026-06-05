@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   createApiKeyAction,
   revokeApiKeyAction,
+  deleteApiKeyAction,
 } from "@/app/actions/api-keys";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import {
@@ -50,6 +51,7 @@ export function ApiKeysPanel({
   const [revealedPlain, setRevealedPlain] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [revokeTargetId, setRevokeTargetId] = useState<string | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
   function generate() {
     setErr(null);
@@ -114,6 +116,21 @@ export function ApiKeysPanel({
     });
   }
 
+  function confirmDelete() {
+    if (!deleteTargetId) return;
+    const id = deleteTargetId;
+    setDeleteTargetId(null);
+    start(async () => {
+      const res = await deleteApiKeyAction({
+        communityId,
+        communitySlug,
+        apiKeyId: id,
+      });
+      if (res.ok) router.refresh();
+      else setErr(res.reason);
+    });
+  }
+
   function copy() {
     if (!revealedPlain) return;
     navigator.clipboard.writeText(revealedPlain).then(() => {
@@ -135,6 +152,15 @@ export function ApiKeysPanel({
         danger
         onConfirm={confirmRevoke}
         onCancel={() => setRevokeTargetId(null)}
+      />
+      <ConfirmModal
+        open={deleteTargetId !== null}
+        title="Xóa API Key"
+        message="Xóa hẳn key đã revoke này khỏi danh sách? Không thể undo. Lịch sử provision (nếu có) vẫn được giữ."
+        confirmLabel="Xóa"
+        danger
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTargetId(null)}
       />
       <SectionHeader
         title="API Keys"
@@ -403,7 +429,7 @@ export function ApiKeysPanel({
                     )}
                   </div>
                 </div>
-                {!revoked && (
+                {!revoked ? (
                   <button
                     type="button"
                     onClick={() => revoke(k.id)}
@@ -411,6 +437,15 @@ export function ApiKeysPanel({
                     style={btnDanger}
                   >
                     Revoke
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setDeleteTargetId(k.id)}
+                    disabled={pending}
+                    style={btnDanger}
+                  >
+                    Xóa
                   </button>
                 )}
               </div>
