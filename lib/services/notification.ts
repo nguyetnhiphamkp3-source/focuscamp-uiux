@@ -114,6 +114,7 @@ export async function createNotification(input: {
       type: input.type,
       title: input.title,
       body: input.body,
+      link: input.link ?? null,
       createdAt: notif.createdAt,
     }).catch(() => {});
     return notif;

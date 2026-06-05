@@ -36,10 +36,19 @@ export function NotifBadge({ initial }: { initial: number }) {
       if (stopped) return;
       try {
         eventSource = new EventSource("/api/notifications/stream");
-        eventSource.addEventListener("notification", () => {
+        eventSource.addEventListener("notification", (e) => {
           // Increment optimistically, then refresh for accurate count
           setCount((c) => c + 1);
           refreshCount();
+          // Re-broadcast on the window so feature components (e.g. the challenge
+          // live-refresh) can react off this single shared connection instead of
+          // opening their own SSE stream.
+          try {
+            const detail = JSON.parse((e as MessageEvent).data);
+            window.dispatchEvent(new CustomEvent("fc:notification", { detail }));
+          } catch {
+            /* ignore malformed payloads */
+          }
         });
         eventSource.onerror = () => {
           // SSE failed — close and fall back to polling

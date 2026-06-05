@@ -10,6 +10,7 @@ import type { SubmissionRow } from "@/components/community/submission-review-pan
 import { effectivePersonalStartsAt, challengeDayAnchor, challengeCurrentDay, hasCalendarDeadline, sequentialCurrentDay } from "@/lib/services/challenge-progress";
 import { ChallengeSettingsPanel } from "@/components/community/challenge-settings-panel";
 import { ChallengeEditButton } from "@/components/community/challenge-edit-button";
+import { ChallengeLiveRefresh } from "@/components/community/challenge-live-refresh";
 import { ResubmitForm } from "@/components/community/resubmit-form";
 import { TaskEditorButton } from "@/components/community/task-editor";
 import { TaskGiftStrip } from "@/components/community/task-gift-strip";
@@ -468,6 +469,7 @@ export default async function ChallengeDetailPage({
 
   return (
     <>
+      {session?.user?.id && <ChallengeLiveRefresh challengeSlug={challengeSlug} />}
       <header className="view-header">
         <span className="view-title" title={challenge.title}>{challenge.title}</span>
         {permissions.canManageChallenges && <ChallengeEditButton />}

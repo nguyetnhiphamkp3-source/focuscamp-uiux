@@ -49,6 +49,11 @@ export async function publish(channel: string, data: unknown): Promise<void> {
   emitter.emit(channel, payload);
 }
 
+// Ref-count Redis subscriptions per channel: subscribe on the first listener,
+// unsubscribe on the last. Without this, channels (e.g. notification:<userId>)
+// accumulate forever on the shared subscriber connection — a slow memory leak.
+const channelRefs = new Map<string, number>();
+
 /**
  * Subscribe to a channel. Returns an unsubscribe function.
  */
@@ -57,11 +62,21 @@ export function subscribe(
   handler: (data: string) => void,
 ): () => void {
   if (subscriber) {
-    subscriber.subscribe(channel).catch(() => {});
+    const n = channelRefs.get(channel) ?? 0;
+    if (n === 0) subscriber.subscribe(channel).catch(() => {});
+    channelRefs.set(channel, n + 1);
   }
   emitter.on(channel, handler);
   return () => {
     emitter.off(channel, handler);
-    // Don't unsubscribe from Redis — other connections might still need it
+    if (subscriber) {
+      const n = (channelRefs.get(channel) ?? 1) - 1;
+      if (n <= 0) {
+        channelRefs.delete(channel);
+        subscriber.unsubscribe(channel).catch(() => {});
+      } else {
+        channelRefs.set(channel, n);
+      }
+    }
   };
 }
