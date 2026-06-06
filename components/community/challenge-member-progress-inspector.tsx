@@ -25,6 +25,7 @@ export function ChallengeMemberProgressInspector({
   detail: ChallengeMemberProgressDetail | null;
 }) {
   if (roster.length === 0) return null;
+  const selectedName = detail ? displayName(detail.user) : null;
 
   return (
     <section style={{ marginTop: "var(--space-8)" }}>
@@ -49,61 +50,33 @@ export function ChallengeMemberProgressInspector({
               fontSize: "var(--text-sm)",
             }}
           >
-            {roster.length} thanh vien dang tham gia challenge
+            Chon mot thanh vien de xem timeline va bang chung chi tiet.
           </p>
         </div>
       </div>
 
-      <div
-        style={{
-          border: "1px solid var(--border-subtle)",
-          borderRadius: "var(--r-md)",
-          background: "var(--bg-card)",
-          overflow: "hidden",
-        }}
+      <details
+        style={pickerShellStyle}
       >
-        <div style={{ overflowX: "auto" }}>
-          <table
-            style={{
-              width: "100%",
-              minWidth: 900,
-              borderCollapse: "collapse",
-              fontSize: "var(--text-sm)",
-            }}
-          >
-            <thead>
-              <tr style={{ background: "var(--bg-secondary)" }}>
-                {[
-                  "Member",
-                  "Status",
-                  "Current task/day",
-                  "Approved/total",
-                  "Pending",
-                  "Rejected",
-                  "Late",
-                  "Missing",
-                  "Latest submission",
-                  "",
-                ].map((header) => (
-                  <th key={header} style={thStyle}>
-                    {header}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {roster.map((row) => (
-                <RosterRow
-                  key={row.memberId}
-                  row={row}
-                  communitySlug={communitySlug}
-                  selected={row.userId === selectedMemberId}
-                />
-              ))}
-            </tbody>
-          </table>
+        <summary style={pickerSummaryStyle}>
+          <span style={{ color: "var(--text-heading)", fontWeight: "var(--fw-bold)" }}>
+            {selectedName ? `Dang xem: ${selectedName}` : "Chon thanh vien"}
+          </span>
+          <span style={{ color: "var(--text-muted)", fontSize: "var(--text-xs)" }}>
+            {roster.length} thanh vien
+          </span>
+        </summary>
+        <div style={pickerListStyle}>
+          {roster.map((row) => (
+            <MemberPickerRow
+              key={row.memberId}
+              row={row}
+              communitySlug={communitySlug}
+              selected={row.userId === selectedMemberId}
+            />
+          ))}
         </div>
-      </div>
+      </details>
 
       {selectedMemberId && !detail && (
         <div
@@ -131,7 +104,7 @@ export function ChallengeMemberProgressInspector({
   );
 }
 
-function RosterRow({
+function MemberPickerRow({
   row,
   communitySlug,
   selected,
@@ -142,81 +115,56 @@ function RosterRow({
 }) {
   const name = displayName(row.user);
   return (
-    <tr
+    <div
       style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "var(--space-3)",
+        padding: "var(--space-3)",
         borderTop: "1px solid var(--border-subtle)",
-        background: selected ? "rgba(27,158,117,0.06)" : "transparent",
+        background: selected ? "rgba(27,158,117,0.08)" : "transparent",
       }}
     >
-      <td style={tdStyle}>
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", minWidth: 0 }}>
-          <MemberAvatar userId={row.user.id} name={name} image={row.user.image} size={30} />
-          <div style={{ minWidth: 0 }}>
-            <Link
-              href={`/c/${communitySlug}/profile/${row.user.id}`}
-              style={{
-                color: "var(--text-heading)",
-                fontWeight: "var(--fw-bold)",
-                textDecoration: "none",
-                overflowWrap: "anywhere",
-              }}
-            >
-              {name}
-            </Link>
-            {row.user.handle && (
-              <div style={{ color: "var(--text-muted)", fontSize: "var(--text-xs)" }}>
-                @{row.user.handle}
-              </div>
-            )}
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", minWidth: 0 }}>
+        <MemberAvatar userId={row.user.id} name={name} image={row.user.image} size={34} />
+        <div style={{ minWidth: 0 }}>
+          <Link
+            href={`/c/${communitySlug}/profile/${row.user.id}`}
+            style={{
+              color: "var(--text-heading)",
+              fontWeight: "var(--fw-bold)",
+              textDecoration: "none",
+              overflowWrap: "anywhere",
+            }}
+          >
+            {name}
+          </Link>
+          <div
+            style={{
+              display: "flex",
+              gap: "var(--space-2)",
+              flexWrap: "wrap",
+              marginTop: 2,
+              color: "var(--text-muted)",
+              fontSize: "var(--text-xs)",
+            }}
+          >
+            {row.user.handle && <span>@{row.user.handle}</span>}
+            <span>
+              {row.currentDay > 0 ? `Day ${row.currentDay}` : "Chua bat dau"} · {row.approvedCount}/{row.totalTasks}
+            </span>
           </div>
         </div>
-      </td>
-      <td style={tdStyle}>
-        <StatusPill tone={row.memberStatus === "COMPLETED" ? "success" : "info"}>
-          {row.memberStatus}
-        </StatusPill>
-      </td>
-      <td style={tdStyle}>
-        <div style={{ color: "var(--text-heading)", fontWeight: "var(--fw-semibold)" }}>
-          {row.currentDay > 0 ? `Day ${row.currentDay}` : "Chua bat dau"}
-        </div>
-        {row.currentTaskTitle && (
-          <div style={{ color: "var(--text-muted)", fontSize: "var(--text-xs)", overflowWrap: "anywhere" }}>
-            {row.currentTaskTitle}
-          </div>
-        )}
-      </td>
-      <td style={tdNumberStyle}>
-        {row.approvedCount}/{row.totalTasks}
-      </td>
-      <td style={tdNumberStyle}>{row.pendingCount}</td>
-      <td style={tdNumberStyle}>{row.rejectedCount}</td>
-      <td style={tdNumberStyle}>{row.lateCount}</td>
-      <td style={tdNumberStyle}>{row.missingCount}</td>
-      <td style={tdStyle}>
-        {row.latestSubmissionAt ? (
-          <div>
-            <div style={{ whiteSpace: "nowrap" }}>{formatDateTime(row.latestSubmissionAt)}</div>
-            {row.latestSubmissionStatus && (
-              <div style={{ color: "var(--text-muted)", fontSize: "var(--text-xs)" }}>
-                {row.latestSubmissionStatus}
-              </div>
-            )}
-          </div>
-        ) : (
-          <span style={{ color: "var(--text-muted)" }}>Chua nop</span>
-        )}
-      </td>
-      <td style={{ ...tdStyle, textAlign: "right" }}>
-        <ChallengeMemberProgressQueryButton
-          memberId={row.userId}
-          selected={selected}
-          ariaLabel={`Xem tien do ${name}`}
-        >
-          Chi tiet
-        </ChallengeMemberProgressQueryButton>
-      </td>
-    </tr>
+      </div>
+      <ChallengeMemberProgressQueryButton
+        memberId={row.userId}
+        selected={selected}
+        ariaLabel={`Xem tien do ${name}`}
+      >
+        Xem
+      </ChallengeMemberProgressQueryButton>
+    </div>
   );
 }
 
@@ -629,24 +577,25 @@ function formatDateTime(date: Date): string {
   });
 }
 
-const thStyle: CSSProperties = {
-  padding: "var(--space-3)",
-  color: "var(--text-muted)",
-  fontSize: "var(--text-xs)",
-  fontWeight: "var(--fw-bold)",
-  textAlign: "left",
-  whiteSpace: "nowrap",
+const pickerShellStyle: CSSProperties = {
+  border: "1px solid var(--border-subtle)",
+  borderRadius: "var(--r-md)",
+  background: "var(--bg-card)",
+  overflow: "hidden",
 };
 
-const tdStyle: CSSProperties = {
-  padding: "var(--space-3)",
-  verticalAlign: "middle",
-  color: "var(--text-normal)",
+const pickerSummaryStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: "var(--space-3)",
+  padding: "var(--space-3) var(--space-4)",
+  cursor: "pointer",
+  listStyle: "none",
 };
 
-const tdNumberStyle: CSSProperties = {
-  ...tdStyle,
-  textAlign: "center",
-  fontWeight: "var(--fw-bold)",
-  color: "var(--text-heading)",
+const pickerListStyle: CSSProperties = {
+  maxHeight: 360,
+  overflowY: "auto",
+  borderTop: "1px solid var(--border-subtle)",
 };
