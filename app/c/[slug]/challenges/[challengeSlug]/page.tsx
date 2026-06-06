@@ -42,6 +42,11 @@ import { parseCheckinHistory } from "@/lib/checkin-history";
 import type { AIReviewData } from "@/lib/ai-review-data";
 import { listAIProviders } from "@/lib/services/ai-provider";
 import { checkinImages } from "@/lib/checkin-images";
+import {
+  getChallengeMemberProgress,
+  listChallengeMemberProgress,
+} from "@/lib/services/challenge-member-progress";
+import { ChallengeMemberProgressInspector } from "@/components/community/challenge-member-progress-inspector";
 
 export const dynamic = "force-dynamic";
 
@@ -68,7 +73,7 @@ export default async function ChallengeDetailPage({
   searchParams,
 }: {
   params: Promise<{ slug: string; challengeSlug: string }>;
-  searchParams: Promise<{ review?: string; page?: string; search?: string }>;
+  searchParams: Promise<{ review?: string; page?: string; search?: string; member?: string | string[] }>;
 }) {
   const { slug, challengeSlug } = await params;
   const sp = await searchParams;
@@ -124,6 +129,11 @@ export default async function ChallengeDetailPage({
 
   const page = Math.max(1, parseInt(sp.page || "1", 10) || 1);
   const search = (sp.search || "").trim();
+  const selectedMemberParam = Array.isArray(sp.member) ? sp.member[0] : sp.member;
+  const selectedMemberId =
+    typeof selectedMemberParam === "string" && selectedMemberParam.trim()
+      ? selectedMemberParam.trim()
+      : null;
   const PAGE_SIZE = 13;
 
   // Parallel batch — all queries below are independent of each other.
@@ -132,6 +142,8 @@ export default async function ChallengeDetailPage({
     tierGateBlock,
     communityProducts,
     submissionData,
+    memberProgressRows,
+    selectedMemberProgress,
     myCheckins,
     leaderboard,
     myMembership,
@@ -200,6 +212,17 @@ export default async function ChallengeDetailPage({
             aiFlaggedCount: res.aiFlaggedCount,
           };
         })()
+      : Promise.resolve(null),
+
+    permissions.canReviewSubmissions
+      ? listChallengeMemberProgress({ challengeId: challenge.id })
+      : Promise.resolve([]),
+
+    permissions.canReviewSubmissions && selectedMemberId
+      ? getChallengeMemberProgress({
+          challengeId: challenge.id,
+          userId: selectedMemberId,
+        })
       : Promise.resolve(null),
 
     // My check-ins for this challenge (to mark tasks done)
@@ -1256,6 +1279,15 @@ export default async function ChallengeDetailPage({
                   ? Math.max(...challenge.tasks.map((t) => t.dayNumber)) + 1
                   : 1
               }
+            />
+          )}
+
+          {permissions.canReviewSubmissions && (
+            <ChallengeMemberProgressInspector
+              communitySlug={slug}
+              roster={memberProgressRows}
+              selectedMemberId={selectedMemberId}
+              detail={selectedMemberProgress}
             />
           )}
 

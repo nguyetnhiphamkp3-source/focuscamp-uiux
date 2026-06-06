@@ -1,6 +1,6 @@
 # focus.camp — Roadmap & Module Spec
 
-_Updated: 2026-06-02. Source of truth for "what's shipped / what's next"._
+_Updated: 2026-06-06. Source of truth for "what's shipped / what's next"._
 
 ## Positioning
 
@@ -90,6 +90,7 @@ Key: ✅ done · 🟡 partial · ❌ not started · 🚫 deferred (Phase 2+)
 | User checkin + evidence (text/link/image/text+image) | ✅ | |
 | Streak calc + per-challenge leaderboard | ✅ | |
 | Admin review submission (approve/reject + note) | ✅ | Phase C |
+| Challenge member progress inspector | ✅ | Operator-only roster + per-member timeline on challenge detail |
 | `approveAllPending` bulk | ✅ | |
 | Voting on submissions | ✅ | CheckinVote model + 👍 pill |
 | Video feedback submit + review | ❌ | Phase 2 |
