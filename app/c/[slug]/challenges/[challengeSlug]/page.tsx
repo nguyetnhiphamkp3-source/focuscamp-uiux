@@ -73,7 +73,14 @@ export default async function ChallengeDetailPage({
   searchParams,
 }: {
   params: Promise<{ slug: string; challengeSlug: string }>;
-  searchParams: Promise<{ review?: string; page?: string; search?: string; member?: string | string[] }>;
+  searchParams: Promise<{
+    review?: string;
+    page?: string;
+    search?: string;
+    member?: string | string[];
+    memberSearch?: string;
+    memberPage?: string;
+  }>;
 }) {
   const { slug, challengeSlug } = await params;
   const sp = await searchParams;
@@ -129,12 +136,15 @@ export default async function ChallengeDetailPage({
 
   const page = Math.max(1, parseInt(sp.page || "1", 10) || 1);
   const search = (sp.search || "").trim();
+  const memberSearch = (sp.memberSearch || "").trim();
+  const memberPage = Math.max(1, parseInt(sp.memberPage || "1", 10) || 1);
   const selectedMemberParam = Array.isArray(sp.member) ? sp.member[0] : sp.member;
   const selectedMemberId =
     typeof selectedMemberParam === "string" && selectedMemberParam.trim()
       ? selectedMemberParam.trim()
       : null;
   const PAGE_SIZE = 13;
+  const MEMBER_PAGE_SIZE = 8;
 
   // Parallel batch — all queries below are independent of each other.
   // Was sequential (10+ awaits in a row), now ~1 round-trip max.
@@ -142,7 +152,7 @@ export default async function ChallengeDetailPage({
     tierGateBlock,
     communityProducts,
     submissionData,
-    memberProgressRows,
+    memberProgressData,
     selectedMemberProgress,
     myCheckins,
     leaderboard,
@@ -215,8 +225,13 @@ export default async function ChallengeDetailPage({
       : Promise.resolve(null),
 
     permissions.canReviewSubmissions
-      ? listChallengeMemberProgress({ challengeId: challenge.id })
-      : Promise.resolve([]),
+      ? listChallengeMemberProgress({
+          challengeId: challenge.id,
+          search: memberSearch || undefined,
+          limit: MEMBER_PAGE_SIZE,
+          offset: (memberPage - 1) * MEMBER_PAGE_SIZE,
+        })
+      : Promise.resolve({ rows: [], total: 0 }),
 
     permissions.canReviewSubmissions && selectedMemberId
       ? getChallengeMemberProgress({
@@ -1282,15 +1297,6 @@ export default async function ChallengeDetailPage({
             />
           )}
 
-          {permissions.canReviewSubmissions && (
-            <ChallengeMemberProgressInspector
-              communitySlug={slug}
-              roster={memberProgressRows}
-              selectedMemberId={selectedMemberId}
-              detail={selectedMemberProgress}
-            />
-          )}
-
           {/* Leaderboard */}
           {leaderboard.length > 0 && (
             <div style={{ marginTop: "var(--space-8)" }}>
@@ -1429,6 +1435,19 @@ export default async function ChallengeDetailPage({
                 })}
               </div>
             </div>
+          )}
+
+          {permissions.canReviewSubmissions && (
+            <ChallengeMemberProgressInspector
+              communitySlug={slug}
+              roster={memberProgressData.rows}
+              total={memberProgressData.total}
+              page={memberPage}
+              pageSize={MEMBER_PAGE_SIZE}
+              search={memberSearch}
+              selectedMemberId={selectedMemberId}
+              detail={selectedMemberProgress}
+            />
           )}
 
           {/* Admin/Mod submission review panel */}

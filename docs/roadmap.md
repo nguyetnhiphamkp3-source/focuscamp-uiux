@@ -90,7 +90,7 @@ Key: ✅ done · 🟡 partial · ❌ not started · 🚫 deferred (Phase 2+)
 | User checkin + evidence (text/link/image/text+image) | ✅ | |
 | Streak calc + per-challenge leaderboard | ✅ | |
 | Admin review submission (approve/reject + note) | ✅ | Phase C |
-| Challenge member progress inspector | ✅ | Operator-only roster + per-member timeline on challenge detail |
+| Challenge member progress inspector | ✅ | Operator-only searchable/paginated member picker + per-member timeline on challenge detail |
 | `approveAllPending` bulk | ✅ | |
 | Voting on submissions | ✅ | CheckinVote model + 👍 pill |
 | Video feedback submit + review | ❌ | Phase 2 |

@@ -11,21 +11,37 @@ import type {
 import { LinkifiedText } from "@/components/shared/linkified-text";
 import { SubmissionHistory } from "@/components/community/submission-history";
 import { SubmissionImageCarousel } from "@/components/community/submission-image-carousel";
-import { ChallengeMemberProgressQueryButton } from "@/components/community/challenge-member-progress-query-button";
+import {
+  ChallengeMemberProgressPageButton,
+  ChallengeMemberProgressQueryButton,
+  ChallengeMemberProgressSearchForm,
+} from "@/components/community/challenge-member-progress-query-button";
 
 export function ChallengeMemberProgressInspector({
   communitySlug,
   roster,
+  total,
+  page,
+  pageSize,
+  search,
   selectedMemberId,
   detail,
 }: {
   communitySlug: string;
   roster: ChallengeMemberProgressRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  search: string;
   selectedMemberId: string | null;
   detail: ChallengeMemberProgressDetail | null;
 }) {
-  if (roster.length === 0) return null;
+  if (total === 0 && !search) return null;
+
   const selectedName = detail ? displayName(detail.user) : null;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const currentPage = Math.min(Math.max(page, 1), totalPages);
+  const prevPage = page > totalPages ? totalPages : Math.max(1, page - 1);
 
   return (
     <section style={{ marginTop: "var(--space-8)" }}>
@@ -41,7 +57,7 @@ export function ChallengeMemberProgressInspector({
       >
         <div>
           <h2 style={{ margin: 0, fontSize: "var(--text-xl)" }}>
-            Tien do thanh vien
+            Tiến độ thành viên
           </h2>
           <p
             style={{
@@ -50,47 +66,66 @@ export function ChallengeMemberProgressInspector({
               fontSize: "var(--text-sm)",
             }}
           >
-            Chon mot thanh vien de xem timeline va bang chung chi tiet.
+            Chọn một thành viên để xem timeline, bằng chứng và lịch sử review chi tiết.
           </p>
         </div>
       </div>
 
-      <details
-        style={pickerShellStyle}
-      >
+      <details style={pickerShellStyle} open={!!selectedMemberId || !!search}>
         <summary style={pickerSummaryStyle}>
           <span style={{ color: "var(--text-heading)", fontWeight: "var(--fw-bold)" }}>
-            {selectedName ? `Dang xem: ${selectedName}` : "Chon thanh vien"}
+            {selectedName ? `Đang xem: ${selectedName}` : "Chọn thành viên"}
           </span>
           <span style={{ color: "var(--text-muted)", fontSize: "var(--text-xs)" }}>
-            {roster.length} thanh vien
+            {total} thành viên
           </span>
         </summary>
+
+        <ChallengeMemberProgressSearchForm initialSearch={search} />
+
         <div style={pickerListStyle}>
-          {roster.map((row) => (
-            <MemberPickerRow
-              key={row.memberId}
-              row={row}
-              communitySlug={communitySlug}
-              selected={row.userId === selectedMemberId}
-            />
-          ))}
+          {roster.length > 0 ? (
+            roster.map((row) => (
+              <MemberPickerRow
+                key={row.memberId}
+                row={row}
+                communitySlug={communitySlug}
+                selected={row.userId === selectedMemberId}
+              />
+            ))
+          ) : (
+            <div style={emptyStateStyle}>
+              Không tìm thấy thành viên phù hợp.
+            </div>
+          )}
         </div>
+
+        {totalPages > 1 && (
+          <div style={pagerStyle}>
+            <ChallengeMemberProgressPageButton
+              page={prevPage}
+              direction="prev"
+              disabled={currentPage <= 1 && page <= totalPages}
+            >
+              Trước
+            </ChallengeMemberProgressPageButton>
+            <span style={pagerLabelStyle}>
+              Trang {currentPage}/{totalPages}
+            </span>
+            <ChallengeMemberProgressPageButton
+              page={currentPage + 1}
+              direction="next"
+              disabled={currentPage >= totalPages}
+            >
+              Sau
+            </ChallengeMemberProgressPageButton>
+          </div>
+        )}
       </details>
 
       {selectedMemberId && !detail && (
-        <div
-          style={{
-            marginTop: "var(--space-3)",
-            padding: "var(--space-3) var(--space-4)",
-            border: "1px solid var(--warning)",
-            borderRadius: "var(--r-md)",
-            background: "var(--warning-soft)",
-            color: "var(--text-normal)",
-            fontSize: "var(--text-sm)",
-          }}
-        >
-          Khong tim thay member trong challenge nay.
+        <div style={warningStyle}>
+          Không tìm thấy thành viên trong challenge này.
         </div>
       )}
 
@@ -152,7 +187,7 @@ function MemberPickerRow({
           >
             {row.user.handle && <span>@{row.user.handle}</span>}
             <span>
-              {row.currentDay > 0 ? `Day ${row.currentDay}` : "Chua bat dau"} · {row.approvedCount}/{row.totalTasks}
+              {row.currentDay > 0 ? `Ngày ${row.currentDay}` : "Chưa bắt đầu"} · {row.approvedCount}/{row.totalTasks}
             </span>
           </div>
         </div>
@@ -160,7 +195,7 @@ function MemberPickerRow({
       <ChallengeMemberProgressQueryButton
         memberId={row.userId}
         selected={selected}
-        ariaLabel={`Xem tien do ${name}`}
+        ariaLabel={`Xem tiến độ ${name}`}
       >
         Xem
       </ChallengeMemberProgressQueryButton>
@@ -222,16 +257,16 @@ function MemberProgressDetailPanel({
                 fontSize: "var(--text-xs)",
               }}
             >
-              <span>Joined {formatDate(detail.joinedAt)}</span>
-              {detail.effectiveStartsAt && <span>Start {formatDate(detail.effectiveStartsAt)}</span>}
-              {detail.completedAt && <span>Completed {formatDate(detail.completedAt)}</span>}
+              <span>Tham gia {formatDate(detail.joinedAt)}</span>
+              {detail.effectiveStartsAt && <span>Bắt đầu {formatDate(detail.effectiveStartsAt)}</span>}
+              {detail.completedAt && <span>Hoàn thành {formatDate(detail.completedAt)}</span>}
             </div>
           </div>
         </div>
         <ChallengeMemberProgressQueryButton
           memberId={null}
           variant="close"
-          ariaLabel="Dong chi tiet thanh vien"
+          ariaLabel="Đóng chi tiết thành viên"
         >
           <X size={16} aria-hidden="true" />
         </ChallengeMemberProgressQueryButton>
@@ -246,12 +281,12 @@ function MemberProgressDetailPanel({
             marginBottom: "var(--space-5)",
           }}
         >
-          <SummaryMetric label="Current" value={detail.currentDay > 0 ? `Day ${detail.currentDay}` : "Chua start"} />
-          <SummaryMetric label="Approved" value={`${detail.approvedCount}/${detail.totalTasks}`} />
-          <SummaryMetric label="Cho duyet" value={String(detail.pendingCount)} />
-          <SummaryMetric label="Bi tu choi" value={String(detail.rejectedCount)} />
-          <SummaryMetric label="Tre" value={String(detail.lateCount)} />
-          <SummaryMetric label="Thieu" value={String(detail.missingCount)} />
+          <SummaryMetric label="Hiện tại" value={detail.currentDay > 0 ? `Ngày ${detail.currentDay}` : "Chưa bắt đầu"} />
+          <SummaryMetric label="Đã duyệt" value={`${detail.approvedCount}/${detail.totalTasks}`} />
+          <SummaryMetric label="Chờ duyệt" value={String(detail.pendingCount)} />
+          <SummaryMetric label="Bị từ chối" value={String(detail.rejectedCount)} />
+          <SummaryMetric label="Trễ" value={String(detail.lateCount)} />
+          <SummaryMetric label="Thiếu" value={String(detail.missingCount)} />
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
@@ -319,7 +354,7 @@ function TimelineTask({
                 overflowWrap: "anywhere",
               }}
             >
-              Day {task.dayNumber}: {task.title}
+              Ngày {task.dayNumber}: {task.title}
             </div>
             {task.label && (
               <div style={{ color: "var(--text-muted)", fontSize: "var(--text-xs)" }}>
@@ -340,9 +375,9 @@ function TimelineTask({
             fontSize: "var(--text-xs)",
           }}
         >
-          {task.deadlineAt && <span>Deadline {formatDateTime(task.deadlineAt)}</span>}
-          {task.checkin && <span>Nop {formatDateTime(task.checkin.submittedAt)}</span>}
-          {task.checkin?.reviewedAt && <span>Review {formatDateTime(task.checkin.reviewedAt)}</span>}
+          {task.deadlineAt && <span>Hạn {formatDateTime(task.deadlineAt)}</span>}
+          {task.checkin && <span>Nộp {formatDateTime(task.checkin.submittedAt)}</span>}
+          {task.checkin?.reviewedAt && <span>Duyệt {formatDateTime(task.checkin.reviewedAt)}</span>}
         </div>
 
         {task.checkin && (
@@ -374,7 +409,7 @@ function TimelineTask({
                   color: "var(--text-normal)",
                 }}
               >
-                <strong>{task.checkin.reviewedBy?.name ?? "Reviewer"}:</strong>{" "}
+                <strong>{task.checkin.reviewedBy?.name ?? "Người duyệt"}:</strong>{" "}
                 {task.checkin.reviewNote}
               </div>
             )}
@@ -406,7 +441,7 @@ function TimelineTask({
                 {task.checkin.linkUrl}
               </a>
             )}
-            <SubmissionImageCarousel images={task.checkin.imageUrls} alt="Bang chung" compact />
+            <SubmissionImageCarousel images={task.checkin.imageUrls} alt="Bằng chứng" compact />
             <SubmissionHistory entries={history} />
           </div>
         )}
@@ -536,25 +571,25 @@ function stateMeta(state: ChallengeProgressTimelineState): {
 } {
   switch (state) {
     case "APPROVED_ON_TIME":
-      return { label: "Dung han", tone: "success", color: "var(--success)", bg: "rgba(36,128,70,0.12)" };
+      return { label: "Đúng hạn", tone: "success", color: "var(--success)", bg: "rgba(36,128,70,0.12)" };
     case "APPROVED_LATE":
-      return { label: "Tre", tone: "warning", color: "var(--warning)", bg: "rgba(240,178,50,0.14)" };
+      return { label: "Trễ", tone: "warning", color: "var(--warning)", bg: "rgba(240,178,50,0.14)" };
     case "PENDING":
-      return { label: "Cho duyet", tone: "warning", color: "var(--warning)", bg: "rgba(240,178,50,0.14)" };
+      return { label: "Chờ duyệt", tone: "warning", color: "var(--warning)", bg: "rgba(240,178,50,0.14)" };
     case "REJECTED":
-      return { label: "Bi tu choi", tone: "danger", color: "var(--danger)", bg: "rgba(218,55,60,0.1)" };
+      return { label: "Bị từ chối", tone: "danger", color: "var(--danger)", bg: "rgba(218,55,60,0.1)" };
     case "MISSING":
-      return { label: "Thieu", tone: "danger", color: "var(--danger)", bg: "rgba(218,55,60,0.1)" };
+      return { label: "Thiếu", tone: "danger", color: "var(--danger)", bg: "rgba(218,55,60,0.1)" };
     case "CURRENT":
-      return { label: "Dang lam", tone: "info", color: "var(--info)", bg: "rgba(0,168,252,0.1)" };
+      return { label: "Đang làm", tone: "info", color: "var(--info)", bg: "rgba(0,168,252,0.1)" };
     case "LOCKED":
     default:
-      return { label: "Chua mo", tone: "muted", color: "var(--text-muted)", bg: "var(--bg-chat)" };
+      return { label: "Chưa mở", tone: "muted", color: "var(--text-muted)", bg: "var(--bg-chat)" };
   }
 }
 
 function displayName(user: ChallengeMemberProgressRow["user"]): string {
-  return user.name || user.email?.split("@")[0] || "Member";
+  return user.name || user.email?.split("@")[0] || "Thành viên";
 }
 
 function formatDate(date: Date): string {
@@ -595,7 +630,41 @@ const pickerSummaryStyle: CSSProperties = {
 };
 
 const pickerListStyle: CSSProperties = {
-  maxHeight: 360,
+  maxHeight: 420,
   overflowY: "auto",
+};
+
+const emptyStateStyle: CSSProperties = {
+  padding: "var(--space-5) var(--space-4)",
   borderTop: "1px solid var(--border-subtle)",
+  color: "var(--text-muted)",
+  fontSize: "var(--text-sm)",
+  textAlign: "center",
+};
+
+const pagerStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: "var(--space-3)",
+  padding: "var(--space-3)",
+  borderTop: "1px solid var(--border-subtle)",
+  background: "var(--bg-secondary)",
+};
+
+const pagerLabelStyle: CSSProperties = {
+  color: "var(--text-muted)",
+  fontSize: "var(--text-xs)",
+  fontWeight: "var(--fw-bold)",
+  whiteSpace: "nowrap",
+};
+
+const warningStyle: CSSProperties = {
+  marginTop: "var(--space-3)",
+  padding: "var(--space-3) var(--space-4)",
+  border: "1px solid var(--warning)",
+  borderRadius: "var(--r-md)",
+  background: "var(--warning-soft)",
+  color: "var(--text-normal)",
+  fontSize: "var(--text-sm)",
 };

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import { checkinImages } from "@/lib/checkin-images";
 import {
   challengeCurrentDay,
@@ -144,18 +145,27 @@ export function buildChallengeMemberProgress(input: {
 
 export async function listChallengeMemberProgress(input: {
   challengeId: string;
-}): Promise<ChallengeMemberProgressRow[]> {
-  const details = await getChallengeProgressDetails({
+  search?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ rows: ChallengeMemberProgressRow[]; total: number }> {
+  const { details, total } = await getChallengeProgressDetails({
     challengeId: input.challengeId,
+    search: input.search,
+    limit: input.limit,
+    offset: input.offset,
   });
-  return details.map(({ tasks: _tasks, ...row }) => row);
+  return {
+    rows: details.map(({ tasks: _tasks, ...row }) => row),
+    total,
+  };
 }
 
 export async function getChallengeMemberProgress(input: {
   challengeId: string;
   userId: string;
 }): Promise<ChallengeMemberProgressDetail | null> {
-  const details = await getChallengeProgressDetails({
+  const { details } = await getChallengeProgressDetails({
     challengeId: input.challengeId,
     userId: input.userId,
   });
@@ -165,7 +175,11 @@ export async function getChallengeMemberProgress(input: {
 async function getChallengeProgressDetails(input: {
   challengeId: string;
   userId?: string;
-}): Promise<ChallengeMemberProgressDetail[]> {
+  search?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ details: ChallengeMemberProgressDetail[]; total: number }> {
+  const memberWhere = challengeMemberWhere(input);
   const challenge = await prisma.challenge.findUnique({
     where: { id: input.challengeId },
     select: {
@@ -183,35 +197,39 @@ async function getChallengeProgressDetails(input: {
           unlockAfterHours: true,
         },
       },
-      members: {
-        where: {
-          status: { in: ["ACTIVE", "COMPLETED"] },
-          ...(input.userId ? { userId: input.userId } : {}),
-        },
-        orderBy: { joinedAt: "asc" },
-        select: {
-          id: true,
-          userId: true,
-          status: true,
-          joinedAt: true,
-          personalStartsAt: true,
-          completedAt: true,
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              image: true,
-              handle: true,
-            },
+    },
+  });
+  if (!challenge) return { details: [], total: 0 };
+
+  const [members, total] = await Promise.all([
+    prisma.challengeMember.findMany({
+      where: memberWhere,
+      orderBy: { joinedAt: "asc" },
+      ...(input.limit ? { take: input.limit } : {}),
+      ...(input.offset ? { skip: input.offset } : {}),
+      select: {
+        id: true,
+        userId: true,
+        status: true,
+        joinedAt: true,
+        personalStartsAt: true,
+        completedAt: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+            handle: true,
           },
         },
       },
-    },
-  });
-  if (!challenge || challenge.members.length === 0) return [];
+    }),
+    prisma.challengeMember.count({ where: memberWhere }),
+  ]);
+  if (members.length === 0) return { details: [], total };
 
-  const userIds = challenge.members.map((m) => m.userId);
+  const userIds = members.map((m) => m.userId);
   const checkins = await prisma.checkin.findMany({
     where: {
       challengeId: input.challengeId,
@@ -238,12 +256,37 @@ async function getChallengeProgressDetails(input: {
     },
   });
 
-  return buildChallengeMemberProgress({
-    challenge,
-    tasks: challenge.tasks,
-    members: challenge.members,
-    checkins,
-  });
+  return {
+    details: buildChallengeMemberProgress({
+      challenge,
+      tasks: challenge.tasks,
+      members,
+      checkins,
+    }),
+    total,
+  };
+}
+
+function challengeMemberWhere(input: {
+  challengeId: string;
+  userId?: string;
+  search?: string;
+}): Prisma.ChallengeMemberWhereInput {
+  const search = input.search?.trim();
+  return {
+    challengeId: input.challengeId,
+    status: { in: ["ACTIVE", "COMPLETED"] },
+    ...(input.userId ? { userId: input.userId } : {}),
+    ...(search
+      ? {
+          OR: [
+            { user: { name: { contains: search, mode: "insensitive" } } },
+            { user: { email: { contains: search, mode: "insensitive" } } },
+            { user: { handle: { contains: search, mode: "insensitive" } } },
+          ],
+        }
+      : {}),
+  };
 }
 
 function buildMemberProgress(input: {
