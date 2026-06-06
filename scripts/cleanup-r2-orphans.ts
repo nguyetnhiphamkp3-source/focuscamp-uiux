@@ -55,16 +55,39 @@ async function getReferencedUrls(): Promise<Set<string>> {
   const extract = (url: string | null) => {
     if (url && url.startsWith(prefix)) urls.add(url.slice(prefix.length));
   };
+  const extractMany = (raw: unknown) => {
+    if (!Array.isArray(raw)) return;
+    raw.forEach((url) => {
+      if (typeof url === "string") extract(url);
+    });
+  };
+  const extractCheckinHistory = (raw: unknown) => {
+    if (!Array.isArray(raw)) return;
+    raw.forEach((entry) => {
+      if (!entry || typeof entry !== "object") return;
+      extractMany((entry as Record<string, unknown>).imageUrls);
+    });
+  };
 
-  const [users, communities, challenges, checkins, posts, products, events] =
+  const [users, communities, courses, challenges, challengeTasks, checkins, posts, products, events] =
     await Promise.all([
       prisma.user.findMany({ where: { image: { startsWith: prefix } }, select: { image: true } }),
       prisma.community.findMany({
-        where: { OR: [{ bannerUrl: { startsWith: prefix } }, { iconUrl: { startsWith: prefix } }] },
-        select: { bannerUrl: true, iconUrl: true },
+        where: {
+          OR: [
+            { bannerUrl: { startsWith: prefix } },
+            { iconUrl: { startsWith: prefix } },
+            { agentAvatarUrl: { startsWith: prefix } },
+          ],
+        },
+        select: { bannerUrl: true, iconUrl: true, agentAvatarUrl: true },
       }),
+      prisma.course.findMany({ where: { thumbnailUrl: { startsWith: prefix } }, select: { thumbnailUrl: true } }),
       prisma.challenge.findMany({ where: { bannerUrl: { startsWith: prefix } }, select: { bannerUrl: true } }),
-      prisma.checkin.findMany({ where: { imageUrl: { startsWith: prefix } }, select: { imageUrl: true } }),
+      prisma.challengeTask.findMany({ where: { giftFileUrl: { startsWith: prefix } }, select: { giftFileUrl: true } }),
+      prisma.checkin.findMany({
+        select: { imageUrl: true, imageUrls: true, reviewHistory: true },
+      }),
       prisma.post.findMany({ where: { imageUrl: { startsWith: prefix } }, select: { imageUrl: true } }),
       prisma.product.findMany({
         where: { OR: [{ fileUrl: { startsWith: prefix } }, { thumbnailUrl: { startsWith: prefix } }] },
@@ -74,9 +97,15 @@ async function getReferencedUrls(): Promise<Set<string>> {
     ]);
 
   users.forEach((r) => extract(r.image));
-  communities.forEach((r) => { extract(r.bannerUrl); extract(r.iconUrl); });
+  communities.forEach((r) => { extract(r.bannerUrl); extract(r.iconUrl); extract(r.agentAvatarUrl); });
+  courses.forEach((r) => extract(r.thumbnailUrl));
   challenges.forEach((r) => extract(r.bannerUrl));
-  checkins.forEach((r) => extract(r.imageUrl));
+  challengeTasks.forEach((r) => extract(r.giftFileUrl));
+  checkins.forEach((r) => {
+    extract(r.imageUrl);
+    extractMany(r.imageUrls);
+    extractCheckinHistory(r.reviewHistory);
+  });
   posts.forEach((r) => extract(r.imageUrl));
   products.forEach((r) => { extract(r.fileUrl); extract(r.thumbnailUrl); });
   events.forEach((r) => extract(r.bannerUrl));

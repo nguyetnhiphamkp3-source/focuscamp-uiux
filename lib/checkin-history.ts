@@ -15,6 +15,8 @@ export type CheckinHistoryEntry = {
   imageUrls: string[];
   reviewNote: string | null;
   aiReviewData: AIReviewData | null;
+  /** ISO string — when stored image evidence was pruned by retention cleanup. */
+  imageUrlsPrunedAt: string | null;
   /** ISO string — when the original review happened (may be null for legacy rows). */
   reviewedAt: string | null;
   /** ISO string — when this attempt was rejected. */
@@ -41,6 +43,8 @@ export function parseCheckinHistory(raw: unknown): CheckinHistoryEntry[] {
           e.aiReviewData && typeof e.aiReviewData === "object"
             ? (e.aiReviewData as AIReviewData)
             : null,
+        imageUrlsPrunedAt:
+          typeof e.imageUrlsPrunedAt === "string" ? e.imageUrlsPrunedAt : null,
         reviewedAt: typeof e.reviewedAt === "string" ? e.reviewedAt : null,
         rejectedAt:
           typeof e.rejectedAt === "string"

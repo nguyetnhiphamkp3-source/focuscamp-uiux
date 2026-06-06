@@ -26,6 +26,7 @@ export function SubmissionImageCarousel({
   const [index, setIndex] = useState(0);
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [failedImages, setFailedImages] = useState<Set<string>>(() => new Set());
 
   useEffect(() => setMounted(true), []);
 
@@ -50,6 +51,16 @@ export function SubmissionImageCarousel({
   }, [open, count]);
 
   if (count === 0) return null;
+  const currentImage = images[index];
+  const currentImageFailed = failedImages.has(currentImage);
+  const markImageFailed = (url: string) => {
+    setFailedImages((prev) => {
+      if (prev.has(url)) return prev;
+      const next = new Set(prev);
+      next.add(url);
+      return next;
+    });
+  };
 
   // compact → fixed-height letterboxed tiles (uniform across admin cards).
   // default → natural height capped, centered.
@@ -75,14 +86,21 @@ export function SubmissionImageCarousel({
   return (
     <div style={{ marginTop: "var(--space-2)" }}>
       <div style={frameStyle}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={images[index]}
-          alt={count > 1 ? `${alt} ${index + 1}/${count}` : alt}
-          referrerPolicy="no-referrer"
-          onClick={() => setOpen(true)}
-          style={imgStyle}
-        />
+        {currentImageFailed ? (
+          <div style={missingImageStyle}>Ảnh bằng chứng không còn tồn tại</div>
+        ) : (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={currentImage}
+            alt={count > 1 ? `${alt} ${index + 1}/${count}` : alt}
+            referrerPolicy="no-referrer"
+            loading="lazy"
+            decoding="async"
+            onError={() => markImageFailed(currentImage)}
+            onClick={() => setOpen(true)}
+            style={imgStyle}
+          />
+        )}
         {count > 1 && (
           <>
             <button type="button" onClick={() => go(-1)} aria-label="Ảnh trước" style={navBtnStyle("left")}>
@@ -172,21 +190,29 @@ export function SubmissionImageCarousel({
                 </button>
               </>
             )}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={images[index]}
-              alt={alt}
-              referrerPolicy="no-referrer"
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                maxWidth: "min(100%, 1200px)",
-                maxHeight: "calc(100vh - 48px)",
-                borderRadius: 8,
-                objectFit: "contain",
-                boxShadow: "0 20px 64px rgba(0,0,0,0.48)",
-                cursor: "zoom-out",
-              }}
-            />
+            {currentImageFailed ? (
+              <div style={{ ...missingImageStyle, color: "#fff", background: "rgba(255,255,255,0.1)" }}>
+                Ảnh bằng chứng không còn tồn tại
+              </div>
+            ) : (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={currentImage}
+                alt={alt}
+                referrerPolicy="no-referrer"
+                decoding="async"
+                onError={() => markImageFailed(currentImage)}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  maxWidth: "min(100%, 1200px)",
+                  maxHeight: "calc(100vh - 48px)",
+                  borderRadius: 8,
+                  objectFit: "contain",
+                  boxShadow: "0 20px 64px rgba(0,0,0,0.48)",
+                  cursor: "zoom-out",
+                }}
+              />
+            )}
             {count > 1 && (
               <span
                 style={{
@@ -222,6 +248,18 @@ const counterStyle: React.CSSProperties = {
   fontWeight: 600,
   color: "#fff",
   background: "rgba(0,0,0,0.55)",
+};
+
+const missingImageStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: "100%",
+  minHeight: 160,
+  padding: "var(--space-4)",
+  color: "var(--text-muted)",
+  fontSize: "var(--text-sm)",
+  textAlign: "center",
 };
 
 const closeBtnStyle: React.CSSProperties = {

@@ -1,3 +1,5 @@
+"use client";
+
 import type { CheckinHistoryEntry } from "@/lib/checkin-history";
 import { AgentReviewCard } from "@/components/community/agent-review-card";
 import { SubmissionImageCarousel } from "@/components/community/submission-image-carousel";
@@ -5,8 +7,7 @@ import { LinkifiedText } from "@/components/shared/linkified-text";
 
 /**
  * Collapsible proof trail of rejected attempts for a check-in.
- * Renders nothing when there's no history. Server component — the only
- * interactive bit (image carousel) is its own client boundary.
+ * Renders nothing when there's no history.
  */
 export function SubmissionHistory({ entries }: { entries: CheckinHistoryEntry[] }) {
   if (entries.length === 0) return null;
@@ -127,6 +128,17 @@ export function SubmissionHistory({ entries }: { entries: CheckinHistoryEntry[] 
             )}
 
             <SubmissionImageCarousel images={e.imageUrls} alt="bài nộp cũ" compact />
+            {e.imageUrls.length === 0 && e.imageUrlsPrunedAt && (
+              <div
+                style={{
+                  marginTop: 6,
+                  fontSize: "var(--text-xs)",
+                  color: "var(--text-muted)",
+                }}
+              >
+                Ảnh bằng chứng đã được dọn sau thời gian lưu trữ.
+              </div>
+            )}
           </div>
         ))}
       </div>

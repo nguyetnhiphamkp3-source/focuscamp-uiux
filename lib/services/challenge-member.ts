@@ -9,7 +9,7 @@ import { createNotification } from "./notification";
 import { awardXp } from "./xp";
 import { assertCommunityCanWrite } from "./community";
 import { canCommunity, effectiveCommunityRole } from "@/lib/community-permissions";
-import { deleteReplacedMediaUrl, deleteRemovedMediaUrls } from "@/lib/media-cleanup";
+import { deleteReplacedMediaUrl } from "@/lib/media-cleanup";
 import { checkinImages } from "@/lib/checkin-images";
 
 export type SubmissionStatus = "PENDING" | "APPROVED" | "REJECTED";
@@ -749,10 +749,8 @@ export async function resubmitCheckin(input: {
       resubmittedAt: new Date(),
     },
   });
-  await deleteRemovedMediaUrls(checkinImages(checkin), updated.imageUrls, {
-    checkinId: input.checkinId,
-    field: "imageUrls",
-  });
+  // Keep rejected-attempt media alive: reviewHistory stores these URLs as the
+  // audit trail shown to members/admins after resubmit.
   logger.info(
     { checkinId: input.checkinId, by: input.userId, rejectCount: checkin.rejectCount },
     "[challenge] submission resubmitted"

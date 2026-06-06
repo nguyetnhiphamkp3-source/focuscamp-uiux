@@ -193,6 +193,7 @@ export default async function ChallengeDetailPage({
                 : null,
               reviewedBy: r.reviewedBy,
               aiReviewData: r.aiReviewData as SubmissionRow["aiReviewData"],
+              reviewHistory: r.reviewHistory,
             })),
             total: res.total,
             pendingCount: res.pendingCount,

@@ -10,7 +10,9 @@ import {
 } from "@/app/actions/challenge-review";
 import { avatarColorFor, initials, fmtRelativeTime } from "@/lib/brand";
 import type { AIReviewData } from "@/lib/ai-review-data";
+import { parseCheckinHistory } from "@/lib/checkin-history";
 import { AgentReviewCard } from "@/components/community/agent-review-card";
+import { SubmissionHistory } from "@/components/community/submission-history";
 import { SubmissionImageCarousel } from "@/components/community/submission-image-carousel";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { LinkifiedText } from "@/components/shared/linkified-text";
@@ -29,6 +31,7 @@ export type SubmissionRow = {
   task: { dayNumber: number; title: string; label: string | null } | null;
   reviewedBy: { id: string; name: string | null } | null;
   aiReviewData?: AIReviewData | null;
+  reviewHistory?: unknown;
 };
 
 export function SubmissionReviewPanel({
@@ -611,6 +614,8 @@ function SubmissionCard({
     }
   })();
 
+  const history = parseCheckinHistory(submission.reviewHistory);
+
   return (
     <div
       style={{
@@ -735,6 +740,7 @@ function SubmissionCard({
               <SubmissionImageCarousel images={submission.imageUrls} alt="evidence" compact />
             </div>
           )}
+          <SubmissionHistory entries={history} />
 
           {submission.aiReviewData && (
             <AgentReviewCard
