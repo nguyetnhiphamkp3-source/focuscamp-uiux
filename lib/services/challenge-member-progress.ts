@@ -154,6 +154,7 @@ export async function listChallengeMemberProgress(input: {
     search: input.search,
     limit: input.limit,
     offset: input.offset,
+    includeCheckinDetails: false,
   });
   return {
     rows: details.map(({ tasks: _tasks, ...row }) => row),
@@ -168,6 +169,7 @@ export async function getChallengeMemberProgress(input: {
   const { details } = await getChallengeProgressDetails({
     challengeId: input.challengeId,
     userId: input.userId,
+    includeCheckinDetails: true,
   });
   return details[0] ?? null;
 }
@@ -178,6 +180,7 @@ async function getChallengeProgressDetails(input: {
   search?: string;
   limit?: number;
   offset?: number;
+  includeCheckinDetails: boolean;
 }): Promise<{ details: ChallengeMemberProgressDetail[]; total: number }> {
   const memberWhere = challengeMemberWhere(input);
   const challenge = await prisma.challenge.findUnique({
@@ -230,31 +233,59 @@ async function getChallengeProgressDetails(input: {
   if (members.length === 0) return { details: [], total };
 
   const userIds = members.map((m) => m.userId);
-  const checkins = await prisma.checkin.findMany({
-    where: {
-      challengeId: input.challengeId,
-      userId: { in: userIds },
-      dayNumber: { not: null },
-    },
-    orderBy: { createdAt: "asc" },
-    select: {
-      id: true,
-      userId: true,
-      dayNumber: true,
-      content: true,
-      linkUrl: true,
-      imageUrl: true,
-      imageUrls: true,
-      status: true,
-      reviewNote: true,
-      reviewedAt: true,
-      reviewedBy: { select: { id: true, name: true } },
-      rejectCount: true,
-      reviewHistory: true,
-      createdAt: true,
-      resubmittedAt: true,
-    },
-  });
+  const checkins = input.includeCheckinDetails
+    ? await prisma.checkin.findMany({
+        where: {
+          challengeId: input.challengeId,
+          userId: { in: userIds },
+          dayNumber: { not: null },
+        },
+        orderBy: { createdAt: "asc" },
+        select: {
+          id: true,
+          userId: true,
+          dayNumber: true,
+          content: true,
+          linkUrl: true,
+          imageUrl: true,
+          imageUrls: true,
+          status: true,
+          reviewNote: true,
+          reviewedAt: true,
+          reviewedBy: { select: { id: true, name: true } },
+          rejectCount: true,
+          reviewHistory: true,
+          createdAt: true,
+          resubmittedAt: true,
+        },
+      })
+    : (await prisma.checkin.findMany({
+        where: {
+          challengeId: input.challengeId,
+          userId: { in: userIds },
+          dayNumber: { not: null },
+        },
+        orderBy: { createdAt: "asc" },
+        select: {
+          id: true,
+          userId: true,
+          dayNumber: true,
+          status: true,
+          createdAt: true,
+          resubmittedAt: true,
+        },
+      })).map((checkin) => ({
+        ...checkin,
+        content: "",
+        linkUrl: null,
+        imageUrl: null,
+        imageUrls: [],
+        reviewNote: null,
+        reviewedAt: null,
+        reviewedBy: null,
+        rejectCount: 0,
+        reviewHistory: null,
+      }));
 
   return {
     details: buildChallengeMemberProgress({

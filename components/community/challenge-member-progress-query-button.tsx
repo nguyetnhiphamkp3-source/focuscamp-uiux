@@ -28,7 +28,7 @@ export function ChallengeMemberProgressQueryButton({
     if (memberId) params.set("member", memberId);
     else params.delete("member");
     const qs = params.toString();
-    router.push(qs ? `${pathname}?${qs}` : pathname);
+    router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }
 
   return (
@@ -66,7 +66,7 @@ export function ChallengeMemberProgressSearchForm({
     else params.delete("memberSearch");
     params.delete("memberPage");
     const qs = params.toString();
-    router.push(qs ? `${pathname}?${qs}` : pathname);
+    router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }
 
   function clearSearch() {
@@ -74,7 +74,7 @@ export function ChallengeMemberProgressSearchForm({
     params.delete("memberSearch");
     params.delete("memberPage");
     const qs = params.toString();
-    router.push(qs ? `${pathname}?${qs}` : pathname);
+    router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }
 
   return (
@@ -128,7 +128,7 @@ export function ChallengeMemberProgressPageButton({
     if (page <= 1) params.delete("memberPage");
     else params.set("memberPage", String(page));
     const qs = params.toString();
-    router.push(qs ? `${pathname}?${qs}` : pathname);
+    router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }
 
   return (

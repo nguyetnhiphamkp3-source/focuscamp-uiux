@@ -17,6 +17,7 @@ import {
   ChallengeMemberProgressQueryButton,
   ChallengeMemberProgressSearchForm,
 } from "@/components/community/challenge-member-progress-query-button";
+import { ChallengeMemberProgressModalFrame } from "@/components/community/challenge-member-progress-modal-frame";
 
 export function ChallengeMemberProgressInspector({
   communitySlug,
@@ -131,7 +132,7 @@ export function ChallengeMemberProgressInspector({
       )}
 
       {detail && (
-        <MemberProgressDetailPanel
+        <MemberProgressDetailModal
           detail={detail}
           communitySlug={communitySlug}
         />
@@ -204,23 +205,45 @@ function MemberPickerRow({
   );
 }
 
-function MemberProgressDetailPanel({
+function MemberProgressDetailModal({
   detail,
   communitySlug,
 }: {
   detail: ChallengeMemberProgressDetail;
   communitySlug: string;
 }) {
+  const titleId = `member-progress-${detail.memberId}-title`;
+
+  return (
+    <ChallengeMemberProgressModalFrame>
+      <MemberProgressDetailPanel
+        detail={detail}
+        communitySlug={communitySlug}
+        modal
+        titleId={titleId}
+      />
+    </ChallengeMemberProgressModalFrame>
+  );
+}
+
+function MemberProgressDetailPanel({
+  detail,
+  communitySlug,
+  modal = false,
+  titleId,
+}: {
+  detail: ChallengeMemberProgressDetail;
+  communitySlug: string;
+  modal?: boolean;
+  titleId?: string;
+}) {
   const name = displayName(detail.user);
   return (
     <div
-      style={{
-        marginTop: "var(--space-4)",
-        border: "1px solid var(--border-subtle)",
-        borderRadius: "var(--r-md)",
-        background: "var(--bg-card)",
-        overflow: "hidden",
-      }}
+      role={modal ? "dialog" : undefined}
+      aria-modal={modal ? "true" : undefined}
+      aria-labelledby={modal ? titleId : undefined}
+      style={modal ? modalPanelStyle : detailPanelStyle}
     >
       <div
         style={{
@@ -237,6 +260,7 @@ function MemberProgressDetailPanel({
           <MemberAvatar userId={detail.user.id} name={name} image={detail.user.image} size={42} />
           <div style={{ minWidth: 0 }}>
             <Link
+              id={titleId}
               href={`/c/${communitySlug}/profile/${detail.user.id}`}
               style={{
                 color: "var(--text-heading)",
@@ -273,7 +297,7 @@ function MemberProgressDetailPanel({
         </ChallengeMemberProgressQueryButton>
       </div>
 
-      <div style={{ padding: "var(--space-4)" }}>
+      <div style={modal ? modalBodyStyle : detailBodyStyle}>
         <div
           style={{
             display: "grid",
@@ -673,4 +697,33 @@ const warningStyle: CSSProperties = {
   background: "var(--warning-soft)",
   color: "var(--text-normal)",
   fontSize: "var(--text-sm)",
+};
+
+const detailPanelStyle: CSSProperties = {
+  marginTop: "var(--space-4)",
+  border: "1px solid var(--border-subtle)",
+  borderRadius: "var(--r-md)",
+  background: "var(--bg-card)",
+  overflow: "hidden",
+};
+
+const modalPanelStyle: CSSProperties = {
+  width: "min(860px, calc(100vw - 32px))",
+  maxHeight: "calc(100vh - 48px)",
+  display: "flex",
+  flexDirection: "column",
+  border: "1px solid var(--border-subtle)",
+  borderRadius: "var(--r-md)",
+  background: "var(--bg-card)",
+  overflow: "hidden",
+  boxShadow: "0 20px 60px rgba(0,0,0,0.35)",
+};
+
+const detailBodyStyle: CSSProperties = {
+  padding: "var(--space-4)",
+};
+
+const modalBodyStyle: CSSProperties = {
+  padding: "var(--space-4)",
+  overflowY: "auto",
 };
