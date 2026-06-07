@@ -11,6 +11,7 @@ import { assertCommunityCanWrite } from "./community";
 import { canCommunity, effectiveCommunityRole } from "@/lib/community-permissions";
 import { deleteReplacedMediaUrl } from "@/lib/media-cleanup";
 import { checkinImages } from "@/lib/checkin-images";
+import { canResubmitCheckin } from "@/lib/checkin-resubmit-state";
 
 export type SubmissionStatus = "PENDING" | "APPROVED" | "REJECTED";
 
@@ -470,6 +471,8 @@ export async function reviewSubmission(input: {
 
 /**
  * Flag a check-in as PENDING (removes any prior approval). Admin-only.
+ * A preserved reviewedAt marks this as a reopened pending row, so the member can
+ * revise it; fresh pending submissions still have reviewedAt=null and stay locked.
  */
 export async function flagSubmissionForReview(input: {
   userId: string;
@@ -485,16 +488,37 @@ export async function flagSubmissionForReview(input: {
     where: { id: input.checkinId },
     data: {
       status: "PENDING",
-      reviewedById: null,
-      reviewedAt: null,
-      reviewNote: null,
+      reviewedById: checkin.reviewedById,
+      reviewedAt: checkin.reviewedAt ?? new Date(),
+      reviewNote: checkin.status === "REJECTED" ? checkin.reviewNote : null,
       aiReviewData: Prisma.DbNull,
     },
   });
+  await recomputeMemberCompletion(checkin.userId, checkin.challengeId);
   logger.info(
     { checkinId: input.checkinId, by: input.userId },
     "[challenge] submission flagged for review"
   );
+
+  const ctx = await prisma.challenge.findUnique({
+    where: { id: checkin.challengeId },
+    select: {
+      slug: true,
+      title: true,
+      community: { select: { slug: true } },
+    },
+  });
+  if (ctx) {
+    await createNotification({
+      userId: checkin.userId,
+      type: "SUBMISSION_REOPENED",
+      title: `Submission của bạn được đưa về chờ duyệt (${ctx.title})`,
+      body: checkin.status === "REJECTED" ? checkin.reviewNote || undefined : undefined,
+      actorId: input.userId,
+      link: `/c/${ctx.community.slug}/challenges/${ctx.slug}`,
+      communitySlug: ctx.community.slug,
+    });
+  }
   return updated;
 }
 
@@ -677,8 +701,8 @@ export async function resubmitCheckin(input: {
   if (!checkin) throw new Error("Check-in không tồn tại");
   if (checkin.userId !== input.userId)
     throw new Error("Chỉ tác giả mới nộp lại được");
-  if (checkin.status !== "REJECTED")
-    throw new Error("Chỉ nộp lại được checkin đã bị từ chối");
+  if (!canResubmitCheckin(checkin))
+    throw new Error("Chỉ nộp lại được checkin bị từ chối hoặc được admin mở lại");
   if (checkin.rejectCount >= REJECT_CAP) {
     throw new Error(
       `Đã nộp lại ${REJECT_CAP} lần — liên hệ admin / cần thanh toán để resubmit (Phase 2)`
@@ -718,16 +742,19 @@ export async function resubmitCheckin(input: {
   const prevHistory = Array.isArray(checkin.reviewHistory)
     ? (checkin.reviewHistory as unknown[])
     : [];
-  const rejectedSnapshot = {
-    content: checkin.content,
-    linkUrl: checkin.linkUrl,
-    imageUrls: checkinImages(checkin),
-    reviewNote: checkin.reviewNote,
-    aiReviewData: checkin.aiReviewData ?? null,
-    reviewedAt: checkin.reviewedAt?.toISOString() ?? null,
-    rejectedAt: (checkin.reviewedAt ?? new Date()).toISOString(),
-    attempt: checkin.rejectCount, // 1 = first rejection, 2 = second, …
-  };
+  const rejectedSnapshot =
+    checkin.status === "REJECTED"
+      ? {
+          content: checkin.content,
+          linkUrl: checkin.linkUrl,
+          imageUrls: checkinImages(checkin),
+          reviewNote: checkin.reviewNote,
+          aiReviewData: checkin.aiReviewData ?? null,
+          reviewedAt: checkin.reviewedAt?.toISOString() ?? null,
+          rejectedAt: (checkin.reviewedAt ?? new Date()).toISOString(),
+          attempt: checkin.rejectCount, // 1 = first rejection, 2 = second, ...
+        }
+      : null;
 
   const updated = await prisma.checkin.update({
     where: { id: input.checkinId },
@@ -745,14 +772,21 @@ export async function resubmitCheckin(input: {
       // Stale AI verdict is now preserved in reviewHistory; clear it so the row
       // doesn't show last attempt's review until the new one re-runs.
       aiReviewData: Prisma.DbNull,
-      reviewHistory: [...prevHistory, rejectedSnapshot] as Prisma.InputJsonValue,
+      ...(rejectedSnapshot
+        ? { reviewHistory: [...prevHistory, rejectedSnapshot] as Prisma.InputJsonValue }
+        : {}),
       resubmittedAt: new Date(),
     },
   });
   // Keep rejected-attempt media alive: reviewHistory stores these URLs as the
   // audit trail shown to members/admins after resubmit.
   logger.info(
-    { checkinId: input.checkinId, by: input.userId, rejectCount: checkin.rejectCount },
+    {
+      checkinId: input.checkinId,
+      by: input.userId,
+      rejectCount: checkin.rejectCount,
+      previousStatus: checkin.status,
+    },
     "[challenge] submission resubmitted"
   );
   return updated;

@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 import { avatarColorFor, initials } from "@/lib/brand";
 import { parseCheckinHistory } from "@/lib/checkin-history";
+import { isReopenedPendingSubmission } from "@/lib/checkin-resubmit-state";
 import type {
   ChallengeMemberProgressDetail,
   ChallengeMemberProgressRow,
@@ -377,7 +378,12 @@ function TimelineTask({
         >
           {task.deadlineAt && <span>Hạn {formatDateTime(task.deadlineAt)}</span>}
           {task.checkin && <span>Nộp {formatDateTime(task.checkin.submittedAt)}</span>}
-          {task.checkin?.reviewedAt && <span>Duyệt {formatDateTime(task.checkin.reviewedAt)}</span>}
+          {task.checkin?.reviewedAt && (
+            <span>
+              {isReopenedPendingSubmission(task.checkin) ? "Mở lại" : "Duyệt"}{" "}
+              {formatDateTime(task.checkin.reviewedAt)}
+            </span>
+          )}
         </div>
 
         {task.checkin && (

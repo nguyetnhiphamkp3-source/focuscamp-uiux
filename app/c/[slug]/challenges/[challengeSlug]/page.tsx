@@ -43,6 +43,10 @@ import type { AIReviewData } from "@/lib/ai-review-data";
 import { listAIProviders } from "@/lib/services/ai-provider";
 import { checkinImages } from "@/lib/checkin-images";
 import {
+  canResubmitCheckin,
+  isReopenedPendingSubmission,
+} from "@/lib/checkin-resubmit-state";
+import {
   getChallengeMemberProgress,
   listChallengeMemberProgress,
 } from "@/lib/services/challenge-member-progress";
@@ -929,6 +933,12 @@ export default async function ChallengeDetailPage({
                 const checkinData = checkinByDay.get(t.dayNumber);
                 const isRejected = checkinData?.status === "REJECTED";
                 const isPending = checkinData?.status === "PENDING";
+                const isRevisionRequested = checkinData
+                  ? isReopenedPendingSubmission(checkinData)
+                  : false;
+                const canResubmit = checkinData
+                  ? canResubmitCheckin(checkinData)
+                  : false;
                 const isDone = doneDayNumbers.has(t.dayNumber);
                 const isCurrent = !isDone && !isRejected && t.dayNumber === dayNow;
                 const isFuture = t.dayNumber > dayNow && !isDone && !isRejected;
@@ -1021,7 +1031,9 @@ export default async function ChallengeDetailPage({
                       )}
                       {isDone && isPending && (
                         <span className="ch-task-status">
-                          <span className="pending">⏳ Chờ duyệt</span>
+                          <span className="pending">
+                            {isRevisionRequested ? "↻ Cần nộp lại" : "⏳ Chờ duyệt"}
+                          </span>
                         </span>
                       )}
                       {isDone && !isPending && (
@@ -1196,14 +1208,14 @@ export default async function ChallengeDetailPage({
                             {(isRejected || isPending || permissions.canReviewSubmissions) && (
                               <div className={`ch-submission${isRejected ? " ch-submission-rejected" : ""}`}>
                                 <div className="ch-submission-label">
-                                  {isRejected ? "Bài nộp bị từ chối" : isResubmitted ? "Bài nộp lại" : "Bài nộp của bạn"}
+                                  {isRejected ? "Bài nộp bị từ chối" : isRevisionRequested ? "Bài nộp cần sửa" : isResubmitted ? "Bài nộp lại" : "Bài nộp của bạn"}
                                   <span style={{ marginLeft: "var(--space-2)", fontWeight: "var(--fw-normal)", color: "var(--text-muted)", fontSize: "var(--text-xs)" }}>
                                     {isResubmitted ? `Nộp lại lúc ${timeStr}` : `Nộp lúc ${timeStr}`}
                                   </span>
                                 </div>
                                 {checkinData.reviewedAt && !isRejected && permissions.canReviewSubmissions && (
                                   <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: "var(--space-2)" }}>
-                                    Duyệt lúc {checkinData.reviewedAt.toLocaleString("vi-VN", fmtOpts)}
+                                    {isRevisionRequested ? "Đưa về chờ duyệt lúc" : "Duyệt lúc"} {checkinData.reviewedAt.toLocaleString("vi-VN", fmtOpts)}
                                   </div>
                                 )}
                                 {checkinData.aiReviewData && (
@@ -1212,16 +1224,16 @@ export default async function ChallengeDetailPage({
                                     status={checkinData.status}
                                   />
                                 )}
-                                {isRejected && checkinData.reviewNote && (
+                                {(isRejected || isRevisionRequested) && checkinData.reviewNote && (
                                   <div className="ch-submission-reject-note">
-                                    <strong>Lý do:</strong> {checkinData.reviewNote}
+                                    <strong>{isRejected ? "Lý do" : "Góp ý trước đó"}:</strong> {checkinData.reviewNote}
                                   </div>
                                 )}
                                 <div className="ch-submission-content"><LinkifiedText>{checkinData.content}</LinkifiedText></div>
                                 <SubmissionImageCarousel images={evidenceImages} alt="Bài nộp" />
                                 {/* Proof trail of earlier rejected attempts (shown here when no recap above) */}
                                 {!(isDone && !isRejected) && <SubmissionHistory entries={history} />}
-                                {isRejected && (
+                                {canResubmit && (
                                   <ResubmitForm
                                     checkinId={checkinData.id}
                                     communitySlug={slug}

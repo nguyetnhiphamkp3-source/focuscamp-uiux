@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
  * Invisible client component for the challenge detail page. Listens for
  * `fc:notification` window events (re-broadcast by the notification bell's single
  * SSE connection — no new connection opened here) and refreshes the page when
- * THIS user's submission in THIS challenge is approved/rejected, so the submitter
+ * THIS user's submission in THIS challenge is approved/rejected/reopened, so the submitter
  * sees the new status live without a manual reload.
  */
 export function ChallengeLiveRefresh({ challengeSlug }: { challengeSlug: string }) {
@@ -21,7 +21,8 @@ export function ChallengeLiveRefresh({ challengeSlug }: { challengeSlug: string 
       if (!detail) return;
       if (
         detail.type !== "SUBMISSION_APPROVED" &&
-        detail.type !== "SUBMISSION_REJECTED"
+        detail.type !== "SUBMISSION_REJECTED" &&
+        detail.type !== "SUBMISSION_REOPENED"
       ) {
         return;
       }

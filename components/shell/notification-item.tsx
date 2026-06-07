@@ -31,6 +31,7 @@ const TYPE_ICON: Record<string, string> = {
   POST_COT: "⭐",
   SUBMISSION_APPROVED: "✓",
   SUBMISSION_REJECTED: "✕",
+  SUBMISSION_REOPENED: "↻",
   FOLLOW: "👥",
   UNFOLLOW: "👤",
 };
@@ -59,7 +60,9 @@ export function NotificationItem({ n }: { n: InboxItem }) {
   // Submission decisions are attributed to the community (not the reviewing
   // admin), so they show the community icon. Everything else uses the actor.
   const isReviewDecision =
-    n.type === "SUBMISSION_APPROVED" || n.type === "SUBMISSION_REJECTED";
+    n.type === "SUBMISSION_APPROVED" ||
+    n.type === "SUBMISSION_REJECTED" ||
+    n.type === "SUBMISSION_REOPENED";
   const avatar =
     isReviewDecision && n.community
       ? { image: n.community.iconUrl, colorKey: n.community.slug, label: n.community.name }

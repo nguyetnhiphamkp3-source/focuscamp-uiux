@@ -94,7 +94,7 @@ Key: ✅ done · 🟡 partial · ❌ not started · 🚫 deferred (Phase 2+)
 | `approveAllPending` bulk | ✅ | |
 | Voting on submissions | ✅ | CheckinVote model + 👍 pill |
 | Video feedback submit + review | ❌ | Phase 2 |
-| Resubmit after reject (with rejectCount cap) | ✅ | Cap at 2, note preserved |
+| Resubmit after reject (with rejectCount cap) | ✅ | Cap at 2, note preserved; admin-reopened pending submissions can be resubmitted |
 | Admin CRUD tasks inline | ✅ | TaskEditorButton + CreateTaskButton + delete |
 | Freeze mechanics (pause timer) | 🟡 | UI + banner shipped; day-count adjustment = Phase 2 |
 | **XP award system** (+5/post, +2/comment, +5×mult/checkin, +10/approve+best) | ✅ | awardXp + XPLedger persisted |

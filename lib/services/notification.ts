@@ -26,6 +26,7 @@ export type NotificationType =
   | "POST_COT"
   | "SUBMISSION_APPROVED"
   | "SUBMISSION_REJECTED"
+  | "SUBMISSION_REOPENED"
   | "FOLLOW"
   | "UNFOLLOW"
   | "AGENT_BROADCAST"
