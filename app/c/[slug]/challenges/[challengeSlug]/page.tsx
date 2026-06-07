@@ -100,6 +100,8 @@ export default async function ChallengeDetailPage({
           name: true,
           id: true,
           ownerId: true,
+          agentName: true,
+          agentAvatarUrl: true,
           tiersConfig: true,
           memberships: session?.user?.id
             ? { where: { userId: session.user.id }, select: { role: true } }
@@ -939,6 +941,9 @@ export default async function ChallengeDetailPage({
                 const canResubmit = checkinData
                   ? canResubmitCheckin(checkinData)
                   : false;
+                const aiReviewerName = challenge.community.agentName?.trim() || "AI Agent";
+                const hasAiReview =
+                  challenge.aiReviewEnabled && !!t.aiReviewGuidelines?.trim();
                 const isDone = doneDayNumbers.has(t.dayNumber);
                 const isCurrent = !isDone && !isRejected && t.dayNumber === dayNow;
                 const isFuture = t.dayNumber > dayNow && !isDone && !isRejected;
@@ -1145,7 +1150,7 @@ export default async function ChallengeDetailPage({
                             <SopContent content={t.sopContent} />
                           </div>
                         )}
-                        {hasEvidenceHint && (
+                        {(hasEvidenceHint || hasAiReview) && (
                           <div
                             style={{
                               marginTop: "var(--space-3)",
@@ -1154,10 +1159,53 @@ export default async function ChallengeDetailPage({
                               border: "1px solid var(--border-subtle)",
                               color: "var(--text-muted)",
                               fontSize: "var(--text-sm)",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "var(--space-2)",
+                              flexWrap: "wrap",
                             }}
                           >
-                            Evidence: {evidenceTypeLabel(t.evidenceType)}
-                            {t.evidenceLabel ? ` · ${t.evidenceLabel}` : ""}
+                            {hasEvidenceHint && (
+                              <span>
+                                Evidence: {evidenceTypeLabel(t.evidenceType)}
+                                {t.evidenceLabel ? ` · ${t.evidenceLabel}` : ""}
+                              </span>
+                            )}
+                            {hasAiReview && (
+                              <span
+                                title={`${aiReviewerName} sẽ chấm bài tự động sau khi bạn nộp`}
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "var(--space-1)",
+                                  padding: "2px 8px",
+                                  borderRadius: 999,
+                                  border: "1px solid rgba(88,101,242,0.22)",
+                                  background: "rgba(88,101,242,0.08)",
+                                  color: "var(--info)",
+                                  fontSize: "var(--text-xs)",
+                                  fontWeight: "var(--fw-bold)",
+                                }}
+                              >
+                                {challenge.community.agentAvatarUrl ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img
+                                    src={challenge.community.agentAvatarUrl}
+                                    alt=""
+                                    style={{
+                                      width: 16,
+                                      height: 16,
+                                      borderRadius: "50%",
+                                      objectFit: "cover",
+                                      flexShrink: 0,
+                                    }}
+                                  />
+                                ) : (
+                                  <span aria-hidden="true">🤖</span>
+                                )}
+                                {aiReviewerName} chấm AI
+                              </span>
+                            )}
                           </div>
                         )}
                         {checkinData && (() => {
