@@ -1173,7 +1173,7 @@ export default async function ChallengeDetailPage({
                             )}
                             {hasAiReview && (
                               <span
-                                title={`${aiReviewerName} sẽ chấm bài tự động sau khi bạn nộp`}
+                                title={`Task này có ${aiReviewerName} duyệt bài`}
                                 style={{
                                   display: "inline-flex",
                                   alignItems: "center",
@@ -1203,7 +1203,7 @@ export default async function ChallengeDetailPage({
                                 ) : (
                                   <span aria-hidden="true">🤖</span>
                                 )}
-                                {aiReviewerName} chấm AI
+                                Task này có {aiReviewerName} duyệt bài
                               </span>
                             )}
                           </div>
