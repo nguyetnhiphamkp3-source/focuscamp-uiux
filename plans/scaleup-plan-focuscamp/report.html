@@ -1,0 +1,1206 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>scaleup-plan-focuscamp - Multi-instance Scale Plan</title>
+  <style>
+    :root {
+      --bg: #f6f7f4;
+      --panel: #ffffff;
+      --panel-2: #f0f6f2;
+      --ink: #18201d;
+      --muted: #63706a;
+      --line: #dce4de;
+      --green: #1b9e75;
+      --green-dark: #0c6b52;
+      --blue: #2f6fed;
+      --amber: #b7791f;
+      --red: #c2413b;
+      --purple: #7556d9;
+      --shadow: 0 18px 60px rgba(24, 32, 29, 0.09);
+      --radius: 14px;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      --sans: Arial, Helvetica, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.62;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    code,
+    pre {
+      font-family: var(--mono);
+    }
+
+    .page {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .toc {
+      position: sticky;
+      top: 0;
+      align-self: start;
+      height: 100vh;
+      padding: 26px 18px;
+      border-right: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.78);
+      backdrop-filter: blur(10px);
+      overflow: auto;
+    }
+
+    .toc-title {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--green-dark);
+      margin-bottom: 10px;
+    }
+
+    .toc h1 {
+      margin: 0 0 18px;
+      font-size: 22px;
+      line-height: 1.15;
+    }
+
+    .toc nav {
+      display: grid;
+      gap: 6px;
+    }
+
+    .toc a {
+      display: block;
+      padding: 8px 10px;
+      border-radius: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .toc a:hover {
+      background: var(--panel-2);
+      color: var(--ink);
+    }
+
+    .toc-meta {
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    main {
+      width: min(1180px, 100%);
+      margin: 0 auto;
+      padding: 32px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid #cfe0d6;
+      border-radius: 24px;
+      padding: 34px;
+      background:
+        linear-gradient(135deg, rgba(27, 158, 117, 0.13), rgba(47, 111, 237, 0.08)),
+        var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+      color: var(--green-dark);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 5px rgba(27, 158, 117, 0.12);
+    }
+
+    .hero h2 {
+      margin: 0;
+      max-width: 880px;
+      font-size: clamp(32px, 5vw, 58px);
+      line-height: 1.02;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      max-width: 860px;
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 24px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 7px 10px;
+      background: rgba(255, 255, 255, 0.78);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .badge.critical {
+      border-color: rgba(194, 65, 59, 0.24);
+      background: rgba(194, 65, 59, 0.08);
+      color: #8f2f2b;
+    }
+
+    .badge.ready {
+      border-color: rgba(27, 158, 117, 0.26);
+      background: rgba(27, 158, 117, 0.08);
+      color: var(--green-dark);
+    }
+
+    section {
+      margin-top: 28px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: 0 10px 36px rgba(24, 32, 29, 0.05);
+    }
+
+    .section-head {
+      padding: 24px 24px 0;
+    }
+
+    .section-head h2 {
+      margin: 0;
+      font-size: 26px;
+      line-height: 1.18;
+      letter-spacing: 0;
+    }
+
+    .section-head p {
+      margin: 8px 0 0;
+      color: var(--muted);
+    }
+
+    .section-body {
+      padding: 24px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .grid.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grid.three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .grid.four {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px;
+      background: #fff;
+    }
+
+    .card.tint {
+      background: var(--panel-2);
+    }
+
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 17px;
+      line-height: 1.25;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      margin-bottom: 10px;
+      border-radius: 10px;
+      background: var(--green);
+      color: white;
+      font-weight: 800;
+      font-size: 13px;
+    }
+
+    .status-line {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .status-line:last-child {
+      border-bottom: 0;
+    }
+
+    .status-line strong {
+      font-size: 13px;
+    }
+
+    .status-line span {
+      color: var(--muted);
+    }
+
+    .svg-wrap {
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fbfcfb;
+    }
+
+    svg {
+      display: block;
+      min-width: 760px;
+      width: 100%;
+      height: auto;
+    }
+
+    .track {
+      display: grid;
+      grid-template-columns: 86px minmax(0, 1fr);
+      gap: 18px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .track + .track {
+      margin-top: 12px;
+    }
+
+    .track-id {
+      display: grid;
+      place-items: center;
+      min-height: 86px;
+      border-radius: 14px;
+      background: #17201d;
+      color: #fff;
+      font-weight: 900;
+      font-size: 22px;
+    }
+
+    .track h3 {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+
+    .track p {
+      margin: 0 0 10px;
+      color: var(--muted);
+    }
+
+    .mini-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .mini-list li {
+      position: relative;
+      padding-left: 18px;
+      color: #34413c;
+    }
+
+    .mini-list li::before {
+      content: "";
+      position: absolute;
+      top: 0.72em;
+      left: 0;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    .timeline {
+      display: grid;
+      gap: 12px;
+    }
+
+    .phase {
+      display: grid;
+      grid-template-columns: 104px minmax(0, 1fr) 150px;
+      gap: 14px;
+      align-items: start;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .phase .tag {
+      display: inline-flex;
+      justify-content: center;
+      border-radius: 10px;
+      padding: 7px 9px;
+      background: #17201d;
+      color: white;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .phase h3 {
+      margin: 0 0 5px;
+      font-size: 16px;
+    }
+
+    .phase p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .phase .priority {
+      justify-self: end;
+      border-radius: 999px;
+      padding: 6px 9px;
+      font-size: 12px;
+      font-weight: 800;
+      background: rgba(27, 158, 117, 0.1);
+      color: var(--green-dark);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+
+    th,
+    td {
+      padding: 12px 10px;
+      border: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #edf5f0;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #31453d;
+    }
+
+    td {
+      background: #fff;
+    }
+
+    .risk-high {
+      color: var(--red);
+      font-weight: 800;
+    }
+
+    .risk-med {
+      color: var(--amber);
+      font-weight: 800;
+    }
+
+    .risk-low {
+      color: var(--green-dark);
+      font-weight: 800;
+    }
+
+    pre {
+      overflow: auto;
+      margin: 0;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #111815;
+      color: #dff3e9;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .file-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .file-pill {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 9px 10px;
+      background: #fff;
+      color: #35433d;
+      font-family: var(--mono);
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .callout {
+      border: 1px solid rgba(183, 121, 31, 0.25);
+      border-radius: 12px;
+      padding: 16px;
+      background: rgba(183, 121, 31, 0.08);
+    }
+
+    .callout strong {
+      color: #7a4e12;
+    }
+
+    .footer {
+      margin: 30px 0 12px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    @media (max-width: 980px) {
+      .page {
+        display: block;
+      }
+
+      .toc {
+        position: relative;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      main {
+        padding: 18px;
+      }
+
+      .grid.two,
+      .grid.three,
+      .grid.four,
+      .file-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .phase,
+      .track,
+      .status-line {
+        grid-template-columns: 1fr;
+      }
+
+      .phase .priority {
+        justify-self: start;
+      }
+
+      .hero {
+        padding: 24px;
+      }
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .page {
+        display: block;
+      }
+
+      .toc {
+        position: relative;
+        height: auto;
+        border: 1px solid var(--line);
+        margin: 20px;
+      }
+
+      section,
+      .hero {
+        box-shadow: none;
+        break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <aside class="toc" aria-label="Mục lục">
+      <div class="toc-title">Scale Plan</div>
+      <h1>scaleup-plan-focuscamp</h1>
+      <nav>
+        <a href="#overview">01. Tổng quan</a>
+        <a href="#first">02. Làm gì trước?</a>
+        <a href="#target">03. Kiến trúc mục tiêu</a>
+        <a href="#tracks">04. 6 track scale</a>
+        <a href="#phases">05. Lộ trình PR</a>
+        <a href="#risks">06. Rủi ro P0</a>
+        <a href="#agent">07. AI Agent task graph</a>
+        <a href="#done">08. Definition of Done</a>
+        <a href="#sources">09. Source map</a>
+      </nav>
+      <div class="toc-meta">
+        <strong>Audit date:</strong><br>
+        2026-06-07<br><br>
+        <strong>Target:</strong><br>
+        Multi-instance production readiness<br><br>
+        <strong>File:</strong><br>
+        <code>plans/scaleup-plan-focuscamp/report.html</code>
+      </div>
+    </aside>
+
+    <main>
+      <header class="hero" id="overview">
+        <div class="eyebrow"><span class="dot"></span> focus.camp scale-up plan</div>
+        <h2>Kế hoạch nâng focus.camp từ single-VPS early production lên multi-instance production.</h2>
+        <p>
+          Bản HTML này tóm tắt kế hoạch update code và hạ tầng để hệ thống scale được:
+          stateless app replicas, Redis bắt buộc, worker singleton, cache/counter/index cho hot path,
+          realtime SSE, service-side permission và deploy an toàn hơn.
+        </p>
+        <div class="badges">
+          <span class="badge ready">Self-contained HTML</span>
+          <span class="badge ready">Human-readable</span>
+          <span class="badge ready">AI Agent-readable</span>
+          <span class="badge critical">P0 security first</span>
+          <span class="badge">No external assets</span>
+        </div>
+      </header>
+
+      <section id="first">
+        <div class="section-head">
+          <h2>Đọc nhanh: làm cái nào trước?</h2>
+          <p>Câu trả lời ngắn là làm security trước, chưa scale hạ tầng ngay.</p>
+        </div>
+        <div class="section-body">
+          <div class="grid two">
+            <article class="card tint">
+              <span class="number">1</span>
+              <h3>PR đầu tiên: `security-service-hardening`</h3>
+              <p>
+                Fix các cửa bypass quyền ở backend/service trước: chat, report, API key, owner row,
+                best-answer, product purchase, challenge payment.
+              </p>
+            </article>
+            <article class="card tint">
+              <span class="number">2</span>
+              <h3>Vì sao không làm infra trước?</h3>
+              <p>
+                Nếu thêm nhiều app replicas trước khi khóa permission, lỗi bảo mật sẽ bị nhân rộng,
+                khó trace hơn và dễ thành incident hơn.
+              </p>
+            </article>
+          </div>
+
+          <div class="grid three" style="margin-top: 14px;">
+            <article class="card">
+              <h3>Làm xong thì thấy gì?</h3>
+              <p>User bị remove/demote không còn dùng API key, chat, report, purchase, challenge path để bypass được.</p>
+            </article>
+            <article class="card">
+              <h3>Sau đó làm gì?</h3>
+              <p>Redis required + distributed rate limit, rồi DB index/counter/cache, rồi realtime SSE, worker, deploy multi-instance.</p>
+            </article>
+            <article class="card">
+              <h3>Câu nhớ nhanh</h3>
+              <p><strong>Khóa cửa trước, rồi mới mở thêm nhà.</strong> Engineering translation: secure service boundaries first, then scale infrastructure.</p>
+            </article>
+          </div>
+
+          <table style="margin-top: 14px;">
+            <thead>
+              <tr>
+                <th>Thứ tự</th>
+                <th>Việc</th>
+                <th>Mục tiêu dễ hiểu</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td>Security fixes</td>
+                <td>Không ai bypass quyền bằng API/action trực tiếp.</td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>Redis + rate limit</td>
+                <td>Nhiều server vẫn dùng chung giới hạn request và trạng thái realtime.</td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td>DB index + counter + cache</td>
+                <td>Trang đông người không query nặng lặp lại liên tục.</td>
+              </tr>
+              <tr>
+                <td>4</td>
+                <td>Realtime SSE</td>
+                <td>Chat/notification cập nhật ngay, không phải refresh/poll DB quá nhiều.</td>
+              </tr>
+              <tr>
+                <td>5</td>
+                <td>Worker + cron split</td>
+                <td>Job nền không bị chạy trùng khi có nhiều app replicas.</td>
+              </tr>
+              <tr>
+                <td>6</td>
+                <td>Multi-instance deploy</td>
+                <td>Lúc này mới mở rộng app replicas sau load balancer.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <h2>Trạng thái hiện tại</h2>
+          <p>Codebase đã đủ nền sản phẩm, nhưng các đường vận hành scale cần được khóa lại trước khi tăng traffic.</p>
+        </div>
+        <div class="section-body">
+          <div class="grid three">
+            <article class="card tint">
+              <h3>Đã có nền tốt</h3>
+              <p>Next.js App Router, Prisma/Postgres, Redis/BullMQ optional, R2/S3, SePay, NextAuth, AI Agent/MCP.</p>
+            </article>
+            <article class="card tint">
+              <h3>Chưa replica-safe</h3>
+              <p>Rate limit fallback in-memory, worker/cron có nguy cơ chạy lặp, DB/Redis còn gắn với một stack.</p>
+            </article>
+            <article class="card tint">
+              <h3>Cần chốt service layer</h3>
+              <p>Một số flow vẫn phụ thuộc UI hoặc caller-provided id. Khi scale, các gap permission sẽ thành incident.</p>
+            </article>
+          </div>
+          <div class="status-line">
+            <strong>Kết luận ngắn</strong>
+            <span>Scale được, nhưng cần đi theo thứ tự: security -> Redis/rate limit -> DB/cache -> realtime -> worker/infra.</span>
+          </div>
+          <div class="status-line">
+            <strong>Không làm</strong>
+            <span>Không rewrite app, không chuyển khỏi Postgres, không nhảy thẳng Kubernetes, không sửa app code trong artifact này.</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="target">
+        <div class="section-head">
+          <h2>Kiến trúc mục tiêu</h2>
+          <p>App replicas stateless, mọi state phân tán đi qua Postgres/Redis/R2, worker chạy riêng.</p>
+        </div>
+        <div class="section-body">
+          <div class="svg-wrap" role="img" aria-label="Sơ đồ kiến trúc multi-instance mục tiêu">
+            <svg viewBox="0 0 980 470" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+                  <path d="M0,0 L0,6 L9,3 z" fill="#31453d"></path>
+                </marker>
+                <linearGradient id="boxGreen" x1="0" x2="1">
+                  <stop offset="0" stop-color="#e7f5ee"></stop>
+                  <stop offset="1" stop-color="#f6fbf8"></stop>
+                </linearGradient>
+              </defs>
+              <rect x="28" y="34" width="160" height="58" rx="14" fill="#17201d"></rect>
+              <text x="108" y="60" text-anchor="middle" fill="#fff" font-size="15" font-weight="700">Users</text>
+              <text x="108" y="78" text-anchor="middle" fill="#cfe0d6" font-size="12">web + mobile browser</text>
+
+              <rect x="260" y="28" width="190" height="70" rx="16" fill="url(#boxGreen)" stroke="#b9d7c8"></rect>
+              <text x="355" y="58" text-anchor="middle" fill="#17201d" font-size="15" font-weight="700">Cloudflare / WAF</text>
+              <text x="355" y="78" text-anchor="middle" fill="#63706a" font-size="12">TLS, cache static, firewall</text>
+
+              <rect x="520" y="28" width="170" height="70" rx="16" fill="#eef3ff" stroke="#cbd8ff"></rect>
+              <text x="605" y="58" text-anchor="middle" fill="#17201d" font-size="15" font-weight="700">Load Balancer</text>
+              <text x="605" y="78" text-anchor="middle" fill="#63706a" font-size="12">health-aware routing</text>
+
+              <line x1="188" y1="63" x2="250" y2="63" stroke="#31453d" stroke-width="2" marker-end="url(#arrow)"></line>
+              <line x1="450" y1="63" x2="510" y2="63" stroke="#31453d" stroke-width="2" marker-end="url(#arrow)"></line>
+
+              <rect x="60" y="165" width="210" height="78" rx="16" fill="#ffffff" stroke="#dce4de"></rect>
+              <text x="165" y="195" text-anchor="middle" fill="#17201d" font-size="15" font-weight="700">Next.js app A</text>
+              <text x="165" y="216" text-anchor="middle" fill="#63706a" font-size="12">WORKER_ENABLED=false</text>
+
+              <rect x="330" y="165" width="210" height="78" rx="16" fill="#ffffff" stroke="#dce4de"></rect>
+              <text x="435" y="195" text-anchor="middle" fill="#17201d" font-size="15" font-weight="700">Next.js app B</text>
+              <text x="435" y="216" text-anchor="middle" fill="#63706a" font-size="12">stateless replica</text>
+
+              <rect x="600" y="165" width="210" height="78" rx="16" fill="#ffffff" stroke="#dce4de"></rect>
+              <text x="705" y="195" text-anchor="middle" fill="#17201d" font-size="15" font-weight="700">Next.js app N</text>
+              <text x="705" y="216" text-anchor="middle" fill="#63706a" font-size="12">horizontal scale</text>
+
+              <line x1="605" y1="98" x2="165" y2="154" stroke="#31453d" stroke-width="2" marker-end="url(#arrow)"></line>
+              <line x1="605" y1="98" x2="435" y2="154" stroke="#31453d" stroke-width="2" marker-end="url(#arrow)"></line>
+              <line x1="605" y1="98" x2="705" y2="154" stroke="#31453d" stroke-width="2" marker-end="url(#arrow)"></line>
+
+              <rect x="62" y="315" width="185" height="72" rx="16" fill="#eaf7f1" stroke="#b9d7c8"></rect>
+              <text x="154" y="345" text-anchor="middle" fill="#17201d" font-size="15" font-weight="700">Postgres</text>
+              <text x="154" y="365" text-anchor="middle" fill="#63706a" font-size="12">primary DB + migrations</text>
+
+              <rect x="285" y="315" width="185" height="72" rx="16" fill="#fff6e5" stroke="#ead2a2"></rect>
+              <text x="377" y="345" text-anchor="middle" fill="#17201d" font-size="15" font-weight="700">Redis</text>
+              <text x="377" y="365" text-anchor="middle" fill="#63706a" font-size="12">cache, pubsub, queue</text>
+
+              <rect x="508" y="315" width="185" height="72" rx="16" fill="#eef3ff" stroke="#cbd8ff"></rect>
+              <text x="600" y="345" text-anchor="middle" fill="#17201d" font-size="15" font-weight="700">R2 / S3</text>
+              <text x="600" y="365" text-anchor="middle" fill="#63706a" font-size="12">uploads, downloads</text>
+
+              <rect x="730" y="315" width="185" height="72" rx="16" fill="#f2edff" stroke="#d8cdf7"></rect>
+              <text x="822" y="345" text-anchor="middle" fill="#17201d" font-size="15" font-weight="700">Worker</text>
+              <text x="822" y="365" text-anchor="middle" fill="#63706a" font-size="12">singleton jobs</text>
+
+              <line x1="165" y1="243" x2="154" y2="303" stroke="#31453d" stroke-width="2" marker-end="url(#arrow)"></line>
+              <line x1="435" y1="243" x2="377" y2="303" stroke="#31453d" stroke-width="2" marker-end="url(#arrow)"></line>
+              <line x1="705" y1="243" x2="600" y2="303" stroke="#31453d" stroke-width="2" marker-end="url(#arrow)"></line>
+              <line x1="705" y1="243" x2="822" y2="303" stroke="#31453d" stroke-width="2" marker-end="url(#arrow)"></line>
+
+              <text x="490" y="435" text-anchor="middle" fill="#63706a" font-size="13">
+                Rule: app stateless, Redis required in production, worker/cron outside app replicas.
+              </text>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      <section id="tracks">
+        <div class="section-head">
+          <h2>6 track scale chính</h2>
+          <p>Thứ tự ưu tiên giữ cho hệ thống không phình rủi ro trong lúc tăng tải.</p>
+        </div>
+        <div class="section-body">
+          <article class="track">
+            <div class="track-id">T1</div>
+            <div>
+              <h3>Multi-instance Infrastructure</h3>
+              <p>Tách app khỏi DB/Redis, thêm health live/ready, deploy image theo SHA, worker singleton.</p>
+              <ul class="mini-list">
+                <li>Tách `docker-compose.yml` local/dev và `docker-compose.prod.yml` production.</li>
+                <li>App replicas dùng `WORKER_ENABLED=false`; worker service riêng dùng `WORKER_ENABLED=true`.</li>
+                <li>`/api/health/live` chỉ check process; `/api/health/ready` check DB, Redis, env critical.</li>
+              </ul>
+            </div>
+          </article>
+
+          <article class="track">
+            <div class="track-id">T2</div>
+            <div>
+              <h3>Database, Query, Counter, Cache</h3>
+              <p>Giảm tải hot path bằng index đúng query shape, counter denormalized và Redis cache có invalidation.</p>
+              <ul class="mini-list">
+                <li>Ưu tiên shell, discovery, community summary, feed, challenge review counts, marketplace lists.</li>
+                <li>Thêm counters như `Post.commentCount`, `Post.reactionCount`, `Challenge.participantCount` nếu schema chưa có.</li>
+                <li>Không cache mù: mỗi cache key phải có điểm invalidate khi mutation xảy ra.</li>
+              </ul>
+            </div>
+          </article>
+
+          <article class="track">
+            <div class="track-id">T3</div>
+            <div>
+              <h3>Realtime Chat And Notifications</h3>
+              <p>Dùng SSE v1 qua Redis pub/sub cho notification unread count và chat message, WebSocket để sau.</p>
+              <ul class="mini-list">
+                <li>Thêm `GET /api/chat/channels/[channelId]/stream` và API message cursor.</li>
+                <li>Service chat phải check ACTIVE membership và channel ownership trước khi send/stream.</li>
+                <li>Client reconnect thì refetch cursor để không mất message.</li>
+              </ul>
+            </div>
+          </article>
+
+          <article class="track">
+            <div class="track-id">T4</div>
+            <div>
+              <h3>Redis, Rate Limit, Queue, Worker</h3>
+              <p>Redis production là bắt buộc, rate limit distributed, queue idempotent, worker không chạy lặp.</p>
+              <ul class="mini-list">
+                <li>`REQUIRE_REDIS=true` làm production fail readiness nếu Redis thiếu.</li>
+                <li>Rate limit dùng Redis sliding window/token bucket, chỉ local/dev mới fallback memory.</li>
+                <li>Cron cleanup, AI review, notification fanout chạy qua worker/queue.</li>
+              </ul>
+            </div>
+          </article>
+
+          <article class="track">
+            <div class="track-id">T5</div>
+            <div>
+              <h3>Security And Permission Hardening</h3>
+              <p>Fix các permission gap trước khi scale vì scale sẽ khuếch đại lỗi bảo mật.</p>
+              <ul class="mini-list">
+                <li>Không tin `communityId`, `channelId`, `postId`, `challengeId` từ client nếu derive được từ DB.</li>
+                <li>API key request phải revalidate current member role/status sau demotion/removal.</li>
+                <li>Owner row, report resolve, best-answer, product purchase, challenge payment đều cần service-side guard.</li>
+              </ul>
+            </div>
+          </article>
+
+          <article class="track">
+            <div class="track-id">T6</div>
+            <div>
+              <h3>Service Layer Cleanup, Testing, Observability</h3>
+              <p>Business logic đi qua `lib/services/`; action/API chỉ parse session, validate input, gọi service.</p>
+              <ul class="mini-list">
+                <li>Audit `rg "prisma\." app lib components` để chuyển logic rủi ro về service.</li>
+                <li>Thêm test service integration cho role, payment, challenge, report, chat.</li>
+                <li>Log metrics: route duration, Redis latency, queue lag, SSE connections, rate-limit denials.</li>
+              </ul>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="phases">
+        <div class="section-head">
+          <h2>Lộ trình triển khai</h2>
+          <p>Đi theo phase nhỏ để dễ review, dễ rollback và dễ đo hiệu quả.</p>
+        </div>
+        <div class="section-body">
+          <div class="timeline">
+            <div class="phase">
+              <span class="tag">Phase 0</span>
+              <div>
+                <h3>Baseline và guardrails</h3>
+                <p>Ghi query count, response time, hot route, topology hiện tại, dirty worktree và tiêu chí đo.</p>
+              </div>
+              <span class="priority">Setup</span>
+            </div>
+            <div class="phase">
+              <span class="tag">Phase 1</span>
+              <div>
+                <h3>Security fixes first</h3>
+                <p>Chat, report, API key, owner row, best-answer, purchase/challenge relation.</p>
+              </div>
+              <span class="priority">P0</span>
+            </div>
+            <div class="phase">
+              <span class="tag">Phase 2</span>
+              <div>
+                <h3>Redis required + distributed rate limit</h3>
+                <p>Production không fallback memory; readiness fail nếu Redis/DB không sẵn sàng.</p>
+              </div>
+              <span class="priority">P0</span>
+            </div>
+            <div class="phase">
+              <span class="tag">Phase 3</span>
+              <div>
+                <h3>Indexes, counters, cache</h3>
+                <p>Migration index/counter, backfill, dual-write, cache shell/discovery/community/feed.</p>
+              </div>
+              <span class="priority">P1</span>
+            </div>
+            <div class="phase">
+              <span class="tag">Phase 4</span>
+              <div>
+                <h3>Realtime SSE</h3>
+                <p>Chat message stream, notification count, Redis pub/sub, reconnect/refetch.</p>
+              </div>
+              <span class="priority">P1</span>
+            </div>
+            <div class="phase">
+              <span class="tag">Phase 5</span>
+              <div>
+                <h3>Worker/cron split</h3>
+                <p>Queue idempotency, singleton worker, cron jobs chuyển ra khỏi app replicas.</p>
+              </div>
+              <span class="priority">P1</span>
+            </div>
+            <div class="phase">
+              <span class="tag">Phase 6</span>
+              <div>
+                <h3>Multi-instance deploy</h3>
+                <p>External DB/Redis, image SHA, rolling update, healthcheck và backup/observability.</p>
+              </div>
+              <span class="priority">Release</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="risks">
+        <div class="section-head">
+          <h2>Rủi ro P0 cần xử lý trước scale</h2>
+          <p>Các lỗi này cần fix ở service/backend, không chỉ hide UI.</p>
+        </div>
+        <div class="section-body">
+          <table>
+            <thead>
+              <tr>
+                <th>Rủi ro</th>
+                <th>Mức</th>
+                <th>Hướng fix</th>
+                <th>Verify</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Chat send/stream thiếu membership và channel ownership recheck.</td>
+                <td class="risk-high">High</td>
+                <td>Service derive community từ channel, check ACTIVE membership trước DB write/stream.</td>
+                <td>Removed member không send/stream được.</td>
+              </tr>
+              <tr>
+                <td>Report resolution tin `communityId` caller-provided.</td>
+                <td class="risk-high">High</td>
+                <td>Load report by `reportId`, derive community từ DB, verify actor permission.</td>
+                <td>Wrong communityId không bypass được.</td>
+              </tr>
+              <tr>
+                <td>API keys có thể sống sau demotion/removal.</td>
+                <td class="risk-high">High</td>
+                <td>Mỗi request revalidate current membership role/status và key scope.</td>
+                <td>Demote/remove xong request tiếp theo bị reject.</td>
+              </tr>
+              <tr>
+                <td>`updateMemberRole` thiếu owner-row protection ở service.</td>
+                <td class="risk-high">High</td>
+                <td>Không cho update/remove owner row, owner transfer là flow riêng.</td>
+                <td>ADMIN/MOD/action direct không demote OWNER được.</td>
+              </tr>
+              <tr>
+                <td>Product purchase membership enforcement chưa rõ ở service.</td>
+                <td class="risk-med">Medium</td>
+                <td>`startProductPurchase` verify product/community access, không dựa UI disabled.</td>
+                <td>Non-member gọi API trực tiếp bị deny.</td>
+              </tr>
+              <tr>
+                <td>Challenge AIP payment cần verify challenge-community relation.</td>
+                <td class="risk-med">Medium</td>
+                <td>Payment target phải derive và assert cùng community/challenge.</td>
+                <td>Mix challengeId/communityId sai bị reject.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <h2>Visual flow: deploy và runtime</h2>
+          <p>Sơ đồ này là checklist vận hành khi chuyển qua multi-instance.</p>
+        </div>
+        <div class="section-body">
+          <div class="svg-wrap" role="img" aria-label="Flow triển khai và runtime">
+            <svg viewBox="0 0 980 330" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <marker id="arrow2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+                  <path d="M0,0 L0,6 L9,3 z" fill="#31453d"></path>
+                </marker>
+              </defs>
+              <rect x="40" y="55" width="135" height="70" rx="14" fill="#17201d"></rect>
+              <text x="107" y="84" text-anchor="middle" fill="#fff" font-size="14" font-weight="700">Git push</text>
+              <text x="107" y="104" text-anchor="middle" fill="#cfe0d6" font-size="12">main branch</text>
+
+              <rect x="220" y="55" width="160" height="70" rx="14" fill="#eef3ff" stroke="#cbd8ff"></rect>
+              <text x="300" y="84" text-anchor="middle" fill="#17201d" font-size="14" font-weight="700">GitHub Actions</text>
+              <text x="300" y="104" text-anchor="middle" fill="#63706a" font-size="12">build + push GHCR</text>
+
+              <rect x="425" y="55" width="145" height="70" rx="14" fill="#eaf7f1" stroke="#b9d7c8"></rect>
+              <text x="497" y="84" text-anchor="middle" fill="#17201d" font-size="14" font-weight="700">Migrate once</text>
+              <text x="497" y="104" text-anchor="middle" fill="#63706a" font-size="12">prisma migrate deploy</text>
+
+              <rect x="615" y="55" width="145" height="70" rx="14" fill="#fff6e5" stroke="#ead2a2"></rect>
+              <text x="687" y="84" text-anchor="middle" fill="#17201d" font-size="14" font-weight="700">Roll app</text>
+              <text x="687" y="104" text-anchor="middle" fill="#63706a" font-size="12">replica A/B/N</text>
+
+              <rect x="805" y="55" width="135" height="70" rx="14" fill="#f2edff" stroke="#d8cdf7"></rect>
+              <text x="872" y="84" text-anchor="middle" fill="#17201d" font-size="14" font-weight="700">Worker</text>
+              <text x="872" y="104" text-anchor="middle" fill="#63706a" font-size="12">singleton</text>
+
+              <line x1="175" y1="90" x2="210" y2="90" stroke="#31453d" stroke-width="2" marker-end="url(#arrow2)"></line>
+              <line x1="380" y1="90" x2="415" y2="90" stroke="#31453d" stroke-width="2" marker-end="url(#arrow2)"></line>
+              <line x1="570" y1="90" x2="605" y2="90" stroke="#31453d" stroke-width="2" marker-end="url(#arrow2)"></line>
+              <line x1="760" y1="90" x2="795" y2="90" stroke="#31453d" stroke-width="2" marker-end="url(#arrow2)"></line>
+
+              <rect x="120" y="205" width="185" height="70" rx="14" fill="#ffffff" stroke="#dce4de"></rect>
+              <text x="212" y="234" text-anchor="middle" fill="#17201d" font-size="14" font-weight="700">Health ready</text>
+              <text x="212" y="254" text-anchor="middle" fill="#63706a" font-size="12">DB + Redis + env</text>
+
+              <rect x="398" y="205" width="185" height="70" rx="14" fill="#ffffff" stroke="#dce4de"></rect>
+              <text x="490" y="234" text-anchor="middle" fill="#17201d" font-size="14" font-weight="700">Observe</text>
+              <text x="490" y="254" text-anchor="middle" fill="#63706a" font-size="12">logs, Sentry, metrics</text>
+
+              <rect x="675" y="205" width="185" height="70" rx="14" fill="#ffffff" stroke="#dce4de"></rect>
+              <text x="767" y="234" text-anchor="middle" fill="#17201d" font-size="14" font-weight="700">Rollback</text>
+              <text x="767" y="254" text-anchor="middle" fill="#63706a" font-size="12">previous image SHA</text>
+
+              <line x1="687" y1="126" x2="212" y2="194" stroke="#31453d" stroke-width="2" marker-end="url(#arrow2)"></line>
+              <line x1="687" y1="126" x2="490" y2="194" stroke="#31453d" stroke-width="2" marker-end="url(#arrow2)"></line>
+              <line x1="687" y1="126" x2="767" y2="194" stroke="#31453d" stroke-width="2" marker-end="url(#arrow2)"></line>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      <section id="agent">
+        <div class="section-head">
+          <h2>AI Agent task graph</h2>
+          <p>Block này có thể được copy vào prompt cho agent khác để chia việc theo track.</p>
+        </div>
+        <div class="section-body">
+          <pre><code>project: focus.camp
+plan: scaleup-plan-focuscamp
+audit_date: 2026-06-07
+target: multi-instance production readiness
+constraints:
+  - do_not_rewrite_app
+  - use_existing_nextjs_app_router
+  - use_prisma_postgres
+  - use_redis_for_distributed_state
+  - service_layer_required
+  - no_secrets_in_commits
+  - preserve_dirty_user_worktree
+tracks:
+  security:
+    priority: P0
+    acceptance:
+      - service_side_auth_for_chat_report_api_key_payment_challenge
+      - owner_row_protected
+      - tests_cover_role_demotion_and_wrong_community
+  redis_rate_limit_worker:
+    priority: P0
+    acceptance:
+      - redis_required_in_production
+      - distributed_rate_limit
+      - worker_singleton
+  database_cache:
+    priority: P1
+    acceptance:
+      - hot_paths_indexed
+      - counters_backfilled
+      - redis_cache_with_invalidation
+  realtime:
+    priority: P1
+    acceptance:
+      - sse_chat_and_notifications_work_cross_replica
+      - reconnect_refetch_no_message_loss
+  infrastructure:
+    priority: P1
+    acceptance:
+      - app_stateless
+      - external_db_redis_ready
+      - immutable_image_deploy
+  service_cleanup_tests:
+    priority: P2
+    acceptance:
+      - no_new_direct_prisma_business_logic
+      - service_integration_tests_for_core_flows
+      - load_test_baseline_documented</code></pre>
+        </div>
+      </section>
+
+      <section id="done">
+        <div class="section-head">
+          <h2>Definition of Done</h2>
+          <p>Điều kiện đóng phase và đóng toàn bộ scale plan.</p>
+        </div>
+        <div class="section-body">
+          <div class="grid two">
+            <article class="card">
+              <h3>Mỗi phase xong khi</h3>
+              <ul class="mini-list">
+                <li>Code change nhỏ, phạm vi rõ.</li>
+                <li>Có migration/backfill nếu đổi schema.</li>
+                <li>Có test cho behavior rủi ro.</li>
+                <li>Có manual verify command/result.</li>
+                <li>Có rollback note nếu deploy production.</li>
+              </ul>
+            </article>
+            <article class="card">
+              <h3>Toàn plan xong khi</h3>
+              <ul class="mini-list">
+                <li>App chạy 2+ replicas với shared DB/Redis.</li>
+                <li>Redis bắt buộc trong production.</li>
+                <li>Worker/cron không duplicate.</li>
+                <li>Hot routes có cache/index/counter.</li>
+                <li>7 security risks đã fix và có test.</li>
+              </ul>
+            </article>
+          </div>
+          <div class="callout" style="margin-top: 14px;">
+            <strong>Nguyên tắc triển khai:</strong>
+            permission fix phải service-side, cache phải có invalidation, queue job phải idempotent,
+            và khi sửa Next.js behavior phải đọc local `node_modules/next/dist/docs/` vì repo dùng Next 16.
+          </div>
+        </div>
+      </section>
+
+      <section id="sources">
+        <div class="section-head">
+          <h2>Source map</h2>
+          <p>Các đường dẫn bằng chứng quan trọng để người hoặc AI Agent mở tiếp khi triển khai.</p>
+        </div>
+        <div class="section-body">
+          <div class="file-grid">
+            <div class="file-pill">plans/scaleup-plan-focuscamp/plan.md</div>
+            <div class="file-pill">report.html</div>
+            <div class="file-pill">Dockerfile</div>
+            <div class="file-pill">docker-compose.yml</div>
+            <div class="file-pill">.github/workflows/deploy.yml</div>
+            <div class="file-pill">app/api/health/route.ts</div>
+            <div class="file-pill">instrumentation.ts</div>
+            <div class="file-pill">lib/redis.ts</div>
+            <div class="file-pill">lib/rate-limit.ts</div>
+            <div class="file-pill">lib/queue.ts</div>
+            <div class="file-pill">lib/realtime.ts</div>
+            <div class="file-pill">app/api/notifications/stream/route.ts</div>
+            <div class="file-pill">components/shell/notif-badge.tsx</div>
+            <div class="file-pill">app/actions/chat.ts</div>
+            <div class="file-pill">lib/services/chat.ts</div>
+            <div class="file-pill">lib/community-permissions.ts</div>
+            <div class="file-pill">docs/roles-permissions.md</div>
+            <div class="file-pill">lib/services/payment.ts</div>
+            <div class="file-pill">lib/services/api-keys.ts</div>
+            <div class="file-pill">prisma/schema.prisma</div>
+          </div>
+        </div>
+      </section>
+
+      <div class="footer">
+        Generated as a static, offline HTML report. No external fonts, scripts, images, URLs, secrets, or environment values included.
+      </div>
+    </main>
+  </div>
+</body>
+</html>
