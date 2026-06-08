@@ -1,6 +1,5 @@
 "use server";
 
-import { randomBytes } from "crypto";
 import type { Prisma } from "@prisma/client";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
@@ -9,6 +8,11 @@ import { InvoiceConfigSchema, PaymentConfigSchema } from "@/lib/community-config
 import { decryptSecret, encryptSecret } from "@/lib/integrations/encryption";
 import { logError, logger } from "@/lib/logger";
 import { assertCommunityPermission } from "@/lib/services/community-settings";
+import {
+  generateSepayWebhookKey,
+  hashSepayWebhookKey,
+  maskSepayWebhookKey,
+} from "@/lib/sepay-webhook-key";
 import { assertSafeWebhookUrl } from "@/lib/webhook-url";
 
 type ActionResult<T = unknown> =
@@ -30,6 +34,13 @@ type InvoiceConfigInput = {
   unit: string;
 };
 
+type SepayKeyState = {
+  hash?: string;
+  masked?: string;
+  createdAt?: string;
+  lastRotatedAt?: string;
+};
+
 function existingInvoiceConfig(raw: unknown): Record<string, unknown> {
   return raw && typeof raw === "object" && !Array.isArray(raw)
     ? (raw as Record<string, unknown>)
@@ -38,6 +49,45 @@ function existingInvoiceConfig(raw: unknown): Record<string, unknown> {
 
 function existingString(raw: unknown): string | undefined {
   return typeof raw === "string" && raw ? raw : undefined;
+}
+
+function existingPaymentConfig(raw: unknown): Record<string, unknown> {
+  return raw && typeof raw === "object" && !Array.isArray(raw)
+    ? (raw as Record<string, unknown>)
+    : {};
+}
+
+function getSepayKeyState(raw: Record<string, unknown>): SepayKeyState {
+  const legacyPlain = existingString(raw.sepayApiKey);
+  const hash = existingString(raw.sepayApiKeyHash) ?? (legacyPlain ? hashSepayWebhookKey(legacyPlain) : undefined);
+  const masked = existingString(raw.sepayApiKeyMasked) ?? (legacyPlain ? maskSepayWebhookKey(legacyPlain) : undefined);
+  return {
+    hash,
+    masked,
+    createdAt: existingString(raw.sepayApiKeyCreatedAt),
+    lastRotatedAt: existingString(raw.sepayApiKeyLastRotatedAt),
+  };
+}
+
+function buildPaymentBillingModel(input: {
+  bank: {
+    bankCode: string;
+    bankAccount: string;
+    bankHolder: string;
+    bankName: string;
+  };
+  key: SepayKeyState;
+  now: string;
+}) {
+  const keyFields = input.key.hash
+    ? {
+        sepayApiKeyHash: input.key.hash,
+        sepayApiKeyMasked: input.key.masked ?? "sk_************************************",
+        sepayApiKeyCreatedAt: input.key.createdAt ?? input.now,
+        sepayApiKeyLastRotatedAt: input.key.lastRotatedAt ?? input.now,
+      }
+    : {};
+  return { ...input.bank, ...keyFields };
 }
 
 function buildInvoiceTestPayload(input: {
@@ -107,7 +157,7 @@ export async function updatePaymentConfigAction(input: {
   bankAccount: string;
   bankHolder: string;
   bankName: string;
-}): Promise<ActionResult<{ sepayApiKey: string }>> {
+}): Promise<ActionResult<{ sepayApiKey?: string; sepayApiKeyMasked?: string; hasSepayApiKey: boolean }>> {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
 
@@ -131,21 +181,34 @@ export async function updatePaymentConfigAction(input: {
   });
   if (!parsed.success) return { ok: false, reason: "invalid_input" };
 
-  // Preserve existing API key or generate new one
-  const existing = community.billingModel as Record<string, unknown> | null;
-  const sepayApiKey =
-    (existing?.sepayApiKey as string) ||
-    `sk_${randomBytes(24).toString("hex")}`;
+  const existing = existingPaymentConfig(community.billingModel);
+  const now = new Date().toISOString();
+  const keyState = getSepayKeyState(existing);
+  let oneTimeKey: string | undefined;
+  if (!keyState.hash) {
+    oneTimeKey = generateSepayWebhookKey();
+    keyState.hash = hashSepayWebhookKey(oneTimeKey);
+    keyState.masked = maskSepayWebhookKey(oneTimeKey);
+    keyState.createdAt = now;
+    keyState.lastRotatedAt = now;
+  }
 
   try {
     await prisma.community.update({
       where: { id: input.communityId },
       data: {
-        billingModel: { ...parsed.data, sepayApiKey },
+        billingModel: buildPaymentBillingModel({ bank: parsed.data, key: keyState, now }),
       },
     });
     revalidatePath(`/c/${input.communitySlug}/settings`);
-    return { ok: true, data: { sepayApiKey } };
+    return {
+      ok: true,
+      data: {
+        sepayApiKey: oneTimeKey,
+        sepayApiKeyMasked: keyState.masked,
+        hasSepayApiKey: !!keyState.hash,
+      },
+    };
   } catch (err) {
     logError(err, { userId: s.user.id });
     if (err instanceof Error) return { ok: false, reason: err.message };
@@ -156,7 +219,7 @@ export async function updatePaymentConfigAction(input: {
 export async function regenerateWebhookKeyAction(input: {
   communityId: string;
   communitySlug: string;
-}): Promise<ActionResult<{ sepayApiKey: string }>> {
+}): Promise<ActionResult<{ sepayApiKey: string; sepayApiKeyMasked: string; hasSepayApiKey: true }>> {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
 
@@ -173,17 +236,34 @@ export async function regenerateWebhookKeyAction(input: {
   }
   if (!community.billingModel) return { ok: false, reason: "no_config" };
 
-  const sepayApiKey = `sk_${randomBytes(24).toString("hex")}`;
+  const existing = existingPaymentConfig(community.billingModel);
+  const now = new Date().toISOString();
+  const sepayApiKey = generateSepayWebhookKey();
+  const keyState = {
+    hash: hashSepayWebhookKey(sepayApiKey),
+    masked: maskSepayWebhookKey(sepayApiKey),
+    createdAt: existingString(existing.sepayApiKeyCreatedAt) ?? now,
+    lastRotatedAt: now,
+  };
+  const parsed = PaymentConfigSchema.safeParse(existing);
+  if (!parsed.success) return { ok: false, reason: "invalid_payment_config" };
 
   try {
     await prisma.community.update({
       where: { id: input.communityId },
       data: {
-        billingModel: { ...(community.billingModel as object), sepayApiKey },
+        billingModel: buildPaymentBillingModel({ bank: parsed.data, key: keyState, now }),
       },
     });
     revalidatePath(`/c/${input.communitySlug}/settings`);
-    return { ok: true, data: { sepayApiKey } };
+    return {
+      ok: true,
+      data: {
+        sepayApiKey,
+        sepayApiKeyMasked: keyState.masked,
+        hasSepayApiKey: true,
+      },
+    };
   } catch (err) {
     logError(err, { userId: s.user.id });
     if (err instanceof Error) return { ok: false, reason: err.message };

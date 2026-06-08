@@ -14,6 +14,7 @@ import { SePayWebhookSchema } from "@/lib/validations";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { logger, logError } from "@/lib/logger";
 import { matchSePayTransactionToPayment } from "@/lib/services/payment";
+import { hashSepayWebhookKey, maskSepayWebhookKey } from "@/lib/sepay-webhook-key";
 
 export const dynamic = "force-dynamic";
 
@@ -42,12 +43,51 @@ export async function POST(req: NextRequest) {
   }
   let keyValid = providedKey === platformKey;
   if (!keyValid && providedKey) {
-    // Check if key matches any community's sepayApiKey
+    // New community keys are stored as hashes so the original key is only shown once.
+    const providedKeyHash = hashSepayWebhookKey(providedKey);
     const community = await prisma.community.findFirst({
-      where: { billingModel: { path: ["sepayApiKey"], equals: providedKey } },
+      where: { billingModel: { path: ["sepayApiKeyHash"], equals: providedKeyHash } },
       select: { id: true },
     });
-    keyValid = !!community;
+    if (community) {
+      keyValid = true;
+    } else {
+      // Backward compatibility for keys created before hashed storage.
+      const legacyCommunity = await prisma.community.findFirst({
+        where: { billingModel: { path: ["sepayApiKey"], equals: providedKey } },
+        select: { id: true, billingModel: true },
+      });
+      keyValid = !!legacyCommunity;
+      if (legacyCommunity) {
+        const existing =
+          legacyCommunity.billingModel &&
+          typeof legacyCommunity.billingModel === "object" &&
+          !Array.isArray(legacyCommunity.billingModel)
+            ? (legacyCommunity.billingModel as Record<string, unknown>)
+            : {};
+        const { sepayApiKey: _legacyKey, ...rest } = existing;
+        prisma.community
+          .update({
+            where: { id: legacyCommunity.id },
+            data: {
+              billingModel: {
+                ...rest,
+                sepayApiKeyHash: providedKeyHash,
+                sepayApiKeyMasked: maskSepayWebhookKey(providedKey),
+                sepayApiKeyCreatedAt:
+                  typeof existing.sepayApiKeyCreatedAt === "string"
+                    ? existing.sepayApiKeyCreatedAt
+                    : new Date().toISOString(),
+                sepayApiKeyLastRotatedAt:
+                  typeof existing.sepayApiKeyLastRotatedAt === "string"
+                    ? existing.sepayApiKeyLastRotatedAt
+                    : new Date().toISOString(),
+              },
+            },
+          })
+          .catch(() => {});
+      }
+    }
   }
   if (!keyValid) {
     logger.warn({ ip }, "[SePay webhook] unauthorized");

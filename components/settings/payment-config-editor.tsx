@@ -45,14 +45,18 @@ export function PaymentConfigEditor({
     bankAccount: string;
     bankHolder: string;
     bankName: string;
-    sepayApiKey?: string;
+    hasSepayApiKey: boolean;
+    sepayApiKeyMasked?: string;
   } | null;
 }) {
   const router = useRouter();
   const [bankCode, setBankCode] = useState(initial?.bankCode ?? "");
   const [bankAccount, setBankAccount] = useState(initial?.bankAccount ?? "");
   const [bankHolder, setBankHolder] = useState(initial?.bankHolder ?? "");
-  const [sepayApiKey, setSepayApiKey] = useState(initial?.sepayApiKey ?? "");
+  const [hasSepayApiKey, setHasSepayApiKey] = useState(initial?.hasSepayApiKey ?? false);
+  const [sepayApiKeyMasked, setSepayApiKeyMasked] = useState(initial?.sepayApiKeyMasked ?? "");
+  const [oneTimeSepayApiKey, setOneTimeSepayApiKey] = useState("");
+  const [copied, setCopied] = useState(false);
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -78,7 +82,9 @@ export function PaymentConfigEditor({
       });
       if (res.ok) {
         setSaved(true);
-        if (res.data?.sepayApiKey) setSepayApiKey(res.data.sepayApiKey);
+        if (res.data?.sepayApiKey) setOneTimeSepayApiKey(res.data.sepayApiKey);
+        if (res.data?.sepayApiKeyMasked) setSepayApiKeyMasked(res.data.sepayApiKeyMasked);
+        if (res.data?.hasSepayApiKey) setHasSepayApiKey(true);
         router.refresh();
       } else {
         setErr(res.reason);
@@ -93,7 +99,10 @@ export function PaymentConfigEditor({
     start(async () => {
       const res = await regenerateWebhookKeyAction({ communityId, communitySlug });
       if (res.ok && res.data?.sepayApiKey) {
-        setSepayApiKey(res.data.sepayApiKey);
+        setOneTimeSepayApiKey(res.data.sepayApiKey);
+        setSepayApiKeyMasked(res.data.sepayApiKeyMasked);
+        setHasSepayApiKey(true);
+        setCopied(false);
         setSaved(true);
         router.refresh();
       } else {
@@ -101,6 +110,15 @@ export function PaymentConfigEditor({
       }
     });
   }
+
+  async function copyOneTimeKey() {
+    if (!oneTimeSepayApiKey) return;
+    await navigator.clipboard.writeText(oneTimeSepayApiKey);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1500);
+  }
+
+  const shouldShowWebhook = !!initial || hasSepayApiKey || !!oneTimeSepayApiKey;
 
   return (
     <section className="ui-card ui-card-lg" style={{ marginBottom: "var(--space-4)" }}>
@@ -166,7 +184,7 @@ export function PaymentConfigEditor({
         </label>
       </div>
 
-      {(sepayApiKey || initial) && (
+      {shouldShowWebhook && (
         <div
           style={{
             padding: 14,
@@ -180,7 +198,7 @@ export function PaymentConfigEditor({
             Webhook SePay
           </div>
           <p style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", margin: "0 0 10px" }}>
-            Copy thông tin bên dưới vào SePay Dashboard → Webhook để nhận thông báo thanh toán tự động.
+            Copy Webhook URL vào SePay Dashboard. API key chỉ copy được ngay sau khi tạo mới.
           </p>
           <label style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 8 }}>
             <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
@@ -194,19 +212,59 @@ export function PaymentConfigEditor({
               style={{ ...inputStyle, background: "var(--bg-secondary)", cursor: "copy" }}
             />
           </label>
-          {sepayApiKey && (
+          {(hasSepayApiKey || oneTimeSepayApiKey) && (
             <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
                 API Key (dán vào ô &quot;Authorization&quot; trên SePay)
               </span>
+              {oneTimeSepayApiKey && (
+                <p
+                  style={{
+                    fontSize: "var(--text-xs)",
+                    color: "var(--warning)",
+                    margin: "0 0 6px",
+                  }}
+                >
+                  Key mới chỉ hiện một lần. Copy vào SePay ngay; rời trang là không xem lại được.
+                </p>
+              )}
+              {!oneTimeSepayApiKey && hasSepayApiKey && (
+                <p
+                  style={{
+                    fontSize: "var(--text-xs)",
+                    color: "var(--text-muted)",
+                    margin: "0 0 6px",
+                  }}
+                >
+                  Key đang được ẩn. Không thể copy lại key cũ; tạo key mới nếu cần đổi.
+                </p>
+              )}
               <div style={{ display: "flex", gap: 6 }}>
                 <input
                   type="text"
                   readOnly
-                  value={sepayApiKey}
-                  onClick={(e) => (e.target as HTMLInputElement).select()}
-                  style={{ ...inputStyle, flex: 1, background: "var(--bg-secondary)", cursor: "copy" }}
+                  value={oneTimeSepayApiKey || sepayApiKeyMasked || "sk_************************************"}
+                  onClick={(e) => {
+                    if (oneTimeSepayApiKey) (e.target as HTMLInputElement).select();
+                  }}
+                  style={{
+                    ...inputStyle,
+                    flex: 1,
+                    background: "var(--bg-secondary)",
+                    cursor: oneTimeSepayApiKey ? "copy" : "default",
+                    userSelect: oneTimeSepayApiKey ? "text" : "none",
+                  }}
                 />
+                {oneTimeSepayApiKey && (
+                  <button
+                    type="button"
+                    onClick={copyOneTimeKey}
+                    disabled={pending}
+                    style={{ ...btnSecondary, whiteSpace: "nowrap", fontSize: "var(--text-xs)" }}
+                  >
+                    {copied ? "Đã copy" : "Copy"}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={regenerateKey}

@@ -11,6 +11,7 @@
  */
 import { z } from "zod";
 import { logger } from "@/lib/logger";
+import { maskSepayWebhookKey } from "@/lib/sepay-webhook-key";
 
 /* ===== Types ===== */
 
@@ -67,9 +68,13 @@ export const PaymentConfigSchema = z.object({
   bankAccount: z.string().min(1).max(30),
   bankHolder: z.string().min(1).max(100),
   bankName: z.string().min(1).max(60),
-  sepayApiKey: z.string().min(1).max(100).optional(),
+  sepayApiKeyMasked: z.string().min(1).max(100).optional(),
+  sepayApiKeyCreatedAt: z.string().optional(),
+  sepayApiKeyLastRotatedAt: z.string().optional(),
 });
-export type PaymentConfig = z.infer<typeof PaymentConfigSchema>;
+export type PaymentConfig = z.infer<typeof PaymentConfigSchema> & {
+  hasSepayApiKey: boolean;
+};
 
 export const VatRateSchema = z.union([
   z.literal(-2),
@@ -259,8 +264,36 @@ export function isFeatureVisible(
 /** Payment config — null if owner hasn't configured their bank account. */
 export function getPaymentConfig(c: CommunityConfigSource): PaymentConfig | null {
   if (c.billingModel === null || c.billingModel === undefined) return null;
-  const parsed = PaymentConfigSchema.safeParse(c.billingModel);
-  if (parsed.success) return parsed.data;
+  const raw =
+    typeof c.billingModel === "object" && !Array.isArray(c.billingModel)
+      ? (c.billingModel as Record<string, unknown>)
+      : null;
+  if (!raw) {
+    logger.warn({ raw: c.billingModel }, "[community-config] bad billingModel");
+    return null;
+  }
+  const legacyPlainKey =
+    typeof raw.sepayApiKey === "string" && raw.sepayApiKey
+      ? raw.sepayApiKey
+      : undefined;
+  const storedHash =
+    typeof raw.sepayApiKeyHash === "string" && raw.sepayApiKeyHash
+      ? raw.sepayApiKeyHash
+      : undefined;
+  const storedMasked =
+    typeof raw.sepayApiKeyMasked === "string" && raw.sepayApiKeyMasked
+      ? raw.sepayApiKeyMasked
+      : undefined;
+  const parsed = PaymentConfigSchema.safeParse({
+    ...raw,
+    sepayApiKeyMasked: storedMasked ?? (legacyPlainKey ? maskSepayWebhookKey(legacyPlainKey) : undefined),
+  });
+  if (parsed.success) {
+    return {
+      ...parsed.data,
+      hasSepayApiKey: !!(storedHash || legacyPlainKey || storedMasked),
+    };
+  }
   logger.warn({ issues: parsed.error.issues }, "[community-config] bad billingModel");
   return null;
 }
