@@ -387,6 +387,7 @@ export function SubmissionReviewPanel({
         {search && (
           <Link
             href={buildUrl({ search: null })}
+            prefetch={false}
             scroll={false}
             style={{
               padding: "6px 12px",
@@ -419,6 +420,7 @@ export function SubmissionReviewPanel({
           <Link
             key={t.key}
             href={buildUrl({ review: t.key.toLowerCase() })}
+            prefetch={false}
             scroll={false}
             className="review-tab"
             style={{
@@ -482,6 +484,7 @@ export function SubmissionReviewPanel({
           {page > 1 ? (
             <Link
               href={buildUrl({ page: String(page - 1) })}
+              prefetch={false}
               scroll={false}
               style={{
                 padding: "6px 14px",
@@ -516,6 +519,7 @@ export function SubmissionReviewPanel({
           {page < totalPages ? (
             <Link
               href={buildUrl({ page: String(page + 1) })}
+              prefetch={false}
               scroll={false}
               style={{
                 padding: "6px 14px",
@@ -628,6 +632,7 @@ function SubmissionCard({
       <div className="submission-card-row">
         <Link
           href={`/c/${communitySlug}/profile/${submission.user.id}`}
+          prefetch={false}
           style={{ flexShrink: 0 }}
         >
           {submission.user.image ? (
@@ -676,6 +681,7 @@ function SubmissionCard({
           >
             <Link
               href={`/c/${communitySlug}/profile/${submission.user.id}`}
+              prefetch={false}
               style={{
                 color: "var(--header-primary)",
                 fontWeight: 600,

@@ -12,18 +12,20 @@ export function FeatureLink({
   className = "feature-item",
   children,
   exact = false,
+  prefetch = false,
 }: {
   href: string;
   className?: string;
   children: React.ReactNode;
   exact?: boolean;
+  prefetch?: boolean;
 }) {
   const pathname = usePathname();
   const isActive = exact
     ? pathname === href
     : pathname === href || pathname.startsWith(href + "/");
   return (
-    <Link href={href} className={`${className}${isActive ? " active" : ""}`}>
+    <Link href={href} prefetch={prefetch} className={`${className}${isActive ? " active" : ""}`}>
       {children}
     </Link>
   );

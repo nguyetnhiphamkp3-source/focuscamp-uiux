@@ -25,13 +25,21 @@ export const PillarConfigSchema = z.object({
 });
 export type PillarConfig = z.infer<typeof PillarConfigSchema>;
 
-export const ClassConfigSchema = z.object({
+export const ClassConfigSchema = z.preprocess((raw) => {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return raw;
+  const entry = raw as Record<string, unknown>;
+  return {
+    ...entry,
+    key: entry.key ?? entry.slug,
+    label: entry.label ?? entry.name,
+  };
+}, z.object({
   key: z.string().min(1).max(40),
   label: z.string().min(1).max(60),
   emoji: z.string().max(8).optional(),
   description: z.string().max(500).optional(),
   color: z.string().max(40).optional(),
-});
+}));
 export type ClassConfig = z.infer<typeof ClassConfigSchema>;
 
 export const GemsConfigSchema = z.object({

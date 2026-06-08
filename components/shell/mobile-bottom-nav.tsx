@@ -62,6 +62,7 @@ export function MobileBottomNav({
       <nav className="mobile-bottom-nav" aria-label="Navigation chính">
         <Link
           href="/"
+          prefetch={false}
           className={`mobile-nav-item${pathname === "/" ? " active" : ""}`}
         >
           <span className="mobile-nav-icon"><Flame size={22} /></span>
@@ -70,6 +71,7 @@ export function MobileBottomNav({
 
         <Link
           href="/discovery"
+          prefetch={false}
           className={`mobile-nav-item${pathname.startsWith("/discovery") ? " active" : ""}`}
         >
           <span className="mobile-nav-icon"><Globe size={22} /></span>
@@ -78,6 +80,7 @@ export function MobileBottomNav({
 
         <Link
           href="/inbox"
+          prefetch={false}
           className={`mobile-nav-item${pathname.startsWith("/inbox") ? " active" : ""}`}
         >
           <span className="mobile-nav-icon">
@@ -89,6 +92,7 @@ export function MobileBottomNav({
 
         <Link
           href={profileHref}
+          prefetch={false}
           className={`mobile-nav-item${pathname.startsWith("/u/") || pathname === "/settings" ? " active" : ""}`}
         >
           <span className="mobile-nav-icon"><User size={22} /></span>

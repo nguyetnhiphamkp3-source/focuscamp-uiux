@@ -17,6 +17,7 @@ export function ServerList({
       <div className="server-icon-wrapper">
         <Link
           href="/"
+          prefetch={false}
           className="server-icon"
           title="Điểm tập kết — focus.camp"
           style={{
@@ -41,6 +42,7 @@ export function ServerList({
             <div className={`indicator ${active ? "active" : ""}`}></div>
             <Link
               href={`/c/${c.slug}`}
+              prefetch={false}
               className={`server-icon ${c.iconUrl ? "" : "server-icon-text"} ${active ? "active" : ""} ${c.isOwner ? "server-icon--owner" : ""}`}
               style={
                 c.iconUrl
@@ -79,6 +81,7 @@ export function ServerList({
         {onDiscovery && <div className="indicator active"></div>}
         <Link
           href="/discovery"
+          prefetch={false}
           className={`server-icon explore-server ${onDiscovery ? "active" : ""}`}
           title="Discovery"
         >
