@@ -86,7 +86,7 @@ Key: ✅ done · 🟡 partial · ❌ not started · 🚫 deferred (Phase 2+)
 | Auto-start grace period + live countdown UI | ✅ | Client-side countdown from `joinedAt + N giờ`; refreshes route once when grace expires |
 | Admin approve member requests | ✅ | `requiresApproval` flag |
 | UI toggle `requiresApproval` in challenge settings | ✅ | ChallengeSettingsPanel |
-| Daily task unlock by day | ✅ | |
+| Daily task unlock by day | ✅ | Explicit 07:00 Asia/Ho_Chi_Minh day anchor; Task 1 opens immediately as warm-up |
 | User checkin + evidence (text/link/image/text+image) | ✅ | |
 | Streak calc + per-challenge leaderboard | ✅ | |
 | Admin review submission (approve/reject + note) | ✅ | Phase C |

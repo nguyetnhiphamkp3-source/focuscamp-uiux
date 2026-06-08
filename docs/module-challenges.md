@@ -130,7 +130,7 @@ Hệ thống thử thách nhóm có quản lý task theo ngày, check-in, review
 ### Lifecycle
 ```
 Admin tạo (open) → User xin vào (pending) → Admin duyệt (approved)
-→ User bấm Start (personal_starts_at = now) → Mỗi 24h mở 1 task mới
+→ User bấm Start (personal_starts_at = now) → Task 1 mở ngay, các task sau mở theo mốc 07:00 VN
 → User nộp evidence → Admin approve/reject → Hoàn thành / Thất bại
 ```
 
@@ -141,8 +141,11 @@ Admin tạo (open) → User xin vào (pending) → Admin duyệt (approved)
 4. Có thể reject → user xin lại được
 
 ### Mở khoá Task theo ngày
-- `currentDay = ceil(elapsed_hours / 24)` tính từ personal_starts_at
-- Task unlock khi `day_number ≤ currentDay`
+- Mốc ngày challenge cố định là `07:00 Asia/Ho_Chi_Minh`, không phụ thuộc timezone server/container.
+- User bấm "Bắt đầu" lúc nào cũng được; Task 1 mở ngay như warm-up.
+- `personal_starts_at` được round up tới mốc 07:00 VN kế tiếp để tính ngày chính thức. Nếu bấm đúng 07:00 thì dùng mốc đó.
+- Task ngày N unlock/deadline tại `day_anchor + (N - 1) × 24h` / `day_anchor + N × 24h`.
+- `DAILY_SEQUENTIAL`: ngoài time gate, task sau chỉ mở khi task trước đã có submission không bị reject.
 - Freeze period → currentDay bị cap tại `freeze_from_day - 1`, elapsed hours trừ thời gian freeze
 
 ### Task Submission

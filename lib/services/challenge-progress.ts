@@ -5,6 +5,16 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { awardXp, bumpCommunityStreak } from "./xp";
 
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
+
+export const CHALLENGE_DAY_ANCHOR_TIME_ZONE = "Asia/Ho_Chi_Minh";
+export const CHALLENGE_DAY_ANCHOR_HOUR = 7;
+
+// Asia/Ho_Chi_Minh is UTC+7 and has no DST, so this keeps the challenge
+// calendar independent from the server/container timezone.
+const CHALLENGE_DAY_ANCHOR_UTC_OFFSET_HOURS = 7;
+
 export interface ActiveChallenge {
   memberId: string;
   challengeId: string;
@@ -52,20 +62,19 @@ export function effectivePersonalStartsAt(
 }
 
 /**
- * Day-anchor (Option B): the local-midnight at which "Day 1" officially begins.
+ * Day-anchor (Option B): 07:00 Asia/Ho_Chi_Minh, when "Day 1" officially begins.
  *
- * Rounds the personal start UP to the next local midnight. The remainder of the
+ * Rounds the personal start UP to the next 07:00 VN boundary. The remainder of the
  * day a member presses "Bắt đầu" is warm-up — Day-1's task is already visible and
  * can be checked in early, but the day counter and missed-day tally only start
  * ticking at this anchor. So an evening starter isn't shortchanged on Day 1 (and
- * is never flagged "missed" for the partial first day). Starting exactly at
- * midnight keeps that midnight as Day 1 (no push).
+ * is never flagged "missed" for the partial first day). Starting exactly at 07:00
+ * keeps that boundary as Day 1 (no push).
  */
 export function challengeDayAnchor(effStart: Date): Date {
-  const anchor = new Date(effStart);
-  anchor.setHours(0, 0, 0, 0);
+  const anchor = challengeDayBoundaryForVietnamDate(effStart);
   if (effStart.getTime() > anchor.getTime()) {
-    anchor.setDate(anchor.getDate() + 1);
+    return new Date(anchor.getTime() + DAY_MS);
   }
   return anchor;
 }
@@ -81,12 +90,36 @@ export function challengeCurrentDay(
   now: Date = new Date()
 ): number {
   const anchor = challengeDayAnchor(effStart);
-  const today = new Date(now);
-  today.setHours(0, 0, 0, 0);
+  const today = challengeDayFloor(now);
   const elapsedDays = Math.floor(
-    (today.getTime() - anchor.getTime()) / (1000 * 60 * 60 * 24)
+    (today.getTime() - anchor.getTime()) / DAY_MS
   );
   return Math.min(requiredDays, Math.max(1, elapsedDays + 1));
+}
+
+function challengeDayFloor(instant: Date): Date {
+  const boundary = challengeDayBoundaryForVietnamDate(instant);
+  if (instant.getTime() < boundary.getTime()) {
+    return new Date(boundary.getTime() - DAY_MS);
+  }
+  return boundary;
+}
+
+function challengeDayBoundaryForVietnamDate(instant: Date): Date {
+  const vietnamInstant = new Date(
+    instant.getTime() + CHALLENGE_DAY_ANCHOR_UTC_OFFSET_HOURS * HOUR_MS
+  );
+  return new Date(
+    Date.UTC(
+      vietnamInstant.getUTCFullYear(),
+      vietnamInstant.getUTCMonth(),
+      vietnamInstant.getUTCDate(),
+      CHALLENGE_DAY_ANCHOR_HOUR - CHALLENGE_DAY_ANCHOR_UTC_OFFSET_HOURS,
+      0,
+      0,
+      0
+    )
+  );
 }
 
 export function sequentialCurrentDay(
