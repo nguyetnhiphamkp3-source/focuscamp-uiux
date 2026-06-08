@@ -61,7 +61,7 @@ export default async function DiscoveryPage({
 
   const activatedFilter: Prisma.CommunityWhereInput = {
     OR: [
-      { planExpiresAt: { not: null } },
+      { planExpiresAt: { gte: new Date() } },
       { planTier: "GRANDFATHER" },
     ],
   };

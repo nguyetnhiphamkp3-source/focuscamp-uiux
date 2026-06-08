@@ -23,6 +23,7 @@ export default async function UserGlobalPage({
 }: {
   params: Promise<{ handle: string }>;
 }) {
+  const now = new Date();
   const { handle } = await params;
   const resolved = await resolveUserHandleParam(handle);
   if (!resolved) notFound();
@@ -42,7 +43,7 @@ export default async function UserGlobalPage({
         where: {
           community: {
             OR: [
-              { planExpiresAt: { not: null } },
+              { planExpiresAt: { gte: now } },
               { planTier: "GRANDFATHER" },
             ],
           },
@@ -57,7 +58,7 @@ export default async function UserGlobalPage({
       ownedCommunities: {
         where: {
           OR: [
-            { planExpiresAt: { not: null } },
+            { planExpiresAt: { gte: now } },
             { planTier: "GRANDFATHER" },
           ],
         },
