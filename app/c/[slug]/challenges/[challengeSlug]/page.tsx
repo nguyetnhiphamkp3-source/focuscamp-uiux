@@ -389,7 +389,7 @@ export default async function ChallengeDetailPage({
   const calendarDeadline = hasCalendarDeadline(unlockMode);
   const startWindowOpen = canStartChallengeNow(unlockMode);
   const startWindowMessage =
-    "Thời gian Bắt đầu thử thách mở từ 07:00 sáng đến 23:59 mỗi ngày. Từ 00:00-07:00, bạn hãy quay lại sau 07:00 để bắt đầu đúng nhịp mở bài.";
+    "Thời gian Bắt đầu thử thách mở từ 07:00 sáng đến 23:59 mỗi ngày theo giờ Việt Nam. Từ 00:00-07:00 theo giờ Việt Nam, bạn hãy quay lại sau 07:00 để bắt đầu đúng nhịp mở bài.";
   const tasks = challenge.tasks;
 
   const dayNow = (() => {
