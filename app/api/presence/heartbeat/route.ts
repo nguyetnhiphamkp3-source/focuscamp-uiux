@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { recordHeartbeat } from "@/lib/presence";
+import { verifyCommunityAccess } from "@/lib/services/community";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,11 @@ export async function POST(req: Request) {
       : null;
   if (typeof communityId !== "string" || !communityId) {
     return NextResponse.json({ error: "missing_community_id" }, { status: 400 });
+  }
+
+  const hasAccess = await verifyCommunityAccess(session.user.id, communityId);
+  if (!hasAccess) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
   await recordHeartbeat(communityId, session.user.id);

@@ -27,6 +27,7 @@ export type MemberRow = {
   level: number;
   joinedAt: Date;
   lastActiveAt: Date;
+  isOnline: boolean;
   user: {
     id: string;
     name: string | null;
@@ -268,7 +269,11 @@ export function MembersEditor({
                       </span>
                     )}
                     {tier && <span>· {tier.name}</span>}
-                    <span>· Online {fmtRelativeTime(m.lastActiveAt)}</span>
+                    {m.isOnline ? (
+                      <span style={{ color: "var(--success)" }}>· Đang online</span>
+                    ) : (
+                      <span>· Lần nhận XP {fmtRelativeTime(m.lastActiveAt)}</span>
+                    )}
                     <span>· Tham gia {fmtRelativeTime(m.joinedAt)}</span>
                   </div>
                 </div>

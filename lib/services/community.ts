@@ -49,6 +49,27 @@ export async function getMembership(userId: string, communityId: string) {
 }
 
 /**
+ * Verify that a user has access to a community (is owner or member).
+ * Used by heartbeat route to prevent non-members from inflating online counts.
+ */
+export async function verifyCommunityAccess(
+  userId: string,
+  communityId: string,
+): Promise<boolean> {
+  const row = await prisma.community.findFirst({
+    where: {
+      id: communityId,
+      OR: [
+        { ownerId: userId },
+        { memberships: { some: { userId } } },
+      ],
+    },
+    select: { id: true },
+  });
+  return row !== null;
+}
+
+/**
  * Join user to community (idempotent). Wraps membership.create + community.memberCount
  * in a transaction so counters never drift.
  *

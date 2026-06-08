@@ -7,6 +7,7 @@ import {
   effectiveCommunityRole,
 } from "@/lib/community-permissions";
 import { listMembers } from "@/lib/services/community-settings";
+import { getOnlineUserIds } from "@/lib/presence";
 import { MembersEditor } from "@/components/settings/members-editor";
 
 export const dynamic = "force-dynamic";
@@ -50,6 +51,11 @@ export default async function MembersPage({
     limit: 100,
   });
 
+  const onlineIds = await getOnlineUserIds(
+    community.id,
+    members.map((m) => m.userId),
+  );
+
   return (
     <>
       <header className="view-header">
@@ -71,6 +77,7 @@ export default async function MembersPage({
               level: m.level,
               joinedAt: m.joinedAt,
               lastActiveAt: m.lastActiveAt,
+              isOnline: onlineIds.has(m.userId),
               user: m.user,
             }))}
             total={total}

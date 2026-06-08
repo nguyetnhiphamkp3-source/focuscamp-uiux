@@ -39,3 +39,35 @@ export async function getOnlineCounts(): Promise<Map<string, number>> {
   }
   return counts;
 }
+
+/**
+ * Check which users from a given list are currently online in a community.
+ * Uses Redis pipeline EXISTS — one round-trip for all users.
+ * Returns a Set of online userIds.
+ */
+export async function getOnlineUserIds(
+  communityId: string,
+  userIds: string[],
+): Promise<Set<string>> {
+  if (!redis || userIds.length === 0) return new Set();
+  try {
+    const pipe = redis.pipeline();
+    for (const uid of userIds) {
+      pipe.exists(`${PREFIX}:${communityId}:${uid}`);
+    }
+    const results = await pipe.exec();
+    const online = new Set<string>();
+    if (results) {
+      for (let i = 0; i < results.length; i++) {
+        const [err, count] = results[i];
+        if (!err && count === 1) {
+          online.add(userIds[i]);
+        }
+      }
+    }
+    return online;
+  } catch {
+    // non-critical — return empty set
+    return new Set();
+  }
+}
