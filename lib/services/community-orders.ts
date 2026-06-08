@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getInvoiceConfig } from "@/lib/community-config";
 
 export type ApprovalSource = "MANUAL" | "SEPAY_WEBHOOK";
 
@@ -11,6 +12,13 @@ export interface OrderApproval {
 export interface OrderCancellation {
   adminName: string | null;
   cancelledAt: string | null;
+}
+
+export interface OrderInvoiceInfo {
+  enabled: boolean;
+  hasBuyerInfo: boolean;
+  buyerEmail: string | null;
+  webhookStatus: string | null;
 }
 
 export interface AffiliateInfo {
@@ -53,6 +61,7 @@ export interface OrderRow {
   approval: OrderApproval | null;
   /** Who manually cancelled a CANCELLED order. Null for non-cancelled orders. */
   cancellation: OrderCancellation | null;
+  invoice: OrderInvoiceInfo;
 }
 
 const VALID_STATUSES = ["PENDING", "COMPLETED", "EXPIRED", "REFUNDED", "CANCELLED"];
@@ -139,6 +148,24 @@ function buildCancellation(
   };
 }
 
+function buildInvoiceInfo(
+  meta: Record<string, unknown>,
+  enabled: boolean,
+): OrderInvoiceInfo {
+  const invoice = meta.invoice && typeof meta.invoice === "object" && !Array.isArray(meta.invoice)
+    ? (meta.invoice as Record<string, unknown>)
+    : null;
+  const webhook = meta.invoiceWebhook && typeof meta.invoiceWebhook === "object" && !Array.isArray(meta.invoiceWebhook)
+    ? (meta.invoiceWebhook as Record<string, unknown>)
+    : null;
+  return {
+    enabled,
+    hasBuyerInfo: !!invoice,
+    buyerEmail: typeof invoice?.buyer_email === "string" ? invoice.buyer_email : null,
+    webhookStatus: typeof webhook?.status === "string" ? webhook.status : null,
+  };
+}
+
 export async function listCommunityOrders(
   communityId: string,
   opts: { status?: string; limit?: number; offset?: number } = {}
@@ -147,6 +174,11 @@ export async function listCommunityOrders(
   const offset = opts.offset ?? 0;
   const statusFilter =
     opts.status && VALID_STATUSES.includes(opts.status) ? { status: opts.status } : {};
+  const community = await prisma.community.findUnique({
+    where: { id: communityId },
+    select: { invoiceConfig: true },
+  });
+  const invoiceEnabled = !!(community && getInvoiceConfig(community)?.enabled);
 
   const [revenueAgg, pendingCount, total] = await Promise.all([
     prisma.payment.aggregate({
@@ -243,6 +275,7 @@ export async function listCommunityOrders(
       affiliate: affiliateMap.get(pay.id) ?? null,
       approval: buildApproval(pay, userMap),
       cancellation: buildCancellation(pay, userMap),
+      invoice: buildInvoiceInfo(meta, invoiceEnabled),
     };
 
     if (pay.refType === "product") {
@@ -343,6 +376,7 @@ export async function listPlatformOrders(
       affiliate: affiliateMap.get(pay.id) ?? null,
       approval: buildApproval(pay, userMap),
       cancellation: buildCancellation(pay, userMap),
+      invoice: { enabled: false, hasBuyerInfo: false, buyerEmail: null, webhookStatus: null },
     };
   });
 

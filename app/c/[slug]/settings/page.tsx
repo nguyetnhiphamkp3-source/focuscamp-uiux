@@ -9,6 +9,7 @@ import {
   getLevelTiers,
   getUiConfig,
   getPaymentConfig,
+  getInvoiceConfig,
 } from "@/lib/community-config";
 import {
   effectiveCommunityRole,
@@ -33,6 +34,7 @@ import { getAffiliateConfig } from "@/lib/services/affiliate";
 import { ChannelConfigEditor } from "@/components/settings/channel-config-editor";
 import { normalizeChannelConfig } from "@/lib/channel-config";
 import { PaymentConfigEditor } from "@/components/settings/payment-config-editor";
+import { InvoiceConfigEditor } from "@/components/settings/invoice-config-editor";
 import { getPlanStatus } from "@/lib/platform-plans";
 import { getTiersConfig } from "@/lib/services/subscription";
 import { DangerZone } from "@/components/settings/danger-zone";
@@ -94,6 +96,7 @@ export default async function SettingsPage({
   const subscriptionTiers = getTiersConfig(community.tiersConfig);
   const uiConfig = getUiConfig(community);
   const planState = getPlanStatus(community);
+  const invoiceConfig = getInvoiceConfig(community);
 
   // Async queries — only fetch for active tab
   const apiKeys = tab === "integrations" && perms.canManageApiKeys ? await listApiKeys(community.id) : [];
@@ -110,6 +113,24 @@ export default async function SettingsPage({
           orderBy: { createdAt: "desc" },
         })
       : [];
+  const invoiceAuditUsers =
+    tab === "billing" && perms.canManageBilling && invoiceConfig
+      ? await prisma.user.findMany({
+          where: {
+            id: {
+              in: [
+                invoiceConfig.createdByUserId,
+                invoiceConfig.updatedByUserId,
+                invoiceConfig.lastTestedByUserId,
+              ].filter((id): id is string => !!id),
+            },
+          },
+          select: { id: true, name: true, email: true },
+        })
+      : [];
+  const invoiceAuditUserMap = new Map(
+    invoiceAuditUsers.map((u) => [u.id, u.name ?? u.email]),
+  );
 
   return (
     <>
@@ -249,6 +270,37 @@ export default async function SettingsPage({
                   communityId={community.id}
                   communitySlug={slug}
                   initial={getPaymentConfig(community)}
+                />
+              )}
+
+              {perms.canManageBilling && (
+                <InvoiceConfigEditor
+                  communityId={community.id}
+                  communitySlug={slug}
+                  initial={{
+                    enabled: invoiceConfig?.enabled ?? false,
+                    endpoint: invoiceConfig?.endpoint ?? "",
+                    authHeaderName: invoiceConfig?.authHeaderName ?? "X-Api-Key",
+                    hasAuthHeaderValue: !!invoiceConfig?.authHeaderValue,
+                    vatRate: invoiceConfig?.vatRate ?? 10,
+                    paymentMethod: invoiceConfig?.paymentMethod ?? "CK",
+                    unit: invoiceConfig?.unit ?? "lần",
+                    audit: {
+                      createdBy: invoiceConfig?.createdByUserId
+                        ? (invoiceAuditUserMap.get(invoiceConfig.createdByUserId) ?? null)
+                        : null,
+                      createdAt: invoiceConfig?.createdAt ?? null,
+                      updatedBy: invoiceConfig?.updatedByUserId
+                        ? (invoiceAuditUserMap.get(invoiceConfig.updatedByUserId) ?? null)
+                        : null,
+                      updatedAt: invoiceConfig?.updatedAt ?? null,
+                      lastTestedBy: invoiceConfig?.lastTestedByUserId
+                        ? (invoiceAuditUserMap.get(invoiceConfig.lastTestedByUserId) ?? null)
+                        : null,
+                      lastTestAt: invoiceConfig?.lastTestAt ?? null,
+                      lastTestOk: invoiceConfig?.lastTestOk ?? null,
+                    },
+                  }}
                 />
               )}
 

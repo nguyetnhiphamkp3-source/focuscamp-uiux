@@ -70,6 +70,34 @@ export const SePayWebhookSchema = z.object({
 });
 export type SePayWebhookInput = z.infer<typeof SePayWebhookSchema>;
 
+/* ========== Invoice buyer info ========== */
+const OptionalInvoiceField = (max: number) =>
+  z.string().trim().max(max).optional().or(z.literal(""));
+
+export const InvoiceBuyerSchema = z.object({
+  buyer_type: z.coerce.number().pipe(z.union([z.literal(1), z.literal(2)])),
+  buyer_name: z.string().trim().min(1, "Tên người mua là bắt buộc").max(160),
+  buyer_email: z.string().trim().email("Email nhận hóa đơn không hợp lệ").max(200),
+  buyer_legal_name: OptionalInvoiceField(200),
+  buyer_tax_code: OptionalInvoiceField(40),
+  buyer_national_id: OptionalInvoiceField(40),
+  buyer_address: OptionalInvoiceField(300),
+  buyer_phone: OptionalInvoiceField(40),
+}).superRefine((data, ctx) => {
+  if (data.buyer_type === 2) {
+    if (!data.buyer_legal_name) {
+      ctx.addIssue({ code: "custom", path: ["buyer_legal_name"], message: "Tên pháp lý công ty là bắt buộc" });
+    }
+    if (!data.buyer_tax_code) {
+      ctx.addIssue({ code: "custom", path: ["buyer_tax_code"], message: "Mã số thuế là bắt buộc" });
+    }
+  }
+  if (data.buyer_type === 1 && !data.buyer_national_id) {
+    ctx.addIssue({ code: "custom", path: ["buyer_national_id"], message: "CCCD là bắt buộc" });
+  }
+});
+export type InvoiceBuyerInput = z.infer<typeof InvoiceBuyerSchema>;
+
 /* ========== Chat ========== */
 export const SendMessageSchema = z.object({
   content: z

@@ -141,6 +141,7 @@ model Community {
    */
   tiersConfig   Json?
   billingModel  Json?
+  invoiceConfig Json?
   /**
    * UI visibility config — { hiddenFeatures: FeatureKey[] }
    */

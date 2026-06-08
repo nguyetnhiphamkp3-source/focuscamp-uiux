@@ -149,6 +149,163 @@ function CancellationChip({ cancellation }: { cancellation: OrderRow["cancellati
   );
 }
 
+function InvoiceChip({ invoice }: { invoice: OrderRow["invoice"] }) {
+  if (!invoice.enabled) return null;
+  const status = invoice.webhookStatus;
+  const label =
+    status === "sent" ? "HĐ đã gửi" :
+    status === "failed" ? "HĐ lỗi" :
+    status === "skipped" ? "HĐ bỏ qua" :
+    invoice.hasBuyerInfo ? "HĐ sẵn sàng" :
+    "Thiếu HĐ";
+  const color =
+    status === "sent" ? "var(--success)" :
+    status === "failed" ? "var(--danger)" :
+    status === "skipped" ? "var(--warning)" :
+    invoice.hasBuyerInfo ? "var(--info)" :
+    "var(--danger)";
+  const bg =
+    status === "sent" ? "rgba(27,158,117,0.12)" :
+    status === "failed" || !invoice.hasBuyerInfo ? "rgba(242,63,67,0.1)" :
+    status === "skipped" ? "rgba(240,178,50,0.15)" :
+    "rgba(14,165,233,0.12)";
+  return (
+    <span
+      title={invoice.buyerEmail ? `Email hóa đơn: ${invoice.buyerEmail}` : "Community đang bật invoice"}
+      style={{
+        borderRadius: 3,
+        padding: "1px 5px",
+        fontWeight: 600,
+        flexShrink: 0,
+        background: bg,
+        color,
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+function InvoiceApproveModal({
+  order,
+  onApprove,
+  onCancel,
+}: {
+  order: OrderRow;
+  onApprove: (sendInvoiceWebhook: boolean) => void;
+  onCancel: () => void;
+}) {
+  const canSend = order.invoice.hasBuyerInfo;
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.6)",
+        zIndex: 9999,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 20,
+      }}
+    >
+      <div
+        style={{
+          background: "var(--bg-floating)",
+          borderRadius: 14,
+          border: "1px solid var(--border-subtle)",
+          maxWidth: 460,
+          width: "100%",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
+          padding: 24,
+          display: "flex",
+          flexDirection: "column",
+          gap: 14,
+        }}
+      >
+        <div style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--header-primary)" }}>
+          Duyệt đơn hàng
+        </div>
+        <div style={{ fontSize: "var(--text-base)", color: "var(--text-normal)", lineHeight: 1.5 }}>
+          Community này đang bật xuất hóa đơn qua webhook.
+          {canSend ? (
+            <>
+              <br />
+              Gửi yêu cầu xuất hóa đơn về webhook đã cấu hình?
+              {order.invoice.buyerEmail ? (
+                <>
+                  <br />
+                  Email hóa đơn: <strong>{order.invoice.buyerEmail}</strong>
+                </>
+              ) : null}
+            </>
+          ) : (
+            <>
+              <br />
+              Đơn này chưa có thông tin hóa đơn, nên không thể gửi webhook hóa đơn. Bạn vẫn có thể chỉ duyệt thanh toán.
+            </>
+          )}
+        </div>
+        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap", marginTop: 4 }}>
+          <button
+            type="button"
+            onClick={onCancel}
+            style={{
+              padding: "10px 16px",
+              borderRadius: 8,
+              border: "1px solid var(--border-subtle)",
+              background: "transparent",
+              color: "var(--interactive-normal)",
+              cursor: "pointer",
+              fontSize: "var(--text-base)",
+              fontWeight: 500,
+            }}
+          >
+            Huỷ
+          </button>
+          <button
+            type="button"
+            onClick={() => onApprove(false)}
+            style={{
+              padding: "10px 16px",
+              borderRadius: 8,
+              border: "1px solid var(--warning)",
+              background: "transparent",
+              color: "var(--warning)",
+              cursor: "pointer",
+              fontSize: "var(--text-base)",
+              fontWeight: 600,
+            }}
+          >
+            Chỉ duyệt
+          </button>
+          {canSend && (
+            <button
+              type="button"
+              onClick={() => onApprove(true)}
+              style={{
+                padding: "10px 16px",
+                borderRadius: 8,
+                border: "none",
+                background: "var(--brand-green)",
+                color: "#fff",
+                cursor: "pointer",
+                fontSize: "var(--text-base)",
+                fontWeight: 700,
+              }}
+            >
+              Duyệt + gửi hóa đơn
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function StatusBadge({ status }: { status: string }) {
   const style = STATUS_COLORS[status] ?? STATUS_COLORS.PENDING;
   return (
@@ -176,16 +333,16 @@ function ApproveButton({
 
   if (done) return <span style={{ fontSize: "var(--text-xs)", color: "var(--success)", fontWeight: 600 }}>Đã duyệt</span>;
 
-  function confirmApprove() {
+  function confirmApprove(sendInvoiceWebhook = false) {
     setShowConfirm(false);
     startTransition(async () => {
       let res;
       if (order.orderType === "product" && order.purchaseId) {
-        res = await approveOrderAction({ purchaseId: order.purchaseId, communitySlug });
+        res = await approveOrderAction({ purchaseId: order.purchaseId, communitySlug, sendInvoiceWebhook });
       } else if (mode === "platform") {
         res = await approvePlatformPaymentAction({ paymentId: order.orderId });
       } else {
-        res = await approvePaymentAction({ paymentId: order.orderId, communitySlug });
+        res = await approvePaymentAction({ paymentId: order.orderId, communitySlug, sendInvoiceWebhook });
       }
       if (res.ok) {
         router.refresh();
@@ -198,14 +355,22 @@ function ApproveButton({
 
   return (
     <>
-      <ConfirmModal
-        open={showConfirm}
-        title="Duyệt đơn hàng"
-        message="Duyệt thủ công đơn hàng này?"
-        confirmLabel="Duyệt"
-        onConfirm={confirmApprove}
-        onCancel={() => setShowConfirm(false)}
-      />
+      {order.invoice.enabled && showConfirm ? (
+        <InvoiceApproveModal
+          order={order}
+          onApprove={confirmApprove}
+          onCancel={() => setShowConfirm(false)}
+        />
+      ) : (
+        <ConfirmModal
+          open={showConfirm}
+          title="Duyệt đơn hàng"
+          message="Duyệt thủ công đơn hàng này?"
+          confirmLabel="Duyệt"
+          onConfirm={() => confirmApprove(false)}
+          onCancel={() => setShowConfirm(false)}
+        />
+      )}
       <button
         disabled={pending}
         onClick={() => setShowConfirm(true)}
@@ -461,6 +626,7 @@ export function OrdersPanel({
                       </span>
                       <ApprovalChip approval={order.approval} />
                       <CancellationChip cancellation={order.cancellation} />
+                      <InvoiceChip invoice={order.invoice} />
                     </div>
                   </div>
 

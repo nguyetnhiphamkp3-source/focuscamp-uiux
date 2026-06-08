@@ -396,6 +396,13 @@ export async function simulatePaymentCompletedAction(
     }
   });
 
+  try {
+    const { issueInvoiceForPayment } = await import("@/lib/integrations/invoice-webhook");
+    await issueInvoiceForPayment(payment.id);
+  } catch {
+    /* non-blocking */
+  }
+
   revalidatePath(`/pay/${paymentCode}`);
   return { ok: true };
 }

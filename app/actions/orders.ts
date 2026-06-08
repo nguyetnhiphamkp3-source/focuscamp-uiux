@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { logError, logger } from "@/lib/logger";
+import { getInvoiceConfig } from "@/lib/community-config";
 import { canCommunity, effectiveCommunityRole } from "@/lib/community-permissions";
 import { isSuperAdmin } from "@/lib/platform-admin";
 import { activateCommunityPlan } from "@/lib/services/community";
@@ -15,6 +16,7 @@ type ActionResult = { ok: true } | { ok: false; reason: string };
 export async function approveOrderAction(input: {
   purchaseId: string;
   communitySlug: string;
+  sendInvoiceWebhook?: boolean;
 }): Promise<ActionResult> {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
@@ -32,6 +34,7 @@ export async function approveOrderAction(input: {
           community: {
             select: {
               ownerId: true,
+              invoiceConfig: true,
               memberships: { where: { userId: s.user.id }, select: { role: true } },
             },
           },
@@ -193,6 +196,20 @@ export async function approveOrderAction(input: {
     logger.warn({ err, purchaseId: purchase.id }, "[orders] manual approve: gettime sync failed");
   }
 
+  if (payment && getInvoiceConfig(purchase.product.community)?.enabled) {
+    try {
+      if (input.sendInvoiceWebhook) {
+        const { issueInvoiceForPayment } = await import("@/lib/integrations/invoice-webhook");
+        await issueInvoiceForPayment(payment.id);
+      } else {
+        const { markInvoiceWebhookSkipped } = await import("@/lib/integrations/invoice-webhook");
+        await markInvoiceWebhookSkipped({ paymentId: payment.id, skippedBy: adminId });
+      }
+    } catch (err) {
+      logger.warn({ err, paymentId: payment.id }, "[orders] manual approve: invoice webhook action failed");
+    }
+  }
+
   logger.info({ purchaseId: purchase.id, adminId: s.user.id, ref: manualRef }, "[orders] manually approved");
   revalidatePath(`/c/${input.communitySlug}/orders`);
   return { ok: true };
@@ -201,6 +218,7 @@ export async function approveOrderAction(input: {
 export async function approvePaymentAction(input: {
   paymentId: string;
   communitySlug: string;
+  sendInvoiceWebhook?: boolean;
 }): Promise<ActionResult> {
   const s = await auth();
   if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
@@ -211,6 +229,7 @@ export async function approvePaymentAction(input: {
     select: {
       id: true,
       ownerId: true,
+      invoiceConfig: true,
       memberships: { where: { userId: s.user.id }, select: { role: true } },
     },
   });
@@ -331,6 +350,20 @@ export async function approvePaymentAction(input: {
     logError(err, { paymentId: payment.id });
     if (err instanceof Error) return { ok: false, reason: err.message };
     return { ok: false, reason: "unknown" };
+  }
+
+  if (getInvoiceConfig(community)?.enabled) {
+    try {
+      if (input.sendInvoiceWebhook) {
+        const { issueInvoiceForPayment } = await import("@/lib/integrations/invoice-webhook");
+        await issueInvoiceForPayment(payment.id);
+      } else {
+        const { markInvoiceWebhookSkipped } = await import("@/lib/integrations/invoice-webhook");
+        await markInvoiceWebhookSkipped({ paymentId: payment.id, skippedBy: adminId });
+      }
+    } catch (err) {
+      logger.warn({ err, paymentId: payment.id }, "[orders] manual approve: invoice webhook action failed");
+    }
   }
 
   logger.info({ paymentId: payment.id, refType: payment.refType, adminId: s.user.id }, "[orders] payment manually approved");

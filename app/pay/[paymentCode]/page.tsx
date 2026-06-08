@@ -2,12 +2,14 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { buildVietQRUrl } from "@/lib/sepay";
+import { getInvoiceConfig } from "@/lib/community-config";
 import { auth } from "@/auth";
 import { PaymentStatusPoller } from "./poller";
 import { BumpOfferBox } from "@/components/marketplace/bump-offer-box";
 import { UpsellOfferBox } from "@/components/marketplace/upsell-offer-box";
 import { SimulatePaymentButton } from "@/components/marketplace/simulate-payment-button";
 import { RemovableBumpRow } from "@/components/marketplace/removable-bump-row";
+import { InvoiceForm } from "@/components/checkout/invoice-form";
 
 export default async function PaymentPage({
   params,
@@ -27,18 +29,28 @@ export default async function PaymentPage({
 
   if (!payment) notFound();
 
-  let isOwner = false;
-  if (session?.user?.id && payment.communityId) {
-    const community = await prisma.community.findUnique({
-      where: { id: payment.communityId },
-      select: { ownerId: true },
-    });
-    isOwner = community?.ownerId === session.user.id;
-  }
+  const community = payment.communityId
+    ? await prisma.community.findUnique({
+        where: { id: payment.communityId },
+        select: { ownerId: true, invoiceConfig: true },
+      })
+    : null;
+  const isOwner = !!(session?.user?.id && community?.ownerId === session.user.id);
 
   let bumpProduct: { id: string; title: string; priceVnd: number; description: string | null } | null = null;
   let upsellProduct: { id: string; title: string; priceVnd: number; description: string | null } | null = null;
   const meta = (payment.metadata ?? {}) as Record<string, unknown>;
+  const invoiceConfig = community ? getInvoiceConfig(community) : null;
+  const invoiceMeta =
+    meta.invoice && typeof meta.invoice === "object" && !Array.isArray(meta.invoice)
+      ? (meta.invoice as Record<string, unknown>)
+      : null;
+  const shouldCollectInvoice =
+    payment.status === "PENDING" && !!invoiceConfig?.enabled && !invoiceMeta;
+  const invoiceEmail =
+    invoiceConfig?.enabled && typeof invoiceMeta?.buyer_email === "string"
+      ? invoiceMeta.buyer_email
+      : null;
 
   // Helper: skip showing bump/upsell for products the current user already owns
   // (subscriptions are renewable so we keep them).
@@ -203,6 +215,22 @@ export default async function PaymentPage({
               subtitle="Giao dịch hoàn tất."
               tone="success"
             />
+            {invoiceEmail && (
+              <div
+                style={{
+                  marginTop: 12,
+                  padding: "10px 12px",
+                  borderRadius: 8,
+                  background: "rgba(27,158,117,0.08)",
+                  border: "1px solid rgba(27,158,117,0.24)",
+                  color: "var(--brand-green)",
+                  fontSize: "var(--text-sm)",
+                  lineHeight: 1.5,
+                }}
+              >
+                Hóa đơn sẽ được gửi vào {invoiceEmail}.
+              </div>
+            )}
             {upsellProduct && (
               <UpsellOfferBox upsellProduct={upsellProduct} returnUrl={returnUrl} />
             )}
@@ -239,6 +267,12 @@ export default async function PaymentPage({
             title="Đơn hàng đã bị hủy"
             subtitle="Mã thanh toán này không còn hiệu lực."
             tone="danger"
+          />
+        ) : shouldCollectInvoice ? (
+          <InvoiceForm
+            paymentCode={payment.paymentCode}
+            defaultName={session?.user?.name ?? session?.user?.email?.split("@")[0] ?? ""}
+            defaultEmail={session?.user?.email ?? ""}
           />
         ) : (
           <>

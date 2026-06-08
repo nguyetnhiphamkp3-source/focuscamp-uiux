@@ -71,6 +71,41 @@ export const PaymentConfigSchema = z.object({
 });
 export type PaymentConfig = z.infer<typeof PaymentConfigSchema>;
 
+export const VatRateSchema = z.union([
+  z.literal(-2),
+  z.literal(-1),
+  z.literal(0),
+  z.literal(5),
+  z.literal(8),
+  z.literal(10),
+]);
+
+export const InvoiceConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  endpoint: z.string().trim().url().max(1000).optional().or(z.literal("")),
+  authHeaderName: z.string().trim().min(1).max(60).regex(/^[A-Za-z0-9-]+$/).default("X-Api-Key"),
+  authHeaderValue: z.string().max(5000).optional().or(z.literal("")),
+  vatRate: VatRateSchema.default(10),
+  paymentMethod: z.enum(["TM", "CK", "TM/CK", "KHAC"]).default("CK"),
+  unit: z.string().trim().min(1).max(30).default("lần"),
+  createdByUserId: z.string().optional(),
+  createdAt: z.string().optional(),
+  updatedByUserId: z.string().optional(),
+  updatedAt: z.string().optional(),
+  lastTestAt: z.string().optional(),
+  lastTestOk: z.boolean().optional(),
+  lastTestedByUserId: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (!data.enabled) return;
+  if (!data.endpoint) {
+    ctx.addIssue({ code: "custom", path: ["endpoint"], message: "Endpoint là bắt buộc khi bật invoice" });
+  }
+  if (!data.authHeaderValue) {
+    ctx.addIssue({ code: "custom", path: ["authHeaderValue"], message: "Header value là bắt buộc khi bật invoice" });
+  }
+});
+export type InvoiceConfig = z.infer<typeof InvoiceConfigSchema>;
+
 /** Shape of the fields we read off a Community row. */
 export type CommunityConfigSource = {
   pillarsConfig?: unknown;
@@ -79,6 +114,7 @@ export type CommunityConfigSource = {
   levelsConfig?: unknown;
   uiConfig?: unknown;
   billingModel?: unknown;
+  invoiceConfig?: unknown;
 };
 
 /* ===== UI visibility config ===== */
@@ -226,5 +262,14 @@ export function getPaymentConfig(c: CommunityConfigSource): PaymentConfig | null
   const parsed = PaymentConfigSchema.safeParse(c.billingModel);
   if (parsed.success) return parsed.data;
   logger.warn({ issues: parsed.error.issues }, "[community-config] bad billingModel");
+  return null;
+}
+
+/** Invoice webhook config — null if owner hasn't configured it or JSON is invalid. */
+export function getInvoiceConfig(c: CommunityConfigSource): InvoiceConfig | null {
+  if (c.invoiceConfig === null || c.invoiceConfig === undefined) return null;
+  const parsed = InvoiceConfigSchema.safeParse(c.invoiceConfig);
+  if (parsed.success) return parsed.data;
+  logger.warn({ issues: parsed.error.issues }, "[community-config] bad invoiceConfig");
   return null;
 }

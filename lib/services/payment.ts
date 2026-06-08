@@ -713,6 +713,13 @@ export async function matchSePayTransactionToPayment(params: {
     }
   }
 
+  try {
+    const { issueInvoiceForPayment } = await import("@/lib/integrations/invoice-webhook");
+    await issueInvoiceForPayment(payment.id);
+  } catch (err) {
+    logger.warn({ err, paymentId: payment.id }, "[payment] invoice webhook failed (non-blocking)");
+  }
+
   logger.info(
     { paymentCode, transactionId, amount, refType: payment.refType },
     "[payment] matched + activated"
