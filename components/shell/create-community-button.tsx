@@ -6,14 +6,12 @@ import { useRouter } from "next/navigation";
 import { createCommunityAction } from "@/app/actions/community";
 import { toSlug, fmtVnd } from "@/lib/brand";
 import { COMMUNITY_CATEGORIES } from "@/lib/community-categories";
-import { PLATFORM_PLANS } from "@/lib/platform-plans";
+import { DEFAULT_PLATFORM_PLAN_TIER, PLATFORM_PLANS } from "@/lib/platform-plans";
 
 // Tạm thời disable luồng tạo community public. Flip về false để bật lại modal full.
 const CREATION_DISABLED = false;
 const DISABLED_AVATAR_URL =
   "https://pub-8cc0aba616ff4e23a1298f6aa8b318d8.r2.dev/community/cmnzkjmx10000cb7zui6cjdrc/1778573696488-80b7ce.png";
-
-type PaidTier = "SOLO" | "PRO" | "AGENCY";
 
 /**
  * "+ Tạo cộng đồng" button — opens modal with form. Auto-generates slug
@@ -33,9 +31,9 @@ export function CreateCommunityButton({
   const [tagline, setTagline] = useState("");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
-  const [planTier, setPlanTier] = useState<PaidTier>("SOLO");
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
+  const plan = PLATFORM_PLANS[DEFAULT_PLATFORM_PLAN_TIER];
 
   function onNameChange(v: string) {
     setName(v);
@@ -54,7 +52,7 @@ export function CreateCommunityButton({
         tagline: tagline.trim() || undefined,
         category: category || undefined,
         description: description.trim() || undefined,
-        planTier,
+        planTier: DEFAULT_PLATFORM_PLAN_TIER,
       });
       if (res.ok) {
         setOpen(false);
@@ -72,7 +70,6 @@ export function CreateCommunityButton({
     setTagline("");
     setCategory("");
     setDescription("");
-    setPlanTier("SOLO");
     setErr(null);
   }
 
@@ -271,63 +268,56 @@ export function CreateCommunityButton({
                 </span>
                 <div
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr 1fr",
-                    gap: 8,
+                    padding: "12px 14px",
+                    borderRadius: 8,
+                    border: "2px solid var(--brand-green)",
+                    background: "rgba(27,158,117,0.08)",
+                    color: "var(--text-normal)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "var(--space-3)",
                   }}
                 >
-                  {(["SOLO", "PRO", "AGENCY"] as const).map((tier) => {
-                    const plan = PLATFORM_PLANS[tier];
-                    const selected = planTier === tier;
-                    return (
-                      <button
-                        key={tier}
-                        type="button"
-                        onClick={() => setPlanTier(tier)}
-                        disabled={pending}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <div
+                      style={{
+                        fontWeight: 700,
+                        fontSize: "var(--text-base)",
+                        color: "var(--brand-green)",
+                      }}
+                    >
+                      {plan.label}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "var(--text-sm)",
+                        color: "var(--header-primary)",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {fmtVnd(plan.priceVnd)}đ
+                      <span
                         style={{
-                          padding: "10px 8px",
-                          borderRadius: 8,
-                          border: `2px solid ${selected ? "var(--brand-green)" : "var(--border-subtle)"}`,
-                          background: selected ? "rgba(27,158,117,0.08)" : "var(--bg-card)",
-                          color: "var(--text-normal)",
-                          cursor: "pointer",
-                          textAlign: "left",
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 4,
+                          fontSize: "var(--text-xs)",
+                          color: "var(--text-muted)",
+                          fontWeight: 400,
                         }}
                       >
-                        <div
-                          style={{
-                            fontWeight: 700,
-                            fontSize: "var(--text-base)",
-                            color: selected ? "var(--brand-green)" : "var(--header-primary)",
-                          }}
-                        >
-                          {plan.label}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: "var(--text-sm)",
-                            color: "var(--header-primary)",
-                            fontWeight: 600,
-                          }}
-                        >
-                          {fmtVnd(plan.priceVnd)}đ
-                          <span
-                            style={{
-                              fontSize: "var(--text-xs)",
-                              color: "var(--text-muted)",
-                              fontWeight: 400,
-                            }}
-                          >
-                            /tháng
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })}
+                        /tháng
+                      </span>
+                    </div>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: "var(--text-xs)",
+                      color: "var(--brand-green)",
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Đang áp dụng
+                  </span>
                 </div>
                 <div
                   style={{
@@ -336,7 +326,7 @@ export function CreateCommunityButton({
                     lineHeight: 1.4,
                   }}
                 >
-                  {PLATFORM_PLANS[planTier].features.map((f: string, i: number) => (
+                  {plan.features.map((f: string, i: number) => (
                     <div key={i}>· {f}</div>
                   ))}
                 </div>
@@ -373,7 +363,7 @@ export function CreateCommunityButton({
                   color: "var(--text-muted)",
                 }}
               >
-                Bấm Tiếp tục → quét QR thanh toán {fmtVnd(PLATFORM_PLANS[planTier].priceVnd)}đ qua SePay.
+                Bấm Tiếp tục → quét QR thanh toán {fmtVnd(plan.priceVnd)}đ qua SePay.
                 Sau khi giao dịch xong cộng đồng sẽ active 30 ngày.
               </div>
               <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>

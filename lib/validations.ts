@@ -497,7 +497,7 @@ export const RemoveMemberSchema = z.object({
   targetUserId: z.string().cuid(),
 });
 
-export const PlanTierSchema = z.enum(["SOLO", "PRO", "AGENCY"]);
+export const PlanTierSchema = z.enum(["AGENCY"]);
 const CommunityCategorySchema = z.enum(COMMUNITY_CATEGORIES);
 
 export const CreateCommunitySchema = z.object({

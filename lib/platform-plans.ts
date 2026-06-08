@@ -16,6 +16,7 @@
 export const GRACE_PERIOD_DAYS = 7;
 
 export type PlanTier = "SOLO" | "PRO" | "AGENCY" | "GRANDFATHER";
+export type PaidPlanTier = Exclude<PlanTier, "GRANDFATHER">;
 
 export interface PlanConfig {
   tier: PlanTier;
@@ -24,39 +25,42 @@ export interface PlanConfig {
   features: string[];
 }
 
-export const PLATFORM_PLANS: Record<Exclude<PlanTier, "GRANDFATHER">, PlanConfig> = {
+export const DEFAULT_PLATFORM_PLAN_TIER: PaidPlanTier = "AGENCY";
+export const ACTIVE_PLATFORM_PLAN_TIERS = [DEFAULT_PLATFORM_PLAN_TIER] as const;
+
+const COMMUNITY_PLAN_FEATURES = [
+  "Cộng đồng riêng mang thương hiệu của bạn",
+  "Chat, bảng tin, hỏi đáp, CỐT và tín hiệu",
+  "Challenge 4 chế độ: theo thời gian, tuần tự, kết hợp, thủ công",
+  "Check-in, nộp bằng chứng, duyệt bài và bảng xếp hạng",
+  "Khóa học, bài học và theo dõi tiến độ học viên",
+  "Marketplace bán sản phẩm số, khóa học hoặc challenge",
+  "Thanh toán tự động qua SePay",
+  "Coupon và hoa hồng affiliate",
+  "AI Agent riêng cho từng cộng đồng",
+  "Quản lý thành viên và phân quyền admin/mod/member",
+  "Email support 24h",
+  "White-label domain riêng (coming soon)",
+];
+
+export const PLATFORM_PLANS: Record<PaidPlanTier, PlanConfig> = {
   SOLO: {
     tier: "SOLO",
-    label: "Solo",
-    priceVnd: 99_000,
-    features: [
-      "1 community",
-      "Toàn bộ feature core: Chat, Challenge, Khóa học, Marketplace",
-      "Email support 48h",
-    ],
+    label: "Agency",
+    priceVnd: 1_000_000,
+    features: COMMUNITY_PLAN_FEATURES,
   },
   PRO: {
     tier: "PRO",
-    label: "Pro",
-    priceVnd: 299_000,
-    features: [
-      "Tất cả tính năng Solo",
-      "AI Agent per-community",
-      "Custom branding (logo / màu)",
-      "Email support 24h",
-    ],
+    label: "Agency",
+    priceVnd: 1_000_000,
+    features: COMMUNITY_PLAN_FEATURES,
   },
   AGENCY: {
     tier: "AGENCY",
     label: "Agency",
-    priceVnd: 799_000,
-    features: [
-      "Tất cả tính năng Pro",
-      "White-label (xoá brand focus.camp)",
-      "Custom domain",
-      "Analytics dashboard nâng cao",
-      "Priority support 12h",
-    ],
+    priceVnd: 1_000_000,
+    features: COMMUNITY_PLAN_FEATURES,
   },
 };
 
@@ -81,7 +85,7 @@ export interface CommunityPlanSource {
 }
 
 export function getPlanStatus(c: CommunityPlanSource, now: Date = new Date()): PlanState {
-  const tier = (c.planTier || "SOLO") as PlanTier;
+  const tier = (c.planTier || DEFAULT_PLATFORM_PLAN_TIER) as PlanTier;
 
   if (tier === "GRANDFATHER") {
     return { status: "grandfathered", tier, expiresAt: null, daysLeft: null };
@@ -124,12 +128,12 @@ export function canRead(state: PlanState): boolean {
 
 export function planLabel(tier: PlanTier): string {
   if (tier === "GRANDFATHER") return "Lifetime (grandfather)";
-  return PLATFORM_PLANS[tier].label;
+  return PLATFORM_PLANS[tier]?.label ?? PLATFORM_PLANS[DEFAULT_PLATFORM_PLAN_TIER].label;
 }
 
 export function planPriceVnd(tier: PlanTier): number {
   if (tier === "GRANDFATHER") return 0;
-  return PLATFORM_PLANS[tier].priceVnd;
+  return PLATFORM_PLANS[tier]?.priceVnd ?? PLATFORM_PLANS[DEFAULT_PLATFORM_PLAN_TIER].priceVnd;
 }
 
 /** Compute new expiry after a successful renewal payment. */

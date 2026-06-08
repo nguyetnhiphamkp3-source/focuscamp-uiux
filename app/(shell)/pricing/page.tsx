@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/auth";
 import { fmtVnd } from "@/lib/brand";
-import { PLATFORM_PLANS } from "@/lib/platform-plans";
+import { DEFAULT_PLATFORM_PLAN_TIER, PLATFORM_PLANS } from "@/lib/platform-plans";
 import { LoginModal } from "@/components/shell/login-modal";
 import { CreateCommunityButton } from "@/components/shell/create-community-button";
 
@@ -9,12 +9,12 @@ export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Pricing | focus.camp",
-  description: "Gói trả phí hàng tháng cho cộng đồng — Solo, Pro, Agency",
+  description: "Gói Agency trả phí hàng tháng cho cộng đồng focus.camp",
 };
 
 export default async function PricingPage() {
   const session = await auth();
-  const tiers = ["SOLO", "PRO", "AGENCY"] as const;
+  const plan = PLATFORM_PLANS[DEFAULT_PLATFORM_PLAN_TIER];
 
   return (
     <div style={{ flex: 1, overflowY: "auto" }}>
@@ -46,7 +46,7 @@ export default async function PricingPage() {
             lineHeight: 1.5,
           }}
         >
-          Mỗi cộng đồng = 1 gói trả hàng tháng. Muốn nhiều cộng đồng?
+          Mỗi cộng đồng = 1 gói Agency trả hàng tháng. Muốn nhiều cộng đồng?
           Mua nhiều lần. Hủy bất kỳ lúc nào, không ràng buộc dài hạn.
         </p>
       </section>
@@ -62,137 +62,110 @@ export default async function PricingPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gridTemplateColumns: "minmax(280px, 520px)",
+            justifyContent: "center",
             gap: 16,
           }}
         >
-          {tiers.map((tier) => {
-            const plan = PLATFORM_PLANS[tier];
-            const isFeatured = tier === "PRO";
-            return (
-              <div
-                key={tier}
+          <div
+            style={{
+              background: "var(--bg-card)",
+              border: "2px solid var(--brand-green)",
+              borderRadius: 16,
+              padding: 28,
+              display: "flex",
+              flexDirection: "column",
+              position: "relative",
+              boxShadow: "0 8px 30px rgba(27,158,117,0.15)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "var(--text-xl)",
+                fontWeight: 800,
+                color: "var(--text-heading)",
+                marginBottom: 8,
+              }}
+            >
+              {plan.label}
+            </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "baseline",
+                gap: 4,
+                marginBottom: 16,
+              }}
+            >
+              <span
                 style={{
-                  background: isFeatured ? "var(--bg-card)" : "var(--bg-elevated)",
-                  border: `2px solid ${isFeatured ? "var(--brand-green)" : "var(--border-subtle)"}`,
-                  borderRadius: 16,
-                  padding: 28,
-                  display: "flex",
-                  flexDirection: "column",
-                  position: "relative",
-                  boxShadow: isFeatured
-                    ? "0 8px 30px rgba(27,158,117,0.15)"
-                    : "none",
+                  fontSize: "var(--text-2xl)",
+                  fontWeight: 800,
+                  color: "var(--text-heading)",
                 }}
               >
-                {isFeatured && (
-                  <span
-                    style={{
-                      position: "absolute",
-                      top: -12,
-                      left: 28,
-                      padding: "4px 12px",
-                      borderRadius: 999,
-                      background: "var(--brand-green)",
-                      color: "#fff",
-                      fontSize: "var(--text-xs)",
-                      fontWeight: 700,
-                      letterSpacing: "0.04em",
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    Phổ biến nhất
-                  </span>
-                )}
-                <div
+                {fmtVnd(plan.priceVnd)}đ
+              </span>
+              <span
+                style={{
+                  fontSize: "var(--text-sm)",
+                  color: "var(--text-muted)",
+                }}
+              >
+                /tháng
+              </span>
+            </div>
+            <ul
+              style={{
+                listStyle: "none",
+                padding: 0,
+                margin: "0 0 24px",
+                flex: 1,
+              }}
+            >
+              {plan.features.map((f, i) => (
+                <li
+                  key={i}
                   style={{
-                    fontSize: "var(--text-xl)",
-                    fontWeight: 800,
-                    color: "var(--text-heading)",
-                    marginBottom: 8,
-                  }}
-                >
-                  {plan.label}
-                </div>
-                <div
-                  style={{
+                    padding: "6px 0",
+                    fontSize: "var(--text-sm)",
+                    color: "var(--text-normal)",
                     display: "flex",
-                    alignItems: "baseline",
-                    gap: 4,
-                    marginBottom: 16,
+                    alignItems: "flex-start",
+                    gap: 8,
+                    lineHeight: 1.4,
                   }}
                 >
-                  <span
-                    style={{
-                      fontSize: "var(--text-2xl)",
-                      fontWeight: 800,
-                      color: "var(--text-heading)",
-                    }}
-                  >
-                    {fmtVnd(plan.priceVnd)}đ
+                  <span style={{ color: "var(--brand-green)", flexShrink: 0 }}>
+                    ✓
                   </span>
-                  <span
+                  <span>{f}</span>
+                </li>
+              ))}
+            </ul>
+            {session?.user ? (
+              <CreateCommunityButton variant="inline" />
+            ) : (
+              <LoginModal
+                trigger={
+                  <button
                     style={{
+                      padding: "12px 22px",
+                      borderRadius: 10,
+                      fontWeight: 700,
                       fontSize: "var(--text-sm)",
-                      color: "var(--text-muted)",
+                      color: "#fff",
+                      background: "var(--brand-green)",
+                      border: `1px solid var(--brand-green)`,
+                      cursor: "pointer",
                     }}
                   >
-                    /tháng
-                  </span>
-                </div>
-                <ul
-                  style={{
-                    listStyle: "none",
-                    padding: 0,
-                    margin: "0 0 24px",
-                    flex: 1,
-                  }}
-                >
-                  {plan.features.map((f, i) => (
-                    <li
-                      key={i}
-                      style={{
-                        padding: "6px 0",
-                        fontSize: "var(--text-sm)",
-                        color: "var(--text-normal)",
-                        display: "flex",
-                        alignItems: "flex-start",
-                        gap: 8,
-                        lineHeight: 1.4,
-                      }}
-                    >
-                      <span style={{ color: "var(--brand-green)", flexShrink: 0 }}>
-                        ✓
-                      </span>
-                      <span>{f}</span>
-                    </li>
-                  ))}
-                </ul>
-                {session?.user ? (
-                  <CreateCommunityButton variant="inline" />
-                ) : (
-                  <LoginModal
-                    trigger={
-                      <button
-                        style={{
-                          padding: "12px 22px",
-                          borderRadius: 10,
-                          fontWeight: 700,
-                          fontSize: "var(--text-sm)",
-                          color: isFeatured ? "#fff" : "var(--brand-green)",
-                          background: isFeatured ? "var(--brand-green)" : "transparent",
-                          border: `1px solid var(--brand-green)`,
-                          cursor: "pointer",
-                        }}
-                      >
-                        Bắt đầu →
-                      </button>
-                    }
-                  />
-                )}
-              </div>
-            );
-          })}
+                    Bắt đầu →
+                  </button>
+                }
+              />
+            )}
+          </div>
         </div>
       </section>
 
@@ -243,8 +216,8 @@ export default async function PricingPage() {
           }
         />
         <Faq
-          q="Có nâng cấp Solo → Pro được không?"
-          a="Hiện chưa tự động. Liên hệ support@focus.camp để đổi gói thủ công, chúng tôi tính chênh lệch theo pro-rata."
+          q="Có gói thấp hơn Agency không?"
+          a="Hiện tại focus.camp chỉ mở một gói Agency cho người tạo cộng đồng."
         />
         <Faq
           q="Thanh toán qua đâu?"
