@@ -97,6 +97,18 @@ export function challengeCurrentDay(
   return Math.min(requiredDays, Math.max(1, elapsedDays + 1));
 }
 
+export function isCalendarTaskUnlockMode(unlockMode: string | null | undefined): boolean {
+  return unlockMode === "DAILY" || unlockMode === "DAILY_SEQUENTIAL";
+}
+
+export function canStartChallengeNow(
+  unlockMode: string | null | undefined,
+  now: Date = new Date()
+): boolean {
+  if (!isCalendarTaskUnlockMode(unlockMode)) return true;
+  return vietnamLocalHour(now) >= CHALLENGE_DAY_ANCHOR_HOUR;
+}
+
 function challengeDayFloor(instant: Date): Date {
   const boundary = challengeDayBoundaryForVietnamDate(instant);
   if (instant.getTime() < boundary.getTime()) {
@@ -122,6 +134,12 @@ function challengeDayBoundaryForVietnamDate(instant: Date): Date {
   );
 }
 
+function vietnamLocalHour(instant: Date): number {
+  return new Date(
+    instant.getTime() + CHALLENGE_DAY_ANCHOR_UTC_OFFSET_HOURS * HOUR_MS
+  ).getUTCHours();
+}
+
 export function sequentialCurrentDay(
   tasks: { dayNumber: number }[],
   approvedDayNumbers: Set<number>,
@@ -134,7 +152,7 @@ export function sequentialCurrentDay(
 }
 
 export function hasCalendarDeadline(unlockMode: string | null | undefined): boolean {
-  return unlockMode === "DAILY" || unlockMode === "DAILY_SEQUENTIAL";
+  return isCalendarTaskUnlockMode(unlockMode);
 }
 
 /**

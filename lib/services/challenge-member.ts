@@ -12,6 +12,7 @@ import { canCommunity, effectiveCommunityRole } from "@/lib/community-permission
 import { deleteReplacedMediaUrl } from "@/lib/media-cleanup";
 import { checkinImages } from "@/lib/checkin-images";
 import { canResubmitCheckin } from "@/lib/checkin-resubmit-state";
+import { canStartChallengeNow } from "./challenge-progress";
 
 export type SubmissionStatus = "PENDING" | "APPROVED" | "REJECTED";
 
@@ -949,10 +950,17 @@ export async function startChallengeForMember(input: {
 }) {
   const member = await prisma.challengeMember.findUnique({
     where: { challengeId_userId: { challengeId: input.challengeId, userId: input.userId } },
-    select: { status: true, personalStartsAt: true },
+    select: {
+      status: true,
+      personalStartsAt: true,
+      challenge: { select: { taskUnlockMode: true } },
+    },
   });
   if (!member || member.status !== "ACTIVE" || member.personalStartsAt) {
     throw new Error("invalid_state");
+  }
+  if (!canStartChallengeNow(member.challenge.taskUnlockMode)) {
+    throw new Error("challenge_start_window_closed");
   }
   await prisma.challengeMember.update({
     where: { challengeId_userId: { challengeId: input.challengeId, userId: input.userId } },

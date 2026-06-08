@@ -7,7 +7,7 @@ import { joinChallengeAction, startChallengeAction } from "@/app/actions/challen
 import { CheckinForm } from "@/components/community/checkin-form";
 import { SubmissionReviewPanel } from "@/components/community/submission-review-panel";
 import type { SubmissionRow } from "@/components/community/submission-review-panel";
-import { effectivePersonalStartsAt, challengeDayAnchor, challengeCurrentDay, hasCalendarDeadline, sequentialCurrentDay } from "@/lib/services/challenge-progress";
+import { effectivePersonalStartsAt, challengeDayAnchor, challengeCurrentDay, hasCalendarDeadline, sequentialCurrentDay, canStartChallengeNow } from "@/lib/services/challenge-progress";
 import { ChallengeSettingsPanel } from "@/components/community/challenge-settings-panel";
 import { ChallengeEditButton } from "@/components/community/challenge-edit-button";
 import { ChallengeLiveRefresh } from "@/components/community/challenge-live-refresh";
@@ -81,6 +81,7 @@ export default async function ChallengeDetailPage({
     review?: string;
     page?: string;
     search?: string;
+    startError?: string;
     member?: string | string[];
     memberSearch?: string;
     memberPage?: string;
@@ -386,6 +387,9 @@ export default async function ChallengeDetailPage({
 
   const unlockMode = challenge.taskUnlockMode ?? "DAILY";
   const calendarDeadline = hasCalendarDeadline(unlockMode);
+  const startWindowOpen = canStartChallengeNow(unlockMode);
+  const startWindowMessage =
+    "Thời gian Bắt đầu thử thách mở từ 07:00 sáng đến 23:59 mỗi ngày. Từ 00:00-07:00, bạn hãy quay lại sau 07:00 để bắt đầu đúng nhịp mở bài.";
   const tasks = challenge.tasks;
 
   const dayNow = (() => {
@@ -695,6 +699,17 @@ export default async function ChallengeDetailPage({
             <div style={{ marginTop: "var(--space-5)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
               <div style={{ padding: "14px 18px", background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 12, fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>
                 Bạn đã tham gia challenge. Nhấn <strong>Bắt đầu</strong> khi sẵn sàng — đồng hồ đếm ngày sẽ chạy từ lúc này.
+                {calendarDeadline && (
+                  <div
+                    style={{
+                      marginTop: "var(--space-2)",
+                      color: !startWindowOpen ? "var(--warning)" : "var(--text-muted)",
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {startWindowMessage}
+                  </div>
+                )}
                 {autoStartDeadline && autoStartDeadlineLabel && autoStartServerNowIso && (
                   <AutoStartCountdown
                     deadlineIso={autoStartDeadline.toISOString()}
@@ -704,7 +719,16 @@ export default async function ChallengeDetailPage({
                 )}
               </div>
               <form action={startChallengeAction.bind(null, { challengeId: challenge.id, communitySlug: slug, challengeSlug })}>
-                <button type="submit" className="ui-btn ui-btn-primary ui-btn-lg" style={{ width: "100%" }}>
+                <button
+                  type="submit"
+                  className="ui-btn ui-btn-primary ui-btn-lg"
+                  disabled={!startWindowOpen}
+                  style={{
+                    width: "100%",
+                    opacity: startWindowOpen ? 1 : 0.55,
+                    cursor: startWindowOpen ? "pointer" : "not-allowed",
+                  }}
+                >
                   🚀 Bắt đầu ngay
                 </button>
               </form>

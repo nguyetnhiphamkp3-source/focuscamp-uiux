@@ -823,16 +823,20 @@ export async function startChallengeAction(
   input: { challengeId: string; communitySlug: string; challengeSlug: string },
   _formData: FormData
 ): Promise<void> {
+  const returnUrl = `/c/${input.communitySlug}/challenges/${input.challengeSlug}`;
   const s = await auth();
   if (!s?.user?.id) {
-    redirect(`/c/${input.communitySlug}/challenges/${input.challengeSlug}`);
+    redirect(returnUrl);
   }
   try {
     await startChallengeForMember({ userId: s.user.id, challengeId: input.challengeId });
-  } catch {
-    // invalid_state — already started or not ACTIVE, redirect anyway to refresh state
+  } catch (err) {
+    if (err instanceof Error && err.message === "challenge_start_window_closed") {
+      redirect(`${returnUrl}?startError=window_closed`);
+    }
+    // invalid_state — already started or not ACTIVE, redirect anyway to refresh state.
   }
-  redirect(`/c/${input.communitySlug}/challenges/${input.challengeSlug}`);
+  redirect(returnUrl);
 }
 
 export async function renewChallengePaymentAction(input: {

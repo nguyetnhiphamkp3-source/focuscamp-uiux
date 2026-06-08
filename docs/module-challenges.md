@@ -143,6 +143,7 @@ Admin tạo (open) → User xin vào (pending) → Admin duyệt (approved)
 ### Mở khoá Task theo ngày
 - Mốc ngày challenge cố định là `07:00 Asia/Ho_Chi_Minh`, không phụ thuộc timezone server/container.
 - User bấm "Bắt đầu" lúc nào cũng được; Task 1 mở ngay như warm-up.
+- Với mode `DAILY` / `DAILY_SEQUENTIAL`, nút "Bắt đầu" chỉ mở từ 07:00 đến 23:59 VN. Từ 00:00 đến trước 07:00, UI disable và service vẫn chặn nếu submit trực tiếp.
 - `personal_starts_at` được round up tới mốc 07:00 VN kế tiếp để tính ngày chính thức. Nếu bấm đúng 07:00 thì dùng mốc đó.
 - Task ngày N unlock/deadline tại `day_anchor + (N - 1) × 24h` / `day_anchor + N × 24h`.
 - `DAILY_SEQUENTIAL`: ngoài time gate, task sau chỉ mở khi task trước đã có submission không bị reject.

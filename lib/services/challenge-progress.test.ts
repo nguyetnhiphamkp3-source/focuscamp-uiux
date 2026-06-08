@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  canStartChallengeNow,
   challengeCurrentDay,
   challengeDayAnchor,
 } from "@/lib/services/challenge-progress";
@@ -49,4 +50,12 @@ test("current day advances only at the 07:00 Vietnam boundary", () => {
     challengeCurrentDay(startedAt, 21, new Date("2026-06-10T00:00:00.000Z")),
     3,
   );
+});
+
+test("manual start window is closed from 00:00 to before 07:00 Vietnam time for calendar modes", () => {
+  assert.equal(canStartChallengeNow("DAILY", new Date("2026-06-07T16:59:59.000Z")), true);
+  assert.equal(canStartChallengeNow("DAILY", new Date("2026-06-07T17:00:00.000Z")), false);
+  assert.equal(canStartChallengeNow("DAILY_SEQUENTIAL", new Date("2026-06-07T23:59:59.000Z")), false);
+  assert.equal(canStartChallengeNow("DAILY_SEQUENTIAL", new Date("2026-06-08T00:00:00.000Z")), true);
+  assert.equal(canStartChallengeNow("SEQUENTIAL", new Date("2026-06-07T20:00:00.000Z")), true);
 });
