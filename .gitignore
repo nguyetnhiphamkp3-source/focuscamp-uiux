@@ -46,3 +46,20 @@ next-env.d.ts
 # local tool configs
 /.opencode
 /release-manifest.json
+
+# Claude/Codex local runtime
+/.claude/agent-memory/
+/.claude/scheduled_tasks.lock
+/.claude/hooks/.logs/
+
+# IDE local settings
+/.vscode/
+
+# Temporary script output
+/scripts/tmp/
+/tsc-out.txt
+/*scriptstmp*.json
+
+# Root-level generated reports
+/report*.html
+/report*.md
