@@ -6,7 +6,12 @@ import { useRouter } from "next/navigation";
 import { createCommunityAction } from "@/app/actions/community";
 import { toSlug, fmtVnd } from "@/lib/brand";
 import { COMMUNITY_CATEGORIES } from "@/lib/community-categories";
-import { DEFAULT_PLATFORM_PLAN_TIER, PLATFORM_PLANS } from "@/lib/platform-plans";
+import {
+  DEFAULT_PLATFORM_PLAN_TIER,
+  DISPLAY_PLATFORM_PLAN_TIERS,
+  PLATFORM_PLAN_DISPLAY,
+  PLATFORM_PLANS,
+} from "@/lib/platform-plans";
 
 // Tạm thời disable luồng tạo community public. Flip về false để bật lại modal full.
 const CREATION_DISABLED = false;
@@ -268,56 +273,87 @@ export function CreateCommunityButton({
                 </span>
                 <div
                   style={{
-                    padding: "12px 14px",
-                    borderRadius: 8,
-                    border: "2px solid var(--brand-green)",
-                    background: "rgba(27,158,117,0.08)",
-                    color: "var(--text-normal)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: "var(--space-3)",
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr 1fr",
+                    gap: 8,
                   }}
                 >
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <div
-                      style={{
-                        fontWeight: 700,
-                        fontSize: "var(--text-base)",
-                        color: "var(--brand-green)",
-                      }}
-                    >
-                      {plan.label}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "var(--text-sm)",
-                        color: "var(--header-primary)",
-                        fontWeight: 600,
-                      }}
-                    >
-                      {fmtVnd(plan.priceVnd)}đ
-                      <span
+                  {DISPLAY_PLATFORM_PLAN_TIERS.map((tier) => {
+                    const option = PLATFORM_PLAN_DISPLAY[tier];
+                    const optionPlan = PLATFORM_PLANS[tier];
+                    const selected = tier === DEFAULT_PLATFORM_PLAN_TIER;
+                    return (
+                      <button
+                        key={tier}
+                        type="button"
+                        disabled={!option.available || pending}
                         style={{
-                          fontSize: "var(--text-xs)",
-                          color: "var(--text-muted)",
-                          fontWeight: 400,
+                          padding: "10px 8px",
+                          borderRadius: 8,
+                          border: `2px solid ${selected ? "var(--brand-green)" : "var(--border-subtle)"}`,
+                          background: selected ? "rgba(27,158,117,0.08)" : "var(--bg-card)",
+                          color: "var(--text-normal)",
+                          cursor: option.available && !pending ? "default" : "not-allowed",
+                          textAlign: "left",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 4,
+                          opacity: option.available ? 1 : 0.58,
                         }}
                       >
-                        /tháng
-                      </span>
-                    </div>
-                  </div>
-                  <span
-                    style={{
-                      fontSize: "var(--text-xs)",
-                      color: "var(--brand-green)",
-                      fontWeight: 700,
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    Đang áp dụng
-                  </span>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 6,
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontWeight: 700,
+                              fontSize: "var(--text-base)",
+                              color: selected ? "var(--brand-green)" : "var(--header-primary)",
+                            }}
+                          >
+                            {option.label}
+                          </span>
+                          {option.badge && (
+                            <span
+                              style={{
+                                fontSize: "var(--text-xs)",
+                                color: "var(--text-muted)",
+                                fontWeight: 700,
+                                textTransform: "uppercase",
+                              }}
+                            >
+                              {option.badge}
+                            </span>
+                          )}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: "var(--text-sm)",
+                            color: "var(--header-primary)",
+                            fontWeight: 600,
+                          }}
+                        >
+                          {option.available ? `${fmtVnd(optionPlan.priceVnd)}đ` : "Coming soon"}
+                          {option.available && (
+                            <span
+                              style={{
+                                fontSize: "var(--text-xs)",
+                                color: "var(--text-muted)",
+                                fontWeight: 400,
+                              }}
+                            >
+                              /tháng
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
                 <div
                   style={{

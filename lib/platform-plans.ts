@@ -27,6 +27,16 @@ export interface PlanConfig {
 
 export const DEFAULT_PLATFORM_PLAN_TIER: PaidPlanTier = "AGENCY";
 export const ACTIVE_PLATFORM_PLAN_TIERS = [DEFAULT_PLATFORM_PLAN_TIER] as const;
+export const DISPLAY_PLATFORM_PLAN_TIERS = ["SOLO", "PRO", "AGENCY"] as const;
+
+export const PLATFORM_PLAN_DISPLAY: Record<
+  PaidPlanTier,
+  { label: string; available: boolean; badge?: string }
+> = {
+  SOLO: { label: "Solo", available: false, badge: "Coming soon" },
+  PRO: { label: "Pro", available: false, badge: "Coming soon" },
+  AGENCY: { label: "Agency", available: true },
+};
 
 const COMMUNITY_PLAN_FEATURES = [
   "Cộng đồng riêng mang thương hiệu của bạn",
@@ -46,20 +56,20 @@ const COMMUNITY_PLAN_FEATURES = [
 export const PLATFORM_PLANS: Record<PaidPlanTier, PlanConfig> = {
   SOLO: {
     tier: "SOLO",
-    label: "Agency",
+    label: "Solo",
     priceVnd: 1_000_000,
     features: COMMUNITY_PLAN_FEATURES,
   },
   PRO: {
     tier: "PRO",
-    label: "Agency",
+    label: "Pro",
     priceVnd: 1_000_000,
     features: COMMUNITY_PLAN_FEATURES,
   },
   AGENCY: {
     tier: "AGENCY",
     label: "Agency",
-    priceVnd: 1_000_000,
+    priceVnd: 1_499_000,
     features: COMMUNITY_PLAN_FEATURES,
   },
 };

@@ -1,0 +1,1 @@
+ALTER TABLE "Community" ALTER COLUMN "planTier" SET DEFAULT 'AGENCY';

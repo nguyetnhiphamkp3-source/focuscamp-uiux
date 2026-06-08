@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { auth } from "@/auth";
 import { fmtVnd } from "@/lib/brand";
-import { DEFAULT_PLATFORM_PLAN_TIER, PLATFORM_PLANS } from "@/lib/platform-plans";
+import {
+  DEFAULT_PLATFORM_PLAN_TIER,
+  DISPLAY_PLATFORM_PLAN_TIERS,
+  PLATFORM_PLAN_DISPLAY,
+  PLATFORM_PLANS,
+} from "@/lib/platform-plans";
 import { LoginModal } from "@/components/shell/login-modal";
 import { CreateCommunityButton } from "@/components/shell/create-community-button";
 
@@ -9,12 +14,11 @@ export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Pricing | focus.camp",
-  description: "Gói Agency trả phí hàng tháng cho cộng đồng focus.camp",
+  description: "Gói trả phí hàng tháng cho cộng đồng focus.camp",
 };
 
 export default async function PricingPage() {
   const session = await auth();
-  const plan = PLATFORM_PLANS[DEFAULT_PLATFORM_PLAN_TIER];
 
   return (
     <div style={{ flex: 1, overflowY: "auto" }}>
@@ -46,8 +50,8 @@ export default async function PricingPage() {
             lineHeight: 1.5,
           }}
         >
-          Mỗi cộng đồng = 1 gói Agency trả hàng tháng. Muốn nhiều cộng đồng?
-          Mua nhiều lần. Hủy bất kỳ lúc nào, không ràng buộc dài hạn.
+          Agency đang mở đăng ký. Solo và Pro sẽ được mở sau.
+          Mỗi cộng đồng cần 1 gói trả phí riêng.
         </p>
       </section>
 
@@ -62,110 +66,163 @@ export default async function PricingPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "minmax(280px, 520px)",
-            justifyContent: "center",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
             gap: 16,
           }}
         >
-          <div
-            style={{
-              background: "var(--bg-card)",
-              border: "2px solid var(--brand-green)",
-              borderRadius: 16,
-              padding: 28,
-              display: "flex",
-              flexDirection: "column",
-              position: "relative",
-              boxShadow: "0 8px 30px rgba(27,158,117,0.15)",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "var(--text-xl)",
-                fontWeight: 800,
-                color: "var(--text-heading)",
-                marginBottom: 8,
-              }}
-            >
-              {plan.label}
-            </div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "baseline",
-                gap: 4,
-                marginBottom: 16,
-              }}
-            >
-              <span
+          {DISPLAY_PLATFORM_PLAN_TIERS.map((tier) => {
+            const option = PLATFORM_PLAN_DISPLAY[tier];
+            const plan = PLATFORM_PLANS[tier];
+            const available = option.available;
+            const isFeatured = tier === DEFAULT_PLATFORM_PLAN_TIER;
+            return (
+              <div
+                key={tier}
                 style={{
-                  fontSize: "var(--text-2xl)",
-                  fontWeight: 800,
-                  color: "var(--text-heading)",
+                  background: isFeatured ? "var(--bg-card)" : "var(--bg-elevated)",
+                  border: `2px solid ${isFeatured ? "var(--brand-green)" : "var(--border-subtle)"}`,
+                  borderRadius: 16,
+                  padding: 28,
+                  display: "flex",
+                  flexDirection: "column",
+                  position: "relative",
+                  boxShadow: isFeatured ? "0 8px 30px rgba(27,158,117,0.15)" : "none",
+                  opacity: available ? 1 : 0.68,
                 }}
               >
-                {fmtVnd(plan.priceVnd)}đ
-              </span>
-              <span
-                style={{
-                  fontSize: "var(--text-sm)",
-                  color: "var(--text-muted)",
-                }}
-              >
-                /tháng
-              </span>
-            </div>
-            <ul
-              style={{
-                listStyle: "none",
-                padding: 0,
-                margin: "0 0 24px",
-                flex: 1,
-              }}
-            >
-              {plan.features.map((f, i) => (
-                <li
-                  key={i}
+                {option.badge && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: -12,
+                      left: 28,
+                      padding: "4px 12px",
+                      borderRadius: 999,
+                      background: "var(--bg-card)",
+                      color: "var(--text-muted)",
+                      border: "1px solid var(--border-subtle)",
+                      fontSize: "var(--text-xs)",
+                      fontWeight: 700,
+                      letterSpacing: "0.04em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {option.badge}
+                  </span>
+                )}
+                <div
                   style={{
-                    padding: "6px 0",
-                    fontSize: "var(--text-sm)",
-                    color: "var(--text-normal)",
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: 8,
-                    lineHeight: 1.4,
+                    fontSize: "var(--text-xl)",
+                    fontWeight: 800,
+                    color: "var(--text-heading)",
+                    marginBottom: 8,
                   }}
                 >
-                  <span style={{ color: "var(--brand-green)", flexShrink: 0 }}>
-                    ✓
+                  {option.label}
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "baseline",
+                    gap: 4,
+                    marginBottom: 16,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: available ? "var(--text-2xl)" : "var(--text-xl)",
+                      fontWeight: 800,
+                      color: available ? "var(--text-heading)" : "var(--text-muted)",
+                    }}
+                  >
+                    {available ? `${fmtVnd(plan.priceVnd)}đ` : "Coming soon"}
                   </span>
-                  <span>{f}</span>
-                </li>
-              ))}
-            </ul>
-            {session?.user ? (
-              <CreateCommunityButton variant="inline" />
-            ) : (
-              <LoginModal
-                trigger={
+                  {available && (
+                    <span
+                      style={{
+                        fontSize: "var(--text-sm)",
+                        color: "var(--text-muted)",
+                      }}
+                    >
+                      /tháng
+                    </span>
+                  )}
+                </div>
+                <ul
+                  style={{
+                    listStyle: "none",
+                    padding: 0,
+                    margin: "0 0 24px",
+                    flex: 1,
+                  }}
+                >
+                  {(available
+                    ? plan.features
+                    : ["Đang hoàn thiện", "Sẽ mở đăng ký sau", "Nhận thông báo khi ra mắt"]
+                  ).map((f, i) => (
+                    <li
+                      key={i}
+                      style={{
+                        padding: "6px 0",
+                        fontSize: "var(--text-sm)",
+                        color: available ? "var(--text-normal)" : "var(--text-muted)",
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: 8,
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      <span style={{ color: available ? "var(--brand-green)" : "var(--text-muted)", flexShrink: 0 }}>
+                        {available ? "✓" : "·"}
+                      </span>
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+                {available ? (
+                  session?.user ? (
+                    <CreateCommunityButton variant="inline" />
+                  ) : (
+                    <LoginModal
+                      trigger={
+                        <button
+                          style={{
+                            padding: "12px 22px",
+                            borderRadius: 10,
+                            fontWeight: 700,
+                            fontSize: "var(--text-sm)",
+                            color: "#fff",
+                            background: "var(--brand-green)",
+                            border: `1px solid var(--brand-green)`,
+                            cursor: "pointer",
+                          }}
+                        >
+                          Bắt đầu →
+                        </button>
+                      }
+                    />
+                  )
+                ) : (
                   <button
+                    type="button"
+                    disabled
                     style={{
                       padding: "12px 22px",
                       borderRadius: 10,
                       fontWeight: 700,
                       fontSize: "var(--text-sm)",
-                      color: "#fff",
-                      background: "var(--brand-green)",
-                      border: `1px solid var(--brand-green)`,
-                      cursor: "pointer",
+                      color: "var(--text-muted)",
+                      background: "var(--bg-modifier-hover)",
+                      border: "1px solid var(--border-subtle)",
+                      cursor: "not-allowed",
                     }}
                   >
-                    Bắt đầu →
+                    Coming soon
                   </button>
-                }
-              />
-            )}
-          </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </section>
 
@@ -216,8 +273,8 @@ export default async function PricingPage() {
           }
         />
         <Faq
-          q="Có gói thấp hơn Agency không?"
-          a="Hiện tại focus.camp chỉ mở một gói Agency cho người tạo cộng đồng."
+          q="Solo và Pro dùng được chưa?"
+          a="Chưa. Hai gói này đang ở trạng thái coming soon; hiện chỉ gói Agency mở đăng ký."
         />
         <Faq
           q="Thanh toán qua đâu?"

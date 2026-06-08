@@ -38,13 +38,13 @@ export default function TermsPage() {
       </p>
       <ul style={legalStyles.ul}>
         <li>
-          <strong>Solo</strong> — 99.000đ/tháng
+          <strong>Solo</strong> — coming soon
         </li>
         <li>
-          <strong>Pro</strong> — 299.000đ/tháng
+          <strong>Pro</strong> — coming soon
         </li>
         <li>
-          <strong>Agency</strong> — 799.000đ/tháng
+          <strong>Agency</strong> — 1.499.000đ/tháng
         </li>
       </ul>
       <p style={legalStyles.p}>

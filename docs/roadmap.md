@@ -39,7 +39,7 @@ Key: ✅ done · 🟡 partial · ❌ not started · 🚫 deferred (Phase 2+)
 ### Community platform
 | Item | Status | Notes |
 |---|---|---|
-| Community create/join/list | ✅ | CreateCommunityButton (+ icon in ServerList); single Agency platform plan at 1.000.000đ/month |
+| Community create/join/list | ✅ | CreateCommunityButton (+ icon in ServerList); single Agency platform plan at 1.499.000đ/month |
 | Join flow picks class when `classesConfig` set | ✅ | Modal |
 | Right sidebar: guest/member views | ✅ | |
 | Boss Sói gamification (HP/tagline/name, computed from activity) | ✅ | Per-community |
