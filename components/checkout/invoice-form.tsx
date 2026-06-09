@@ -74,6 +74,14 @@ export function InvoiceForm({
       setErr("Nhập tên pháp lý công ty và mã số thuế");
       return;
     }
+    if (!buyerAddress.trim()) {
+      setErr("Nhập địa chỉ");
+      return;
+    }
+    if (!buyerPhone.trim()) {
+      setErr("Nhập số điện thoại");
+      return;
+    }
 
     setPending(true);
     const res = await saveInvoiceBuyerInfoAction({
@@ -154,6 +162,7 @@ export function InvoiceForm({
           value={buyerName}
           onChange={(e) => setBuyerName(e.target.value)}
           disabled={pending}
+          required
           style={inputStyle}
         />
       </Field>
@@ -164,6 +173,7 @@ export function InvoiceForm({
           value={buyerEmail}
           onChange={(e) => setBuyerEmail(e.target.value)}
           disabled={pending}
+          required
           style={inputStyle}
         />
       </Field>
@@ -174,6 +184,7 @@ export function InvoiceForm({
             value={buyerNationalId}
             onChange={(e) => setBuyerNationalId(e.target.value)}
             disabled={pending}
+            required
             style={inputStyle}
           />
         </Field>
@@ -184,6 +195,7 @@ export function InvoiceForm({
               value={buyerLegalName}
               onChange={(e) => setBuyerLegalName(e.target.value)}
               disabled={pending}
+              required
               style={inputStyle}
             />
           </Field>
@@ -192,6 +204,7 @@ export function InvoiceForm({
               value={buyerTaxCode}
               onChange={(e) => setBuyerTaxCode(e.target.value)}
               disabled={pending}
+              required
               style={inputStyle}
             />
           </Field>
@@ -203,6 +216,7 @@ export function InvoiceForm({
           value={buyerAddress}
           onChange={(e) => setBuyerAddress(e.target.value)}
           disabled={pending}
+          required
           style={inputStyle}
         />
       </Field>
@@ -212,6 +226,7 @@ export function InvoiceForm({
           value={buyerPhone}
           onChange={(e) => setBuyerPhone(e.target.value)}
           disabled={pending}
+          required
           style={inputStyle}
         />
       </Field>

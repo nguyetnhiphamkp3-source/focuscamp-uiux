@@ -73,6 +73,8 @@ export type SePayWebhookInput = z.infer<typeof SePayWebhookSchema>;
 /* ========== Invoice buyer info ========== */
 const OptionalInvoiceField = (max: number) =>
   z.string().trim().max(max).optional().or(z.literal(""));
+const RequiredInvoiceField = (max: number, message: string) =>
+  z.string().trim().min(1, message).max(max);
 
 export const InvoiceBuyerSchema = z.object({
   buyer_type: z.coerce.number().pipe(z.union([z.literal(1), z.literal(2)])),
@@ -81,8 +83,8 @@ export const InvoiceBuyerSchema = z.object({
   buyer_legal_name: OptionalInvoiceField(200),
   buyer_tax_code: OptionalInvoiceField(40),
   buyer_national_id: OptionalInvoiceField(40),
-  buyer_address: OptionalInvoiceField(300),
-  buyer_phone: OptionalInvoiceField(40),
+  buyer_address: RequiredInvoiceField(300, "Địa chỉ là bắt buộc"),
+  buyer_phone: RequiredInvoiceField(40, "Số điện thoại là bắt buộc"),
 }).superRefine((data, ctx) => {
   if (data.buyer_type === 2) {
     if (!data.buyer_legal_name) {
