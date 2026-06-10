@@ -273,6 +273,10 @@ export const FlagSubmissionSchema = z.object({
   checkinId: z.string().cuid(),
 });
 
+export const ClearCheckinLateFlagSchema = z.object({
+  checkinId: z.string().cuid(),
+});
+
 export const ResubmitCheckinSchema = z.object({
   checkinId: z.string().cuid(),
   content: z.string().trim().max(2000),

@@ -89,7 +89,7 @@ Key: ✅ done · 🟡 partial · ❌ not started · 🚫 deferred (Phase 2+)
 | Daily task unlock by day | ✅ | Explicit 07:00 Asia/Ho_Chi_Minh day anchor; Task 1 opens immediately as warm-up; manual Start for calendar modes opens 07:00-23:59 VN |
 | User checkin + evidence (text/link/image/text+image) | ✅ | |
 | Streak calc + per-challenge leaderboard | ✅ | |
-| Admin review submission (approve/reject + note) | ✅ | Phase C |
+| Admin review submission (approve/reject + note) | ✅ | Phase C; admin/mod can clear late flag without DB edits |
 | Challenge member progress inspector | ✅ | Operator-only searchable/paginated member picker + per-member timeline on challenge detail |
 | `approveAllPending` bulk | ✅ | |
 | Voting on submissions | ✅ | CheckinVote model + 👍 pill |

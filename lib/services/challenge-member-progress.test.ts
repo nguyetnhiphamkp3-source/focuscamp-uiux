@@ -40,6 +40,7 @@ function checkin(input: {
   status: string;
   createdAt: Date;
   resubmittedAt?: Date | null;
+  lateWaivedAt?: Date | null;
 }) {
   return {
     id: input.id,
@@ -57,6 +58,7 @@ function checkin(input: {
     reviewHistory: null,
     createdAt: input.createdAt,
     resubmittedAt: input.resubmittedAt ?? null,
+    lateWaivedAt: input.lateWaivedAt ?? null,
   };
 }
 
@@ -109,6 +111,27 @@ test("approved late is derived from submission time versus calendar deadline", (
   assert.equal(progress.lateCount, 1);
   assert.equal(progress.tasks[0].state, "APPROVED_ON_TIME");
   assert.equal(progress.tasks[1].state, "APPROVED_LATE");
+});
+
+test("late waiver makes an otherwise late approval count as on time", () => {
+  const [progress] = buildChallengeMemberProgress({
+    challenge: baseChallenge,
+    tasks,
+    members: [member],
+    checkins: [
+      checkin({
+        id: "day-2",
+        dayNumber: 2,
+        status: "APPROVED",
+        createdAt: new Date(2026, 0, 5, 12),
+        lateWaivedAt: new Date(2026, 0, 5, 13),
+      }),
+    ],
+    now: new Date(2026, 0, 6, 9),
+  });
+
+  assert.equal(progress.lateCount, 0);
+  assert.equal(progress.tasks[1].state, "APPROVED_ON_TIME");
 });
 
 test("pending and rejected submissions do not count as approved", () => {

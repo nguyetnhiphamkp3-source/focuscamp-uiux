@@ -3,13 +3,12 @@ import type { Prisma } from "@prisma/client";
 import { checkinImages } from "@/lib/checkin-images";
 import {
   challengeCurrentDay,
-  challengeDayAnchor,
+  challengeTaskDeadline,
   effectivePersonalStartsAt,
   hasCalendarDeadline,
+  isLateSubmission,
   sequentialCurrentDay,
 } from "@/lib/services/challenge-progress";
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 export type ChallengeProgressTimelineState =
   | "APPROVED_ON_TIME"
@@ -33,6 +32,7 @@ export type ChallengeMemberProgressCheckin = {
   reviewHistory: unknown;
   createdAt: Date;
   resubmittedAt: Date | null;
+  lateWaivedAt: Date | null;
   submittedAt: Date;
 };
 
@@ -119,6 +119,7 @@ type CheckinForProgress = {
   reviewHistory: unknown;
   createdAt: Date;
   resubmittedAt: Date | null;
+  lateWaivedAt: Date | null;
 };
 
 export function buildChallengeMemberProgress(input: {
@@ -257,6 +258,7 @@ async function getChallengeProgressDetails(input: {
           reviewHistory: true,
           createdAt: true,
           resubmittedAt: true,
+          lateWaivedAt: true,
         },
       })
     : (await prisma.checkin.findMany({
@@ -273,6 +275,7 @@ async function getChallengeProgressDetails(input: {
           status: true,
           createdAt: true,
           resubmittedAt: true,
+          lateWaivedAt: true,
         },
       })).map((checkin) => ({
         ...checkin,
@@ -285,6 +288,7 @@ async function getChallengeProgressDetails(input: {
         reviewedBy: null,
         rejectCount: 0,
         reviewHistory: null,
+        lateWaivedAt: checkin.lateWaivedAt,
       }));
 
   return {
@@ -361,12 +365,15 @@ function buildMemberProgress(input: {
     const checkin = checkinByDay.get(task.dayNumber) ?? null;
     const deadlineAt =
       calendarDeadline && effectiveStartsAt
-        ? new Date(challengeDayAnchor(effectiveStartsAt).getTime() + task.dayNumber * DAY_MS)
+        ? challengeTaskDeadline(effectiveStartsAt, task.dayNumber)
         : null;
     const isLate =
-      !!deadlineAt &&
       checkin?.status === "APPROVED" &&
-      submittedAt(checkin).getTime() > deadlineAt.getTime();
+      isLateSubmission({
+        submittedAt: submittedAt(checkin),
+        deadlineAt,
+        lateWaivedAt: checkin.lateWaivedAt,
+      });
     const unlocked = isTaskUnlocked({
       challenge: input.challenge,
       tasks: input.tasks,
@@ -591,6 +598,7 @@ function toProgressCheckin(
     reviewHistory: checkin.reviewHistory,
     createdAt: checkin.createdAt,
     resubmittedAt: checkin.resubmittedAt,
+    lateWaivedAt: checkin.lateWaivedAt,
     submittedAt: submittedAt(checkin),
   };
 }

@@ -648,6 +648,9 @@ model Checkin {
   reviewHistory Json?
   /** Accurate timestamp of the latest resubmit (updatedAt gets clobbered by a later approve). */
   resubmittedAt DateTime?
+  /** Admin/mod override: this submission should no longer be counted/displayed as late. */
+  lateWaivedAt DateTime?
+  lateWaivedById String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 

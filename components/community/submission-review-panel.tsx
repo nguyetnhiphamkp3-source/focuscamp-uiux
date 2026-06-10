@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   reviewSubmissionAction,
   flagSubmissionAction,
+  clearLateFlagAction,
   approveAllPendingAction,
 } from "@/app/actions/challenge-review";
 import { avatarColorFor, initials, fmtRelativeTime } from "@/lib/brand";
@@ -23,6 +24,7 @@ export type SubmissionRow = {
   linkUrl: string | null;
   imageUrls: string[];
   status: string; // PENDING | APPROVED | REJECTED
+  isLate: boolean;
   reviewNote: string | null;
   reviewedAt: Date | null;
   createdAt: Date;
@@ -138,6 +140,12 @@ export function SubmissionReviewPanel({
     [rowMatchesView],
   );
 
+  const applyLateFlag = useCallback((checkinId: string, isLate: boolean) => {
+    setSubmissions((cur) =>
+      cur.map((row) => (row.id === checkinId ? { ...row, isLate } : row)),
+    );
+  }, []);
+
   const buildUrl = useCallback(
     (overrides: Record<string, string | null>) => {
       const params = new URLSearchParams(sp.toString());
@@ -239,6 +247,25 @@ export function SubmissionReviewPanel({
         setPendingCount(snapshot.pending);
         setAiFlaggedCount(snapshot.ai);
         setTotal(snapshot.total);
+        setErr(res.reason);
+      }
+    });
+  }
+
+  function clearLateFlag(checkinId: string) {
+    setErr(null);
+    const snapshot = submissions;
+    applyLateFlag(checkinId, false);
+    start(async () => {
+      const res = await clearLateFlagAction({
+        checkinId,
+        communitySlug,
+        challengeSlug,
+      });
+      if (res.ok) {
+        applyLateFlag(res.data.checkinId, res.data.isLate);
+      } else {
+        setSubmissions(snapshot);
         setErr(res.reason);
       }
     });
@@ -463,6 +490,7 @@ export function SubmissionReviewPanel({
               pending={pending}
               onReview={review}
               onFlag={flag}
+              onClearLateFlag={clearLateFlag}
             />
           ))}
         </div>
@@ -575,12 +603,14 @@ function SubmissionCard({
   pending,
   onReview,
   onFlag,
+  onClearLateFlag,
 }: {
   submission: SubmissionRow;
   communitySlug: string;
   pending: boolean;
   onReview: (id: string, action: "APPROVE" | "REJECT", note?: string) => void;
   onFlag: (id: string) => void;
+  onClearLateFlag: (id: string) => void;
 }) {
   const [rejecting, setRejecting] = useState(false);
   const [note, setNote] = useState("");
@@ -707,6 +737,18 @@ function SubmissionCard({
               </span>
             )}
             {statusBadge}
+            {submission.isLate && (
+              <span
+                style={{
+                  ...badgeStyle,
+                  color: "var(--warning)",
+                  background: "rgba(240,178,50,0.14)",
+                }}
+                title="Bài nộp sau hạn deadline"
+              >
+                Trễ
+              </span>
+            )}
             {submission.aiReviewData && (
               <AIReviewBadge
                 data={submission.aiReviewData}
@@ -819,6 +861,17 @@ function SubmissionCard({
                 title="Đưa trở lại trạng thái chờ duyệt để xem lại"
               >
                 ⟲ Đưa về chờ duyệt
+              </button>
+            )}
+            {submission.isLate && (
+              <button
+                type="button"
+                onClick={() => onClearLateFlag(submission.id)}
+                disabled={pending}
+                style={actionBtnStyle("var(--warning)", false)}
+                title="Gỡ nhãn trễ cho bài nộp này"
+              >
+                Gỡ cờ trễ
               </button>
             )}
           </div>

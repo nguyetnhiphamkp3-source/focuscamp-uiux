@@ -212,6 +212,7 @@ export default async function ChallengeDetailPage({
               linkUrl: r.linkUrl,
               imageUrls: checkinImages(r),
               status: r.status,
+              isLate: r.isLate,
               reviewNote: r.reviewNote,
               reviewedAt: r.reviewedAt,
               createdAt: r.createdAt,
@@ -254,7 +255,7 @@ export default async function ChallengeDetailPage({
           // asc so the latest check-in per dayNumber wins the checkinByDay Map (last-write-wins);
           // keeps isPending/isRejected (and the gift gate) deterministic when a day has >1 check-in.
           orderBy: { createdAt: "asc" },
-          select: { id: true, taskId: true, dayNumber: true, createdAt: true, updatedAt: true, resubmittedAt: true, content: true, linkUrl: true, imageUrl: true, imageUrls: true, status: true, reviewedAt: true, reviewNote: true, rejectCount: true, aiReviewData: true, reviewHistory: true },
+          select: { id: true, taskId: true, dayNumber: true, createdAt: true, updatedAt: true, resubmittedAt: true, lateWaivedAt: true, content: true, linkUrl: true, imageUrl: true, imageUrls: true, status: true, reviewedAt: true, reviewNote: true, rejectCount: true, aiReviewData: true, reviewHistory: true },
         })
       : Promise.resolve([]),
 
@@ -975,7 +976,16 @@ export default async function ChallengeDetailPage({
                 const dayDeadline = calendarDeadline && effStart
                   ? new Date(challengeDayAnchor(effStart).getTime() + t.dayNumber * 24 * 60 * 60 * 1000)
                   : null;
-                const isLate = !!(calendarDeadline && isDone && checkinData && dayDeadline && checkinData.createdAt.getTime() > dayDeadline.getTime());
+                const submittedAt = checkinData?.resubmittedAt ?? checkinData?.createdAt ?? null;
+                const isLate = !!(
+                  calendarDeadline &&
+                  isDone &&
+                  checkinData &&
+                  submittedAt &&
+                  dayDeadline &&
+                  !checkinData.lateWaivedAt &&
+                  submittedAt.getTime() > dayDeadline.getTime()
+                );
                 const hasBody = !!(t.description || t.sopContent || t.videoUrl || hasEvidenceHint || checkinData || isCurrent || isOverdue);
                 // Determine if task is locked based on unlock mode
                 const taskUnlocked = isDone || permissions.canManageChallenges || isTaskUnlocked(t, taskIndex);

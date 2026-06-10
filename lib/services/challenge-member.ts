@@ -12,9 +12,33 @@ import { canCommunity, effectiveCommunityRole } from "@/lib/community-permission
 import { deleteReplacedMediaUrl } from "@/lib/media-cleanup";
 import { checkinImages } from "@/lib/checkin-images";
 import { canResubmitCheckin } from "@/lib/checkin-resubmit-state";
-import { canStartChallengeNow } from "./challenge-progress";
+import {
+  canStartChallengeNow,
+  challengeTaskDeadline,
+  effectivePersonalStartsAt,
+  hasCalendarDeadline,
+  isLateSubmission,
+} from "./challenge-progress";
 
 export type SubmissionStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+type CheckinLateFields = {
+  userId: string;
+  dayNumber: number | null;
+  createdAt: Date;
+  resubmittedAt: Date | null;
+  lateWaivedAt: Date | null;
+};
+
+type ChallengeLateContext = {
+  autoStartAfterHours: number | null;
+  taskUnlockMode: string | null;
+};
+
+type MemberLateContext = {
+  joinedAt: Date;
+  personalStartsAt: Date | null;
+};
 
 export async function assertChallengeAdmin(userId: string, challengeId: string) {
   const ch = await prisma.challenge.findUnique({
@@ -77,6 +101,28 @@ async function assertCommunityOwner(userId: string, communityId: string) {
   });
   if (!canCommunity(role, "manage_challenges"))
     throw new Error("Chỉ admin cộng đồng mới tạo challenge");
+}
+
+function submittedAt(checkin: { createdAt: Date; resubmittedAt: Date | null }): Date {
+  return checkin.resubmittedAt ?? checkin.createdAt;
+}
+
+function checkinIsLate(
+  checkin: CheckinLateFields,
+  challenge: ChallengeLateContext,
+  member: MemberLateContext | null,
+): boolean {
+  if (checkin.dayNumber == null || !hasCalendarDeadline(challenge.taskUnlockMode)) {
+    return false;
+  }
+  if (!member) return false;
+  const effStart = effectivePersonalStartsAt(member, challenge);
+  if (!effStart) return false;
+  return isLateSubmission({
+    submittedAt: submittedAt(checkin),
+    deadlineAt: challengeTaskDeadline(effStart, checkin.dayNumber),
+    lateWaivedAt: checkin.lateWaivedAt,
+  });
 }
 
 /* ===== Admin: member request review ===== */
@@ -276,7 +322,7 @@ export async function listChallengeSubmissions(input: {
     ...searchWhere,
   };
 
-  const [rows, total, pendingCount, aiFlaggedCount] = await Promise.all([
+  const [rows, total, pendingCount, aiFlaggedCount, challenge] = await Promise.all([
     prisma.checkin.findMany({
       where: baseWhere,
       include: {
@@ -297,8 +343,34 @@ export async function listChallengeSubmissions(input: {
         NOT: [{ aiReviewData: { equals: Prisma.DbNull } }],
       },
     }),
+    prisma.challenge.findUnique({
+      where: { id: challengeId },
+      select: { autoStartAfterHours: true, taskUnlockMode: true },
+    }),
   ]);
-  return { rows, total, pendingCount, aiFlaggedCount };
+
+  const members =
+    challenge && hasCalendarDeadline(challenge.taskUnlockMode) && rows.length > 0
+      ? await prisma.challengeMember.findMany({
+          where: {
+            challengeId,
+            userId: { in: [...new Set(rows.map((row) => row.userId))] },
+          },
+          select: { userId: true, joinedAt: true, personalStartsAt: true },
+        })
+      : [];
+  const memberByUserId = new Map(members.map((member) => [member.userId, member]));
+  return {
+    rows: rows.map((row) => ({
+      ...row,
+      isLate: challenge
+        ? checkinIsLate(row, challenge, memberByUserId.get(row.userId) ?? null)
+        : false,
+    })),
+    total,
+    pendingCount,
+    aiFlaggedCount,
+  };
 }
 
 /**
@@ -523,6 +595,65 @@ export async function flagSubmissionForReview(input: {
       communitySlug: ctx.community.slug,
     });
   }
+  return updated;
+}
+
+/**
+ * Clear the "late" label for a submission. Reviewer-only; keeps the original
+ * submission timestamp intact and stores a waiver instead of rewriting history.
+ */
+export async function clearCheckinLateFlag(input: {
+  userId: string;
+  checkinId: string;
+}) {
+  const checkin = await prisma.checkin.findUnique({
+    where: { id: input.checkinId },
+    select: {
+      id: true,
+      challengeId: true,
+      userId: true,
+      dayNumber: true,
+      createdAt: true,
+      resubmittedAt: true,
+      lateWaivedAt: true,
+      challenge: {
+        select: {
+          autoStartAfterHours: true,
+          taskUnlockMode: true,
+        },
+      },
+    },
+  });
+  if (!checkin) throw new Error("Check-in không tồn tại");
+  await assertChallengeReviewer(input.userId, checkin.challengeId);
+
+  const member =
+    checkin.dayNumber != null && hasCalendarDeadline(checkin.challenge.taskUnlockMode)
+      ? await prisma.challengeMember.findUnique({
+          where: {
+            challengeId_userId: {
+              challengeId: checkin.challengeId,
+              userId: checkin.userId,
+            },
+          },
+          select: { joinedAt: true, personalStartsAt: true },
+        })
+      : null;
+  if (!checkinIsLate(checkin, checkin.challenge, member)) {
+    return checkin;
+  }
+
+  const updated = await prisma.checkin.update({
+    where: { id: input.checkinId },
+    data: {
+      lateWaivedAt: new Date(),
+      lateWaivedById: input.userId,
+    },
+  });
+  logger.info(
+    { checkinId: input.checkinId, by: input.userId },
+    "[challenge] submission late flag cleared",
+  );
   return updated;
 }
 
@@ -780,6 +911,8 @@ export async function resubmitCheckin(input: {
         ? { reviewHistory: [...prevHistory, rejectedSnapshot] as Prisma.InputJsonValue }
         : {}),
       resubmittedAt: new Date(),
+      lateWaivedAt: null,
+      lateWaivedById: null,
     },
   });
   // Keep rejected-attempt media alive: reviewHistory stores these URLs as the

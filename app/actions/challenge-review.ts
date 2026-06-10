@@ -5,6 +5,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import {
   reviewSubmission,
   flagSubmissionForReview,
+  clearCheckinLateFlag,
   approveAllPending,
   getSubmissionReviewCounts,
   challengeLeaderboardTag,
@@ -30,6 +31,7 @@ import { redirect } from "next/navigation";
 import {
   ReviewSubmissionSchema,
   FlagSubmissionSchema,
+  ClearCheckinLateFlagSchema,
   ApproveAllPendingSchema,
   UpdateChallengeSettingsSchema,
   UpdateChallengeTaskSchema,
@@ -166,6 +168,34 @@ export async function flagSubmissionAction(input: {
         aiFlaggedCount: counts.aiFlaggedCount,
       },
     };
+  } catch (err) {
+    logError(err, { userId: s.user.id, checkinId: input.checkinId });
+    if (err instanceof Error) return { ok: false, reason: err.message };
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+export async function clearLateFlagAction(input: {
+  checkinId: string;
+  communitySlug: string;
+  challengeSlug: string;
+}): Promise<
+  { ok: true; data: { checkinId: string; isLate: false } } | { ok: false; reason: string }
+> {
+  const s = await auth();
+  if (!s?.user?.id) return { ok: false, reason: "unauthorized" };
+
+  const parsed = ClearCheckinLateFlagSchema.safeParse({ checkinId: input.checkinId });
+  if (!parsed.success) return { ok: false, reason: "invalid" };
+
+  try {
+    const updated = await clearCheckinLateFlag({
+      userId: s.user.id,
+      checkinId: parsed.data.checkinId,
+    });
+    const { after } = await import("next/server");
+    after(() => bumpReview(input.communitySlug, input.challengeSlug, updated.challengeId));
+    return { ok: true, data: { checkinId: updated.id, isLate: false } };
   } catch (err) {
     logError(err, { userId: s.user.id, checkinId: input.checkinId });
     if (err instanceof Error) return { ok: false, reason: err.message };

@@ -155,6 +155,22 @@ export function hasCalendarDeadline(unlockMode: string | null | undefined): bool
   return isCalendarTaskUnlockMode(unlockMode);
 }
 
+export function challengeTaskDeadline(effStart: Date, dayNumber: number): Date {
+  return new Date(challengeDayAnchor(effStart).getTime() + dayNumber * DAY_MS);
+}
+
+export function isLateSubmission(input: {
+  submittedAt: Date;
+  deadlineAt: Date | null;
+  lateWaivedAt?: Date | null;
+}): boolean {
+  return (
+    !!input.deadlineAt &&
+    !input.lateWaivedAt &&
+    input.submittedAt.getTime() > input.deadlineAt.getTime()
+  );
+}
+
 /**
  * Compute consecutive-day streak ending at the most recent check-in.
  * Given checkins sorted asc, returns the longest run of consecutive days
