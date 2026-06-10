@@ -55,8 +55,6 @@ export function NotificationItem({ n }: { n: InboxItem }) {
     }
   }
 
-  const actorName = n.actor?.name ?? "focus.camp";
-
   // Submission decisions are attributed to the community (not the reviewing
   // admin), so they show the community icon. Everything else uses the actor.
   const isReviewDecision =
@@ -64,10 +62,12 @@ export function NotificationItem({ n }: { n: InboxItem }) {
     n.type === "SUBMISSION_REJECTED" ||
     n.type === "SUBMISSION_REOPENED";
   const avatar =
-    isReviewDecision && n.community
-      ? { image: n.community.iconUrl, colorKey: n.community.slug, label: n.community.name }
+    isReviewDecision
+      ? n.community
+        ? { image: n.community.iconUrl, colorKey: n.community.slug, label: n.community.name }
+        : { image: null, colorKey: `review:${n.type}`, label: "Admin" }
       : n.actor
-        ? { image: n.actor.image, colorKey: n.actor.id, label: actorName }
+        ? { image: n.actor.image, colorKey: n.actor.id, label: n.actor.name ?? "focus.camp" }
         : null;
 
   return (

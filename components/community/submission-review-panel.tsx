@@ -776,7 +776,7 @@ function SubmissionCard({
               }}
             >
               <strong>
-                {submission.reviewedBy?.name ?? "Admin"} ghi chú:
+                Admin ghi chú:
               </strong>{" "}
               {submission.reviewNote}
             </div>

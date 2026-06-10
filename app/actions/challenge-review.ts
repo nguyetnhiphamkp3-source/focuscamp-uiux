@@ -123,7 +123,7 @@ export async function reviewSubmissionAction(input: {
         status: updated.status as ReviewPayload["status"],
         reviewNote: updated.reviewNote,
         reviewedAt: updated.reviewedAt?.toISOString() ?? null,
-        reviewedByName: s.user.name ?? null,
+        reviewedByName: "Admin",
         pendingCount: counts.pendingCount,
         aiFlaggedCount: counts.aiFlaggedCount,
       },

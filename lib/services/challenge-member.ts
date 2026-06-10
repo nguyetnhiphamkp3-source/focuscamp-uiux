@@ -172,15 +172,16 @@ export async function approveChallengeMember(input: {
     "[challenge] member approved"
   );
 
-  // Notify applicant
-  await createNotification({
-    userId: member.userId,
-    type: "SUBMISSION_APPROVED",
-    title: `Bạn đã được duyệt vào challenge: ${member.challenge.title}`,
-    actorId: input.userId,
-    link: `/c/${member.challenge.community.slug}/challenges/${member.challenge.slug}`,
-    communitySlug: member.challenge.community.slug,
-  });
+  // Notify applicant without exposing the specific admin account.
+  if (input.userId !== member.userId) {
+    await createNotification({
+      userId: member.userId,
+      type: "SUBMISSION_APPROVED",
+      title: `Admin đã duyệt bạn vào challenge: ${member.challenge.title}`,
+      link: `/c/${member.challenge.community.slug}/challenges/${member.challenge.slug}`,
+      communitySlug: member.challenge.community.slug,
+    });
+  }
 
   return updated;
 }
@@ -226,15 +227,16 @@ export async function rejectChallengeMember(input: {
     "[challenge] member rejected"
   );
 
-  await createNotification({
-    userId: member.userId,
-    type: "SUBMISSION_REJECTED",
-    title: `Bạn bị từ chối vào challenge: ${member.challenge.title}`,
-    body: input.note?.trim() || undefined,
-    actorId: input.userId,
-    link: `/c/${member.challenge.community.slug}/challenges/${member.challenge.slug}`,
-    communitySlug: member.challenge.community.slug,
-  });
+  if (input.userId !== member.userId) {
+    await createNotification({
+      userId: member.userId,
+      type: "SUBMISSION_REJECTED",
+      title: `Admin đã từ chối bạn vào challenge: ${member.challenge.title}`,
+      body: input.note?.trim() || undefined,
+      link: `/c/${member.challenge.community.slug}/challenges/${member.challenge.slug}`,
+      communitySlug: member.challenge.community.slug,
+    });
+  }
 
   return updated;
 }
@@ -435,18 +437,20 @@ export async function reviewSubmission(input: {
   });
   if (ctx) {
     const isAI = !!input.internal;
-    await createNotification({
-      userId: checkin.userId,
-      type: input.action === "APPROVE" ? "SUBMISSION_APPROVED" : "SUBMISSION_REJECTED",
-      title:
-        input.action === "APPROVE"
-          ? `Submission của bạn được ${isAI ? "🤖 AI" : ""} duyệt ✓ (${ctx.title})`
-          : `Submission của bạn bị ${isAI ? "🤖 AI" : ""} từ chối ✕ (${ctx.title})`,
-      body: input.note?.trim() || undefined,
-      actorId: input.internal ? undefined : input.userId,
-      link: `/c/${ctx.community.slug}/challenges/${ctx.slug}`,
-      communitySlug: ctx.community.slug,
-    });
+    const reviewerLabel = isAI ? "🤖 AI" : "Admin";
+    if (input.internal || input.userId !== checkin.userId) {
+      await createNotification({
+        userId: checkin.userId,
+        type: input.action === "APPROVE" ? "SUBMISSION_APPROVED" : "SUBMISSION_REJECTED",
+        title:
+          input.action === "APPROVE"
+            ? `${reviewerLabel} đã duyệt submission của bạn ✓ (${ctx.title})`
+            : `${reviewerLabel} đã từ chối submission của bạn ✕ (${ctx.title})`,
+        body: input.note?.trim() || undefined,
+        link: `/c/${ctx.community.slug}/challenges/${ctx.slug}`,
+        communitySlug: ctx.community.slug,
+      });
+    }
 
     // Award bonus XP on approve (on top of the base CHECKIN XP from submit)
     if (input.action === "APPROVE") {
@@ -509,13 +513,12 @@ export async function flagSubmissionForReview(input: {
       community: { select: { slug: true } },
     },
   });
-  if (ctx) {
+  if (ctx && input.userId !== checkin.userId) {
     await createNotification({
       userId: checkin.userId,
       type: "SUBMISSION_REOPENED",
-      title: `Submission của bạn được đưa về chờ duyệt (${ctx.title})`,
+      title: `Admin đã đưa submission của bạn về chờ duyệt (${ctx.title})`,
       body: checkin.status === "REJECTED" ? checkin.reviewNote || undefined : undefined,
-      actorId: input.userId,
       link: `/c/${ctx.community.slug}/challenges/${ctx.slug}`,
       communitySlug: ctx.community.slug,
     });

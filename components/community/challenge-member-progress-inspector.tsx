@@ -439,7 +439,7 @@ function TimelineTask({
                   color: "var(--text-normal)",
                 }}
               >
-                <strong>{task.checkin.reviewedBy?.name ?? "Người duyệt"}:</strong>{" "}
+                <strong>Admin:</strong>{" "}
                 {task.checkin.reviewNote}
               </div>
             )}
