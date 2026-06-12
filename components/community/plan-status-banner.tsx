@@ -42,7 +42,6 @@ export function PlanStatusBanner({
   }
 
   let bg = "rgba(240, 178, 50, 0.12)";
-  let border = "rgba(240, 178, 50, 0.4)";
   let color = "var(--premium-gold)";
   let title = "";
   let body = "";
@@ -50,7 +49,6 @@ export function PlanStatusBanner({
 
   if (state.status === "pending") {
     bg = "rgba(218, 55, 60, 0.08)";
-    border = "rgba(218, 55, 60, 0.4)";
     color = "var(--danger)";
     title = "Cộng đồng chưa kích hoạt";
     body = isOwner
@@ -65,7 +63,6 @@ export function PlanStatusBanner({
     cta = isOwner ? "Gia hạn ngay" : null;
   } else if (state.status === "expired") {
     bg = "rgba(218, 55, 60, 0.08)";
-    border = "rgba(218, 55, 60, 0.4)";
     color = "var(--danger)";
     title = "Plan đã hết hạn — cộng đồng đang ở chế độ read-only";
     body = isOwner
@@ -80,7 +77,6 @@ export function PlanStatusBanner({
         margin: "var(--space-3) var(--space-3) 0",
         padding: "10px 14px",
         background: bg,
-        border: `1px solid ${border}`,
         borderRadius: "var(--r-md)",
         display: "flex",
         alignItems: "center",

@@ -1,9 +1,18 @@
 import { FeatureLink } from "./nav-link";
 import { NotifBadge } from "./notif-badge";
 import {
-  Globe, Search, ShoppingCart, HelpCircle, Flame, Shield,
-  FileText, User, DollarSign, Bell, Settings,
-} from "lucide-react";
+  GlobeAltIcon as Globe,
+  MagnifyingGlassIcon as Search,
+  ShoppingCartIcon as ShoppingCart,
+  QuestionMarkCircleIcon as HelpCircle,
+  FireIcon as Flame,
+  ShieldCheckIcon as Shield,
+  DocumentTextIcon as FileText,
+  UserIcon as User,
+  CurrencyDollarIcon as DollarSign,
+  BellIcon as Bell,
+  Cog6ToothIcon as Settings,
+} from "@heroicons/react/24/solid";
 
 export function HomeSidebar({
   notifUnread = 0,
@@ -15,81 +24,66 @@ export function HomeSidebar({
   isSuperAdmin?: boolean;
 }) {
   return (
-    <aside className="channel-sidebar">
-      {/* Menu */}
+    <aside className="channel-sidebar home-sidebar">
+      {/* Menu — Telegram-style grouped cards */}
       <div className="features-menu">
         <div className="features-section-title" style={{ paddingTop: 16 }}>
           Khám phá
         </div>
-        <FeatureLink href="/discovery">
-          <span className="feature-icon"><Globe size={18} /></span>
-          <span className="feature-name">Discovery</span>
-          <span className="unread-badge new">NEW</span>
-        </FeatureLink>
-        <FeatureLink href="/search">
-          <span className="feature-icon"><Search size={18} /></span>
-          <span className="feature-name">Tìm kiếm</span>
-        </FeatureLink>
-        <FeatureLink href="/marketplace">
-          <span className="feature-icon"><ShoppingCart size={18} /></span>
-          <span className="feature-name">Super Marketplace</span>
-        </FeatureLink>
+        <div className="sidebar-group">
+          <FeatureLink href="/discovery">
+            <span className="feature-icon" style={{ background: "#3390ec" }}><Globe size={18} /></span>
+            <span className="feature-name">Discovery</span>
+            <span className="unread-badge new">NEW</span>
+          </FeatureLink>
+          <FeatureLink href="/search">
+            <span className="feature-icon" style={{ background: "#8e8e93" }}><Search size={18} /></span>
+            <span className="feature-name">Tìm kiếm</span>
+          </FeatureLink>
+          <FeatureLink href="/marketplace">
+            <span className="feature-icon" style={{ background: "#f5a623" }}><ShoppingCart size={18} /></span>
+            <span className="feature-name">Super Marketplace</span>
+          </FeatureLink>
+        </div>
 
         <div className="features-section-title">Về chúng tôi</div>
-        <FeatureLink href="/about">
-          <span className="feature-icon"><HelpCircle size={18} /></span>
-          <span className="feature-name">Manifesto</span>
-        </FeatureLink>
-        <FeatureLink href="/direct-challenge">
-          <span className="feature-icon"><Flame size={18} /></span>
-          <span className="feature-name">Direct Challenge</span>
-        </FeatureLink>
-        <FeatureLink href="/brand">
-          <span className="feature-icon"><Shield size={18} /></span>
-          <span className="feature-name">Brand Guide</span>
-        </FeatureLink>
-        <FeatureLink href="/fire-keeper">
-          <span className="feature-icon"><Flame size={18} /></span>
-          <span className="feature-name">Fire Keeper</span>
-        </FeatureLink>
+        <div className="sidebar-group">
+          <FeatureLink href="/about">
+            <span className="feature-icon" style={{ background: "#34aadc" }}><HelpCircle size={18} /></span>
+            <span className="feature-name">Manifesto</span>
+          </FeatureLink>
+          <FeatureLink href="/direct-challenge">
+            <span className="feature-icon" style={{ background: "#ff6b3d" }}><Flame size={18} /></span>
+            <span className="feature-name">Direct Challenge</span>
+          </FeatureLink>
+          <FeatureLink href="/brand">
+            <span className="feature-icon" style={{ background: "#5e5ce6" }}><Shield size={18} /></span>
+            <span className="feature-name">Brand Guide</span>
+          </FeatureLink>
+          <FeatureLink href="/fire-keeper">
+            <span className="feature-icon" style={{ background: "#ff3b30" }}><Flame size={18} /></span>
+            <span className="feature-name">Fire Keeper</span>
+          </FeatureLink>
+        </div>
 
         {isSuperAdmin && (
           <>
             <div className="features-section-title">Admin</div>
-            <FeatureLink href="/admin/orders">
-              <span className="feature-icon"><FileText size={18} /></span>
-              <span className="feature-name">Platform Orders</span>
-            </FeatureLink>
+            <div className="sidebar-group">
+              <FeatureLink href="/admin/orders">
+                <span className="feature-icon" style={{ background: "#30b0c7" }}><FileText size={18} /></span>
+                <span className="feature-name">Platform Orders</span>
+              </FeatureLink>
+            </div>
           </>
         )}
 
-        <div className="features-section-title">Tài khoản</div>
-        <FeatureLink href={profileHref} exact>
-          <span className="feature-icon"><User size={18} /></span>
-          <span className="feature-name">Profile</span>
-        </FeatureLink>
-        {profileHref.startsWith("/u/") && (
-          <FeatureLink href={`${profileHref}/affiliates`}>
-            <span className="feature-icon"><DollarSign size={18} /></span>
-            <span className="feature-name">Hoa Hồng</span>
-          </FeatureLink>
-        )}
-        <FeatureLink href="/inbox">
-          <span className="feature-icon"><Bell size={18} /></span>
-          <span className="feature-name">Thông báo</span>
-          <NotifBadge initial={notifUnread} />
-        </FeatureLink>
-        <FeatureLink href="/settings">
-          <span className="feature-icon"><Settings size={18} /></span>
-          <span className="feature-name">Cài đặt</span>
-        </FeatureLink>
       </div>
 
       <div
         style={{
           marginTop: "auto",
           padding: "12px 14px",
-          borderTop: "1px solid var(--border-subtle)",
           fontSize: "var(--text-xs)",
           color: "var(--text-muted)",
           display: "flex",
@@ -107,6 +101,25 @@ export function HomeSidebar({
         <a href="/privacy" className="legal-link">Bảo mật</a>
         <span>·</span>
         <a href="/refund" className="legal-link">Hoàn tiền</a>
+      </div>
+
+      {/* Bottom tab bar — account features as icons (Telegram-style) */}
+      <div className="sidebar-tabbar">
+        <FeatureLink href={profileHref} exact className="tab-item" prefetch>
+          <User size={22} />
+        </FeatureLink>
+        {profileHref.startsWith("/u/") && (
+          <FeatureLink href={`${profileHref}/affiliates`} className="tab-item">
+            <DollarSign size={22} />
+          </FeatureLink>
+        )}
+        <FeatureLink href="/inbox" className="tab-item">
+          <Bell size={22} />
+          <NotifBadge initial={notifUnread} />
+        </FeatureLink>
+        <FeatureLink href="/settings" className="tab-item">
+          <Settings size={22} />
+        </FeatureLink>
       </div>
     </aside>
   );

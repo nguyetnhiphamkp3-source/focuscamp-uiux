@@ -114,8 +114,8 @@ export function JoinButton({
           onClick={(e) => { if (e.target === e.currentTarget && !pending) setOpen(false); }}
           style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
         >
-          <div style={{ background: "var(--bg-floating)", borderRadius: 14, border: "1px solid var(--border-subtle)", maxWidth: 520, width: "100%", maxHeight: "80vh", display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
-            <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--border-subtle)" }}>
+          <div style={{ background: "var(--bg-floating)", borderRadius: 14, border: "none", maxWidth: 520, width: "100%", maxHeight: "80vh", display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
+            <div style={{ padding: "18px 20px" }}>
               <div style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--header-primary)", marginBottom: 4 }}>
                 {hasTiers ? "Chọn gói tham gia" : "Chọn class của bạn"}
               </div>
@@ -133,7 +133,7 @@ export function JoinButton({
                     const price = t.isFree ? null : t.priceVndMonthly;
                     return (
                       <button key={t.key} type="button" onClick={() => setPickedTier(t.key)} disabled={pending}
-                        style={{ display: "flex", gap: 12, alignItems: "center", padding: "12px 14px", borderRadius: 10, border: sel ? "2px solid var(--brand-green)" : "1px solid var(--border-subtle)", background: sel ? "rgba(27,158,117,0.08)" : "var(--bg-card)", color: "var(--text-normal)", cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}
+                        style={{ display: "flex", gap: 12, alignItems: "center", padding: "12px 14px", borderRadius: 10, border: "none", background: sel ? "rgba(27,158,117,0.12)" : "var(--bg-card)", color: "var(--text-normal)", cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}
                       >
                         {t.emoji && <div style={{ fontSize: 28, lineHeight: 1, flexShrink: 0 }}>{t.emoji}</div>}
                         <div style={{ flex: 1, minWidth: 0 }}>
@@ -158,7 +158,7 @@ export function JoinButton({
                     const sel = picked === c.key;
                     return (
                       <button key={c.key} type="button" onClick={() => setPicked(c.key)} disabled={pending}
-                        style={{ display: "flex", gap: 12, alignItems: "center", padding: "12px 14px", borderRadius: 10, border: sel ? "2px solid var(--brand-green)" : "1px solid var(--border-subtle)", background: sel ? "rgba(27,158,117,0.08)" : "var(--bg-card)", color: "var(--text-normal)", cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}
+                        style={{ display: "flex", gap: 12, alignItems: "center", padding: "12px 14px", borderRadius: 10, border: "none", background: sel ? "rgba(27,158,117,0.12)" : "var(--bg-card)", color: "var(--text-normal)", cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}
                       >
                         {c.emoji && <div style={{ fontSize: 28, lineHeight: 1 }}>{c.emoji}</div>}
                         <div style={{ flex: 1, minWidth: 0 }}>
@@ -173,9 +173,9 @@ export function JoinButton({
 
             {err && <div style={{ padding: "0 20px 8px", fontSize: "var(--text-sm)", color: "var(--danger)" }}>{err}</div>}
 
-            <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border-subtle)", display: "flex", gap: 8 }}>
+            <div style={{ padding: "14px 20px", display: "flex", gap: 8 }}>
               <button type="button" onClick={() => !pending && setOpen(false)} disabled={pending}
-                style={{ padding: "10px 18px", borderRadius: 8, border: "1px solid var(--border-subtle)", background: "transparent", color: "var(--interactive-normal)", cursor: "pointer", fontSize: "var(--text-sm)" }}
+                style={{ padding: "10px 18px", borderRadius: 8, border: "none", background: "var(--bg-modifier-hover)", color: "var(--interactive-normal)", cursor: "pointer", fontSize: "var(--text-sm)" }}
               >
                 Huỷ
               </button>

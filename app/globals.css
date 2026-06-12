@@ -13,26 +13,418 @@ select {
 
 /* Overrides on top of prototype.css */
 :root {
-  /* Typography system:
-     - Heading (h1-h6, buttons, labels): Roboto
-     - Body (paragraphs, UI text): Arial system
-     - Display (manifesto, quotes, pull-quotes): Playfair Display */
-  --font-primary: Arial, 'Helvetica Neue', Helvetica, sans-serif;
-  --font-body: Arial, 'Helvetica Neue', Helvetica, sans-serif;
-  --font-heading: var(--font-roboto), 'Helvetica Neue', Arial, sans-serif;
-  --font-display: var(--font-playfair), Georgia, 'Times New Roman', serif;
+  /* Typography system — single family: SF Pro Display (bundled in app/fonts).
+     Body + headings + display all use the same family per design decision. */
+  --font-sf-stack: var(--font-sf), -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+  --font-primary: var(--font-sf-stack);
+  --font-body: var(--font-sf-stack);
+  --font-heading: var(--font-sf-stack);
+  --font-display: var(--font-sf-stack);
+
+  /* Body font-size: 15px desktop, 14px mobile (see media query below).
+     Text color #333333 is applied via --text-normal (theme-aware) in prototype.css. */
+  --body-font-size: 15px;
 
   /* Prototype uses --online-green #1B9E75 (teal) for all CTAs.
      Alias --brand-green to the same value. */
   --brand-green: #1B9E75;
   --brand-green-dark: #157a5b;
   --brand-green-soft: rgba(27, 158, 117, 0.12);
+
+  /* No-border rule: tất cả border var đều transparent */
+  --border-subtle: transparent;
+  --border-strong: transparent;
+}
+
+/* Global body text size — 15px desktop, 14px mobile.
+   SF Pro Display has tight default metrics → set a comfortable line-height so
+   lines aren't cramped (headings keep their own tighter line-height). */
+body {
+  font-size: var(--body-font-size);
+  line-height: var(--lh-normal);
+}
+@media (max-width: 768px) {
+  :root { --body-font-size: 14px; }
+}
+
+/* ============================================================
+   Wallpaper shell — Telegram-style. The whole shell sits on a
+   fixed background image; panels float as frosted-glass blocks.
+   ============================================================ */
+.community-shell {
+  background-image: var(--app-wallpaper, url("/background.webp"));
+  background-size: cover;
+  background-position: center center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+
+/* Community rail + feature sidebar → TWO separate floating blocks (not one).
+   Wallpaper shows in the gap between them and around the edges. */
+.community-shell .left-section {
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  margin: 0;
+  height: 100vh;
+}
+.community-shell .left-section-top {
+  padding-bottom: 68px;          /* reserve room for the floating user-panel */
+}
+.community-shell .server-list {
+  margin: 8px 0 8px 8px;
+  border-radius: var(--r-lg);
+  background: #EFF3EF;           /* match the content-zone canvas */
+  box-shadow: var(--shadow-sm);
+}
+.community-shell .channel-sidebar {
+  margin: 8px 4px 8px 8px;       /* 8px gap from the rail on its left */
+  border-radius: var(--r-lg);
+  background: #EFF3EF;           /* match the content-zone canvas */
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+/* main-content + right-sidebar keep their own solid backgrounds + float margins
+   from prototype.css — nothing to override here. */
+
+/* ============================================================
+   Flat content surface (iOS/Telegram settings style).
+   Content zone = soft #EFF3EF canvas; every frame/card inside is
+   plain white with NO border and NO shadow. Applies everywhere
+   (shell + community) since these frame classes never appear in
+   the left nav sidebar.
+   ============================================================ */
+.main-content,
+.right-sidebar {
+  background: #EFF3EF;
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+}
+
+/* Per-feature scroll wrappers are normally white (--bg-chat); make them
+   transparent so the #EFF3EF content canvas shows behind the white cards. */
+:is(
+  .settings-view, .invite-view, .course-view, .courses-list-wrap,
+  .challenges-view, .mk-view, .lb-view, .pf-view, .feed-view,
+  .dc-view, .ag-view, .placeholder-view
+) {
+  background: transparent;
+}
+
+/* (A) Flatten every frame: remove border + shadow ONLY. Each frame keeps its
+   own background, so dark/tinted surfaces (rs-banner, stat-card, ch-submission…)
+   stay correct and nested containers don't turn white-on-white. */
+:is(
+  .ui-card, .ui-card-sm, .ui-card-lg, .ui-empty,
+  .settings-card, .settings-panel, .settings-section, .settings-taxonomy-row,
+  .settings-action-card, .settings-table-card, .account-settings-profile-card,
+  .orders-panel,
+  .course-card, .course-info-card, .lesson-task-card,
+  .ch-card, .ch-detail-header, .ch-progress-card, .ch-task, .ch-submission,
+  .ch-market-card, .ch-active-card,
+  .mk-card, .mk-recent-card, .mk-hero, .mk-detail-header, .mk-section, .mk-stat,
+  .dc-hero, .dc-search, .dc-community,
+  .pf-section, .pf-overview-card, .pf-level-card, .pf-stat,
+  .lb-rows, .lb-podium-slot,
+  .feed-compose, .feed-post, .feed-signal, .qa-question,
+  .ag-hero, .ag-card, .ag-chat,
+  .offer-pricing, .orders-card, .orders-stat-card,
+  .stat-card, .community-row, .embed-card, .affiliate-link-box, .boss-hp-wrap,
+  .rs-card, .rs-banner, .rs-progress-card, .rs-achievement, .rs-points,
+  .rs-course-info-card, .rs-lesson, .rs-ch-header, .rs-members-stack,
+  .rs-lb-row, .rs-submission
+) {
+  border: none;
+  box-shadow: none;
+}
+
+/* (B) Leaf cards that had a neutral gray gradient or no background of their own
+   → force white so they read as cards on the #EFF3EF canvas. */
+:is(
+  .dc-hero, .mk-hero, .dc-search,
+  .ch-market-card, .ch-active-card,
+  .settings-action-card, .settings-table-card, .account-settings-profile-card
+) {
+  background: var(--bg-card);
+}
+
+/* (C) Page-level CONTAINERS that wrap sub-cards stay on the gray canvas
+   (transparent) so their white child cards keep separation. */
+:is(.orders-panel, .mk-section) {
+  background: transparent;
+}
+
+/* User panel — online status dot (was unstyled → invisible) */
+.user-panel-avatar { overflow: visible; }
+.user-panel-avatar .status-dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--online-green);
+  border: 2px solid var(--bg-card);
+  box-sizing: border-box;       /* keep total 11px — prototype set content-box (→15px, looked broken) */
+  box-shadow: none;
+  z-index: 3;
+}
+
+/* User panel — action icons as uniform rounded buttons */
+.user-panel-actions {
+  gap: 2px;
+}
+.user-panel-actions .up-action {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-md);
+  background: transparent;
+  border: none;
+  color: var(--interactive-normal);
+  cursor: pointer;
+  position: relative;
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.user-panel-actions .up-action:hover {
+  background: var(--bg-modifier-hover);
+  color: var(--interactive-hover);
+}
+.user-panel-actions .up-action svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+}
+
+/* ============================================================
+   Auto-hide scrollbars — hidden when idle, appear only while
+   scrolling (html.is-scrolling, toggled by ScrollbarAutohide)
+   or when hovering the scroll area. Track is always transparent
+   so no gray channel takes visual space. Applies app-wide.
+   ============================================================ */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 8px;
+  transition: background 180ms ease;
+}
+*:hover::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.16); }
+.is-scrolling::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.28); }
+::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.4); }
+
+/* Firefox */
+* { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+*:hover { scrollbar-color: rgba(0, 0, 0, 0.18) transparent; }
+.is-scrolling { scrollbar-color: rgba(0, 0, 0, 0.28) transparent; }
+
+/* Facebook-style post comment modal */
+.post-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 16px;
+  animation: pm-fade 140ms ease;
+}
+.post-modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 660px;
+  max-height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  border-radius: var(--r-xl);
+  box-shadow: 0 16px 56px rgba(0, 0, 0, 0.3);
+  animation: pm-pop 160ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.post-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-elevated);
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+.post-modal-close:hover {
+  background: var(--bg-modifier-hover);
+  color: var(--text-normal);
+}
+.post-modal-body {
+  padding: 22px 24px 18px;
+  overflow-y: auto;
+}
+@keyframes pm-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pm-pop {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ============================================================
+   Settings content tuning (scoped to .settings-page-inner):
+   - sub-15px text +1px (xs 11→12, sm 13→14, base 14→15)
+   - darker muted text (no washed-out gray)
+   - mixed weights: labels Semibold(600)→Medium(500) so headings (700),
+     labels (500) and body (regular) read as distinct strokes, not all-bold.
+   ============================================================ */
+.settings-page-inner {
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 15px;
+}
+.settings-page-inner [style*="font-weight:600"],
+.settings-page-inner .form-field label {
+  font-weight: 500 !important;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* All buttons → fully rounded (pill). Tabs keep their own shape. */
+button:not([class*="tab"]),
+[class*="btn"]:not([class*="tab"]),
+.mk-card-cta, .mk-detail-buy-btn, .lesson-task-submit, .pf-action-btn,
+.rs-join-btn, .course-action-btn {
+  border-radius: var(--r-full) !important;
 }
 
 /* Utility classes */
 .font-display { font-family: var(--font-display); }
 .font-heading { font-family: var(--font-heading); }
 .font-body { font-family: var(--font-body); }
+
+/* Real Bold (SF Pro Display Bold). Default bold weights (700/800) render as
+   Semibold per design decision — use this class only when a true Bold is requested. */
+.font-strong { font-weight: 900; }
+
+/* HomeSidebar (Điểm tập kết): menu items use Regular weight; darker text color
+   for stronger contrast. Active label is Semibold + green (rule further below). */
+.home-sidebar .features-section-title,
+.home-sidebar .feature-item,
+.home-sidebar .feature-item.active,
+.home-sidebar .feature-item.has-unread .feature-name,
+.home-sidebar .feature-name {
+  font-weight: var(--fw-regular);
+}
+.home-sidebar .feature-item,
+.home-sidebar .feature-name {
+  color: var(--text-normal);    /* #070707 */
+}
+
+/* HomeSidebar — Telegram-style grouped cards.
+   Items wrapped in .sidebar-group white rounded cards on the gray sidebar. */
+/* Dense-compact style: flat (no group cards), tight rows, small colored icon
+   badges; active row = soft green tint + green label. */
+.home-sidebar .features-menu {
+  padding: 6px 8px 14px;
+}
+.home-sidebar .sidebar-group {
+  background: transparent;       /* flat — no white card */
+  box-shadow: none;
+  padding: 0;
+  margin-bottom: 10px;           /* gap between sections */
+}
+.home-sidebar .features-section-title {
+  padding: 12px 8px 5px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 14px;             /* +1px (was 13px) */
+}
+.home-sidebar .feature-item {
+  padding: 8px 10px;            /* a bit roomier */
+  gap: 12px;
+  border-radius: 8px;
+  margin-bottom: 0;
+  font-size: 16px;             /* +1px (was 15px) */
+}
+/* Colored rounded-square icon badge, white glyph. */
+.home-sidebar .feature-item .feature-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  color: #fff;
+  flex-shrink: 0;
+}
+.home-sidebar .feature-item .feature-icon svg {
+  width: 18px;
+  height: 18px;
+  fill: #fff;
+  stroke: none;
+}
+.home-sidebar .feature-item:hover {
+  background: var(--bg-modifier-hover);
+}
+.home-sidebar .feature-item.active {
+  background: var(--success-soft);
+}
+.home-sidebar .feature-item.active .feature-name {
+  color: var(--online-green);
+  font-weight: var(--fw-semibold);
+}
+
+/* Bottom tab bar — account features as icons (Telegram-style) */
+.home-sidebar .sidebar-tabbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  margin: 0 4px;
+  border-top: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+.home-sidebar .sidebar-tabbar .tab-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  border-radius: var(--r-md);
+  color: var(--text-muted);     /* gray icon */
+  position: relative;
+}
+.home-sidebar .sidebar-tabbar .tab-item:hover {
+  background: var(--bg-modifier-hover);
+}
+.home-sidebar .sidebar-tabbar .tab-item.active {
+  color: var(--online-green);   /* active = green accent */
+}
+.home-sidebar .sidebar-tabbar .tab-item svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+  stroke: none;
+}
+.home-sidebar .sidebar-tabbar .tab-item .unread-badge {
+  position: absolute;
+  top: 4px;
+  right: 50%;
+  margin-right: -16px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: var(--dnd-red);
+  color: #fff;
+  font-size: var(--text-xs);
+  line-height: 16px;
+  text-align: center;
+}
 
 /* Rendered-markdown prose (challenge pitch, course descriptions, etc.) */
 .md-content h1,
@@ -111,3 +503,93 @@ select {
   color: var(--header-primary);
   font-weight: 700;
 }
+
+/* ================================================================
+   NO-BORDER CLEANUP
+   Progress bars dùng --border-subtle làm background → restore gray.
+   Non-var rgba borders → loại bỏ.
+   Headers/separators → loại bỏ border-bottom/top.
+   ================================================================ */
+
+/* Progress bar tracks */
+.course-card-progress .bar,
+.ch-card-progress .bar,
+.ch-progress-bar,
+.pf-level-bar,
+.rs-progress-bar { background: rgba(0, 0, 0, 0.08); }
+.server-separator { background: rgba(0, 0, 0, 0.1); }
+.ch-task.locked .ch-task-day { background: rgba(0, 0, 0, 0.08); }
+
+/* Hardcoded rgba/hex borders */
+.banner-canvas .node { border: none; }
+.message-reply::before { border: none; }
+.tp-col-2 { border-right: none; }
+.tp-col-4 { border-left: none; }
+.lb-podium-avatar { border: none; }
+.pf-badge,
+.pf-badge.rare,
+.pf-badge.legendary { border: none; }
+
+/* Header & tab-bar separators */
+.chat-header,
+.view-header,
+.settings-tabs-bar,
+.course-tabs,
+.rs-playlist-header,
+.pf-tabs,
+.pf-main-tabs { border-bottom: none; }
+.home-sidebar .sidebar-tabbar { border-top: none; }
+
+/* Interactive elements */
+.chat-input { border: none; }
+.reaction,
+.reaction-add { border: none; }
+.inline-code { border: none; }
+.meta-chip,
+.meta-chip.chip-duration,
+.meta-chip.chip-level,
+.meta-chip.chip-xp,
+.meta-chip.chip-author,
+.meta-chip.chip-updated { border: none; }
+.invite-hero { border: none; }
+.invite-share-btn { border: none; }
+.cl-filter { border: none; }
+.btn-outline { border: none; }
+.theme-option,
+.theme-option.active { border: none; }
+.theme-preview { border: none; }
+.rs-playlist-tab { border: none; }
+.course-action-btn,
+.course-action-btn.primary { border: none; }
+.course-card-cta.secondary,
+.course-card-cta.locked { border: none; }
+.link-tab { border: none; }
+
+/* Form inputs */
+input,
+textarea,
+select { border: none; }
+/* Restore focus indicator via box-shadow instead of border */
+input:focus-visible,
+textarea:focus-visible { border: none; box-shadow: var(--shadow-focus); }
+
+/* Active tab underlines → keep color indicator via background instead */
+.settings-tab { border-bottom: none; }
+.settings-tab.active { border-bottom: none; }
+.course-tab { border-bottom: none; }
+.course-tab.active { border-bottom: none; }
+
+/* Markdown/content */
+.blockquote { border-left: none; }
+.lesson-article blockquote { border-left: none; }
+.md-content blockquote { border-left: none; }
+.md-content pre { border: none; }
+.md-content hr { border-top: none; }
+.agent-md th,
+.agent-md td { border: none; }
+
+/* Feed */
+.feed-signal { border: none; }
+.feed-signal:hover { border: none; }
+.feed-post.cot-post { border-color: transparent; }
+.lb-row.you { border-left: none; }

@@ -72,7 +72,7 @@ export function ReferralTable({
           textAlign: "center",
           color: "var(--text-muted)",
           fontSize: "var(--text-sm)",
-          border: "1px dashed var(--border-subtle)",
+          background: "var(--bg-card)",
           borderRadius: 8,
         }}
       >
@@ -84,7 +84,7 @@ export function ReferralTable({
   return (
     <div
       style={{
-        border: "1px solid var(--border-subtle)",
+        background: "var(--bg-card)",
         borderRadius: 8,
         overflow: "hidden",
       }}

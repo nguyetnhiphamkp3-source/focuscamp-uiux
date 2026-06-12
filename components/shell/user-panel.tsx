@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { signOut } from "@/auth";
 import { LoginModal } from "./login-modal";
+import { WallpaperButton } from "./wallpaper-button";
 import { MessageSquare, Bell, LogOut, LogIn } from "lucide-react";
 
 export function UserPanel({
@@ -96,15 +97,16 @@ export function UserPanel({
         </div>
       )}
       <div className="user-panel-actions">
+        <WallpaperButton />
         {chatHref && (
-          <Link href={chatHref} prefetch={false} title="Chat" style={{ display: "flex", alignItems: "center", justifyContent: "center", color: "var(--interactive-normal)" }}>
+          <Link href={chatHref} prefetch={false} title="Chat" className="up-action">
             <MessageSquare size={20} />
           </Link>
         )}
-        <Link href="/inbox" prefetch={false} title="Thông báo" style={{ display: "flex", alignItems: "center", justifyContent: "center", position: "relative", color: "var(--interactive-normal)" }}>
+        <Link href="/inbox" prefetch={false} title="Thông báo" className="up-action">
           <Bell size={20} />
           {!!notifUnread && notifUnread > 0 && (
-            <span style={{ position: "absolute", top: -4, right: -4, background: "var(--danger)", color: "#fff", borderRadius: "50%", fontSize: 9, minWidth: 14, height: 14, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, lineHeight: 1, padding: "0 2px" }}>
+            <span style={{ position: "absolute", top: 2, right: 2, background: "var(--danger)", color: "#fff", borderRadius: "50%", fontSize: 9, minWidth: 14, height: 14, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, lineHeight: 1, padding: "0 2px" }}>
               {notifUnread > 9 ? "9+" : notifUnread}
             </span>
           )}
@@ -116,7 +118,7 @@ export function UserPanel({
           }}
           style={{ display: "inline" }}
         >
-          <button type="submit" title="Đăng xuất">
+          <button type="submit" title="Đăng xuất" className="up-action">
             <LogOut size={20} />
           </button>
         </form>

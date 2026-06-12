@@ -391,15 +391,15 @@ export function AgentConfigEditor({
         subtitle="Cấu hình danh tính hiển thị, khóa API nhà cung cấp, và bộ não dùng cho chat/duyệt bài."
       />
 
-      <div style={{ display: "grid", gridTemplateColumns: "72px 1fr", gap: 14, marginBottom: 18 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "164px 1fr", gap: 18, alignItems: "center", marginBottom: 18 }}>
         <ImageUploadField
           value={agentAvatarUrl}
           onChange={setAgentAvatarUrl}
           context="avatar"
           shape="circle"
+          size={150}
           disabled={profilePending}
           placeholder="Agent"
-          maxSizeNote="Tối đa 2MB"
         />
         <div style={{ display: "grid", gap: 10 }}>
           <label style={labelStyle}>

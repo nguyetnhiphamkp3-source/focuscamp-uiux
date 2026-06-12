@@ -100,13 +100,36 @@ If a feature doesn't have its own sub-default.tsx, Next.js uses the nearest ance
 
 ## Fonts
 
-- `--font-heading` (Roboto) — h1-h6, buttons, labels
-- `--font-body` (Arial) — body, UI text
-- `--font-display` (Playfair Display italic) — quotes, manifesto, pull-quotes (chỉ chỗ đặc biệt)
+Toàn bộ UI dùng **SF Pro Display** (1 family duy nhất). Font **subset (Latin + tiếng Việt)** bundle trong `app/fonts/SFProDisplay-*.woff2`, load qua `next/font/local` (biến `--font-sf`) — ship qua git, fallback `-apple-system`.
+
+- `--font-heading` / `--font-body` / `--font-display` đều trỏ về SF Pro Display.
+- Weights: 400 (Regular), 500 (Medium), 600 (Semibold) + italic.
+- **Bold mặc định = Semibold**: font-weight 700/800 (gồm `--fw-bold`, `--fw-extrabold`, `font-weight:bold`, h1-h6) được remap về Semibold ở tầng `next/font/local`. KHÔNG cần sửa từng rule.
+- **Bold thật**: chỉ dùng khi có yêu cầu cụ thể — dùng class `.font-strong` (weight 900 → SFProDisplay-Bold).
+- **Body font-size: 15px desktop, 14px mobile** (`--body-font-size`, breakpoint 768px).
+- **Màu text mặc định: `#070707`** (`--text-normal` ở light theme).
 
 ## Spacing (4px base)
 
 `--space-1` (4) → `--space-20` (80). Không dùng số lẻ ngoài scale.
+
+## Không dùng viền (No-border rule) ⚠️
+
+**`--border-subtle` và `--border-strong` được set thành `transparent` trong `globals.css`. KHÔNG dùng border để phân tách UI.**
+
+Thay vào đó:
+- Phân tách bằng **màu nền** (ví dụ: `#EFF3EF` canvas + `#fff` card)
+- Phân tách bằng **spacing** / `gap`
+- Phân tách bằng **shadow** (`--shadow-sm`, `--shadow-md`) nếu cần nổi
+
+Ngoại lệ được phép:
+- `border-radius` — không phải border, chỉ bo góc
+- `border: none` — đang reset, không phải thêm border
+- `border: 2px solid var(--bg-card)` / `border: 4px solid var(--bg-chat)` — kỹ thuật cutout cho status dot / avatar stack
+- `box-shadow: var(--shadow-focus)` — focus ring (dùng shadow, không phải border)
+- `outline` — chỉ cho focus ring, không dùng thay border
+
+**Kiểm tra**: nếu muốn thêm `border: 1px solid ...` → dừng lại, dùng background color khác hoặc shadow thay thế.
 
 ---
 

@@ -30,6 +30,7 @@ const PUBLIC_PREFIXES = [
   "/docs",
   "/marketplace",
   "/api/auth",
+  "/api/dev-login", // DEV-ONLY: route 404s in production (see app/api/dev-login)
   "/api/sepay",
   "/api/integrations",
   "/api/health",

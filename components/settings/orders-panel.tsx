@@ -374,7 +374,7 @@ function ApproveButton({
       <button
         disabled={pending}
         onClick={() => setShowConfirm(true)}
-        style={{ fontSize: "var(--text-xs)", fontWeight: 600, padding: "3px 10px", borderRadius: 5, border: "1px solid var(--brand-green)", background: "transparent", color: "var(--brand-green)", cursor: pending ? "not-allowed" : "pointer", opacity: pending ? 0.6 : 1 }}
+        style={{ fontSize: "var(--text-xs)", fontWeight: 600, padding: "3px 10px", borderRadius: 5, border: "none", background: "var(--brand-green-soft)", color: "var(--brand-green)", cursor: pending ? "not-allowed" : "pointer", opacity: pending ? 0.6 : 1 }}
       >
         {pending ? "Đang duyệt..." : "Duyệt"}
       </button>
@@ -427,7 +427,7 @@ function DeleteExpiredButton({
       <button
         disabled={pending}
         onClick={() => setShowConfirm(true)}
-        style={{ fontSize: "var(--text-xs)", fontWeight: 600, padding: "3px 10px", borderRadius: 5, border: "1px solid var(--danger)", background: "transparent", color: "var(--danger)", cursor: pending ? "not-allowed" : "pointer", opacity: pending ? 0.6 : 1 }}
+        style={{ fontSize: "var(--text-xs)", fontWeight: 600, padding: "3px 10px", borderRadius: 5, border: "none", background: "var(--danger-soft)", color: "var(--danger)", cursor: pending ? "not-allowed" : "pointer", opacity: pending ? 0.6 : 1 }}
       >
         {pending ? "Đang xóa..." : "Xóa"}
       </button>
@@ -480,7 +480,7 @@ function CancelPendingButton({
       <button
         disabled={pending}
         onClick={() => setShowConfirm(true)}
-        style={{ fontSize: "var(--text-xs)", fontWeight: 600, padding: "3px 10px", borderRadius: 5, border: "1px solid var(--danger)", background: "transparent", color: "var(--danger)", cursor: pending ? "not-allowed" : "pointer", opacity: pending ? 0.6 : 1 }}
+        style={{ fontSize: "var(--text-xs)", fontWeight: 600, padding: "3px 10px", borderRadius: 5, border: "none", background: "var(--danger-soft)", color: "var(--danger)", cursor: pending ? "not-allowed" : "pointer", opacity: pending ? 0.6 : 1 }}
       >
         {pending ? "Đang hủy..." : "Hủy"}
       </button>

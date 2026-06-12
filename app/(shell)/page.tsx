@@ -53,10 +53,9 @@ export default async function Home() {
       <section
         style={{
           background:
-            "linear-gradient(135deg, #f7f2e8 0%, #ede5d0 50%, #e5ddc9 100%)",
+            "linear-gradient(135deg, #f7f8fa 0%, #eceef1 50%, #e3e5e8 100%)",
           padding: "64px 32px 56px",
           textAlign: "center",
-          borderBottom: "1px solid var(--border-subtle)",
         }}
       >
         <div style={{ fontSize: "var(--text-3xl)", marginBottom: 12 }}>🔥🏕️</div>
@@ -99,7 +98,7 @@ export default async function Home() {
               href="/discovery"
               style={{
                 padding: "14px 28px",
-                borderRadius: 10,
+                borderRadius: 9999,
                 fontWeight: 700,
                 fontSize: "var(--text-base)",
                 color: "#fff",
@@ -116,7 +115,7 @@ export default async function Home() {
                 <button
                   style={{
                     padding: "14px 28px",
-                    borderRadius: 10,
+                    borderRadius: 9999,
                     fontWeight: 700,
                     fontSize: "var(--text-base)",
                     color: "#fff",
@@ -135,12 +134,12 @@ export default async function Home() {
             href="/discovery"
             style={{
               padding: "14px 28px",
-              borderRadius: 10,
+              borderRadius: 9999,
               fontWeight: 700,
               fontSize: "var(--text-base)",
               color: "var(--text-heading)",
               background: "var(--bg-card)",
-              border: "1px solid var(--border-subtle)",
+              boxShadow: "var(--shadow-sm)",
               textDecoration: "none",
             }}
           >
@@ -150,12 +149,12 @@ export default async function Home() {
             href="/pricing"
             style={{
               padding: "14px 28px",
-              borderRadius: 10,
+              borderRadius: 9999,
               fontWeight: 700,
               fontSize: "var(--text-base)",
               color: "var(--text-heading)",
               background: "var(--bg-card)",
-              border: "1px solid var(--border-subtle)",
+              boxShadow: "var(--shadow-sm)",
               textDecoration: "none",
             }}
           >
@@ -199,7 +198,7 @@ export default async function Home() {
           >
             Tất cả trong 1 platform
           </h2>
-          <p style={{ color: "var(--text-muted)", fontSize: "var(--text-base)" }}>
+          <p style={{ color: "var(--header-secondary)", fontSize: "var(--text-base)" }}>
             Chat, học, làm thử thách, mua tools, và đồng hành cùng AI — không
             cần rời tab.
           </p>
@@ -217,16 +216,15 @@ export default async function Home() {
               key={f.title}
               style={{
                 background: "var(--bg-card)",
-                border: "1px solid var(--border-subtle)",
                 borderRadius: 12,
-                padding: 20,
+                padding: 22,
               }}
             >
               <div style={{ fontSize: "var(--text-2xl)", marginBottom: 8 }}>{f.icon}</div>
               <div
                 style={{
-                  fontWeight: 700,
-                  color: "var(--text-heading)",
+                  fontWeight: 600,
+                  color: "var(--header-primary)",
                   marginBottom: 4,
                   fontSize: "var(--text-md)",
                 }}
@@ -235,9 +233,9 @@ export default async function Home() {
               </div>
               <div
                 style={{
-                  fontSize: "var(--text-sm)",
-                  color: "var(--text-muted)",
-                  lineHeight: 1.5,
+                  fontSize: "var(--text-base)",
+                  color: "var(--header-secondary)",
+                  lineHeight: 1.55,
                 }}
               >
                 {f.desc}
@@ -261,7 +259,6 @@ export default async function Home() {
             padding: 28,
             borderRadius: 16,
             background: "var(--bg-card)",
-            border: "1px solid var(--border-subtle)",
           }}
         >
           <div style={{ fontSize: "var(--text-2xl)", marginBottom: 8 }}>🚀</div>
@@ -278,7 +275,7 @@ export default async function Home() {
           <p
             style={{
               fontSize: "var(--text-base)",
-              color: "var(--text-muted)",
+              color: "var(--header-secondary)",
               marginBottom: 16,
               lineHeight: 1.5,
             }}
@@ -291,7 +288,7 @@ export default async function Home() {
               style={{
                 display: "inline-block",
                 padding: "12px 24px",
-                borderRadius: 10,
+                borderRadius: 9999,
                 fontWeight: 700,
                 color: "#fff",
                 background: "var(--brand-green)",
@@ -306,7 +303,7 @@ export default async function Home() {
                 <button
                   style={{
                     padding: "12px 24px",
-                    borderRadius: 10,
+                    borderRadius: 9999,
                     fontWeight: 700,
                     color: "#fff",
                     background: "var(--brand-green)",

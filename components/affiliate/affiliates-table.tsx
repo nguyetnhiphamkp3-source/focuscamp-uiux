@@ -36,7 +36,7 @@ export function AffiliatesTable({ affiliates }: Props) {
   }
 
   return (
-    <div style={{ overflowX: "auto", border: "1px solid var(--border-subtle)", borderRadius: "var(--r-md)", background: "var(--bg-card)" }}>
+    <div style={{ overflowX: "auto", borderRadius: "var(--r-md)", background: "var(--bg-card)" }}>
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
           <tr>

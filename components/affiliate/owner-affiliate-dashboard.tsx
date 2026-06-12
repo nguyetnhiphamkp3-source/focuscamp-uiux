@@ -43,7 +43,6 @@ const statCardStyle: React.CSSProperties = {
   minWidth: 140,
   padding: "var(--space-4) var(--space-5)",
   background: "var(--bg-card)",
-  border: "1px solid var(--border-subtle)",
   borderRadius: "var(--r-md)",
 };
 

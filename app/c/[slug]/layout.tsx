@@ -22,10 +22,23 @@ import { getPlanStatus } from "@/lib/platform-plans";
 import { PlanStatusBanner } from "@/components/community/plan-status-banner";
 import { communityPermissionFlags, effectiveCommunityRole } from "@/lib/community-permissions";
 import {
-  MessageSquare, Trophy, Zap, HelpCircle, BookOpen, Star,
-  Calendar, BarChart2, ShoppingCart, MapPin, Flag, FileText,
-  Users, Bot,
-} from "lucide-react";
+  ChatBubbleLeftRightIcon as MessageSquare,
+  TrophyIcon as Trophy,
+  BoltIcon as Zap,
+  QuestionMarkCircleIcon as HelpCircle,
+  BookOpenIcon as BookOpen,
+  StarIcon as Star,
+  CalendarIcon as Calendar,
+  ChartBarIcon as BarChart2,
+  ShoppingCartIcon as ShoppingCart,
+  FlagIcon as Flag,
+  DocumentTextIcon as FileText,
+  UsersIcon as Users,
+  CurrencyDollarIcon as DollarSign,
+  CpuChipIcon as Bot,
+  Cog6ToothIcon as Cog,
+} from "@heroicons/react/24/solid";
+import { MapPin } from "lucide-react";
 
 import { PREVIEW_MEMBER_COOKIE } from "@/lib/preview-mode";
 
@@ -34,10 +47,12 @@ export const dynamic = "force-dynamic";
 export default async function CommunityLayout({
   children,
   rightSidebar,
+  modal,
   params,
 }: {
   children: React.ReactNode;
   rightSidebar: React.ReactNode;
+  modal: React.ReactNode;
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
@@ -120,7 +135,7 @@ export default async function CommunityLayout({
           <ServerList communities={myCommunities} activeSlug={slug} />
 
           {/* CHANNEL SIDEBAR — always visible; features locked for non-members */}
-          <aside className="channel-sidebar">
+          <aside className="channel-sidebar home-sidebar">
             <CommunityHeader
               slug={slug}
               name={community.name}
@@ -154,136 +169,135 @@ export default async function CommunityLayout({
                 </div>
               )}
               {anyVisible("feed", "cot", "signals", "qa") && (
-                <div className="features-section-title" style={{ paddingTop: "16px" }}>
-                  Cộng đồng
-                </div>
-              )}
-              {visible("feed") && (
-                <FeatureLink href={`/c/${slug}/feed`}>
-                  <span className="feature-icon"><MessageSquare size={18} /></span>
-                  <span className="feature-name">Bảng tin</span>
-                  {showFeatureBadges && (
-                    <FeatureUnreadBadge
-                      communityId={community.id}
-                      featureKey="feed"
-                      href={`/c/${slug}/feed`}
-                    />
-                  )}
-                </FeatureLink>
-              )}
-              {visible("cot") && (
-                <FeatureLink href={`/c/${slug}/cot`}>
-                  <span className="feature-icon"><Trophy size={18} /></span>
-                  <span className="feature-name">CỐT</span>
-                  {showFeatureBadges && (
-                    <FeatureUnreadBadge
-                      communityId={community.id}
-                      featureKey="cot"
-                      href={`/c/${slug}/cot`}
-                    />
-                  )}
-                </FeatureLink>
-              )}
-              {visible("signals") && (
-                <FeatureLink href={`/c/${slug}/signals`}>
-                  <span className="feature-icon"><Zap size={18} /></span>
-                  <span className="feature-name">Tín hiệu</span>
-                  {showFeatureBadges && (
-                    <FeatureUnreadBadge
-                      communityId={community.id}
-                      featureKey="signals"
-                      href={`/c/${slug}/signals`}
-                    />
-                  )}
-                </FeatureLink>
-              )}
-              {visible("qa") && (
-                <FeatureLink href={`/c/${slug}/qa`}>
-                  <span className="feature-icon"><HelpCircle size={18} /></span>
-                  <span className="feature-name">Hỏi đáp</span>
-                  {showFeatureBadges && (
-                    <FeatureUnreadBadge
-                      communityId={community.id}
-                      featureKey="qa"
-                      href={`/c/${slug}/qa`}
-                    />
-                  )}
-                </FeatureLink>
+                <>
+                  <div className="features-section-title" style={{ paddingTop: "16px" }}>
+                    Cộng đồng
+                  </div>
+                  <div className="sidebar-group">
+                    {visible("feed") && (
+                      <FeatureLink href={`/c/${slug}/feed`}>
+                        <span className="feature-icon" style={{ background: "#3390ec" }}><MessageSquare size={18} /></span>
+                        <span className="feature-name">Bảng tin</span>
+                        {showFeatureBadges && (
+                          <FeatureUnreadBadge communityId={community.id} featureKey="feed" href={`/c/${slug}/feed`} />
+                        )}
+                      </FeatureLink>
+                    )}
+                    {visible("cot") && (
+                      <FeatureLink href={`/c/${slug}/cot`}>
+                        <span className="feature-icon" style={{ background: "#f5a623" }}><Trophy size={18} /></span>
+                        <span className="feature-name">CỐT</span>
+                        {showFeatureBadges && (
+                          <FeatureUnreadBadge communityId={community.id} featureKey="cot" href={`/c/${slug}/cot`} />
+                        )}
+                      </FeatureLink>
+                    )}
+                    {visible("signals") && (
+                      <FeatureLink href={`/c/${slug}/signals`}>
+                        <span className="feature-icon" style={{ background: "#f7b500" }}><Zap size={18} /></span>
+                        <span className="feature-name">Tín hiệu</span>
+                        {showFeatureBadges && (
+                          <FeatureUnreadBadge communityId={community.id} featureKey="signals" href={`/c/${slug}/signals`} />
+                        )}
+                      </FeatureLink>
+                    )}
+                    {visible("qa") && (
+                      <FeatureLink href={`/c/${slug}/qa`}>
+                        <span className="feature-icon" style={{ background: "#34aadc" }}><HelpCircle size={18} /></span>
+                        <span className="feature-name">Hỏi đáp</span>
+                        {showFeatureBadges && (
+                          <FeatureUnreadBadge communityId={community.id} featureKey="qa" href={`/c/${slug}/qa`} />
+                        )}
+                      </FeatureLink>
+                    )}
+                  </div>
+                </>
               )}
 
               {anyVisible("courses", "challenges", "events", "leaderboard") && (
-                <div className="features-section-title">Học tập</div>
-              )}
-              {visible("courses") && (
-                <FeatureLink href={`/c/${slug}/courses`}>
-                  <span className="feature-icon"><BookOpen size={18} /></span>
-                  <span className="feature-name">Khóa học</span>
-                </FeatureLink>
-              )}
-              {visible("challenges") && (
-                <FeatureLink href={`/c/${slug}/challenges`}>
-                  <span className="feature-icon"><Star size={18} /></span>
-                  <span className="feature-name">Challenge</span>
-                </FeatureLink>
-              )}
-              {visible("events") && (
-                <FeatureLink href={`/c/${slug}/events`}>
-                  <span className="feature-icon"><Calendar size={18} /></span>
-                  <span className="feature-name">Events</span>
-                </FeatureLink>
-              )}
-              {visible("leaderboard") && (
-                <FeatureLink href={`/c/${slug}/leaderboard`}>
-                  <span className="feature-icon"><BarChart2 size={18} /></span>
-                  <span className="feature-name">Bảng xếp hạng</span>
-                </FeatureLink>
-              )}
-
-              {(visible("marketplace") || showAgentFeature) && (
-                <div className="features-section-title">Khác</div>
-              )}
-              {visible("marketplace") && (
-                <FeatureLink href={`/c/${slug}/marketplace`}>
-                  <span className="feature-icon"><ShoppingCart size={18} /></span>
-                  <span className="feature-name">Marketplace</span>
-                </FeatureLink>
-              )}
-              {showAgentFeature && (
-                <FeatureLink href={`/c/${slug}/agent`}>
-                  <span className="feature-icon"><Bot size={18} /></span>
-                  <span className="feature-name">AI Agent</span>
-                </FeatureLink>
-              )}
-              {(permissions.canViewMembers || permissions.canManageOrders || permissions.canModerateContent) && !previewAsMember && (
                 <>
-                  <div className="features-section-title">Quản lý</div>
-                  {permissions.canViewMembers && (
-                    <FeatureLink href={`/c/${slug}/members`}>
-                      <span className="feature-icon"><Users size={18} /></span>
-                      <span className="feature-name">Thành viên</span>
-                    </FeatureLink>
-                  )}
-                  {permissions.canModerateContent && (
-                    <FeatureLink href={`/c/${slug}/reports`}>
-                      <span className="feature-icon"><Flag size={18} /></span>
-                      <span className="feature-name">Báo cáo</span>
-                    </FeatureLink>
-                  )}
-                  {permissions.canManageOrders && (
-                    <FeatureLink href={`/c/${slug}/orders`}>
-                      <span className="feature-icon"><FileText size={18} /></span>
-                      <span className="feature-name">Đơn hàng</span>
-                    </FeatureLink>
-                  )}
-                  {permissions.canManageOrders && (
-                    <FeatureLink href={`/c/${slug}/affiliate`}>
-                      <span className="feature-icon"><Users size={18} /></span>
-                      <span className="feature-name">Affiliate</span>
-                    </FeatureLink>
-                  )}
+                  <div className="features-section-title">Học tập</div>
+                  <div className="sidebar-group">
+                    {visible("courses") && (
+                      <FeatureLink href={`/c/${slug}/courses`}>
+                        <span className="feature-icon" style={{ background: "#5e5ce6" }}><BookOpen size={18} /></span>
+                        <span className="feature-name">Khóa học</span>
+                      </FeatureLink>
+                    )}
+                    {visible("challenges") && (
+                      <FeatureLink href={`/c/${slug}/challenges`}>
+                        <span className="feature-icon" style={{ background: "#ff9500" }}><Star size={18} /></span>
+                        <span className="feature-name">Challenge</span>
+                      </FeatureLink>
+                    )}
+                    {visible("events") && (
+                      <FeatureLink href={`/c/${slug}/events`}>
+                        <span className="feature-icon" style={{ background: "#ff6b3d" }}><Calendar size={18} /></span>
+                        <span className="feature-name">Events</span>
+                      </FeatureLink>
+                    )}
+                    {visible("leaderboard") && (
+                      <FeatureLink href={`/c/${slug}/leaderboard`}>
+                        <span className="feature-icon" style={{ background: "#23a55a" }}><BarChart2 size={18} /></span>
+                        <span className="feature-name">Bảng xếp hạng</span>
+                      </FeatureLink>
+                    )}
+                  </div>
                 </>
               )}
-            </div>
+
+              {(visible("marketplace") || showAgentFeature || (permissions.canManageOrders && !previewAsMember)) && (
+                <>
+                  <div className="features-section-title">Khác</div>
+                  <div className="sidebar-group">
+                    {visible("marketplace") && (
+                      <FeatureLink href={`/c/${slug}/marketplace`}>
+                        <span className="feature-icon" style={{ background: "#f59e0b" }}><ShoppingCart size={18} /></span>
+                        <span className="feature-name">Marketplace</span>
+                      </FeatureLink>
+                    )}
+                    {showAgentFeature && (
+                      <FeatureLink href={`/c/${slug}/agent`}>
+                        <span className="feature-icon" style={{ background: "#9b59b6" }}><Bot size={18} /></span>
+                        <span className="feature-name">AI Agent</span>
+                      </FeatureLink>
+                    )}
+                    {permissions.canManageOrders && !previewAsMember && (
+                      <FeatureLink href={`/c/${slug}/affiliate`}>
+                        <span className="feature-icon" style={{ background: "#23a55a" }}><DollarSign size={18} /></span>
+                        <span className="feature-name">Affiliate</span>
+                      </FeatureLink>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>{/* end features-menu */}
+
+            {/* Quản lý → bottom tab bar (gray icons, no labels) like the home sidebar */}
+            {(permissions.canViewMembers || permissions.canManageOrders || permissions.canModerateContent || isOwner || role === "ADMIN") && !previewAsMember && (
+              <div className="sidebar-tabbar">
+                {permissions.canViewMembers && (
+                  <FeatureLink href={`/c/${slug}/members`} className="tab-item">
+                    <Users size={22} />
+                  </FeatureLink>
+                )}
+                {permissions.canModerateContent && (
+                  <FeatureLink href={`/c/${slug}/reports`} className="tab-item">
+                    <Flag size={22} />
+                  </FeatureLink>
+                )}
+                {permissions.canManageOrders && (
+                  <FeatureLink href={`/c/${slug}/orders`} className="tab-item">
+                    <FileText size={22} />
+                  </FeatureLink>
+                )}
+                {(isOwner || role === "ADMIN") && (
+                  <FeatureLink href={`/c/${slug}/settings`} className="tab-item">
+                    <Cog size={22} />
+                  </FeatureLink>
+                )}
+              </div>
+            )}
           </aside>
         </div>{/* end left-section-top */}
 
@@ -347,6 +361,8 @@ export default async function CommunityLayout({
 
       {/* RIGHT SIDEBAR (parallel route slot) */}
       {rightSidebar}
+      {/* Post modal (intercepted /p/[postId]) */}
+      {modal}
       <KeyboardShortcuts />
       <ShortcutSheet />
       {session && <PresenceHeartbeat communityId={community.id} />}

@@ -222,7 +222,6 @@ export default async function DiscoveryPage({
           <div
             style={{
               background: "var(--bg-card)",
-              border: "1px solid var(--border-subtle)",
               borderRadius: 12,
               padding: 40,
               textAlign: "center",

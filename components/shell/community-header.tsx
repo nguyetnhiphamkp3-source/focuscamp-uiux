@@ -1,13 +1,11 @@
 import Link from "next/link";
 import { PreviewAsMemberToggle } from "./preview-as-member-toggle";
-import { Settings } from "lucide-react";
 
 export function CommunityHeader({
   slug,
   name,
   iconUrl,
   isOwner = false,
-  canAccessSettings = false,
   previewAsMember = false,
 }: {
   slug: string;
@@ -70,18 +68,6 @@ export function CommunityHeader({
       </Link>
 
       {isOwner && <PreviewAsMemberToggle active={previewAsMember} />}
-
-      {canAccessSettings && (
-        <Link
-          href={`/c/${slug}/settings`}
-          title="Cài đặt cộng đồng"
-          aria-label="Cài đặt cộng đồng"
-          style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "var(--r-md)", color: "var(--text-muted)", flexShrink: 0 }}
-          className="chat-icon-btn"
-        >
-          <Settings size={16} />
-        </Link>
-      )}
     </div>
   );
 }

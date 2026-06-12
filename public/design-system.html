@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>focus.camp — Design System</title>
+<style>
+  :root{
+    /* Surfaces */
+    --canvas:#EFF3EF;            /* nền vùng nội dung (content zone, rail, sidebar) */
+    --bg-card:#ffffff;           /* card/khung */
+    --bg-elevated:#f7f8fa;
+    --bg-input:#eceef0;
+    --bg-modifier-hover:rgba(0,0,0,.04);
+    --bg-modifier-active:rgba(0,0,0,.08);
+    /* Text */
+    --header-primary:#191c20;    /* tiêu đề mạnh */
+    --header-secondary:#363636;  /* phụ đề / mô tả đậm */
+    --text-normal:#070707;       /* body */
+    --text-muted:#070707;        /* = text-normal (đồng nhất) */
+    /* Brand & semantic */
+    --brand-green:#1B9E75;       /* CTA chính, link, active */
+    --brand-green-soft:rgba(27,158,117,.12);
+    --success:#1B9E75; --warning:#f0b232; --danger:#f23f43; --info:#5865F2;
+    --fire:#ff7043;              /* CHỈ dùng trong Manifesto */
+    /* Border — no borders rule: tất cả transparent */
+    --border-subtle:transparent; --border-strong:transparent;
+    /* Type scale (8 size) */
+    --text-xs:11px; --text-sm:13px; --text-base:14px; --text-md:16px;
+    --text-lg:18px; --text-xl:22px; --text-2xl:28px; --text-3xl:36px;
+    /* Weight */
+    --fw-regular:400; --fw-medium:500; --fw-semibold:600; --fw-bold:700;
+    /* Line-height */
+    --lh-tight:1.2; --lh-snug:1.35; --lh-normal:1.5; --lh-relaxed:1.65;
+    /* Radius */
+    --r-sm:6px; --r-md:9px; --r-lg:12px; --r-xl:16px; --r-2xl:22px; --r-full:9999px;
+    /* Shadow */
+    --shadow-xs:0 1px 2px rgba(0,0,0,.05);
+    --shadow-sm:0 1px 2px rgba(0,0,0,.06),0 2px 6px rgba(0,0,0,.04);
+    --shadow-md:0 2px 8px rgba(0,0,0,.08);
+    --shadow-lg:0 8px 28px rgba(0,0,0,.14);
+    /* Font */
+    --font:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font);color:var(--text-normal);background:var(--canvas);line-height:var(--lh-normal);font-size:15px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 28px 80px}
+  header.top{margin-bottom:8px}
+  header.top h1{font-size:32px;font-weight:600;color:var(--header-primary);letter-spacing:-.01em}
+  header.top p{color:var(--header-secondary);font-size:15px;margin-top:4px}
+  nav.toc{position:sticky;top:0;background:var(--canvas);padding:14px 0;margin:18px 0 8px;display:flex;gap:8px;flex-wrap:wrap;z-index:5}
+  nav.toc a{font-size:13px;color:var(--header-secondary);text-decoration:none;padding:5px 11px;border-radius:var(--r-full);background:var(--bg-card)}
+  nav.toc a:hover{color:var(--brand-green)}
+  section{margin:40px 0}
+  h2.sec{font-size:22px;font-weight:600;color:var(--header-primary);margin-bottom:4px}
+  .sec-note{color:var(--header-secondary);font-size:14px;margin-bottom:18px}
+  .card{background:var(--bg-card);border-radius:var(--r-xl);padding:22px}      /* FLAT: no border, no shadow */
+  .grid{display:grid;gap:14px}
+  .g2{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+  .g3{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
+  code{font-family:Consolas,Menlo,monospace;font-size:.86em;background:var(--bg-elevated);padding:1px 6px;border-radius:5px;color:#3a4150}
+  .row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .muted{color:var(--text-muted)} .sec2{color:var(--header-secondary)}
+
+  /* swatches */
+  .sw{border-radius:var(--r-lg);overflow:hidden;background:var(--bg-card)}
+  .sw .chip{height:64px} .sw .meta{padding:9px 11px}
+  .sw .name{font-size:13px;font-weight:600;color:var(--header-primary)}
+  .sw .val{font-size:12px;color:var(--text-muted);font-family:Consolas,monospace}
+  .sw .use{font-size:11px;color:var(--header-secondary);margin-top:2px}
+
+  /* type specimen */
+  .ty{display:flex;align-items:baseline;gap:16px;padding:9px 0}
+  .ty:last-child{}
+  .ty .lbl{width:140px;flex-shrink:0;font-size:12px;color:var(--text-muted);font-family:Consolas,monospace}
+
+  /* components */
+  .btn{font-family:inherit;font-size:14px;font-weight:600;border-radius:var(--r-full);padding:9px 18px;border:none;cursor:pointer}
+  .btn-primary{background:var(--brand-green);color:#fff;box-shadow:var(--shadow-sm)}
+  .btn-secondary{background:var(--bg-card);color:var(--header-primary)}
+  .btn-ghost{background:transparent;color:var(--header-secondary)}
+  .input{width:100%;font-family:inherit;font-size:14px;padding:10px 12px;border-radius:var(--r-md);border:none;background:var(--bg-input);color:var(--text-normal)}
+  .input:focus{outline:none;box-shadow:0 0 0 2px rgba(27,158,117,0.35)}
+  .badge{display:inline-flex;align-items:center;font-size:11px;font-weight:600;padding:3px 9px;border-radius:var(--r-full)}
+  .icbadge{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px}
+
+  /* sidebar item demo */
+  .side{background:var(--canvas);border-radius:var(--r-lg);padding:6px 8px;max-width:300px}
+  .item{display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:8px;font-size:16px;color:var(--text-normal);font-weight:500}
+  .item.active{background:var(--brand-green-soft);color:var(--brand-green);font-weight:600}
+  .item:hover:not(.active){background:var(--bg-modifier-hover)}
+  .scale-row{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
+  .scale-box{background:var(--brand-green-soft);border-radius:4px}
+  .sh-box{width:96px;height:64px;border-radius:var(--r-lg);background:var(--bg-card)}
+  ul.rules{list-style:none;display:grid;gap:9px}
+  ul.rules li{font-size:14px;padding-left:24px;position:relative;color:var(--text-normal)}
+  ul.rules li::before{position:absolute;left:0;top:0}
+  ul.rules li.do::before{content:"✅"} ul.rules li.dont::before{content:"⛔"}
+  .pill-track{display:inline-flex;background:var(--bg-elevated);border-radius:var(--r-full);padding:3px}
+  .pill-track .t{font-size:13px;padding:6px 14px;border-radius:var(--r-full);color:var(--header-secondary)}
+  .pill-track .t.on{background:var(--bg-card);color:var(--header-primary);font-weight:600;box-shadow:var(--shadow-xs)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>focus.camp — Design System</h1>
+    <p>Quy chuẩn UI dùng chung. Nguyên tắc: <b>phẳng (flat)</b>, trung tính, font SF Pro Display, card trắng trên nền <code>#EFF3EF</code>, hạn chế viền &amp; shadow.</p>
+  </header>
+
+  <nav class="toc">
+    <a href="#principles">Nguyên tắc</a>
+    <a href="#color">Màu</a>
+    <a href="#type">Typography</a>
+    <a href="#space">Spacing</a>
+    <a href="#radius">Radius</a>
+    <a href="#shadow">Shadow</a>
+    <a href="#components">Components</a>
+    <a href="#rules">Do &amp; Don't</a>
+  </nav>
+
+  <!-- PRINCIPLES -->
+  <section id="principles">
+    <h2 class="sec">Nguyên tắc</h2>
+    <div class="grid g2">
+      <div class="card"><b>Flat</b><div class="sec2" style="margin-top:6px;font-size:14px">Card/khung: nền trắng, <b>không viền, không shadow</b>, bo góc. Nền vùng nội dung = <code>#EFF3EF</code>. Phân tách bằng khoảng trắng &amp; nền, không bằng đường kẻ.</div></div>
+      <div class="card"><b>Trung tính</b><div class="sec2" style="margin-top:6px;font-size:14px">Tông xám/trắng, không ám ấm. Màu chỉ dùng cho thương hiệu (xanh lá), trạng thái, và badge icon.</div></div>
+      <div class="card"><b>Một font</b><div class="sec2" style="margin-top:6px;font-size:14px">SF Pro Display cho toàn UI. Body 15px (desktop) / 14px (mobile), line-height 1.5.</div></div>
+      <div class="card"><b>Weight đan xen</b><div class="sec2" style="margin-top:6px;font-size:14px">Regular (body) · Medium (label) · Semibold (tiêu đề). <b>Bold (700/800) render = Semibold</b>; bold thật chỉ khi cần (<code>.font-strong</code> = 900).</div></div>
+    </div>
+  </section>
+
+  <!-- COLOR -->
+  <section id="color">
+    <h2 class="sec">Màu</h2>
+    <p class="sec-note">Surfaces &amp; text trung tính; xanh lá <code>#1B9E75</code> là accent thương hiệu duy nhất cho CTA/active/link.</p>
+
+    <h3 class="sec2" style="margin:6px 0 10px">Surfaces</h3>
+    <div class="grid g2" id="surfaces"></div>
+
+    <h3 class="sec2" style="margin:22px 0 10px">Text</h3>
+    <div class="grid g2" id="texts"></div>
+
+    <h3 class="sec2" style="margin:22px 0 10px">Brand &amp; Semantic</h3>
+    <div class="grid g2" id="brand"></div>
+  </section>
+
+  <!-- TYPE -->
+  <section id="type">
+    <h2 class="sec">Typography</h2>
+    <p class="sec-note">Chỉ dùng đúng <b>8 size</b> này — không inline px ngoài thang. <code>--font</code> = SF Pro Display.</p>
+    <div class="card" id="typescale"></div>
+
+    <h3 class="sec2" style="margin:22px 0 10px">Font weight</h3>
+    <div class="card">
+      <div class="ty"><span class="lbl">400 · Regular</span><span style="font-weight:400;font-size:20px">Ship sản phẩm thật mỗi ngày</span></div>
+      <div class="ty"><span class="lbl">500 · Medium</span><span style="font-weight:500;font-size:20px">Ship sản phẩm thật mỗi ngày</span></div>
+      <div class="ty"><span class="lbl">600 · Semibold</span><span style="font-weight:600;font-size:20px">Ship sản phẩm thật mỗi ngày</span></div>
+      <div class="ty"><span class="lbl">700/800 → 600</span><span style="font-weight:700;font-size:20px">Ship sản phẩm thật mỗi ngày <span class="muted" style="font-size:12px">(render Semibold)</span></span></div>
+      <div class="ty"><span class="lbl">900 · .font-strong</span><span style="font-weight:900;font-size:20px">Bold thật — chỉ khi cần</span></div>
+    </div>
+  </section>
+
+  <!-- SPACING -->
+  <section id="space">
+    <h2 class="sec">Spacing</h2>
+    <p class="sec-note">Thang 4px. Không dùng số lẻ ngoài thang.</p>
+    <div class="card"><div class="scale-row" id="spacing"></div></div>
+  </section>
+
+  <!-- RADIUS -->
+  <section id="radius">
+    <h2 class="sec">Radius</h2>
+    <p class="sec-note">Bo góc rộng kiểu Telegram. Card = <code>--r-xl</code> (16px), nút = <code>--r-md</code> (9px), pill = <code>--r-full</code>.</p>
+    <div class="card"><div class="row" id="radii"></div></div>
+  </section>
+
+  <!-- SHADOW -->
+  <section id="shadow">
+    <h2 class="sec">Shadow</h2>
+    <p class="sec-note">Rất mềm, neutral. Mặc định card <b>không shadow</b>; shadow chỉ cho phần nổi (modal, dropdown, panel float).</p>
+    <div class="card"><div class="row" style="gap:24px" id="shadows"></div></div>
+  </section>
+
+  <!-- COMPONENTS -->
+  <section id="components">
+    <h2 class="sec">Components</h2>
+
+    <h3 class="sec2" style="margin:6px 0 10px">Buttons</h3>
+    <div class="card"><div class="row">
+      <button class="btn btn-primary">Primary CTA</button>
+      <button class="btn btn-secondary">Secondary</button>
+      <button class="btn btn-ghost">Ghost</button>
+      <button class="btn btn-primary" disabled style="opacity:.6">Disabled</button>
+    </div></div>
+
+    <h3 class="sec2" style="margin:22px 0 10px">Inputs</h3>
+    <div class="card" style="max-width:420px;display:grid;gap:10px">
+      <label style="font-size:14px;font-weight:500;color:var(--header-primary)">Tên<br><input class="input" style="margin-top:6px" placeholder="Nhập…"></label>
+      <input class="input" value="Đang focus (viền xanh)" style="border-color:var(--brand-green)">
+    </div>
+
+    <h3 class="sec2" style="margin:22px 0 10px">Card (flat)</h3>
+    <div class="grid g2">
+      <div class="card"><div style="font-size:16px;font-weight:600;color:var(--header-primary)">Tiêu đề card</div><div class="sec2" style="margin-top:4px;font-size:14px">Mô tả phụ — nền trắng, không viền/shadow, bo 16px.</div></div>
+      <div class="card"><div style="font-size:16px;font-weight:600;color:var(--header-primary)">Card khác</div><div class="sec2" style="margin-top:4px;font-size:14px">Phân tách bằng khe nền <code>#EFF3EF</code>.</div></div>
+    </div>
+
+    <h3 class="sec2" style="margin:22px 0 10px">Badges &amp; pills</h3>
+    <div class="card"><div class="row">
+      <span class="badge" style="background:var(--brand-green-soft);color:var(--brand-green)">ACTIVE</span>
+      <span class="badge" style="background:rgba(242,63,67,.1);color:var(--danger)">HARD</span>
+      <span class="badge" style="background:var(--bg-elevated);color:var(--header-secondary)">Pending</span>
+      <span class="badge" style="background:var(--brand-green);color:#fff">NEW</span>
+      <span class="pill-track"><span class="t on">Latest</span><span class="t">Popular</span><span class="t">Following</span></span>
+    </div></div>
+
+    <h3 class="sec2" style="margin:22px 0 10px">Icon badge (sidebar)</h3>
+    <p class="sec-note">Mỗi mục một màu, glyph trắng, bo 8px, 30px.</p>
+    <div class="card"><div class="row" id="icbadges"></div></div>
+
+    <h3 class="sec2" style="margin:22px 0 10px">Sidebar item</h3>
+    <div class="card"><div class="side">
+      <div class="item active">🟦 <span>Bảng tin</span></div>
+      <div class="item">🟧 <span>CỐT</span></div>
+      <div class="item">🟪 <span>Khóa học</span></div>
+    </div><div class="muted" style="font-size:12px;margin-top:8px">Active = nền xanh nhạt + chữ xanh Semibold · thường = Medium #070707 · icon = badge màu 30px.</div></div>
+  </section>
+
+  <!-- RULES -->
+  <section id="rules">
+    <h2 class="sec">Do &amp; Don't</h2>
+    <div class="card"><ul class="rules">
+      <li class="do">Card: nền trắng, bo 16px, <b>không viền, không shadow</b>; đặt trên nền <code>#EFF3EF</code>.</li>
+      <li class="do">Chỉ dùng 8 size chữ &amp; thang spacing 4px qua biến token.</li>
+      <li class="do">Đan xen weight: Regular body · Medium label · Semibold tiêu đề.</li>
+      <li class="do">Accent = xanh lá <code>#1B9E75</code> cho CTA/active/link. Màu khác chỉ cho badge/semantic.</li>
+      <li class="do">Màu chữ ưu tiên đậm: <code>--text-normal #070707</code> / <code>--header-secondary</code>; hạn chế <code>--text-muted</code> nhạt.</li>
+      <li class="dont">Không viền/shadow nổi quanh khung nội dung; không lồng card trắng trong card trắng.</li>
+      <li class="dont">Không inline font-size/spacing/màu ngoài token.</li>
+      <li class="dont">Không dùng nét bold đậm (900) tràn lan — bold mặc định = Semibold.</li>
+      <li class="dont">Không dùng tông ấm/be; màu lửa <code>#ff7043</code> chỉ trong Manifesto.</li>
+    </ul></div>
+  </section>
+</div>
+
+<script>
+  function swatch(name,val,use,dark){
+    return `<div class="sw"><div class="chip" style="background:${val}"></div><div class="meta"><div class="name">${name}</div><div class="val">${val}</div><div class="use">${use}</div></div></div>`;
+  }
+  document.getElementById('surfaces').innerHTML=[
+    ['Canvas','#EFF3EF','Nền content zone / rail / sidebar'],
+    ['Card','#ffffff','Khung/card nội dung'],
+    ['Elevated','#f7f8fa','Nền phụ, pill track'],
+    ['Input','#eceef0','Nền ô nhập'],
+    ['Hover','rgba(0,0,0,.04)','Hover overlay'],
+  ].map(s=>swatch(...s)).join('');
+  document.getElementById('texts').innerHTML=[
+    ['Header primary','#191c20','Tiêu đề mạnh'],
+    ['Header secondary','#363636','Phụ đề / mô tả đậm'],
+    ['Text normal','#070707','Body'],
+    ['Text muted','#070707','= text-normal (đồng nhất)'],
+    ['Border subtle','#e3e5e8','Divider mảnh (nội bộ)'],
+  ].map(s=>swatch(...s)).join('');
+  document.getElementById('brand').innerHTML=[
+    ['Brand green','#1B9E75','CTA · active · link'],
+    ['Success','#1B9E75','Thành công'],
+    ['Warning','#f0b232','Cảnh báo'],
+    ['Danger','#f23f43','Lỗi · xoá'],
+    ['Info','#5865F2','Thông tin'],
+    ['Fire (Manifesto)','#ff7043','CHỈ Manifesto'],
+  ].map(s=>swatch(...s)).join('');
+
+  const TS=[['--text-xs','11px','Label, timestamp, badge'],['--text-sm','13px','Caption, secondary'],['--text-base','14px','UI default'],['--text-md','16px','Button, h4, body lớn'],['--text-lg','18px','h3, card title'],['--text-xl','22px','h2, section header'],['--text-2xl','28px','h1, hero phụ'],['--text-3xl','36px','Landing hero']];
+  document.getElementById('typescale').innerHTML=TS.map(([v,px,use])=>
+    `<div class="ty"><span class="lbl">${v} · ${px}</span><span style="font-size:${px};font-weight:600;color:var(--header-primary)">focus.camp</span><span class="muted" style="font-size:12px">${use}</span></div>`).join('');
+
+  document.getElementById('spacing').innerHTML=[4,8,12,16,20,24,32,40,48,64].map(n=>
+    `<div style="text-align:center"><div class="scale-box" style="width:${n}px;height:${n}px"></div><div class="muted" style="font-size:11px;margin-top:5px">${n}</div></div>`).join('');
+
+  document.getElementById('radii').innerHTML=[['sm',6],['md',9],['lg',12],['xl',16],['2xl',22],['full',9999]].map(([n,r])=>
+    `<div style="text-align:center"><div style="width:70px;height:54px;background:var(--brand-green-soft);border-radius:${r}px;border:1.5px solid var(--brand-green)"></div><div class="muted" style="font-size:11px;margin-top:5px">--r-${n} · ${r>100?'9999':r}</div></div>`).join('');
+
+  document.getElementById('shadows').innerHTML=[['xs','var(--shadow-xs)'],['sm','var(--shadow-sm)'],['md','var(--shadow-md)'],['lg','var(--shadow-lg)']].map(([n,s])=>
+    `<div style="text-align:center"><div class="sh-box" style="box-shadow:${s}"></div><div class="muted" style="font-size:11px;margin-top:8px">--shadow-${n}</div></div>`).join('');
+
+  const IC=[['#3390ec','💬'],['#f5a623','🏆'],['#f7b500','⚡'],['#34aadc','❓'],['#5e5ce6','📖'],['#ff9500','⭐'],['#ff6b3d','📅'],['#23a55a','📊'],['#9b59b6','🤖'],['#f23f43','🚩']];
+  document.getElementById('icbadges').innerHTML=IC.map(([c,e])=>`<div class="icbadge" style="background:${c}">${e}</div>`).join('');
+</script>
+</body>
+</html>

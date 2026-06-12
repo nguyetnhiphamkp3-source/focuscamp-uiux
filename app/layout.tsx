@@ -1,19 +1,25 @@
 import type { Metadata } from "next";
-import { Roboto, Playfair_Display } from "next/font/google";
+import localFont from "next/font/local";
+import { ScrollbarAutohide } from "@/components/shell/scrollbar-autohide";
 import "./globals.css";
 
-const roboto = Roboto({
-  subsets: ["latin", "vietnamese"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-roboto",
-  display: "swap",
-});
-
-const playfair = Playfair_Display({
-  subsets: ["latin", "vietnamese"],
-  weight: ["400", "500", "600", "700", "800"],
-  style: ["normal", "italic"],
-  variable: "--font-playfair",
+// SF Pro Display — subset + bundled in app/fonts (woff2), shipped via git so
+// every environment renders identically. One family for the whole UI.
+const sfPro = localFont({
+  src: [
+    { path: "./fonts/SFProDisplay-Regular.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/SFProDisplay-Italic.woff2", weight: "400", style: "italic" },
+    { path: "./fonts/SFProDisplay-Medium.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/SFProDisplay-Semibold.woff2", weight: "600", style: "normal" },
+    { path: "./fonts/SFProDisplay-SemiboldItalic.woff2", weight: "600", style: "italic" },
+    // Bold (700/800) deliberately maps to Semibold: default "bold" renders lighter.
+    // Real Bold is reserved at weight 900 — use only when explicitly requested.
+    { path: "./fonts/SFProDisplay-Semibold.woff2", weight: "700", style: "normal" },
+    { path: "./fonts/SFProDisplay-SemiboldItalic.woff2", weight: "700", style: "italic" },
+    { path: "./fonts/SFProDisplay-Semibold.woff2", weight: "800", style: "normal" },
+    { path: "./fonts/SFProDisplay-Bold.woff2", weight: "900", style: "normal" },
+  ],
+  variable: "--font-sf",
   display: "swap",
 });
 
@@ -60,8 +66,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" className={`${roboto.variable} ${playfair.variable} h-full antialiased`}>
-      <body>{children}</body>
+    <html lang="vi" className={`${sfPro.variable} h-full antialiased`}>
+      <body>
+        <ScrollbarAutohide />
+        {children}
+      </body>
     </html>
   );
 }
