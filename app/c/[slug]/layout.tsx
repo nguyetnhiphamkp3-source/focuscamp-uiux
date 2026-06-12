@@ -176,7 +176,7 @@ export default async function CommunityLayout({
                   <div className="sidebar-group">
                     {visible("feed") && (
                       <FeatureLink href={`/c/${slug}/feed`}>
-                        <span className="feature-icon" style={{ background: "#3390ec" }}><MessageSquare size={18} /></span>
+                        <span className="feature-icon" style={{ background: "#3390ec" }}><MessageSquare style={{ width: 18, height: 18 }} /></span>
                         <span className="feature-name">Bảng tin</span>
                         {showFeatureBadges && (
                           <FeatureUnreadBadge communityId={community.id} featureKey="feed" href={`/c/${slug}/feed`} />
@@ -185,7 +185,7 @@ export default async function CommunityLayout({
                     )}
                     {visible("cot") && (
                       <FeatureLink href={`/c/${slug}/cot`}>
-                        <span className="feature-icon" style={{ background: "#f5a623" }}><Trophy size={18} /></span>
+                        <span className="feature-icon" style={{ background: "#f5a623" }}><Trophy style={{ width: 18, height: 18 }} /></span>
                         <span className="feature-name">CỐT</span>
                         {showFeatureBadges && (
                           <FeatureUnreadBadge communityId={community.id} featureKey="cot" href={`/c/${slug}/cot`} />
@@ -194,7 +194,7 @@ export default async function CommunityLayout({
                     )}
                     {visible("signals") && (
                       <FeatureLink href={`/c/${slug}/signals`}>
-                        <span className="feature-icon" style={{ background: "#f7b500" }}><Zap size={18} /></span>
+                        <span className="feature-icon" style={{ background: "#f7b500" }}><Zap style={{ width: 18, height: 18 }} /></span>
                         <span className="feature-name">Tín hiệu</span>
                         {showFeatureBadges && (
                           <FeatureUnreadBadge communityId={community.id} featureKey="signals" href={`/c/${slug}/signals`} />
@@ -203,7 +203,7 @@ export default async function CommunityLayout({
                     )}
                     {visible("qa") && (
                       <FeatureLink href={`/c/${slug}/qa`}>
-                        <span className="feature-icon" style={{ background: "#34aadc" }}><HelpCircle size={18} /></span>
+                        <span className="feature-icon" style={{ background: "#34aadc" }}><HelpCircle style={{ width: 18, height: 18 }} /></span>
                         <span className="feature-name">Hỏi đáp</span>
                         {showFeatureBadges && (
                           <FeatureUnreadBadge communityId={community.id} featureKey="qa" href={`/c/${slug}/qa`} />
@@ -220,25 +220,25 @@ export default async function CommunityLayout({
                   <div className="sidebar-group">
                     {visible("courses") && (
                       <FeatureLink href={`/c/${slug}/courses`}>
-                        <span className="feature-icon" style={{ background: "#5e5ce6" }}><BookOpen size={18} /></span>
+                        <span className="feature-icon" style={{ background: "#5e5ce6" }}><BookOpen style={{ width: 18, height: 18 }} /></span>
                         <span className="feature-name">Khóa học</span>
                       </FeatureLink>
                     )}
                     {visible("challenges") && (
                       <FeatureLink href={`/c/${slug}/challenges`}>
-                        <span className="feature-icon" style={{ background: "#ff9500" }}><Star size={18} /></span>
+                        <span className="feature-icon" style={{ background: "#ff9500" }}><Star style={{ width: 18, height: 18 }} /></span>
                         <span className="feature-name">Challenge</span>
                       </FeatureLink>
                     )}
                     {visible("events") && (
                       <FeatureLink href={`/c/${slug}/events`}>
-                        <span className="feature-icon" style={{ background: "#ff6b3d" }}><Calendar size={18} /></span>
+                        <span className="feature-icon" style={{ background: "#ff6b3d" }}><Calendar style={{ width: 18, height: 18 }} /></span>
                         <span className="feature-name">Events</span>
                       </FeatureLink>
                     )}
                     {visible("leaderboard") && (
                       <FeatureLink href={`/c/${slug}/leaderboard`}>
-                        <span className="feature-icon" style={{ background: "#23a55a" }}><BarChart2 size={18} /></span>
+                        <span className="feature-icon" style={{ background: "#23a55a" }}><BarChart2 style={{ width: 18, height: 18 }} /></span>
                         <span className="feature-name">Bảng xếp hạng</span>
                       </FeatureLink>
                     )}
@@ -252,19 +252,19 @@ export default async function CommunityLayout({
                   <div className="sidebar-group">
                     {visible("marketplace") && (
                       <FeatureLink href={`/c/${slug}/marketplace`}>
-                        <span className="feature-icon" style={{ background: "#f59e0b" }}><ShoppingCart size={18} /></span>
+                        <span className="feature-icon" style={{ background: "#f59e0b" }}><ShoppingCart style={{ width: 18, height: 18 }} /></span>
                         <span className="feature-name">Marketplace</span>
                       </FeatureLink>
                     )}
                     {showAgentFeature && (
                       <FeatureLink href={`/c/${slug}/agent`}>
-                        <span className="feature-icon" style={{ background: "#9b59b6" }}><Bot size={18} /></span>
+                        <span className="feature-icon" style={{ background: "#9b59b6" }}><Bot style={{ width: 18, height: 18 }} /></span>
                         <span className="feature-name">AI Agent</span>
                       </FeatureLink>
                     )}
                     {permissions.canManageOrders && !previewAsMember && (
                       <FeatureLink href={`/c/${slug}/affiliate`}>
-                        <span className="feature-icon" style={{ background: "#23a55a" }}><DollarSign size={18} /></span>
+                        <span className="feature-icon" style={{ background: "#23a55a" }}><DollarSign style={{ width: 18, height: 18 }} /></span>
                         <span className="feature-name">Affiliate</span>
                       </FeatureLink>
                     )}
@@ -278,22 +278,22 @@ export default async function CommunityLayout({
               <div className="sidebar-tabbar">
                 {permissions.canViewMembers && (
                   <FeatureLink href={`/c/${slug}/members`} className="tab-item">
-                    <Users size={22} />
+                    <Users style={{ width: 22, height: 22 }} />
                   </FeatureLink>
                 )}
                 {permissions.canModerateContent && (
                   <FeatureLink href={`/c/${slug}/reports`} className="tab-item">
-                    <Flag size={22} />
+                    <Flag style={{ width: 22, height: 22 }} />
                   </FeatureLink>
                 )}
                 {permissions.canManageOrders && (
                   <FeatureLink href={`/c/${slug}/orders`} className="tab-item">
-                    <FileText size={22} />
+                    <FileText style={{ width: 22, height: 22 }} />
                   </FeatureLink>
                 )}
                 {(isOwner || role === "ADMIN") && (
                   <FeatureLink href={`/c/${slug}/settings`} className="tab-item">
-                    <Cog size={22} />
+                    <Cog style={{ width: 22, height: 22 }} />
                   </FeatureLink>
                 )}
               </div>

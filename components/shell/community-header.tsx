@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { PreviewAsMemberToggle } from "./preview-as-member-toggle";
 
 export function CommunityHeader({
   slug,
@@ -67,7 +66,6 @@ export function CommunityHeader({
         </span>
       </Link>
 
-      {isOwner && <PreviewAsMemberToggle active={previewAsMember} />}
     </div>
   );
 }

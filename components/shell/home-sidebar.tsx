@@ -32,16 +32,16 @@ export function HomeSidebar({
         </div>
         <div className="sidebar-group">
           <FeatureLink href="/discovery">
-            <span className="feature-icon" style={{ background: "#3390ec" }}><Globe size={18} /></span>
+            <span className="feature-icon" style={{ background: "#3390ec" }}><Globe style={{ width: 18, height: 18 }} /></span>
             <span className="feature-name">Discovery</span>
             <span className="unread-badge new">NEW</span>
           </FeatureLink>
           <FeatureLink href="/search">
-            <span className="feature-icon" style={{ background: "#8e8e93" }}><Search size={18} /></span>
+            <span className="feature-icon" style={{ background: "#8e8e93" }}><Search style={{ width: 18, height: 18 }} /></span>
             <span className="feature-name">Tìm kiếm</span>
           </FeatureLink>
           <FeatureLink href="/marketplace">
-            <span className="feature-icon" style={{ background: "#f5a623" }}><ShoppingCart size={18} /></span>
+            <span className="feature-icon" style={{ background: "#f5a623" }}><ShoppingCart style={{ width: 18, height: 18 }} /></span>
             <span className="feature-name">Super Marketplace</span>
           </FeatureLink>
         </div>
@@ -49,19 +49,19 @@ export function HomeSidebar({
         <div className="features-section-title">Về chúng tôi</div>
         <div className="sidebar-group">
           <FeatureLink href="/about">
-            <span className="feature-icon" style={{ background: "#34aadc" }}><HelpCircle size={18} /></span>
+            <span className="feature-icon" style={{ background: "#34aadc" }}><HelpCircle style={{ width: 18, height: 18 }} /></span>
             <span className="feature-name">Manifesto</span>
           </FeatureLink>
           <FeatureLink href="/direct-challenge">
-            <span className="feature-icon" style={{ background: "#ff6b3d" }}><Flame size={18} /></span>
+            <span className="feature-icon" style={{ background: "#ff6b3d" }}><Flame style={{ width: 18, height: 18 }} /></span>
             <span className="feature-name">Direct Challenge</span>
           </FeatureLink>
           <FeatureLink href="/brand">
-            <span className="feature-icon" style={{ background: "#5e5ce6" }}><Shield size={18} /></span>
+            <span className="feature-icon" style={{ background: "#5e5ce6" }}><Shield style={{ width: 18, height: 18 }} /></span>
             <span className="feature-name">Brand Guide</span>
           </FeatureLink>
           <FeatureLink href="/fire-keeper">
-            <span className="feature-icon" style={{ background: "#ff3b30" }}><Flame size={18} /></span>
+            <span className="feature-icon" style={{ background: "#ff3b30" }}><Flame style={{ width: 18, height: 18 }} /></span>
             <span className="feature-name">Fire Keeper</span>
           </FeatureLink>
         </div>
@@ -71,7 +71,7 @@ export function HomeSidebar({
             <div className="features-section-title">Admin</div>
             <div className="sidebar-group">
               <FeatureLink href="/admin/orders">
-                <span className="feature-icon" style={{ background: "#30b0c7" }}><FileText size={18} /></span>
+                <span className="feature-icon" style={{ background: "#30b0c7" }}><FileText style={{ width: 18, height: 18 }} /></span>
                 <span className="feature-name">Platform Orders</span>
               </FeatureLink>
             </div>
@@ -106,19 +106,19 @@ export function HomeSidebar({
       {/* Bottom tab bar — account features as icons (Telegram-style) */}
       <div className="sidebar-tabbar">
         <FeatureLink href={profileHref} exact className="tab-item" prefetch>
-          <User size={22} />
+          <User style={{ width: 22, height: 22 }} />
         </FeatureLink>
         {profileHref.startsWith("/u/") && (
           <FeatureLink href={`${profileHref}/affiliates`} className="tab-item">
-            <DollarSign size={22} />
+            <DollarSign style={{ width: 22, height: 22 }} />
           </FeatureLink>
         )}
         <FeatureLink href="/inbox" className="tab-item">
-          <Bell size={22} />
+          <Bell style={{ width: 22, height: 22 }} />
           <NotifBadge initial={notifUnread} />
         </FeatureLink>
         <FeatureLink href="/settings" className="tab-item">
-          <Settings size={22} />
+          <Settings style={{ width: 22, height: 22 }} />
         </FeatureLink>
       </div>
     </aside>
