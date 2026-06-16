@@ -134,7 +134,7 @@ export default async function DiscoveryPage({
       prisma.user.count(),
       prisma.product.count(),
     ]),
-  ]);
+  ]).catch(() => [0, 0, 0, 0, [0, 0, 0, 0]] as const);
 
   const showingLatestChallenges =
     featuredChallengeCount === 0 && latestChallengeCount > 0;
@@ -161,7 +161,7 @@ export default async function DiscoveryPage({
         ...c,
         onlineCount: onlineCounts.get(c.id) ?? 0,
       }));
-    }),
+    }).catch(() => []),
     prisma.challenge.findMany({
       take: DISCOVERY_PAGE_SIZE,
       skip: (challengePage - 1) * DISCOVERY_PAGE_SIZE,
@@ -171,10 +171,10 @@ export default async function DiscoveryPage({
         community: { select: { name: true, slug: true } },
         _count: { select: { members: true } },
       },
-    }),
+    }).catch(() => []),
   ]);
 
-  const [communityCount, challengeCount, memberCount, productCount] = totals;
+  const [communityCount, challengeCount, memberCount, productCount] = Array.isArray(totals) ? totals : [0, 0, 0, 0];
 
   return (
     <div className="dc-view" style={{ minHeight: 0, flex: 1, overflowY: "auto" }}>
