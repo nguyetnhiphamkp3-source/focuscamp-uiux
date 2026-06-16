@@ -116,7 +116,7 @@ export function FeedList({
             disabled={pending}
             style={{
               padding: "10px 24px",
-              borderRadius: 999,
+              borderRadius: 10,
               border: "1px solid var(--border-subtle)",
               background: "var(--bg-card)",
               color: "var(--text-normal)",

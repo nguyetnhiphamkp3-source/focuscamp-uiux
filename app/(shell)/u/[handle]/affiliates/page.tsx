@@ -95,11 +95,15 @@ export default async function MyAffiliatesPage({
 
 function Stat({ label, value, accent }: { label: string; value: string | number; accent?: boolean }) {
   return (
-    <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 12, padding: "14px 16px" }}>
-      <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: 600 }}>
+    <div style={{
+      background: accent ? "linear-gradient(135deg, #1B9E75 0%, #0d7a5a 100%)" : "var(--bg-card)",
+      border: accent ? "none" : "1px solid var(--border-subtle)",
+      borderRadius: 12, padding: "14px 16px",
+    }}>
+      <div style={{ fontSize: "var(--text-xs)", color: accent ? "rgba(255,255,255,0.75)" : "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: 600 }}>
         {label}
       </div>
-      <div style={{ fontSize: "var(--text-xl)", fontWeight: 800, color: accent ? "var(--brand-green)" : "var(--header-primary)", marginTop: 4 }}>
+      <div style={{ fontSize: "var(--text-xl)", fontWeight: 800, color: accent ? "#fff" : "var(--header-primary)", marginTop: 4 }}>
         {value}
       </div>
     </div>

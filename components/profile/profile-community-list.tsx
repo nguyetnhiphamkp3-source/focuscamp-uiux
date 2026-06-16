@@ -54,7 +54,7 @@ export function ProfileCommunityList({
               padding: "8px 12px",
               background: "var(--bg-card)",
               border: "1px solid var(--border-subtle)",
-              borderRadius: 999,
+              borderRadius: 10,
               textDecoration: "none",
               color: "var(--text-normal)",
               fontSize: "var(--text-sm)",

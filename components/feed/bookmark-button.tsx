@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Bookmark } from "lucide-react";
 import { toggleBookmarkAction } from "@/app/actions/social";
+import { useLocale } from "@/components/locale-provider";
 
 export function BookmarkButton({
   postId,
@@ -15,6 +16,7 @@ export function BookmarkButton({
   initialBookmarked: boolean;
 }) {
   const router = useRouter();
+  const { t } = useLocale();
   const [bookmarked, setBookmarked] = useState(initialBookmarked);
   const [pending, start] = useTransition();
   const [showHint, setShowHint] = useState(false);
@@ -57,7 +59,7 @@ export function BookmarkButton({
         }}
       >
         <Bookmark size={16} fill={bookmarked ? "currentColor" : "none"} />{" "}
-        {bookmarked ? "Đã lưu" : "Bookmark"}
+        {bookmarked ? t("bookmarked") : t("bookmark")}
       </button>
       {showHint && (
         <span

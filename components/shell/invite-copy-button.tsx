@@ -20,7 +20,7 @@ export function InviteCopyButton({
         style={{
           width: "100%",
           padding: "8px 12px",
-          borderRadius: 8,
+          borderRadius: 10,
           border: "none",
           background: "var(--brand-green)",
           color: "#fff",
@@ -30,7 +30,7 @@ export function InviteCopyButton({
           fontFamily: "var(--font-heading)",
         }}
       >
-        🔗 Invite People
+        🔗 Mời thành viên
       </button>
       {open && (
         <AffiliatePanel

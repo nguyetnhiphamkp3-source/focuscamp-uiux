@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { updateCourseAction } from "@/app/actions/course";
 import { ImageUploadField } from "@/components/shared/image-upload-field";
+import { useLocale } from "@/components/locale-provider";
 
 /**
  * Modal settings panel for course detail — owner can edit title,
@@ -28,6 +29,7 @@ export function CourseSettingsPanel({
   };
 }) {
   const router = useRouter();
+  const { t } = useLocale();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -133,7 +135,7 @@ export function CourseSettingsPanel({
               fontWeight: 500,
             }}
           >
-            {isPublished ? "Published" : "Draft"}
+            {isPublished ? t("coursePublished") : t("courseDraft")}
           </span>
           <button
             type="button"

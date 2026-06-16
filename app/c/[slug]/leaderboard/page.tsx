@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AVATAR_COLORS } from "@/lib/brand";
+import { getLocale, tSync } from "@/lib/locale-server";
 
 export const revalidate = 60;
 
@@ -19,6 +20,8 @@ export default async function LeaderboardPage({
   const sp = await searchParams;
   const period: Period =
     sp.period === "month" ? "month" : sp.period === "week" ? "week" : "all";
+  const locale = await getLocale();
+  const T = (key: Parameters<typeof tSync>[0]) => tSync(key, locale);
 
   const community = await prisma.community.findUnique({
     where: { slug },
@@ -108,30 +111,30 @@ export default async function LeaderboardPage({
       <header className="view-header">
         <span className="view-title">Bảng xếp hạng</span>
         <span className="view-subtitle">
-          {community.name} · Top performers (
+          {community.name} · {T("lbTopMembers")} (
           {period === "all"
-            ? "All-time"
+            ? T("lbAllTime")
             : period === "month"
-              ? "30 ngày qua"
-              : "7 ngày qua"}
+              ? T("lbMonth")
+              : T("lbWeek")}
           )
         </span>
       </header>
       <div className="lb-view">
         <div className="lb-inner">
           <div className="lb-tabs">
-            <LbTab slug={slug} active={period === "all"} periodParam="" label="All-time" />
+            <LbTab slug={slug} active={period === "all"} periodParam="" label={T("lbAllTime")} />
             <LbTab
               slug={slug}
               active={period === "month"}
               periodParam="month"
-              label="Tháng này"
+              label={T("lbMonth")}
             />
             <LbTab
               slug={slug}
               active={period === "week"}
               periodParam="week"
-              label="Tuần này"
+              label={T("lbWeek")}
             />
           </div>
 
@@ -145,7 +148,7 @@ export default async function LeaderboardPage({
 
           <div className="lb-rows">
             {rest.map((m, i) => {
-              const name = m.user.name || m.user.email || "Member";
+              const name = m.user.name || m.user.email || "Thành viên";
               return (
                 <div key={m.userId} className="lb-row">
                   <div className="lb-row-rank">{i + 4}</div>
@@ -246,7 +249,7 @@ function PodiumSlot({
   tier: string;
   crown?: boolean;
 }) {
-  const name = m.user.name || m.user.email || "Member";
+  const name = m.user.name || m.user.email || "Thành viên";
   return (
     <div className={`lb-podium-slot ${tier}`}>
       {crown && <div style={{ fontSize: 24, marginBottom: -4 }}>👑</div>}

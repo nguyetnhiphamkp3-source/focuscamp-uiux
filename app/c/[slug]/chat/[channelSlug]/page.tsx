@@ -6,6 +6,7 @@ import { avatarColorFor as colorFor, nameColorFor as nameColor } from "@/lib/bra
 import { Pin, Users, Bell } from "lucide-react";
 import { ChatInput } from "@/components/community/chat-input";
 import { LinkifiedText } from "@/components/shared/linkified-text";
+import { getLocale, tSync } from "@/lib/locale-server";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +56,8 @@ export default async function ChannelPage({
 }) {
   const { slug, channelSlug } = await params;
   const session = await auth();
+  const locale = await getLocale();
+  const T = (key: Parameters<typeof tSync>[0]) => tSync(key, locale);
 
   const community = await prisma.community.findUnique({
     where: { slug },
@@ -205,7 +208,7 @@ export default async function ChannelPage({
                   );
                   lastDate = dk;
                 }
-                const displayName = m.user.name || m.user.email || "User";
+                const displayName = m.user.name || m.user.email || T("chatUser");
                 const color = nameColor(m.userId);
                 const profileHref = `/c/${slug}/profile/${m.user.id}`;
                 blocks.push(

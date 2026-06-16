@@ -8,9 +8,9 @@ const FONT_SIZES = [
   { name: "xl", value: 22, use: "h2, section header" },
   { name: "lg", value: 18, use: "h3, card title, sidebar active item" },
   { name: "md", value: 16, use: "Button default, leading paragraph, h4" },
-  { name: "base", value: 14, use: "UI default, body standard, button sm" },
-  { name: "sm", value: 13, use: "Body small, captions, secondary info" },
-  { name: "xs", value: 11, use: "Labels, meta, timestamps, chip badges" },
+  { name: "base", value: 15, use: "UI default, body standard, button sm" },
+  { name: "sm", value: 14, use: "Body small, captions, secondary info" },
+  { name: "xs", value: 12, use: "Labels, meta, timestamps, chip badges" },
 ];
 
 const WEIGHTS = [

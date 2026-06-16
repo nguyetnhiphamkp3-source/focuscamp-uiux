@@ -172,10 +172,10 @@ export default async function Home() {
             fontSize: "var(--text-sm)",
           }}
         >
-          <Stat n={communityCount} label="Communities" />
-          <Stat n={userCount} label="Members" />
+          <Stat n={communityCount} label="Cộng đồng" />
+          <Stat n={userCount} label="Thành viên" />
           <Stat n={challengeCount} label="Challenges" />
-          <Stat n={productCount} label="Products" />
+          <Stat n={productCount} label="Sản phẩm" />
         </div>
       </section>
 

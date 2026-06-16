@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { avatarColorFor, initials, fmtRelativeTime } from "@/lib/brand";
 import { markNotificationReadAction, markAllReadAction } from "@/app/actions/notifications";
 import { useRouter } from "next/navigation";
+import { useLocale } from "@/components/locale-provider";
 
 /* ─── Types ─────────────────────────────────────────────────────────── */
 export type NotifItem = {
@@ -240,6 +241,7 @@ export function NotifBell({
   items?: NotifItem[];
 }) {
   const router = useRouter();
+  const { t } = useLocale();
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"inbox" | "archive">("inbox");
   const [search, setSearch] = useState("");
@@ -392,15 +394,15 @@ export function NotifBell({
 
             {/* Tabs */}
             <div style={{ display: "flex", gap: 4, padding: "4px 0 0" }}>
-              {(["inbox", "archive"] as const).map((t) => {
-                const labels = { inbox: "Inbox", archive: "Đã đọc" };
-                const count = t === "inbox" ? unreadCount : archiveItems.length;
-                const active = tab === t;
+              {(["inbox", "archive"] as const).map((tabKey) => {
+                const labels = { inbox: t("notifInbox"), archive: t("notifRead") };
+                const count = tabKey === "inbox" ? unreadCount : archiveItems.length;
+                const active = tab === tabKey;
                 return (
                   <button
-                    key={t}
+                    key={tabKey}
                     type="button"
-                    onClick={() => setTab(t)}
+                    onClick={() => setTab(tabKey)}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -417,11 +419,11 @@ export function NotifBell({
                       transition: "background 120ms, color 120ms",
                     }}
                   >
-                    {labels[t]}
+                    {labels[tabKey]}
                     {count > 0 && (
                       <span style={{
-                        background: active && t === "inbox" ? "var(--brand-green)" : "rgba(0,0,0,0.08)",
-                        color: active && t === "inbox" ? "#fff" : "var(--text-muted)",
+                        background: active && tabKey === "inbox" ? "var(--brand-green)" : "rgba(0,0,0,0.08)",
+                        color: active && tabKey === "inbox" ? "#fff" : "var(--text-muted)",
                         borderRadius: 99,
                         fontSize: 10,
                         fontWeight: 700,

@@ -10,6 +10,7 @@ import { BuyWithCoupon } from "@/components/marketplace/buy-with-coupon";
 import { logError } from "@/lib/logger";
 import { getEffectiveOwnership } from "@/lib/preview-mode";
 import { canCommunity, effectiveCommunityRole } from "@/lib/community-permissions";
+import { ProductDetailTabs } from "@/components/marketplace/product-detail-tabs";
 
 export const dynamic = "force-dynamic";
 
@@ -126,197 +127,121 @@ export default async function ProductDetailPage({
 
   return (
     <>
-      <header className="view-header">
-        <span className="view-title">{product.title}</span>
-        <span className="view-subtitle">
-          {product.pillar || t.label} · {t.label}
-        </span>
-      </header>
+      <div style={{ flex: 1, overflowY: "auto" }}>
+        <div style={{ padding: "var(--space-5) var(--space-6)", maxWidth: 720, margin: "0 auto" }}>
 
-      <div
-        style={{
-          flex: 1,
-          overflowY: "auto",
-          padding: "var(--space-6) var(--space-8)",
-        }}
-      >
-        <div style={{ maxWidth: 760 }}>
-          {/* Admin/Owner settings panel */}
-          {canManageMarketplace && (
-            <div style={{ marginBottom: "var(--space-4)" }}>
-              <ProductSettingsPanel
-                productId={product.id}
-                communitySlug={communitySlug}
-                productSlug={productSlug}
-                standalone
-                initial={{
-                  title: product.title,
-                  description: product.description ?? null,
-                  priceVnd: Number(product.priceVnd),
-                  priceOldVnd: product.priceOldVnd ? Number(product.priceOldVnd) : null,
-                  isVisible: (product as Record<string, unknown>).isVisible as boolean ?? true,
-                  showInCartBump: (product as Record<string, unknown>).showInCartBump as boolean ?? false,
-                  bumpProductId: (product as Record<string, unknown>).bumpProductId as string | null ?? null,
-                  upsellProductId: (product as Record<string, unknown>).upsellProductId as string | null ?? null,
-                  type: product.type,
-                  pillar: product.pillar ?? null,
-                  thumbnailUrl: (product as Record<string, unknown>).thumbnailUrl as string | null ?? null,
-                  fileUrl: (product as Record<string, unknown>).fileUrl as string | null ?? null,
-                  externalUrl: (product as Record<string, unknown>).externalUrl as string | null ?? null,
-                  licenseKeyTemplate: (product as Record<string, unknown>).licenseKeyTemplate as string | null ?? null,
-                  featuredOnGlobal: (product as Record<string, unknown>).featuredOnGlobal as boolean ?? false,
-                }}
-                communityProducts={communityProducts.map((cp) => ({
-                  id: cp.id,
-                  title: cp.title,
-                  isVisible: cp.isVisible ?? true,
-                }))}
-              />
-            </div>
-          )}
-
-          {/* Header card */}
-          <div
-            className="ui-card ui-card-lg"
-            style={{
-              display: "flex",
-              gap: "var(--space-5)",
-              alignItems: "center",
-              marginBottom: "var(--space-5)",
-            }}
-          >
+          {/* Banner + settings overlay */}
+          <div style={{ position: "relative", marginBottom: "var(--space-5)" }}>
             <div
               className={`mk-card-thumb ${t.cls}`}
               style={{
-                width: 120,
-                height: 120,
-                borderRadius: "var(--r-lg)",
-                flexShrink: 0,
-                ...(product.thumbnailUrl
-                  ? {
-                      backgroundImage: `url("${product.thumbnailUrl}")`,
-                      backgroundSize: "cover",
-                      backgroundPosition: "center",
-                    }
-                  : {}),
+                width: "100%",
+                aspectRatio: "16/9",
+                borderRadius: 14,
+                backgroundImage: `url("${(product as Record<string, unknown>).thumbnailUrl as string | null ?? `https://picsum.photos/seed/${product.id}/960/540`}")`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
               }}
             >
-              {!product.thumbnailUrl && <span className="mk-icon">{t.icon}</span>}
-              <span className="mk-card-type">{t.label}</span>
+              <span className="mk-card-type" style={{ top: 12, left: 12 }}>{t.label}</span>
             </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <h1
-                style={{
-                  fontSize: "var(--text-xl)",
-                  marginBottom: "var(--space-1)",
-                  lineHeight: "var(--lh-tight)",
-                }}
-              >
-                {product.title}
-              </h1>
-              {product.pillar && (
-                <div
-                  style={{
-                    fontSize: "var(--text-sm)",
-                    color: "var(--text-muted)",
-                    marginBottom: "var(--space-3)",
+            {canManageMarketplace && (
+              <div style={{ position: "absolute", top: 10, right: 10 }}>
+                <ProductSettingsPanel
+                  productId={product.id}
+                  communitySlug={communitySlug}
+                  productSlug={productSlug}
+                  standalone
+                  initial={{
+                    title: product.title,
+                    description: product.description ?? null,
+                    priceVnd: Number(product.priceVnd),
+                    priceOldVnd: product.priceOldVnd ? Number(product.priceOldVnd) : null,
+                    isVisible: (product as Record<string, unknown>).isVisible as boolean ?? true,
+                    showInCartBump: (product as Record<string, unknown>).showInCartBump as boolean ?? false,
+                    bumpProductId: (product as Record<string, unknown>).bumpProductId as string | null ?? null,
+                    upsellProductId: (product as Record<string, unknown>).upsellProductId as string | null ?? null,
+                    type: product.type,
+                    pillar: product.pillar ?? null,
+                    thumbnailUrl: (product as Record<string, unknown>).thumbnailUrl as string | null ?? null,
+                    fileUrl: (product as Record<string, unknown>).fileUrl as string | null ?? null,
+                    externalUrl: (product as Record<string, unknown>).externalUrl as string | null ?? null,
+                    licenseKeyTemplate: (product as Record<string, unknown>).licenseKeyTemplate as string | null ?? null,
+                    featuredOnGlobal: (product as Record<string, unknown>).featuredOnGlobal as boolean ?? false,
                   }}
-                >
-                  {product.pillar}
-                </div>
-              )}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "baseline",
-                  gap: "var(--space-2)",
-                }}
-              >
-                {oldPrice && (
-                  <span
-                    style={{
-                      color: "var(--text-muted)",
-                      textDecoration: "line-through",
-                      fontSize: "var(--text-base)",
-                    }}
-                  >
-                    {fmtVnd(oldPrice)}đ
-                  </span>
-                )}
-                <span
-                  style={{
-                    fontSize: "var(--text-2xl)",
-                    fontWeight: "var(--fw-extrabold)",
-                    color: "var(--brand-green)",
-                  }}
-                >
-                  {product.isFree
-                    ? "Miễn phí"
-                    : `${fmtVnd(price)}đ${
-                        product.isSubscription
-                          ? "/" + (product.subscriptionPeriod || "th")
-                          : ""
-                      }`}
-                </span>
+                  communityProducts={communityProducts.map((cp) => ({
+                    id: cp.id,
+                    title: cp.title,
+                    isVisible: cp.isVisible ?? true,
+                  }))}
+                />
               </div>
+            )}
+          </div>
+
+          {/* Title + price */}
+          <div style={{ marginBottom: "var(--space-5)" }}>
+            {product.pillar && (
+              <div style={{ fontSize: "var(--text-xs)", color: "#1B9E75", fontWeight: 500, marginBottom: 6 }}>
+                #{product.pillar}
+              </div>
+            )}
+            <h1 style={{ fontSize: "var(--text-xl)", fontWeight: 700, color: "var(--header-primary)", lineHeight: 1.35, marginBottom: "var(--space-3)" }}>
+              {product.title}
+            </h1>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+              <span style={{ fontSize: "var(--text-2xl)", fontWeight: 800, color: "var(--brand-green)" }}>
+                {product.isFree ? "Miễn phí" : `${fmtVnd(price)}đ`}
+              </span>
+              {oldPrice && (
+                <span style={{ fontSize: "var(--text-base)", color: "var(--text-muted)", textDecoration: "line-through" }}>
+                  {fmtVnd(oldPrice)}đ
+                </span>
+              )}
             </div>
           </div>
 
-          {/* Description */}
-          {product.description && (
-            <div
-              className="ui-card"
-              style={{
-                lineHeight: "var(--lh-relaxed)",
-                marginBottom: "var(--space-5)",
-              }}
-            >
-              {product.description}
+          {/* Tabbed: Mô tả ngắn / Sản phẩm / Đối tượng */}
+          <ProductDetailTabs description={product.description} />
+
+          {/* Content outline */}
+          <div className="ui-card" style={{ marginBottom: "var(--space-4)" }}>
+            <div style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--header-primary)", marginBottom: 12 }}>
+              Nội dung
             </div>
-          )}
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {[
+                ["Phần 1", "Tổng quan & mindset nền tảng"],
+                ["Phần 2", "Thiết lập hệ thống & công cụ"],
+                ["Phần 3", "Quy trình thực thi hàng ngày"],
+                ["Phần 4", "Đo lường & tối ưu kết quả"],
+                ["Bonus", "Template & checklist đi kèm"],
+              ].map(([part, title], i, arr) => (
+                <div key={i} style={{
+                  display: "flex", alignItems: "center", gap: 12,
+                  padding: "10px 0",
+                  borderBottom: i < arr.length - 1 ? "1px solid rgba(0,0,0,0.06)" : "none",
+                  fontSize: "var(--text-sm)",
+                }}>
+                  <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "#1B9E75", minWidth: 52, textAlign: "center", background: "rgba(27,158,117,0.08)", padding: "2px 7px", borderRadius: 4 }}>
+                    {part}
+                  </span>
+                  <span style={{ color: "var(--text-normal)" }}>{title}</span>
+                </div>
+              ))}
+            </div>
+          </div>
 
           {/* Related challenges */}
           {product.challenges.length > 0 && (
-            <div
-              style={{
-                marginBottom: "var(--space-5)",
-                padding: "var(--space-4)",
-                background: "var(--warning-soft)",
-                border: "1px solid var(--warning)",
-                borderRadius: "var(--r-md)",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "var(--text-xs)",
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  color: "#a16207",
-                  fontWeight: "var(--fw-bold)",
-                  marginBottom: "var(--space-2)",
-                }}
-              >
-                🎒 Trang bị cho challenge
+            <div style={{ marginBottom: "var(--space-4)", padding: "var(--space-4)", background: "var(--warning-soft)", borderRadius: "var(--r-md)" }}>
+              <div style={{ fontSize: "var(--text-xs)", color: "#a16207", fontWeight: 700, marginBottom: 8 }}>
+                Trang bị cho challenge
               </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {product.challenges.map((link) => (
-                  <a
-                    key={link.challenge.slug}
-                    href={`/c/${communitySlug}/challenges/${link.challenge.slug}`}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
-                      padding: "4px 10px",
-                      borderRadius: "var(--r-full)",
-                      background: "var(--bg-card)",
-                      border: "1px solid var(--border-subtle)",
-                      fontSize: "var(--text-sm)",
-                      fontWeight: "var(--fw-semibold)",
-                      color: "var(--text-heading)",
-                      textDecoration: "none",
-                    }}
-                  >
+                  <a key={link.challenge.slug} href={`/c/${communitySlug}/challenges/${link.challenge.slug}`}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: "var(--r-full)", background: "var(--bg-card)", fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-heading)", textDecoration: "none" }}>
                     ⚔️ {link.challenge.title}
                   </a>
                 ))}
@@ -324,64 +249,26 @@ export default async function ProductDetailPage({
             </div>
           )}
 
-          {/* License key (after LICENSE purchase) */}
+          {/* License key */}
           {licenseKey && (
-            <div className="ui-card" style={{ marginBottom: "var(--space-3)" }}>
-              <div
-                style={{
-                  fontSize: "var(--text-sm)",
-                  color: "var(--text-muted)",
-                  marginBottom: "var(--space-2)",
-                }}
-              >
-                🔑 License key của bạn (đã gửi qua email)
-              </div>
-              <code
-                style={{
-                  display: "block",
-                  background: "var(--bg-elevated)",
-                  border: "1px solid var(--border-subtle)",
-                  borderRadius: 8,
-                  padding: "12px 14px",
-                  fontFamily: "monospace",
-                  fontSize: "var(--text-md)",
-                  letterSpacing: 1,
-                  color: "var(--brand-green)",
-                  textAlign: "center",
-                  userSelect: "all",
-                }}
-              >
+            <div className="ui-card" style={{ marginBottom: "var(--space-4)" }}>
+              <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginBottom: 8 }}>License key của bạn (đã gửi qua email)</div>
+              <code style={{ display: "block", background: "var(--bg-elevated)", borderRadius: 8, padding: "12px 14px", fontFamily: "monospace", fontSize: "var(--text-md)", letterSpacing: 1, color: "var(--brand-green)", textAlign: "center", userSelect: "all" }}>
                 {licenseKey}
               </code>
             </div>
           )}
 
-          {/* Download (after purchase) */}
+          {/* Download */}
           {canDownload && (
-            <div className="ui-card" style={{ marginBottom: "var(--space-3)" }}>
-              <div
-                style={{
-                  fontSize: "var(--text-sm)",
-                  color: "var(--text-muted)",
-                  marginBottom: "var(--space-2)",
-                }}
-              >
+            <div className="ui-card" style={{ marginBottom: "var(--space-4)" }}>
+              <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginBottom: 8 }}>
                 ✓ Bạn đã{hasPurchased ? " mua" : " là member"} — file đã sẵn sàng
               </div>
-              <a
-                href={`/api/products/${product.id}/download`}
-                className="ui-btn ui-btn-primary ui-btn-lg"
-                style={{ textDecoration: "none" }}
-              >
-                📥 Download file
+              <a href={`/api/products/${product.id}/download`} className="ui-btn ui-btn-primary ui-btn-lg" style={{ textDecoration: "none" }}>
+                Tải file
               </a>
-              <div
-                style={{
-                  fontSize: "var(--text-xs)",
-                  color: "var(--text-muted)",
-                  marginTop: "var(--space-2)",
-                }}
-              >
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 8 }}>
                 Link download có hiệu lực 15 phút sau click.
               </div>
             </div>
@@ -390,102 +277,42 @@ export default async function ProductDetailPage({
           {/* Purchase CTA */}
           <div className="ui-card">
             {!product.isFree ? (
-              <>
-                {!session?.user ? (
-                  <div>
-                    <p
-                      style={{
-                        fontSize: "var(--text-sm)",
-                        color: "var(--text-muted)",
-                        marginBottom: "var(--space-3)",
-                      }}
-                    >
-                      Đăng nhập để mua sản phẩm này.
-                    </p>
-                    <Link href="/login" className="ui-btn ui-btn-primary ui-btn-lg">
-                      Đăng nhập
-                    </Link>
+              !session?.user ? (
+                <div>
+                  <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginBottom: 12 }}>Đăng nhập để mua sản phẩm này.</p>
+                  <Link href="/login" className="ui-btn ui-btn-primary ui-btn-lg">Đăng nhập</Link>
+                </div>
+              ) : !isMember ? (
+                <div>
+                  <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginBottom: 12 }}>
+                    Tham gia community &ldquo;{product.community.name}&rdquo; để được mua.
+                  </p>
+                  <Link href={`/c/${communitySlug}`} className="ui-btn ui-btn-primary ui-btn-lg">Vào community</Link>
+                </div>
+              ) : hasPurchased && !product.isSubscription ? (
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: "var(--text-md)", fontWeight: 600, color: "var(--brand-green)", marginBottom: 4 }}>✓ Bạn đã sở hữu sản phẩm này</div>
+                  <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>Truy cập file/license ở phần trên.</div>
+                </div>
+              ) : (
+                <>
+                  <BuyWithCoupon
+                    communityId={product.community.id}
+                    productId={product.id}
+                    priceVnd={price}
+                    buyLabel={product.isSubscription ? "Đăng ký ngay" : "Mua ngay"}
+                    action={buy}
+                    addToCart={!product.isSubscription ? <AddToCartButton productId={product.id} /> : undefined}
+                  />
+                  <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 10 }}>
+                    Thanh toán qua VietQR · Tự nhận khi SePay xác nhận
                   </div>
-                ) : !isMember ? (
-                  <div>
-                    <p
-                      style={{
-                        fontSize: "var(--text-sm)",
-                        color: "var(--text-muted)",
-                        marginBottom: "var(--space-3)",
-                      }}
-                    >
-                      Tham gia community &ldquo;{product.community.name}&rdquo;
-                      để được mua.
-                    </p>
-                    <Link
-                      href={`/c/${communitySlug}`}
-                      className="ui-btn ui-btn-primary ui-btn-lg"
-                    >
-                      Vào community
-                    </Link>
-                  </div>
-                ) : hasPurchased && !product.isSubscription ? (
-                  <div style={{ textAlign: "center" }}>
-                    <div
-                      style={{
-                        fontSize: "var(--text-md)",
-                        fontWeight: "var(--fw-semibold)",
-                        color: "var(--brand-green)",
-                        marginBottom: "var(--space-2)",
-                      }}
-                    >
-                      ✓ Bạn đã sở hữu sản phẩm này
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "var(--text-sm)",
-                        color: "var(--text-muted)",
-                      }}
-                    >
-                      Truy cập file/license ở phần trên.
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <BuyWithCoupon
-                      communityId={product.community.id}
-                      productId={product.id}
-                      priceVnd={price}
-                      buyLabel={product.isSubscription ? "Subscribe ngay" : "Mua ngay"}
-                      action={buy}
-                      addToCart={
-                        !product.isSubscription ? (
-                          <AddToCartButton productId={product.id} />
-                        ) : undefined
-                      }
-                    />
-                    <div
-                      style={{
-                        fontSize: "var(--text-xs)",
-                        color: "var(--text-muted)",
-                        marginTop: "var(--space-3)",
-                      }}
-                    >
-                      Thanh toán qua VietQR · Tự nhận khi SePay xác nhận
-                    </div>
-                  </>
-                )}
-              </>
+                </>
+              )
             ) : (
               <div style={{ textAlign: "center" }}>
-                <div
-                  style={{
-                    fontSize: "var(--text-sm)",
-                    color: "var(--text-muted)",
-                    marginBottom: "var(--space-3)",
-                  }}
-                >
-                  Sản phẩm miễn phí
-                </div>
-                <button className="ui-btn ui-btn-primary ui-btn-lg" disabled>
-                  Tải về (coming soon)
-                </button>
+                <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginBottom: 12 }}>Sản phẩm miễn phí</div>
+                <button className="ui-btn ui-btn-primary ui-btn-lg" disabled>Tải về (coming soon)</button>
               </div>
             )}
           </div>

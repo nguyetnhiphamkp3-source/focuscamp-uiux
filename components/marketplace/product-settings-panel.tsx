@@ -12,11 +12,12 @@ const inputStyle: React.CSSProperties = {
   width: "100%",
   padding: "8px 10px",
   borderRadius: 6,
-  border: "1px solid var(--border-subtle)",
+  border: "1.5px solid rgba(0,0,0,0.12)",
   background: "var(--bg-chat)",
   color: "var(--text-normal)",
   fontSize: "var(--text-sm)",
   outline: "none",
+  boxSizing: "border-box",
 };
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -277,7 +278,7 @@ export function ProductSettingsPanel({
 
               <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
                 <input type="checkbox" checked={featuredOnGlobal} onChange={(e) => setFeaturedOnGlobal(e.target.checked)} disabled={pending} />
-                <span style={{ fontSize: "var(--text-sm)", color: "var(--text-normal)" }}>🌐 Hiện trên Global Marketplace (focus.camp/marketplace)</span>
+                <span style={{ fontSize: "var(--text-sm)", color: "var(--text-normal)" }}>🌐 Hiện trên trang cửa hàng toàn cầu (focus.camp/marketplace)</span>
               </label>
 
               <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>

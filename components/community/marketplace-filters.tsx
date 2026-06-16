@@ -2,16 +2,7 @@
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useTransition, useRef } from "react";
-
-const FILTERS: { label: string; value: string }[] = [
-  { label: "Tất cả", value: "" },
-  { label: "Templates", value: "TEMPLATE" },
-  { label: "SOP", value: "SOP" },
-  { label: "Tools", value: "TOOL" },
-  { label: "Prompts", value: "PROMPT" },
-  { label: "Bundles", value: "BUNDLE" },
-  { label: "Miễn phí", value: "FREE" },
-];
+import { useLocale } from "@/components/locale-provider";
 
 export function MarketplaceFilters() {
   const router = useRouter();
@@ -20,6 +11,17 @@ export function MarketplaceFilters() {
   const current = params.get("type") ?? "";
   const [, startTransition] = useTransition();
   const searchRef = useRef<HTMLInputElement>(null);
+  const { t } = useLocale();
+
+  const FILTERS = [
+    { label: t("mkAll"), value: "" },
+    { label: t("mkTemplate"), value: "TEMPLATE" },
+    { label: t("mkSop"), value: "SOP" },
+    { label: t("mkTool"), value: "TOOL" },
+    { label: t("mkPrompt"), value: "PROMPT" },
+    { label: t("mkBundle"), value: "BUNDLE" },
+    { label: t("mkFree"), value: "FREE" },
+  ];
 
   function handleFilter(value: string) {
     const sp = new URLSearchParams(params.toString());
@@ -44,7 +46,7 @@ export function MarketplaceFilters() {
         <input
           ref={searchRef}
           defaultValue={params.get("q") ?? ""}
-          placeholder="Tìm kiếm sản phẩm, challenge…"
+          placeholder={t("mkSearchPlaceholder")}
           style={{
             flex: 1,
             padding: "8px 14px",
@@ -80,7 +82,6 @@ export function MarketplaceFilters() {
             type="button"
             className={`mk-filter${current === f.value ? " active" : ""}`}
             onClick={() => handleFilter(f.value)}
-            style={{ cursor: "pointer", background: "none", border: "none", padding: 0 }}
           >
             {f.label}
           </button>

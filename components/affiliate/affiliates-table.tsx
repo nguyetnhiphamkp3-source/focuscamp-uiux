@@ -42,10 +42,10 @@ export function AffiliatesTable({ affiliates }: Props) {
           <tr>
             <th style={thStyle}>Affiliate</th>
             <th style={thStyle}>Mã</th>
-            <th style={{ ...thStyle, textAlign: "right" }}>Clicks</th>
-            <th style={{ ...thStyle, textAlign: "right" }}>Signups</th>
-            <th style={{ ...thStyle, textAlign: "right" }}>Conversions</th>
-            <th style={{ ...thStyle, textAlign: "right" }}>Hoa hồng</th>
+            <th style={thStyle}>Clicks</th>
+            <th style={thStyle}>Signups</th>
+            <th style={thStyle}>Conversions</th>
+            <th style={thStyle}>Hoa hồng</th>
           </tr>
         </thead>
         <tbody>
@@ -70,10 +70,10 @@ export function AffiliatesTable({ affiliates }: Props) {
                   {a.link.code}
                 </code>
               </td>
-              <td style={{ ...tdStyle, textAlign: "right" }}>{a.stats.clicks}</td>
-              <td style={{ ...tdStyle, textAlign: "right" }}>{a.stats.signups}</td>
-              <td style={{ ...tdStyle, textAlign: "right" }}>{a.stats.conversions}</td>
-              <td style={{ ...tdStyle, textAlign: "right", color: "var(--brand-green)" }}>
+              <td style={tdStyle}>{a.stats.clicks}</td>
+              <td style={tdStyle}>{a.stats.signups}</td>
+              <td style={tdStyle}>{a.stats.conversions}</td>
+              <td style={{ ...tdStyle, color: "var(--brand-green)" }}>
                 {fmtVnd(a.stats.totalCommission)}đ
               </td>
             </tr>

@@ -48,7 +48,7 @@ const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  COMPLETED: "Đã TT",
+  COMPLETED: "Đã thanh toán",
   PENDING: "Pending",
   EXPIRED: "Hết hạn",
   REFUNDED: "Hoàn tiền",

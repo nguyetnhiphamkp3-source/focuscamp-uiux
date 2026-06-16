@@ -30,7 +30,7 @@ export function FollowButton({
 
   const baseStyle: React.CSSProperties = {
     padding: variant === "compact" ? "4px 10px" : "8px 16px",
-    borderRadius: 999,
+    borderRadius: 10,
     fontSize: variant === "compact" ? "var(--text-xs)" : "var(--text-sm)",
     fontWeight: 600,
     cursor: pending ? "not-allowed" : "pointer",

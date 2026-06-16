@@ -2,9 +2,11 @@ import Link from "next/link";
 import { LoginModal } from "./login-modal";
 import { UserMenu } from "./user-menu";
 import { NotifBell } from "./notif-bell";
+import { CartIcon } from "@/components/marketplace/cart-icon";
 import { LogIn } from "lucide-react";
+import { getLocale, tSync } from "@/lib/locale-server";
 
-export function UserPanel({
+export async function UserPanel({
   user,
   subtitle,
   profileHref,
@@ -18,7 +20,9 @@ export function UserPanel({
   notifUnread?: number;
   chatHref?: string;
 }) {
-  const displayName = user?.name || user?.email || "Guest";
+  const locale = await getLocale();
+  const T = (key: Parameters<typeof tSync>[0]) => tSync(key, locale);
+  const displayName = user?.name || user?.email || T("guest");
 
   const avatarBlock = (
     <>
@@ -42,7 +46,7 @@ export function UserPanel({
       <div className="user-panel-info">
         <div className="user-panel-name">{displayName}</div>
         <div className="user-panel-status-text">
-          {subtitle || (user ? "Online" : "Guest")}
+          {subtitle || (user ? "Online" : T("guest"))}
         </div>
       </div>
     </>
@@ -71,7 +75,7 @@ export function UserPanel({
               }}
             >
               <LogIn size={16} />
-              Đăng nhập để trải nghiệm
+              {T("loginCta")}
             </button>
           }
         />
@@ -98,6 +102,7 @@ export function UserPanel({
       )}
       <div className="user-panel-actions">
         <UserMenu user={user} chatHref={chatHref} />
+        <CartIcon compact />
         <NotifBell initial={notifUnread ?? 0} />
       </div>
     </div>

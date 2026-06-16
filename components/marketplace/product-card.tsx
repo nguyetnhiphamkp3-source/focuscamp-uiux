@@ -1,14 +1,15 @@
 import Link from "next/link";
+import { Download } from "lucide-react";
 import { ProductSettingsPanel } from "@/components/marketplace/product-settings-panel";
 
 export const TYPE_THUMB: Record<
   string,
   { cls: string; icon: string; label: string }
 > = {
-  TEMPLATE: { cls: "t-template", icon: "🎯", label: "Template" },
-  TOOL: { cls: "t-tool", icon: "🧠", label: "Tool" },
-  BUNDLE: { cls: "t-bundle", icon: "📦", label: "Bundle" },
-  SOP: { cls: "t-sop", icon: "👥", label: "SOP Pack" },
+  TEMPLATE: { cls: "t-template", icon: "🎯", label: "Tài liệu" },
+  TOOL: { cls: "t-tool", icon: "🧠", label: "Công cụ" },
+  BUNDLE: { cls: "t-bundle", icon: "📦", label: "Combo" },
+  SOP: { cls: "t-sop", icon: "👥", label: "Quy trình" },
   PROMPT: { cls: "t-prompt", icon: "💬", label: "Prompt" },
 };
 
@@ -83,54 +84,50 @@ export function ProductCard({
     >
       <div
         className={`mk-card-thumb ${t.cls}`}
-        style={
-          product.thumbnailUrl
-            ? {
-                backgroundImage: `url("${product.thumbnailUrl}")`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }
-            : undefined
-        }
+        style={{
+          backgroundImage: `url("${product.thumbnailUrl ?? `https://picsum.photos/seed/${product.id}/480/270`}")`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
       >
-        {!product.thumbnailUrl && <span className="mk-icon">{t.icon}</span>}
+        {false && <span className="mk-icon">{t.icon}</span>}
         <span className="mk-card-type">{t.label}</span>
-        {sale && <span className="mk-card-sale">-{sale}%</span>}
-        <span className="mk-card-id">
-          #{String(idx + 1).padStart(3, "0")}
-        </span>
         {featured && idx === 0 && <span className="mk-card-limited">Hot</span>}
       </div>
       <div className="mk-card-body">
-        {product.pillar && <div className="mk-card-pillar">{product.pillar}</div>}
-        <div className="mk-card-title">{product.title}</div>
+        {product.pillar && <div className="mk-card-pillar">#{product.pillar}</div>}
+        <div className="mk-card-title" title={product.title}>{product.title}</div>
         <div className="mk-card-footer">
           <div className="mk-card-price">
-            {oldPrice && (
-              <span className="mk-card-old">{fmtVnd(oldPrice)}đ</span>
-            )}
             {product.isFree ? (
-              <span className="mk-card-now">Miễn phí</span>
+              <span className="mk-card-now free">Miễn phí</span>
             ) : (
-              <span className="mk-card-now">
-                {fmtVnd(price)}
-                <span className="currency">đ</span>
-                {product.isSubscription && (
-                  <span
-                    style={{
-                      fontSize: "var(--text-xs)",
-                      color: "var(--text-muted)",
-                      fontWeight: "var(--fw-medium)",
-                    }}
-                  >
-                    /{product.subscriptionPeriod || "th"}
-                  </span>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                <span className="mk-card-now">
+                  {fmtVnd(price)}
+                  <span className="currency">đ</span>
+                  {product.isSubscription && (
+                    <span
+                      style={{
+                        fontSize: "var(--text-xs)",
+                        color: "var(--text-muted)",
+                        fontWeight: "var(--fw-medium)",
+                      }}
+                    >
+                      /{product.subscriptionPeriod || "th"}
+                    </span>
+                  )}
+                </span>
+                {oldPrice && (
+                  <span className="mk-card-old">{fmtVnd(oldPrice)}đ</span>
                 )}
-              </span>
+              </div>
             )}
           </div>
           <span className="mk-card-cta">
-            {product.isFree ? "Tải" : product.isSubscription ? "Subscribe" : "Mua"}
+            {product.isFree ? (
+              <><Download size={12} strokeWidth={2.5} style={{ display: "inline", verticalAlign: "middle", marginRight: 4, marginTop: -1 }} />Tải</>
+            ) : product.isSubscription ? "Đăng ký" : "Mua"}
           </span>
         </div>
       </div>

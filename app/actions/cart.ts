@@ -39,6 +39,37 @@ export async function removeFromCartAction(
   c.set(CART_COOKIE, serializeCart(removeItem(current, productId)), COOKIE_OPTS);
 }
 
+export type CartProductInfo = {
+  id: string;
+  title: string;
+  priceVnd: number;
+  slug: string;
+  communityId: string;
+  communitySlug: string;
+};
+
+export async function getCartProductsAction(
+  productIds: string[]
+): Promise<CartProductInfo[]> {
+  if (productIds.length === 0) return [];
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds } },
+    select: { id: true, title: true, priceVnd: true, slug: true, communityId: true, community: { select: { slug: true } } },
+  });
+  const byId = new Map(products.map((p) => [p.id, p]));
+  return productIds
+    .map((id) => byId.get(id))
+    .filter((p): p is NonNullable<typeof p> => Boolean(p))
+    .map((p) => ({
+      id: p.id,
+      title: p.title,
+      priceVnd: Number(p.priceVnd),
+      slug: p.slug,
+      communityId: p.communityId,
+      communitySlug: p.community.slug,
+    }));
+}
+
 export async function clearCartAction(): Promise<void> {
   const c = await cookies();
   c.set(CART_COOKIE, "[]", COOKIE_OPTS);

@@ -51,7 +51,7 @@ export function UpgradePrompt({
           padding: "6px 14px",
           background: "var(--bg-elevated)",
           color: "var(--text-muted)",
-          borderRadius: 999,
+          borderRadius: 10,
           fontSize: "var(--text-sm)",
           fontWeight: 600,
           marginBottom: 16,

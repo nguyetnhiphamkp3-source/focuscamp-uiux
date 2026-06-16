@@ -56,7 +56,7 @@ export function ChallengeMarketCard({
             fontSize: 11,
             fontWeight: 700,
             padding: "3px 9px",
-            borderRadius: 999,
+            borderRadius: 10,
             background: "rgba(0,0,0,0.55)",
             color: "#fff",
             backdropFilter: "blur(4px)",
@@ -71,7 +71,7 @@ export function ChallengeMarketCard({
             fontSize: 11,
             fontWeight: 700,
             padding: "3px 9px",
-            borderRadius: 999,
+            borderRadius: 10,
             background: `${diffColor}cc`,
             color: "#fff",
           }}

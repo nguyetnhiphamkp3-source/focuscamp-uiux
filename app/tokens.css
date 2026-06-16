@@ -20,9 +20,9 @@
      Chỉ dùng đúng 8 size này cho mọi text trong app.
      Tất cả inline fontSize khác phải được convert về 1 trong 8 này.
   */
-  --text-xs: 11px;   /* Labels, meta, timestamps, chip badges */
-  --text-sm: 13px;   /* Body small, captions, secondary info */
-  --text-base: 14px; /* UI default, button sm, body standard */
+  --text-xs: 12px;   /* Labels, meta, timestamps, chip badges */
+  --text-sm: 14px;   /* Body small, captions, secondary info */
+  --text-base: 15px; /* UI default, button sm, body standard */
   --text-md: 16px;   /* Button default, leading paragraphs, h4 */
   --text-lg: 18px;   /* h3, card title, sidebar active item */
   --text-xl: 22px;   /* h2, section header */

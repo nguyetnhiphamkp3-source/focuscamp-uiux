@@ -64,7 +64,7 @@ export function FeaturedGlobalToggle({
         alignItems: "center",
         gap: 6,
         padding: "4px 10px",
-        borderRadius: 999,
+        borderRadius: 10,
         border: `1px solid ${featured ? "var(--brand-green)" : "var(--border-subtle)"}`,
         background: featured ? "rgba(27,158,117,0.1)" : "transparent",
         color: featured ? "var(--brand-green)" : "var(--text-muted)",
@@ -74,7 +74,7 @@ export function FeaturedGlobalToggle({
         opacity: pending ? 0.6 : 1,
       }}
     >
-      🌐 {featured ? "Đang hiện trên Discovery" : "Hiện trên Discovery"}
+      🌐 {featured ? "Đang hiện toàn cầu" : "Hiện toàn cầu"}
       {err && <span style={{ color: "var(--danger)" }}> · {err}</span>}
     </button>
   );

@@ -52,20 +52,20 @@ export function OwnerAffiliateDashboard({ communityId, communitySlug, affiliates
       {/* Stats row */}
       <div style={{ display: "flex", gap: "var(--space-4)", flexWrap: "wrap" }}>
         <div style={statCardStyle}>
-          <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: "var(--space-1)" }}>Affiliates</div>
+          <div style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--text-muted)", marginBottom: "var(--space-1)" }}>Affiliates</div>
           <div style={{ fontSize: "var(--text-lg)", fontWeight: 600, color: "var(--header-primary)" }}>{totals.affiliates}</div>
         </div>
         <div style={statCardStyle}>
-          <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: "var(--space-1)" }}>Referrals</div>
+          <div style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--text-muted)", marginBottom: "var(--space-1)" }}>Referrals</div>
           <div style={{ fontSize: "var(--text-lg)", fontWeight: 600, color: "var(--header-primary)" }}>{totals.referrals}</div>
         </div>
         <div style={statCardStyle}>
-          <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: "var(--space-1)" }}>Conversions</div>
+          <div style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--text-muted)", marginBottom: "var(--space-1)" }}>Conversions</div>
           <div style={{ fontSize: "var(--text-lg)", fontWeight: 600, color: "var(--header-primary)" }}>{totals.conversions}</div>
         </div>
-        <div style={statCardStyle}>
-          <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: "var(--space-1)" }}>Hoa hồng</div>
-          <div style={{ fontSize: "var(--text-lg)", fontWeight: 600, color: "var(--brand-green)" }}>{fmtVnd(totals.totalCommission)}đ</div>
+        <div style={{ ...statCardStyle, background: "linear-gradient(135deg, #1B9E75 0%, #0d7a5a 100%)" }}>
+          <div style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "rgba(255,255,255,0.85)", marginBottom: "var(--space-1)" }}>Hoa hồng</div>
+          <div style={{ fontSize: "var(--text-lg)", fontWeight: 600, color: "#fff" }}>{fmtVnd(totals.totalCommission)}đ</div>
         </div>
       </div>
 

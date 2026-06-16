@@ -338,7 +338,7 @@ export function CreateCommunityButton({
                             fontWeight: 600,
                           }}
                         >
-                          {option.available ? `${fmtVnd(optionPlan.priceVnd)}đ` : "Coming soon"}
+                          {option.available ? `${fmtVnd(optionPlan.priceVnd)}đ` : "Sắp ra mắt"}
                           {option.available && (
                             <span
                               style={{

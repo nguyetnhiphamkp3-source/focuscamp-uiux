@@ -19,10 +19,12 @@ export default async function MarketplacePage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ type?: string; q?: string }>;
+  searchParams: Promise<{ type?: string; q?: string; page?: string }>;
 }) {
   const { slug } = await params;
-  const { type, q } = await searchParams;
+  const { type, q, page: pageParam } = await searchParams;
+  const PAGE_SIZE = 6;
+  const page = Math.max(1, parseInt(pageParam ?? "1", 10));
   const session = await auth();
 
   const community = await prisma.community.findUnique({
@@ -50,8 +52,9 @@ export default async function MarketplacePage({
   else if (type) productWhere.type = type;
   if (q) productWhere.title = { contains: q, mode: "insensitive" };
 
-  const [products, allProducts, paidChallenges] = await Promise.all([
-    prisma.product.findMany({ where: productWhere, orderBy: { createdAt: "desc" } }),
+  const [products, totalProducts, allProducts, paidChallenges] = await Promise.all([
+    prisma.product.findMany({ where: productWhere, orderBy: { createdAt: "desc" }, skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE }),
+    prisma.product.count({ where: productWhere }),
     prisma.product.findMany({ where: { communityId: community.id }, orderBy: { createdAt: "desc" } }),
     prisma.challenge.findMany({
       where: {
@@ -77,6 +80,7 @@ export default async function MarketplacePage({
     joined.forEach((j) => joinedChallengeIds.add(j.challengeId));
   }
 
+  const totalPages = Math.ceil(totalProducts / PAGE_SIZE);
   const featured = allProducts.slice(0, 5);
   const totalSales = allProducts.reduce((s, p) => s + p.soldCount, 0);
   const totalVolume = allProducts.reduce((s, p) => s + Number(p.priceVnd) * p.soldCount, 0);
@@ -84,8 +88,8 @@ export default async function MarketplacePage({
   return (
     <>
       <header className="view-header">
-        <span className="view-title">Marketplace</span>
-        <span className="view-subtitle">Challenges &amp; power-ups cho hành trình của bạn</span>
+        <span className="view-title">Cửa hàng</span>
+        <span className="view-subtitle">Thử thách &amp; công cụ cho hành trình của bạn</span>
       </header>
 
       <div className="mk-view">
@@ -100,9 +104,9 @@ export default async function MarketplacePage({
           <div className="mk-hero">
             <div className="mk-hero-emoji">🏕️</div>
             <div className="mk-hero-text">
-              <div className="mk-hero-title">Marketplace</div>
+              <div className="mk-hero-title">Cửa hàng</div>
               <div className="mk-hero-desc">
-                Đăng ký challenges để bắt đầu hành trình — hoặc mua thêm templates, SOP, tools để lên level nhanh hơn.
+                Đăng ký thử thách để bắt đầu hành trình — hoặc mua thêm tài liệu, công cụ để lên level nhanh hơn.
               </div>
             </div>
           </div>
@@ -110,10 +114,10 @@ export default async function MarketplacePage({
           {/* Stats — only visible to owner/admin */}
           {canSeeStats && (
             <div className="mk-stats">
-              <StatCard icon="⚔️" label="Challenges" value={String(paidChallenges.length)} sub="đang mở" />
-              <StatCard icon="📦" label="Items" value={String(community._count.products)} sub="trong shop" />
-              <StatCard icon="🛍️" label="Purchases" value={fmtVnd(totalSales)} sub="đơn" />
-              <StatCard icon="💰" label="Volume" value={`${fmtVnd(totalVolume)}đ`} sub="doanh thu" />
+              <StatCard icon="⚔️" label="Thử thách" value={String(paidChallenges.length)} sub="đang mở" />
+              <StatCard icon="📦" label="Sản phẩm" value={String(community._count.products)} sub="trong shop" />
+              <StatCard icon="🛍️" label="Đơn hàng" value={fmtVnd(totalSales)} sub="đã bán" />
+              <StatCard icon="💰" label="Doanh thu" value={`${fmtVnd(totalVolume)}đ`} sub="tổng cộng" />
             </div>
           )}
 
@@ -121,7 +125,7 @@ export default async function MarketplacePage({
           {paidChallenges.length > 0 && (
             <>
               <div className="mk-section-head" style={{ marginTop: "var(--space-4)" }}>
-                <h2>⚔️ Flagship Challenges</h2>
+                <h2>⚔️ Thử thách nổi bật</h2>
                 <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", fontWeight: 600 }}>
                   Lõi tư tưởng của focus.camp
                 </span>
@@ -150,7 +154,7 @@ export default async function MarketplacePage({
           {featured.length > 0 && (
             <>
               <div className="mk-section-head">
-                <h2>🔥 Featured — Trending tuần này</h2>
+                <h2>🔥 Nổi bật — Trending tuần này</h2>
                 <CarouselNavBtns carouselId="featured-carousel" />
               </div>
               <div className="mk-carousel-wrap">
@@ -165,7 +169,7 @@ export default async function MarketplacePage({
 
           {/* ===== ALL PRODUCTS ===== */}
           <div className="mk-section-head">
-            <h2>Tất cả items</h2>
+            <h2>Tất cả sản phẩm</h2>
           </div>
           <div style={{ marginBottom: "var(--space-4)" }}>
             <MarketplaceFilters />
@@ -220,11 +224,65 @@ export default async function MarketplacePage({
                         communityProducts: communityProductsList,
                       } : undefined}
                     />
-                    {canManageMarketplace && (
+                    {false && canManageMarketplace && (
                       <FeaturedGlobalToggle kind="product" resourceId={p.id} communitySlug={slug} initial={p.featuredOnGlobal} />
                     )}
                   </div>
                 ))}
+              </div>
+            );
+          })()}
+
+          {/* Pagination */}
+          {totalPages > 1 && (() => {
+            const buildHref = (p: number) => {
+              const sp = new URLSearchParams();
+              if (type) sp.set("type", type);
+              if (q) sp.set("q", q);
+              if (p > 1) sp.set("page", String(p));
+              const qs = sp.toString();
+              return `/c/${slug}/marketplace${qs ? `?${qs}` : ""}`;
+            };
+            return (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: "var(--space-6)" }}>
+                <a
+                  href={buildHref(page - 1)}
+                  aria-disabled={page <= 1}
+                  style={{
+                    padding: "6px 14px", borderRadius: 8, fontSize: "var(--text-sm)", fontWeight: 500,
+                    background: "var(--bg-card)", color: page <= 1 ? "var(--text-muted)" : "var(--text-normal)",
+                    pointerEvents: page <= 1 ? "none" : "auto", opacity: page <= 1 ? 0.4 : 1,
+                    textDecoration: "none",
+                  }}
+                >
+                  ← Trước
+                </a>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                  <a
+                    key={p}
+                    href={buildHref(p)}
+                    style={{
+                      padding: "6px 12px", borderRadius: 8, fontSize: "var(--text-sm)", fontWeight: p === page ? 700 : 400,
+                      background: p === page ? "var(--online-green)" : "var(--bg-card)",
+                      color: p === page ? "#fff" : "var(--text-normal)",
+                      textDecoration: "none", minWidth: 36, textAlign: "center",
+                    }}
+                  >
+                    {p}
+                  </a>
+                ))}
+                <a
+                  href={buildHref(page + 1)}
+                  aria-disabled={page >= totalPages}
+                  style={{
+                    padding: "6px 14px", borderRadius: 8, fontSize: "var(--text-sm)", fontWeight: 500,
+                    background: "var(--bg-card)", color: page >= totalPages ? "var(--text-muted)" : "var(--text-normal)",
+                    pointerEvents: page >= totalPages ? "none" : "auto", opacity: page >= totalPages ? 0.4 : 1,
+                    textDecoration: "none",
+                  }}
+                >
+                  Sau →
+                </a>
               </div>
             );
           })()}
@@ -237,7 +295,7 @@ export default async function MarketplacePage({
 function StatCard({ icon, label, value, sub }: { icon: string; label: string; value: string; sub: string }) {
   return (
     <div className="mk-stat">
-      <span className="mk-stat-period">All-time</span>
+      <span className="mk-stat-period">Tất cả</span>
       <div className="mk-stat-label">{icon} {label}</div>
       <div className="mk-stat-value">{value}</div>
       <div className="mk-stat-delta neutral">{sub}</div>

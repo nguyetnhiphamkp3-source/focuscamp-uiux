@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Share2, Check } from "lucide-react";
+import { useLocale } from "@/components/locale-provider";
 
 /**
  * Copy post URL to clipboard. Shows "Đã copy" confirmation for 2 seconds.
@@ -20,6 +21,7 @@ export function ShareButton({
   onDone?: () => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const { t } = useLocale();
 
   async function onClick() {
     const url = `${window.location.origin}/c/${communitySlug}/p/${postId}`;
@@ -51,7 +53,7 @@ export function ShareButton({
       aria-label="Copy link bài viết"
     >
       {copied ? <Check size={16} /> : <Share2 size={16} />}{" "}
-      {copied ? "Đã copy" : "Share"}
+      {copied ? t("copied") : t("share")}
     </button>
   );
 }

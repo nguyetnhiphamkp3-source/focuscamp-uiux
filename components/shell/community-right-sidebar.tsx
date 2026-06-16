@@ -1,11 +1,12 @@
 import { JoinButton } from "./join-button";
 import { CommunitySearchBar } from "./community-search-bar";
 import { InviteCopyButton } from "./invite-copy-button";
-import { CartIcon } from "@/components/marketplace/cart-icon";
+import { UpgradeBannerButton } from "./upgrade-banner-button";
 import { classByKey } from "@/lib/community-config";
-import { ChevronRight, Star } from "lucide-react";
 import type { ClassConfig } from "@/lib/community-config";
 import type { TierConfigItem } from "@/lib/services/subscription";
+import { getLocale, tSync } from "@/lib/locale-server";
+import { DICT } from "@/lib/locale";
 
 type Community = {
   id: string;
@@ -39,13 +40,15 @@ export async function CommunityRightSidebar({
   tiers?: TierConfigItem[];
 }) {
   const hasPaidTiers = tiers.some((t) => !t.isFree);
+  const locale = await getLocale();
+  const T = (key: Parameters<typeof tSync>[0]) => tSync(key, locale);
 
   return (
     <aside className="right-sidebar" id="rightSidebar">
       {membership ? (
-        <MemberView community={community} membership={membership} classes={classes} hasPaidTiers={hasPaidTiers} />
+        <MemberView community={community} membership={membership} classes={classes} hasPaidTiers={hasPaidTiers} tiers={tiers} T={T} locale={locale} />
       ) : (
-        <GuestView community={community} classes={classes} tiers={tiers} />
+        <GuestView community={community} classes={classes} tiers={tiers} T={T} locale={locale} />
       )}
     </aside>
   );
@@ -55,10 +58,14 @@ function GuestView({
   community,
   classes,
   tiers,
+  T,
+  locale,
 }: {
   community: Community;
   classes: ClassConfig[];
   tiers: TierConfigItem[];
+  T: (key: Parameters<typeof tSync>[0]) => string;
+  locale: import("@/lib/locale").Locale;
 }) {
   return (
     <div className="rs-view active">
@@ -143,16 +150,10 @@ function GuestView({
             className="rs-section-title"
             style={{ marginTop: 0, marginBottom: 10 }}
           >
-            What you&apos;ll get
+            {T("rsWhatYouGet")}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {[
-              ["📚", "Structured learning paths"],
-              ["⚔️", "Weekly build challenges"],
-              ["🛒", "Exclusive deals & tools"],
-              ["👥", "Mentorship & networking"],
-              ["🏆", "Achievements & rewards"],
-            ].map(([icon, text]) => (
+            {DICT[locale].rsFeatures.map(([icon, text]: [string, string]) => (
               <div
                 key={text}
                 style={{
@@ -178,11 +179,16 @@ function MemberView({
   membership,
   classes,
   hasPaidTiers,
+  tiers,
+  T,
 }: {
   community: Community;
   membership: NonNullable<Membership>;
   classes: ClassConfig[];
   hasPaidTiers?: boolean;
+  tiers?: TierConfigItem[];
+  T: (key: Parameters<typeof tSync>[0]) => string;
+  locale: import("@/lib/locale").Locale;
 }) {
   const myClass = classByKey(membership.className, classes);
 
@@ -208,31 +214,14 @@ function MemberView({
           }}
         />
       </div>
-      {hasPaidTiers && (
-        <a
-          href={`/c/${community.slug}/upgrade`}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            margin: "8px 12px",
-            padding: "10px 14px",
-            background: "linear-gradient(135deg, #1B9E75 0%, #0d7a5a 100%)",
-            borderRadius: 10,
-            textDecoration: "none",
-          }}
-        >
-          <Star size={18} color="gold" strokeWidth={1.5} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "#fff", lineHeight: 1.2 }}>
-              Nâng cấp gói
-            </div>
-            <div style={{ fontSize: "var(--text-xs)", color: "rgba(255,255,255,0.8)", marginTop: 2 }}>
-              Mở khoá tính năng premium
-            </div>
-          </div>
-          <ChevronRight size={16} style={{ color: "rgba(255,255,255,0.7)", flexShrink: 0 }} />
-        </a>
+      {hasPaidTiers && tiers && tiers.filter(t => !t.isFree).length > 0 && (
+        <UpgradeBannerButton
+          communityId={community.id}
+          communitySlug={community.slug}
+          tiers={tiers.filter(t => !t.isFree)}
+          currentTierKey={membership.tier}
+          currentTierLabel={tiers.find(t => t.key === membership.tier)?.label ?? membership.tier}
+        />
       )}
       <CommunitySearchBar name={community.name} slug={community.slug} />
       <div className="rs-body">
@@ -241,10 +230,10 @@ function MemberView({
             className="rs-section-title"
             style={{ marginTop: 0, marginBottom: 10 }}
           >
-            Tiến độ của bạn
+            {T("rsProgress")}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Stat label="Role" value={membership.role} />
+            <Stat label={T("rsRole")} value={membership.role} />
             <Stat label="Tier" value={membership.tier} />
             <Stat label="XP" value={String(membership.xp)} />
             {classes.length > 0 && (
@@ -258,18 +247,6 @@ function MemberView({
               />
             )}
           </div>
-          {classes.length > 0 && (
-            <div style={{ marginTop: 10 }}>
-              <JoinButton
-                communityId={community.id}
-                communitySlug={community.slug}
-                classes={classes}
-                currentClassKey={membership.className}
-                label={myClass ? "Đổi class" : "Chọn class"}
-                variant="secondary"
-              />
-            </div>
-          )}
         </div>
 
         <div className="rs-card">
@@ -288,7 +265,6 @@ function MemberView({
 
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <InviteCopyButton communityId={community.id} communitySlug={community.slug} />
-          <CartIcon />
         </div>
 
         <div className="rs-card">

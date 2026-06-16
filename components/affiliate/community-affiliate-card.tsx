@@ -13,9 +13,9 @@ interface ReferralRow {
 
 function PayoutBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; color: string; bg: string }> = {
-    PAID: { label: "Đã TT", color: "var(--brand-green)", bg: "rgba(27,158,117,0.1)" },
+    PAID: { label: "Đã thanh toán", color: "var(--brand-green)", bg: "rgba(27,158,117,0.1)" },
     REJECTED: { label: "Từ chối", color: "var(--danger)", bg: "rgba(220,53,69,0.1)" },
-    UNPAID: { label: "Chờ TT", color: "var(--text-muted)", bg: "rgba(128,128,128,0.08)" },
+    UNPAID: { label: "Chờ thanh toán", color: "var(--text-muted)", bg: "rgba(128,128,128,0.08)" },
   };
   const s = map[status] ?? map.UNPAID;
   return (

@@ -38,6 +38,7 @@ import { AgentReviewCard } from "@/components/community/agent-review-card";
 import { SubmissionHistory } from "@/components/community/submission-history";
 import { SubmissionImageCarousel } from "@/components/community/submission-image-carousel";
 import { LinkifiedText } from "@/components/shared/linkified-text";
+import { getLocale, tSync, type Locale } from "@/lib/locale-server";
 import { parseCheckinHistory } from "@/lib/checkin-history";
 import type { AIReviewData } from "@/lib/ai-review-data";
 import { listAIProviders } from "@/lib/services/ai-provider";
@@ -65,11 +66,11 @@ function diffLabel(d: string) {
   return "🛡️ Normal";
 }
 
-function evidenceTypeLabel(type: string) {
+function evidenceTypeLabel(type: string, locale: Locale) {
   if (type === "LINK") return "Link";
-  if (type === "IMAGE") return "Image";
-  if (type === "TEXT_IMAGE") return "Text + Image";
-  return "Text";
+  if (type === "IMAGE") return tSync("evidenceImage", locale);
+  if (type === "TEXT_IMAGE") return tSync("evidenceTextImage", locale);
+  return tSync("evidenceText", locale);
 }
 
 export default async function ChallengeDetailPage({
@@ -90,6 +91,7 @@ export default async function ChallengeDetailPage({
   const { slug, challengeSlug } = await params;
   const sp = await searchParams;
   const session = await auth();
+  const locale = await getLocale();
 
   const challenge = await prisma.challenge.findFirst({
     where: { community: { slug }, slug: challengeSlug },
@@ -1201,7 +1203,7 @@ export default async function ChallengeDetailPage({
                           >
                             {hasEvidenceHint && (
                               <span>
-                                Evidence: {evidenceTypeLabel(t.evidenceType)}
+                                Evidence: {evidenceTypeLabel(t.evidenceType, locale)}
                                 {t.evidenceLabel ? ` · ${t.evidenceLabel}` : ""}
                               </span>
                             )}

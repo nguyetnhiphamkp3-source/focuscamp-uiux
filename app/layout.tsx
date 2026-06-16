@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { ScrollbarAutohide } from "@/components/shell/scrollbar-autohide";
+import { LocaleProvider } from "@/components/locale-provider";
+import { getLocale } from "@/lib/locale-server";
 import "./globals.css";
 
 // SF Pro Display — subset + bundled in app/fonts (woff2), shipped via git so
@@ -60,16 +62,19 @@ export const metadata: Metadata = {
   // Icons auto-discovered from app/favicon.ico, app/icon.png, app/apple-icon.png.
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
   return (
-    <html lang="vi" className={`${sfPro.variable} h-full antialiased`}>
+    <html lang={locale === "en" ? "en" : "vi"} className={`${sfPro.variable} h-full antialiased`}>
       <body>
-        <ScrollbarAutohide />
-        {children}
+        <LocaleProvider initialLocale={locale}>
+          <ScrollbarAutohide />
+          {children}
+        </LocaleProvider>
       </body>
     </html>
   );

@@ -1,13 +1,14 @@
 "use client";
 
 import {
-  MoreHorizontal, ImageIcon, MessageSquare, LogOut, Settings,
+  MoreHorizontal, ImageIcon, MessageSquare, LogOut, Settings, Globe,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { logoutAction } from "@/app/actions/auth";
 import { avatarColorFor, initials } from "@/lib/brand";
+import { useLocale } from "@/components/locale-provider";
 
 /* ─── Wallpaper helpers ─────────────────────────────────────────────── */
 const WP_KEY = "fc-wallpaper";
@@ -41,27 +42,31 @@ function downscale(file: File, maxW = 2560): Promise<string> {
 
 /* ─── MenuItem ──────────────────────────────────────────────────────── */
 function MenuItem({
-  icon, label, onClick, href, danger,
+  icon, label, onClick, href, danger, accent,
 }: {
   icon: React.ReactNode;
   label: string;
   onClick?: () => void;
   href?: string;
   danger?: boolean;
+  accent?: string;
 }) {
+  const textColor = accent ?? "var(--text-normal)";
+  const iconColor = accent ?? "var(--text-muted)";
   const style: React.CSSProperties = {
     display: "flex", alignItems: "center", justifyContent: "space-between",
-    padding: "9px 14px", gap: 10, cursor: "pointer",
-    fontSize: "var(--text-sm)", fontWeight: 500,
-    color: danger ? "var(--danger)" : "var(--text-normal)",
-    background: "transparent", border: "none", width: "100%",
+    padding: "9px 10px", gap: 10, cursor: "pointer",
+    fontSize: "15px", fontWeight: 400,
+    color: textColor,
+    background: "transparent", border: "none",
+    width: "calc(100% - 16px)", margin: "0 8px",
     textAlign: "left", textDecoration: "none", transition: "background 100ms",
-    borderRadius: 0,
+    borderRadius: "var(--r-md)",
   };
   const inner = (
     <>
       <span>{label}</span>
-      <span style={{ color: danger ? "var(--danger)" : "var(--text-muted)", flexShrink: 0 }}>{icon}</span>
+      <span style={{ color: iconColor, flexShrink: 0 }}>{icon}</span>
     </>
   );
 
@@ -99,8 +104,9 @@ export function UserMenu({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pos, setPos] = useState<{ bottom: number; left: number } | null>(null);
   const [, startTransition] = useTransition();
+  const { t, toggleLocale } = useLocale();
 
-  const displayName = user.name || user.email || "Guest";
+  const displayName = user.name || user.email || t("guest");
 
   /* Restore wallpaper + theme on mount */
   useEffect(() => {
@@ -241,23 +247,29 @@ export function UserMenu({
           {/* Actions */}
           <MenuItem
             icon={<ImageIcon size={15} />}
-            label="Đổi hình nền"
+            label={t("changeWallpaper")}
             onClick={() => { fileInputRef.current?.click(); }}
+            accent="var(--brand-green)"
           />
           {chatHref && (
             <MenuItem
               icon={<MessageSquare size={15} />}
-              label="Tin nhắn"
+              label={t("messages")}
               href={chatHref}
               onClick={() => setOpen(false)}
             />
           )}
+          <MenuItem
+            icon={<Globe size={15} />}
+            label={t("language")}
+            onClick={() => { setOpen(false); toggleLocale(); }}
+          />
 
           <Divider />
 
           <MenuItem
             icon={<LogOut size={15} />}
-            label="Đăng xuất"
+            label={t("logout")}
             onClick={handleLogout}
             danger
           />

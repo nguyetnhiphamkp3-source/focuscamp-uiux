@@ -296,12 +296,12 @@ body {
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* All buttons → fully rounded (pill). Tabs keep their own shape. */
+/* All buttons → iOS-style moderate rounding. Tabs keep their own shape. */
 button:not([class*="tab"]),
 [class*="btn"]:not([class*="tab"]),
 .mk-card-cta, .mk-detail-buy-btn, .lesson-task-submit, .pf-action-btn,
 .rs-join-btn, .course-action-btn {
-  border-radius: var(--r-full) !important;
+  border-radius: var(--r-lg) !important;
 }
 
 /* Utility classes */
