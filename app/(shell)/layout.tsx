@@ -21,24 +21,28 @@ export default async function ShellLayout({
   let notifUnread = 0;
   let freshUser: { id: string; name: string | null; email: string | null; image: string | null; handle: string | null; isSuperAdmin: boolean } | null = null;
   if (session?.user?.id) {
-    const [mems, n, u] = await Promise.all([
-      prisma.membership.findMany({
-        where: { userId: session.user.id },
-        include: { community: { select: { id: true, slug: true, name: true, iconUrl: true, ownerId: true } } },
-        orderBy: { joinedAt: "asc" },
-      }),
-      unreadCount(session.user.id),
-      prisma.user.findUnique({
-        where: { id: session.user.id },
-        select: { id: true, name: true, email: true, image: true, handle: true, isSuperAdmin: true },
-      }),
-    ]);
-    myCommunities = mems.map((m) => ({
-      ...m.community,
-      isOwner: m.community.ownerId === session.user!.id,
-    }));
-    notifUnread = n;
-    freshUser = u;
+    try {
+      const [mems, n, u] = await Promise.all([
+        prisma.membership.findMany({
+          where: { userId: session.user.id },
+          include: { community: { select: { id: true, slug: true, name: true, iconUrl: true, ownerId: true } } },
+          orderBy: { joinedAt: "asc" },
+        }),
+        unreadCount(session.user.id),
+        prisma.user.findUnique({
+          where: { id: session.user.id },
+          select: { id: true, name: true, email: true, image: true, handle: true, isSuperAdmin: true },
+        }),
+      ]);
+      myCommunities = mems.map((m) => ({
+        ...m.community,
+        isOwner: m.community.ownerId === session.user!.id,
+      }));
+      notifUnread = n;
+      freshUser = u;
+    } catch {
+      // DB unreachable (showcase mode) — render shell with empty state
+    }
   }
 
   const profileHref =
