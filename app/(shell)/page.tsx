@@ -45,7 +45,7 @@ export default async function Home() {
     prisma.community.count(),
     prisma.product.count(),
     prisma.challenge.count(),
-  ]);
+  ]).catch(() => [0, 0, 0, 0]);
 
   return (
     <div style={{ flex: 1, overflowY: "auto" }}>
