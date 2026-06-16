@@ -1,22 +1,46 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import Resend from "next-auth/providers/resend";
+import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
 import { welcomeEmail, magicLinkEmail } from "@/lib/email-templates";
 import { logger } from "@/lib/logger";
 
+// When DEMO_PASSWORD is set, use JWT strategy so sessions don't need DB.
+const isDemoMode = !!process.env.DEMO_PASSWORD;
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
-  session: { strategy: "database" },
+  session: { strategy: isDemoMode ? "jwt" : "database" },
   providers: [
+    // Demo credentials login — only active when DEMO_PASSWORD env var is set.
+    // Lets reviewers browse the UI without Google OAuth or a live database.
+    ...(isDemoMode
+      ? [
+          Credentials({
+            name: "Demo",
+            credentials: {
+              password: { label: "Mật khẩu demo", type: "password" },
+            },
+            async authorize(credentials) {
+              if (credentials?.password === process.env.DEMO_PASSWORD) {
+                return {
+                  id: "demo-admin",
+                  name: "Admin (Demo)",
+                  email: process.env.DEMO_ADMIN_EMAIL || "admin@focus.camp",
+                  image: null,
+                };
+              }
+              return null;
+            },
+          }),
+        ]
+      : []),
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,
       clientSecret: process.env.AUTH_GOOGLE_SECRET,
-      // Safe here: both providers (Google + magic-link) verify email ownership,
-      // so same verified email = same person. Merges Google login into an
-      // existing magic-link account (and vice versa) instead of erroring.
       allowDangerousEmailAccountLinking: true,
       authorization: {
         params: {
@@ -51,20 +75,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   trustHost: true,
   callbacks: {
-    async session({ session, user }) {
+    async jwt({ token, user }) {
+      if (user) token.id = user.id;
+      return token;
+    },
+    async session({ session, token, user }) {
       if (session.user) {
-        session.user.id = user.id;
+        // JWT mode: id from token; database mode: id from user
+        session.user.id = (isDemoMode ? token?.id : user?.id) as string;
       }
       return session;
     },
   },
   events: {
     async createUser({ user }) {
-      // Fired the first time a user signs in (PrismaAdapter creates the User row).
       if (!user.email) return;
-      // Magic-link signups arrive without a name (unlike Google). Default the
-      // name to the email local-part (before "@") so they aren't shown as
-      // "Ẩn danh". Only fills when empty — Google users keep their real name.
       let name = (user.name ?? "").trim();
       if (!name) {
         name = user.email.split("@")[0];
@@ -75,26 +100,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
       }
       try {
-        await sendEmail({
-          to: user.email,
-          ...welcomeEmail({ name }),
-        });
+        await sendEmail({ to: user.email, ...welcomeEmail({ name }) });
       } catch (err) {
         logger.warn({ err, email: user.email }, "[auth] welcome email failed");
       }
-      // Affiliate referral attribution from cookie
       try {
         const { cookies } = await import("next/headers");
         const c = await cookies();
         const ref = c.get("fc_ref")?.value;
         if (ref && user.id) {
-          const { attributeReferralOnSignup } = await import(
-            "@/lib/services/affiliate"
-          );
-          await attributeReferralOnSignup({
-            referredUserId: user.id,
-            refCode: ref,
-          });
+          const { attributeReferralOnSignup } = await import("@/lib/services/affiliate");
+          await attributeReferralOnSignup({ referredUserId: user.id, refCode: ref });
         }
       } catch (err) {
         logger.warn({ err }, "[auth] affiliate attribution failed");

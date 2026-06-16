@@ -22,6 +22,8 @@ export default async function LoginPage({
   const session = await auth();
   if (session?.user) redirect(redirectTo);
 
+  const isDemoMode = !!process.env.DEMO_PASSWORD;
+
   async function handleGoogleSignIn(formData: FormData) {
     "use server";
     const target = safeRedirect(formData.get("redirectTo") as string | undefined);
@@ -34,6 +36,13 @@ export default async function LoginPage({
     if (!email || !email.includes("@")) return;
     const target = safeRedirect(formData.get("redirectTo") as string | undefined);
     await signIn("resend", { email, redirectTo: target });
+  }
+
+  async function handleDemoSignIn(formData: FormData) {
+    "use server";
+    const password = formData.get("password") as string;
+    const target = safeRedirect(formData.get("redirectTo") as string | undefined);
+    await signIn("credentials", { password, redirectTo: target });
   }
 
   return (
@@ -200,6 +209,46 @@ export default async function LoginPage({
           </label>
           <LoginReferralInput />
         </div>
+
+        {isDemoMode && (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", margin: "var(--space-5) 0" }}>
+              <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.08)" }} />
+              <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>hoặc xem demo</span>
+              <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.08)" }} />
+            </div>
+            <form action={handleDemoSignIn} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+              <input type="hidden" name="redirectTo" value={redirectTo} />
+              <div style={{ background: "rgba(27,158,117,0.06)", border: "1px solid rgba(27,158,117,0.2)", borderRadius: 10, padding: "10px 14px", fontSize: "var(--text-xs)", color: "#1B9E75", lineHeight: 1.5 }}>
+                🔑 Tài khoản demo — nhập mật khẩu được cung cấp để xem giao diện
+              </div>
+              <input
+                type="password"
+                name="password"
+                placeholder="Mật khẩu demo"
+                required
+                style={{
+                  width: "100%", minHeight: 44, padding: "0 var(--space-4)",
+                  borderRadius: "var(--r-md)", border: "none",
+                  background: "rgba(0,0,0,0.04)",
+                  color: "var(--text-heading)", fontSize: "var(--text-base)",
+                  boxSizing: "border-box" as const, outline: "none",
+                }}
+              />
+              <button
+                type="submit"
+                style={{
+                  width: "100%", minHeight: 44, padding: "0 var(--space-6)",
+                  borderRadius: "var(--r-md)", background: "#1B9E75",
+                  color: "#fff", border: "none",
+                  fontSize: "var(--text-md)", fontWeight: 700, cursor: "pointer",
+                }}
+              >
+                Vào xem demo →
+              </button>
+            </form>
+          </>
+        )}
 
         <p
           style={{
